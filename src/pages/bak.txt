@@ -1,5 +1,5 @@
 import { MainLayout } from "../layouts/MainLayout";
-import { usePublicClient, useWalletClient } from "wagmi";
+// import * as LitJsSdk from "@lit-protocol/js-sdk/auth";
 
 // @ts-ignore
 import { createAuthManager, storagePlugins } from "@lit-protocol/auth";
@@ -8,12 +8,8 @@ import { createAuthConfigBuilder } from "@lit-protocol/auth-helpers";
 import { createLitClient } from "@lit-protocol/lit-client";
 import { privateKeyToAccount } from "viem/accounts";
 import { useState } from "react";
-import { nagaDev } from "@lit-protocol/networks";
 
 export const HomePage = () => {
-  const publicClient = usePublicClient();
-  const { data: walletClient } = useWalletClient();
-
   const [status, setStatus] = useState<string>("");
   const [signature, setSignature] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
@@ -32,6 +28,7 @@ export const HomePage = () => {
       setStatus("Account created...");
 
       // Step 2: Import and choose the Lit network to connect to
+      const { nagaDev } = await import("@lit-protocol/networks");
       setStatus("Network imported...");
 
       // Step 3: Instantiate the LitClient using the selected network
@@ -41,7 +38,7 @@ export const HomePage = () => {
       // Step 4: Create an AuthManager to manage authentication state
       const authManager = createAuthManager({
         // on browser, use browser storage plugin by default
-        storage: storagePlugins.localStorage({
+        storage: storagePlugins.localStorageNode({
           appName: "my-app", // namespace for isolating auth data
           networkName: "naga-dev", // useful for distinguishing environments
           storagePath: "./lit-auth-storage", // file path for storing session data
