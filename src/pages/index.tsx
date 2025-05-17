@@ -19,6 +19,10 @@ export const HomePage = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [pkpInfo, setPkpInfo] = useState<any>(null);
 
+  // Helper function to serialize BigInts
+  const replacer = (key: string, value: any) =>
+    typeof value === "bigint" ? value.toString() : value;
+
   const authenticate = async () => {
     try {
       setLoading(true);
@@ -136,7 +140,7 @@ export const HomePage = () => {
                 overflow: "auto",
               }}
             >
-              {JSON.stringify(pkpInfo, null, 2)}
+              {JSON.stringify(pkpInfo, replacer, 2)}
             </pre>
           </div>
         )}
