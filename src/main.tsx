@@ -23,9 +23,20 @@ import { APP_INFO, NETWORKS, THEME, WALLET_CONNECT, WALLETS } from "./_config";
 
 const queryClient = new QueryClient();
 
-// Get Chronicle Yellowstone chain configuration
-// const chronicleYellowstone = getChain("chronicle-yellowstone");
-// const yellowstoneChainConfig = chronicleYellowstone.chainConfig();
+// Define the Chronicle Testnet (nagaDev)
+const chronicleTestnet = {
+  id: 175188,
+  name: 'Chronicle Testnet',
+  nativeCurrency: { name: 'Test Lit Token', symbol: 'tLIT', decimals: 18 },
+  rpcUrls: {
+    default: { http: ['https://chain-rpc.litprotocol.com/http'] },
+    public: { http: ['https://chain-rpc.litprotocol.com/http'] },
+  },
+  blockExplorers: {
+    default: { name: 'Chronicle Explorer', url: 'https://chain.litprotocol.com' },
+  },
+  testnet: true,
+};
 
 // Create a proper Chain object for Chronicle Yellowstone - type cast to avoid type errors
 // const chronicleChain = {
@@ -46,9 +57,10 @@ const litTheme = darkTheme({
 });
 
 const defaultConfig = createConfig({
-  chains: [mainnet],
+  chains: [mainnet, chronicleTestnet],
   transports: {
     [mainnet.id]: http(),
+    [chronicleTestnet.id]: http(),
   },
 });
 

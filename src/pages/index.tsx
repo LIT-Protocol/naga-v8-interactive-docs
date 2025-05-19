@@ -1,14 +1,14 @@
 import { MainLayout } from "../layouts/MainLayout";
 import { usePublicClient, useWalletClient } from "wagmi";
-
-// @ts-ignore
 import { createAuthManager, storagePlugins } from "@lit-protocol/auth";
-// @ts-ignore
 import { createAuthConfigBuilder } from "@lit-protocol/auth-helpers";
 import { createLitClient } from "@lit-protocol/lit-client";
 import { privateKeyToAccount } from "viem/accounts";
 import { useState } from "react";
 import { nagaDev } from "@lit-protocol/networks";
+import { WalletClient } from "viem";
+// import { goChain } from "viem/chains";
+// import { useCounter } from '@lit-protocol/react-hooks';
 
 export const HomePage = () => {
   const publicClient = usePublicClient();
@@ -18,29 +18,34 @@ export const HomePage = () => {
   const [signature, setSignature] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [pkpInfo, setPkpInfo] = useState<any>(null);
-
+  // const { count, increment, decrement } = useCounter();
   // Helper function to serialize BigInts
   const replacer = (key: string, value: any) =>
     typeof value === "bigint" ? value.toString() : value;
 
   const authenticate = async () => {
+
+    if (!walletClient) {
+      throw new Error("Wallet client not found");
+    }
+
     try {
       setLoading(true);
       setStatus("Starting authentication process...");
 
       // Step 1: Get private key (in a real app, this would be securely stored)
       // For demo purposes only - never use hardcoded keys in production
-      const demoPrivateKey =
-        "0x1234567890123456789012345678901234567890123456789012345678901234";
-      const myAccount = privateKeyToAccount(demoPrivateKey as `0x${string}`);
-      setStatus("Account created...");
+      // const demoPrivateKey =
+      //   "0x1234567890123456789012345678901234567890123456789012345678901234";
+      // const myAccount = privateKeyToAccount(demoPrivateKey as `0x${string}`);
+      // setStatus("Account created...");
 
       // Step 2: Import and choose the Lit network to connect to
-      setStatus("Network imported...");
+      // setStatus("Network imported...");
 
       // Step 3: Instantiate the LitClient using the selected network
       const litClient = await createLitClient({ network: nagaDev });
-      setStatus("Lit client created...");
+      // setStatus("Lit client created...");
 
       // Step 4: Create an AuthManager to manage authentication state
       const authManager = createAuthManager({
@@ -48,7 +53,6 @@ export const HomePage = () => {
         storage: storagePlugins.localStorage({
           appName: "my-app", // namespace for isolating auth data
           networkName: "naga-dev", // useful for distinguishing environments
-          storagePath: "./lit-auth-storage", // file path for storing session data
         }),
       });
 
@@ -58,19 +62,28 @@ export const HomePage = () => {
       const authConfig = createAuthConfigBuilder()
         .addDomain(window.location.host)
         .addPKPSigningRequest("*")
+        .addStatement("🔥🔥🔥🔥LOOOOOL")
         .addLitActionExecutionRequest("*")
         .build();
       setStatus("Auth config built...");
 
+      // const toSign = "hello from the frontend";
+      // const signatures = await walletClient?.signMessage({
+      //   message: toSign,
+      // });
+      // console.log("XX signatures:", signatures);
+      // return;
       // Step 6: Create an EOA-based auth context
       const eoaAuthContext = await authManager.createEoaAuthContext({
         config: {
-          account: myAccount,
+          account: walletClient,
         },
         authConfig,
         litClient: litClient,
       });
+      console.log("eoaAuthContext:", eoaAuthContext);
       setStatus("EOA auth context created...");
+
 
       // Step 7: Mint a new Programmable Key Pair
       const { data: mintedPkpInfo } = await litClient.mintPkp({
@@ -106,6 +119,11 @@ export const HomePage = () => {
     <MainLayout>
       <div className="home-page">
         <h1>Lit Protocol Demo</h1>
+
+        {/* <p>Count: {count}</p>
+        <button onClick={increment}>Increment</button>
+        <button onClick={decrement}>Decrement</button> */}
+
         <button
           onClick={authenticate}
           disabled={loading}
