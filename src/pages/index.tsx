@@ -1,183 +1,479 @@
-import { MainLayout } from "../layouts/MainLayout";
-import { usePublicClient, useWalletClient } from "wagmi";
-import { createAuthManager, storagePlugins } from "@lit-protocol/auth";
-import { createAuthConfigBuilder } from "@lit-protocol/auth-helpers";
-import { createLitClient } from "@lit-protocol/lit-client";
-import { privateKeyToAccount } from "viem/accounts";
-import { useState } from "react";
+import {
+  createAuthManager as createAuthManagerSingleton,
+  storagePlugins as storagePluginsSingleton,
+} from "@lit-protocol/auth";
+import { createLitClient as createLitClientSingleton } from "@lit-protocol/lit-client";
 import { nagaDev } from "@lit-protocol/networks";
-import { WalletClient } from "viem";
-// import { goChain } from "viem/chains";
-// import { useCounter } from '@lit-protocol/react-hooks';
+import { useEffect, useState } from "react";
+import { useWalletClient } from "wagmi";
+import { MainLayout } from "../layouts/MainLayout";
+import { MintAndUsePkp } from "../tabs";
+import EoaAuthTab from "../tabs/EoaAuthTab";
+import GoogleAuthTab from "../tabs/GoogleAuthTab";
+
+// --- Singleton instances ---
+type LitClient = Awaited<ReturnType<typeof createLitClientSingleton>>;
+type AuthManager = Awaited<ReturnType<typeof createAuthManagerSingleton>>;
+
+let litClientInstance: LitClient | null = null;
+let authManagerInstance: AuthManager | null = null;
+
+const getLitClient = async (): Promise<LitClient> => {
+  if (!litClientInstance) {
+    console.log("Creating new LitClient instance (should happen only once)");
+    litClientInstance = await createLitClientSingleton({ network: nagaDev });
+  }
+  return litClientInstance;
+};
+
+const getAuthManager = (): AuthManager => {
+  if (!authManagerInstance) {
+    console.log("Creating new AuthManager instance (should happen only once)");
+    authManagerInstance = createAuthManagerSingleton({
+      storage: storagePluginsSingleton.localStorage({
+        appName: "my-app",
+        networkName: "naga-dev",
+      }),
+    });
+  }
+  return authManagerInstance;
+};
+
+// DependencyStatus component for displaying dependency status with proper alignment
+type Dependency = {
+  name: string;
+  isLoaded: boolean;
+  description?: string; // Optional description for each dependency
+};
+
+interface DependencyStatusProps {
+  dependencies: Dependency[];
+  title?: string; // Optional custom title
+}
+
+const DependencyStatus = ({
+  dependencies,
+  title = "Dependencies Status:",
+}: DependencyStatusProps) => {
+  return (
+    <div
+      style={{
+        padding: "12px",
+        marginBottom: "20px",
+        backgroundColor: "#f0f9ff",
+        borderRadius: "4px",
+        fontSize: "14px",
+        border: "1px solid #bee3f8",
+      }}
+    >
+      <h3 style={{ margin: "0 0 8px 0", fontSize: "16px" }}>{title}</h3>
+      <table
+        style={{
+          width: "100%",
+          borderCollapse: "separate",
+          borderSpacing: "0 4px",
+        }}
+      >
+        <tbody>
+          {dependencies.map((dep, index) => (
+            <tr key={index}>
+              <td
+                style={{
+                  textAlign: "left",
+                  paddingRight: "10px",
+                  fontWeight: "500",
+                  minWidth: "120px",
+                }}
+              >
+                {dep.name}:
+              </td>
+              <td
+                style={{
+                  textAlign: "left",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {dep.isLoaded ? (
+                  <span style={{ color: "green", fontWeight: "bold" }}>
+                    ✓ Loaded
+                  </span>
+                ) : (
+                  <span style={{ color: "orange", fontWeight: "bold" }}>
+                    ⟳ Loading...
+                  </span>
+                )}
+              </td>
+              {dep.description && (
+                <td
+                  style={{
+                    textAlign: "left",
+                    paddingLeft: "15px",
+                    color: "#666",
+                    fontSize: "13px",
+                    fontStyle: "italic",
+                  }}
+                >
+                  {dep.description}
+                </td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {/* Add a hint for developers */}
+      <div
+        style={{
+          marginTop: "10px",
+          fontSize: "12px",
+          color: "#666",
+          borderTop: "1px dashed #ccc",
+          paddingTop: "8px",
+        }}
+      >
+        <b>Dev Note:</b> To add new dependencies, update the{" "}
+        <code>getDependencies()</code> function.
+      </div>
+    </div>
+  );
+};
+
+// Authentication methods configuration
+const ACTIONS = [
+  {
+    id: "eoa",
+    name: "Auth with EOA",
+    description: "Authenticate using your Ethereum wallet's EOA",
+    category: "EOA Auth",
+  },
+  {
+    id: "pkp",
+    name: "Mint & Use PKP",
+    description: "Mint and use a Programmable Key Pair",
+    category: "EOA Auth",
+  },
+  {
+    id: "google-auth",
+    name: "Auth with Google",
+    description: "Authenticate using your Google account",
+    category: "PKP Auth Methods",
+  },
+  // More authentication methods will be added here
+];
 
 export const HomePage = () => {
-  const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
 
   const [status, setStatus] = useState<string>("");
-  const [signature, setSignature] = useState<string>("");
+  const [signature, setSignature] = useState<any>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [pkpInfo, setPkpInfo] = useState<any>(null);
-  // const { count, increment, decrement } = useCounter();
-  // Helper function to serialize BigInts
-  const replacer = (key: string, value: any) =>
-    typeof value === "bigint" ? value.toString() : value;
+  const [litClient, setLitClient] = useState<LitClient | null>(null);
+  const [authManager, setAuthManager] = useState<AuthManager | null>(null);
+  const [authContext, setAuthContext] = useState<any>(null);
+  const [activeMethod, setActiveMethod] = useState<string>("eoa");
+  const [messageToSign, setMessageToSign] = useState<string>(
+    "Hello, Lit Protocol!"
+  );
+  const [isSigning, setIsSigning] = useState<boolean>(false);
+  const [siteAuthConfig, setSiteAuthConfig] = useState<any>({
+    domain: window.location.host,
+    statement: "🫵 YOU AGREED TO THE TERMS AND CONDITIONS",
+    resources: [
+      ["pkp-signing", "*"],
+      ["lit-action-execution", "*"],
+    ],
+    capabilityAuthSigs: [],
+    expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
+  });
 
-  const authenticate = async () => {
-
-    if (!walletClient) {
-      throw new Error("Wallet client not found");
-    }
-
-    try {
-      setLoading(true);
-      setStatus("Starting authentication process...");
-
-      // Step 1: Get private key (in a real app, this would be securely stored)
-      // For demo purposes only - never use hardcoded keys in production
-      // const demoPrivateKey =
-      //   "0x1234567890123456789012345678901234567890123456789012345678901234";
-      // const myAccount = privateKeyToAccount(demoPrivateKey as `0x${string}`);
-      // setStatus("Account created...");
-
-      // Step 2: Import and choose the Lit network to connect to
-      // setStatus("Network imported...");
-
-      // Step 3: Instantiate the LitClient using the selected network
-      const litClient = await createLitClient({ network: nagaDev });
-      // setStatus("Lit client created...");
-
-      // Step 4: Create an AuthManager to manage authentication state
-      const authManager = createAuthManager({
-        // on browser, use browser storage plugin by default
-        storage: storagePlugins.localStorage({
-          appName: "my-app", // namespace for isolating auth data
-          networkName: "naga-dev", // useful for distinguishing environments
-        }),
-      });
-
-      setStatus("Auth manager created...");
-
-      // Step 5: Build a reusable auth configuration
-      const authConfig = createAuthConfigBuilder()
-        .addDomain(window.location.host)
-        .addPKPSigningRequest("*")
-        .addStatement("🔥🔥🔥🔥LOOOOOL")
-        .addLitActionExecutionRequest("*")
-        .build();
-      setStatus("Auth config built...");
-
-      // const toSign = "hello from the frontend";
-      // const signatures = await walletClient?.signMessage({
-      //   message: toSign,
-      // });
-      // console.log("XX signatures:", signatures);
-      // return;
-      // Step 6: Create an EOA-based auth context
-      const eoaAuthContext = await authManager.createEoaAuthContext({
-        config: {
-          account: walletClient,
-        },
-        authConfig,
-        litClient: litClient,
-      });
-      console.log("eoaAuthContext:", eoaAuthContext);
-      setStatus("EOA auth context created...");
-
-
-      // Step 7: Mint a new Programmable Key Pair
-      const { data: mintedPkpInfo } = await litClient.mintPkp({
-        authContext: eoaAuthContext,
-        scopes: ["sign-anything"],
-      });
-      setPkpInfo(mintedPkpInfo);
-      setStatus("PKP minted successfully!");
-
-      // Step 8: Sign a message with the PKP
-      const signatureResult = await litClient.chain.ethereum.pkpSign({
-        pubKey: mintedPkpInfo.pubkey,
-        toSign: "hello from the frontend",
-        authContext: eoaAuthContext,
-      });
-      setSignature(JSON.stringify(signatureResult));
-      setStatus("Message signed successfully!");
-
-      // Disconnect from Lit network
-      await litClient.disconnect();
-      setStatus("Authentication complete!");
-    } catch (error) {
-      console.error("Authentication error:", error);
-      setStatus(
-        `Error: ${error instanceof Error ? error.message : String(error)}`
+  // Load active tab from URL query parameter when component mounts
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tab = urlParams.get("tab");
+    if (tab && ACTIONS.some((action) => action.id === tab)) {
+      setActiveMethod(tab);
+    } else if (urlParams.has("tab")) {
+      // If tab parameter exists but is invalid, remove it
+      urlParams.delete("tab");
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}${
+          urlParams.toString() ? "?" + urlParams.toString() : ""
+        }`
       );
-    } finally {
-      setLoading(false);
     }
+  }, []);
+
+  // Effect to initialize LitClient and AuthManager state using singletons
+  useEffect(() => {
+    const initClients = async () => {
+      if (!litClient) {
+        // Only set if not already in state
+        const client = await getLitClient();
+        // Check again in case of rapid re-renders or if state was set by another means
+        // This check is against the current closure's `litClient` value.
+        // A more robust check for multiple calls to set state might involve a ref for this effect's completion.
+        // However, for setting from a singleton, simply calling set once is usually fine.
+        setLitClient(client);
+      }
+      if (!authManager) {
+        // Only set if not already in state
+        const manager = getAuthManager();
+        setAuthManager(manager);
+      }
+    };
+    initClients();
+  }, []); // Empty dependency array ensures this runs once on mount
+
+  // Effect to update loading and status messages based on client availability
+  useEffect(() => {
+    if (walletClient && litClient && authManager) {
+      setLoading(false);
+      setStatus("All dependencies loaded successfully!");
+    } else {
+      setLoading(true);
+      const missingDeps = [];
+      if (!walletClient) missingDeps.push("Wallet Client");
+      if (!litClient) missingDeps.push("Lit Client");
+      if (!authManager) missingDeps.push("Auth Manager");
+      setStatus(
+        missingDeps.length > 0
+          ? `Waiting for: ${missingDeps.join(", ")}...`
+          : "Initializing..."
+      );
+    }
+  }, [walletClient, litClient, authManager]);
+
+  function assertDependenciesLoaded() {
+    if (!walletClient || !authManager || !litClient) {
+      throw new Error(
+        `Missing dependencies: ${walletClient ? "" : "walletClient"} ${
+          authManager ? "" : "authManager"
+        } ${litClient ? "" : "litClient"}`
+      );
+    }
+
+    return {
+      walletClient,
+      authManager,
+      litClient,
+    };
+  }
+
+  // Handle tab selection (navigation only, no action execution)
+  const handleTabSelect = (actionId: string) => {
+    setActiveMethod(actionId);
+    // Update URL query parameter to reflect active tab
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set("tab", actionId);
+    window.history.pushState(
+      null,
+      "",
+      `${window.location.pathname}?${urlParams.toString()}`
+    );
+  };
+
+  // Check if all dependencies are loaded
+  const areDependenciesLoaded = () => {
+    return !!(walletClient && authManager && litClient);
+  };
+
+  // Get dependency status for display
+  const getDependencyStatus = () => {
+    return {
+      walletClient: !!walletClient,
+      authManager: !!authManager,
+      litClient: !!litClient,
+    };
+  };
+
+  // Get dependencies for the DependencyStatus component
+  const getDependencies = (): Dependency[] => {
+    return [
+      {
+        name: "Wallet Client",
+        isLoaded: !!walletClient,
+      },
+      {
+        name: "Auth Manager",
+        isLoaded: !!authManager,
+      },
+      {
+        name: "Lit Client",
+        isLoaded: !!litClient,
+      },
+      // Add new dependencies here by adding a new object with name, isLoaded, and optional description
+    ];
+  };
+
+  // Check if we can mint PKP (requires auth context)
+  const canMintPkp = () => {
+    return areDependenciesLoaded() && !!authContext;
   };
 
   return (
     <MainLayout>
-      <div className="home-page">
-        <h1>Lit Protocol Demo</h1>
-
-        {/* <p>Count: {count}</p>
-        <button onClick={increment}>Increment</button>
-        <button onClick={decrement}>Decrement</button> */}
-
-        <button
-          onClick={authenticate}
-          disabled={loading}
+      <div
+        className="doc-layout"
+        style={{
+          display: "flex",
+          height: "100vh",
+          maxWidth: "1200px",
+          margin: "0 auto",
+        }}
+      >
+        {/* Sidebar with tabs */}
+        <div
+          className="sidebar"
           style={{
-            padding: "10px 20px",
-            fontSize: "16px",
-            backgroundColor: loading ? "#cccccc" : "#4285f4",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: loading ? "not-allowed" : "pointer",
+            width: "280px",
+            borderRight: "1px solid #eaeaea",
+            padding: "20px",
+            backgroundColor: "#f9f9f9",
+            height: "100%",
+            overflowY: "auto",
           }}
         >
-          {loading ? "Authenticating..." : "Authenticate with Lit Protocol"}
-        </button>
+          <h2 style={{ marginBottom: "20px" }}>Documentation</h2>
 
-        {status && (
-          <div style={{ marginTop: "20px" }}>
-            <h3>Status:</h3>
-            <p>{status}</p>
+          <DependencyStatus dependencies={getDependencies()} />
+
+          <div className="nav-tabs">
+            {(() => {
+              const groupedActions: { [key: string]: typeof ACTIONS } = {};
+              ACTIONS.forEach((action) => {
+                if (!groupedActions[action.category]) {
+                  groupedActions[action.category] = [];
+                }
+                groupedActions[action.category].push(action);
+              });
+
+              return Object.entries(groupedActions).map(
+                ([category, actionsInCategory], categoryIndex) => (
+                  <div key={category}>
+                    {categoryIndex > 0 && (
+                      <hr
+                        style={{ margin: "15px 0", borderColor: "#dddddd" }}
+                      />
+                    )}
+                    <h3
+                      style={{
+                        fontSize: "1rem",
+                        color: "#555",
+                        marginBottom: "10px",
+                        marginTop: "10px",
+                      }}
+                    >
+                      {category}
+                    </h3>
+                    {actionsInCategory.map((action) => (
+                      <button
+                        key={action.id}
+                        onClick={() => handleTabSelect(action.id)}
+                        style={{
+                          padding: "10px 15px",
+                          marginBottom: "10px",
+                          borderRadius: "4px",
+                          cursor: "pointer",
+                          backgroundColor:
+                            activeMethod === action.id ? "#3b82f6" : "#ffffff",
+                          color:
+                            activeMethod === action.id ? "#ffffff" : "#333333",
+                          border: `1px solid ${
+                            activeMethod === action.id ? "#3b82f6" : "#dddddd"
+                          }`,
+                          transition: "all 0.2s",
+                          width: "100%",
+                          textAlign: "left",
+                          fontWeight: "500",
+                        }}
+                      >
+                        {action.name}
+                      </button>
+                    ))}
+                  </div>
+                )
+              );
+            })()}
           </div>
-        )}
+        </div>
 
-        {pkpInfo && (
-          <div style={{ marginTop: "20px" }}>
-            <h3>PKP Information:</h3>
-            <pre
+        {/* Content area */}
+        <div
+          className="content"
+          style={{
+            flex: 1,
+            padding: "20px",
+            overflowY: "auto",
+          }}
+        >
+          <h1>Demo</h1>
+
+          {/* Status messages */}
+          {status && (
+            <div
               style={{
-                backgroundColor: "#f5f5f5",
-                padding: "10px",
+                marginTop: "10px",
+                marginBottom: "20px",
+                padding: "15px",
+                backgroundColor: loading ? "#fffbeb" : "#f0f9ff",
                 borderRadius: "4px",
-                overflow: "auto",
+                borderLeft: `4px solid ${loading ? "#facc15" : "#3b82f6"}`,
               }}
             >
-              {JSON.stringify(pkpInfo, replacer, 2)}
-            </pre>
-          </div>
-        )}
+              <h3 style={{ margin: "0 0 5px 0" }}>Status:</h3>
+              <p style={{ margin: 0 }}>{status}</p>
+            </div>
+          )}
 
-        {signature && (
-          <div style={{ marginTop: "20px" }}>
-            <h3>Signature:</h3>
-            <pre
-              style={{
-                backgroundColor: "#f5f5f5",
-                padding: "10px",
-                borderRadius: "4px",
-                overflow: "auto",
-              }}
-            >
-              {signature}
-            </pre>
-          </div>
-        )}
+          {/* EOA Authentication Tab */}
+          {activeMethod === "eoa" && (
+            <EoaAuthTab
+              getDependencyStatus={getDependencyStatus}
+              areDependenciesLoaded={areDependenciesLoaded}
+              authContext={authContext}
+              activeMethod={activeMethod}
+              setAuthContext={setAuthContext}
+              setActiveMethod={setActiveMethod}
+              setStatus={setStatus}
+              assertDependenciesLoaded={assertDependenciesLoaded}
+              siteAuthConfig={siteAuthConfig}
+            />
+          )}
+
+          {activeMethod === "google-auth" && (
+            <GoogleAuthTab
+              getDependencyStatus={getDependencyStatus}
+              areDependenciesLoaded={areDependenciesLoaded}
+              authContext={authContext}
+              activeMethod={activeMethod}
+              setAuthContext={setAuthContext}
+              setActiveMethod={setActiveMethod}
+              setStatus={setStatus}
+              assertDependenciesLoaded={assertDependenciesLoaded}
+              siteAuthConfig={siteAuthConfig}
+            />
+          )}
+
+          {/* PKP Tab */}
+          {activeMethod === "pkp" && (
+            <MintAndUsePkp
+              getDependencyStatus={getDependencyStatus}
+              canMintPkp={canMintPkp}
+              loading={loading}
+              authContext={authContext}
+              pkpInfo={pkpInfo}
+              signature={signature}
+              assertDependenciesLoaded={assertDependenciesLoaded}
+              setStatus={setStatus}
+              setPkpInfo={setPkpInfo}
+              setSignature={setSignature}
+              setLoading={setLoading}
+            />
+          )}
+        </div>
       </div>
     </MainLayout>
   );
