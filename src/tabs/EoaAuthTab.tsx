@@ -49,7 +49,6 @@ export default function EoaAuthTab({
       });
 
       console.log("eoaAuthContext:", eoaAuthContext);
-      return;
 
       setAuthContext(eoaAuthContext);
       setActiveMethod("eoa");

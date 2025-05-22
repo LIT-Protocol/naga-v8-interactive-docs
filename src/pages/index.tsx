@@ -11,6 +11,7 @@ import { MintAndUsePkp } from "../tabs";
 import EoaAuthTab from "../tabs/EoaAuthTab";
 import GoogleAuthTab from "../tabs/GoogleAuthTab";
 import DiscordAuthTab from "../tabs/DiscordAuthTab";
+import WebAuthnTab from "../tabs/WebAuthnTab";
 
 // --- Singleton instances ---
 type LitClient = Awaited<ReturnType<typeof createLitClientSingleton>>;
@@ -163,6 +164,12 @@ const ACTIONS = [
     id: "discord-auth",
     name: "Auth with Discord",
     description: "Authenticate using your Discord account",
+    category: "PKP Auth Methods",
+  },
+  {
+    id: "webauthn-auth",
+    name: "Auth with WebAuthn",
+    description: "Authenticate using your WebAuthn device",
     category: "PKP Auth Methods",
   },
   // More authentication methods will be added here
@@ -466,6 +473,20 @@ export const HomePage = () => {
 
           {activeMethod === "discord-auth" && (
             <DiscordAuthTab
+              getDependencyStatus={getDependencyStatus}
+              areDependenciesLoaded={areDependenciesLoaded}
+              authContext={authContext}
+              activeMethod={activeMethod}
+              setAuthContext={setAuthContext}
+              setActiveMethod={setActiveMethod}
+              setStatus={setStatus}
+              assertDependenciesLoaded={assertDependenciesLoaded}
+              siteAuthConfig={siteAuthConfig}
+            />
+          )}
+
+          {activeMethod === "webauthn-auth" && (
+            <WebAuthnTab
               getDependencyStatus={getDependencyStatus}
               areDependenciesLoaded={areDependenciesLoaded}
               authContext={authContext}

@@ -15,7 +15,7 @@ const authData = await DiscordAuthenticator.authenticate(
 );`;
 
 const MINT_PKP_CODE = `
-const res = await litClient.mintWithAuth({
+const res = await litClient.authService.mintWithAuth({
   authData: authData,
 });`;
 
@@ -115,7 +115,7 @@ export default function DiscordAuthTab({
     setSignature(null);
 
     try {
-      const res = await litClient.mintWithAuth({
+      const res = await litClient.authService.mintWithAuth({
         authData: authData,
       });
 

@@ -1,18 +1,34 @@
-import { createAuthManager, GoogleAuthenticator } from "@lit-protocol/auth";
+import { createAuthManager, WebAuthnAuthenticator } from "@lit-protocol/auth";
 import { createLitClient } from "@lit-protocol/lit-client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DisplayCode } from "../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgContainer";
 
-const AUTH_NAME = "Google Authentication";
+const AUTH_NAME = "WebAuthn Authentication";
 
 // Code snippets for each functionality
-const SIGN_IN_CODE = `
-import { GoogleAuthenticator } from "@lit-protocol/auth";
+const GET_REGISTRATION_OPTIONS_CODE = `
+// Get registration options from the server
+const options = await fetch('https://auth.litgateway.com/pkp/webauthn/generate-registration-options')
+  .then(res => res.json())
+  .then(res => res.data);
+`;
 
-const authData = await GoogleAuthenticator.authenticate(
-  "https://login.litgateway.com"
-);`;
+const REGISTER_CODE = `
+import { WebAuthnAuthenticator } from "@lit-protocol/auth";
+
+const data = await WebAuthnAuthenticator.register({
+  authServerUrl: "http://localhost:3301",
+});
+`;
+
+const AUTHENTICATE_CODE = `
+import { WebAuthnAuthenticator } from "@lit-protocol/auth";
+
+const authData = await WebAuthnAuthenticator.authenticate({
+  authServerUrl: "http://localhost:3301",
+});
+`;
 
 const MINT_PKP_CODE = `
 const res = await litClient.authService.mintWithAuth({
@@ -43,7 +59,7 @@ const signatures = await litClient.chain.ethereum.pkpSign({
   toSign: messageToSign,
 });`;
 
-export default function GoogleAuthTab({
+export default function WebAuthnTab({
   getDependencyStatus,
   areDependenciesLoaded,
   authContext,
@@ -70,38 +86,97 @@ export default function GoogleAuthTab({
   };
   siteAuthConfig: any;
 }) {
-  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [isGettingRegistrationOptions, setIsGettingRegistrationOptions] =
+    useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [isMinting, setIsMinting] = useState(false);
   const [isCreatingAuthContext, setIsCreatingAuthContext] = useState(false);
   const [isSigning, setIsSigning] = useState(false);
-  const [authData, setAuthData] = useState<any>();
-  const [pkpInfo, setPkpInfo] = useState<any>();
+
+  const [isFido2Available, setIsFido2Available] = useState<boolean | null>(
+    null
+  );
+
+  const [registrationOptions, setRegistrationResponse] = useState<any>(null);
+  const [authData, setAuthData] = useState<any>(null);
+  const [pkpInfo, setPkpInfo] = useState<any>(null);
   const [messageToSign, setMessageToSign] = useState<string>(
-    "Hello from Google PKP!"
+    "Hello from WebAuthn PKP!"
   );
   const [signature, setSignature] = useState<any>(null);
 
-  const signIn = async () => {
+  // Effect to check for FIDO2 compatibility
+  useEffect(() => {
+    async function checkFido2Availability() {
+      if (window.PublicKeyCredential) {
+        try {
+          const available =
+            await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+          setIsFido2Available(available);
+        } catch (e) {
+          console.warn("Error checking FIDO2 availability:", e);
+          setIsFido2Available(false); // Assume not available on error
+        }
+      } else {
+        setIsFido2Available(false); // WebAuthn API not supported
+      }
+    }
+    checkFido2Availability();
+  }, []);
+
+  // Step 2: Register a WebAuthn credential
+  const register = async () => {
     try {
-      setIsSigningIn(true);
-      setStatus("Signing in with Google...");
+      setIsRegistering(true);
+      setStatus("Registering WebAuthn credential...");
 
-      const authData = await GoogleAuthenticator.authenticate(
-        "https://login.litgateway.com"
-      );
+      // prompt user for username
+      const username = prompt("Enter your username:");
 
-      setAuthData(authData);
-      setStatus("Successfully signed in with Google");
+      const data = await WebAuthnAuthenticator.register({
+        authServerUrl: "http://localhost:3301",
+        username: username || `testuser-${Date.now()}`,
+      });
+      setRegistrationResponse(data);
+      setStatus("Successfully registered WebAuthn credential");
     } catch (error: any) {
-      console.error("Error signing in with Google:", error);
+      console.error("Error registering WebAuthn credential:", error);
       setStatus(
-        `Failed to sign in with Google: ${error?.message || "Unknown error"}`
+        `Failed to register WebAuthn credential: ${
+          error?.message || "Unknown error"
+        }`
       );
     } finally {
-      setIsSigningIn(false);
+      setIsRegistering(false);
     }
   };
 
+  // Alternative Step 2: Authenticate with an existing WebAuthn credential
+  const authenticate = async () => {
+    try {
+      setIsAuthenticating(true);
+      setStatus("Authenticating with WebAuthn...");
+
+      const authData = await WebAuthnAuthenticator.authenticate({
+        registrationResponse: registrationOptions,
+        authServerUrl: "http://localhost:3301",
+      });
+      setAuthData(authData);
+      setStatus("Successfully authenticated with WebAuthn");
+    } catch (error: any) {
+      console.error("Error authenticating with WebAuthn:", error);
+      setStatus(
+        `Failed to authenticate with WebAuthn: ${
+          error?.message || "Unknown error"
+        }`
+      );
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
+  // Step 3: Mint PKP with the WebAuthn auth data
   const mintPkp = async () => {
     const { authManager, litClient } = assertDependenciesLoaded();
 
@@ -109,8 +184,8 @@ export default function GoogleAuthTab({
       throw new Error("No auth data found");
     }
 
-    setStatus("Minting PKP via Google Auth...");
-    setIsAuthenticating(true);
+    setStatus("Minting PKP via WebAuthn Auth...");
+    setIsMinting(true);
     setPkpInfo(null);
     setSignature(null);
 
@@ -122,19 +197,20 @@ export default function GoogleAuthTab({
       const mintedPkpInfo = res.data;
       setPkpInfo(mintedPkpInfo);
       console.log("Minted PKP Info:", mintedPkpInfo);
-      setStatus("PKP minted successfully via Google Auth!");
+      setStatus("PKP minted successfully via WebAuthn Auth!");
     } catch (error: any) {
-      console.error("Error minting PKP with Google Auth:", error);
+      console.error("Error minting PKP with WebAuthn Auth:", error);
       setStatus(
-        `Failed to mint PKP with Google Auth: ${
+        `Failed to mint PKP with WebAuthn Auth: ${
           error?.message || "Unknown error"
         }`
       );
     } finally {
-      setIsAuthenticating(false);
+      setIsMinting(false);
     }
   };
 
+  // Step 4: Create an auth context with the PKP
   const createAuthContext = async () => {
     try {
       setIsCreatingAuthContext(true);
@@ -159,8 +235,8 @@ export default function GoogleAuthTab({
         authConfig: {
           capabilityAuthSigs: [],
           expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
-          statement: "",
-          domain: "",
+          statement: "This is a test statement",
+          domain: "localhost:5173",
           resources: [
             ["pkp-signing", "*"],
             ["lit-action-execution", "*"],
@@ -182,6 +258,7 @@ export default function GoogleAuthTab({
     }
   };
 
+  // Step 5: Sign a message using the PKP
   const signMessage = async () => {
     try {
       setIsSigning(true);
@@ -211,49 +288,70 @@ export default function GoogleAuthTab({
     }
   };
 
-  // Component to render Google Sign-In button
-  const GoogleSignInButton = () => (
+  // Component to render WebAuthn Registration button
+  const WebAuthnRegisterButton = () => (
     <button
-      onClick={signIn}
-      disabled={isSigningIn}
+      onClick={register}
+      disabled={isRegistering}
       style={{
         padding: "10px 15px",
-        backgroundColor: isSigningIn ? "#cccccc" : "#4285F4",
+        backgroundColor: isRegistering ? "#cccccc" : "#4285F4",
         color: "white",
         border: "none",
         borderRadius: "4px",
-        cursor: isSigningIn ? "not-allowed" : "pointer",
+        cursor: isRegistering ? "not-allowed" : "pointer",
         fontWeight: "500",
       }}
     >
-      {isSigningIn ? "Signing in..." : "Sign in with Google"}
+      {isRegistering ? "Registering..." : "Register WebAuthn Credential"}
     </button>
+  );
+
+  // Component to render WebAuthn Authentication button
+  const WebAuthnAuthenticateButton = () => (
+    <div>
+      <button
+        onClick={authenticate}
+        disabled={isAuthenticating}
+        style={{
+          padding: "10px 15px",
+          backgroundColor: isAuthenticating ? "#cccccc" : "#4285F4",
+          color: "white",
+          border: "none",
+          borderRadius: "4px",
+          cursor: isAuthenticating ? "not-allowed" : "pointer",
+          fontWeight: "500",
+        }}
+      >
+        {isAuthenticating ? "Authenticating..." : "Authenticate with WebAuthn"}
+      </button>
+    </div>
   );
 
   // Component to render PKP Minting button
   const MintPKPButton = () => (
     <button
       onClick={mintPkp}
-      disabled={!areDependenciesLoaded() || isAuthenticating || !authData}
+      disabled={!areDependenciesLoaded() || isMinting || !authData}
       style={{
         padding: "10px 15px",
         backgroundColor:
-          !areDependenciesLoaded() || isAuthenticating || !authData
+          !areDependenciesLoaded() || isMinting || !authData
             ? "#cccccc"
             : "#28a745",
         color: "white",
         border: "none",
         borderRadius: "4px",
         cursor:
-          !areDependenciesLoaded() || isAuthenticating || !authData
+          !areDependenciesLoaded() || isMinting || !authData
             ? "not-allowed"
             : "pointer",
         fontWeight: "500",
         marginBottom: "10px",
       }}
     >
-      {isAuthenticating ? "Minting PKP..." : "Mint New PKP with Google"}
-      {!authData && " (Sign in first)"}
+      {isMinting ? "Minting PKP..." : "Mint New PKP with WebAuthn"}
+      {!authData && " (Authenticate first)"}
     </button>
   );
 
@@ -280,7 +378,7 @@ export default function GoogleAuthTab({
     >
       {isCreatingAuthContext
         ? "Creating..."
-        : "Create AuthContext with Google PKP"}
+        : "Create AuthContext with WebAuthn PKP"}
     </button>
   );
 
@@ -289,7 +387,7 @@ export default function GoogleAuthTab({
     <div>
       <div style={{ marginBottom: "15px" }}>
         <label
-          htmlFor="google-pkp-message-input"
+          htmlFor="webauthn-pkp-message-input"
           style={{
             display: "block",
             marginBottom: "8px",
@@ -299,7 +397,7 @@ export default function GoogleAuthTab({
           Message to Sign:
         </label>
         <input
-          id="google-pkp-message-input"
+          id="webauthn-pkp-message-input"
           type="text"
           value={messageToSign}
           onChange={(e) => setMessageToSign(e.target.value)}
@@ -339,9 +437,10 @@ export default function GoogleAuthTab({
     <div className="tab-content">
       <h2>{AUTH_NAME}</h2>
       <p>
-        {AUTH_NAME} uses your Google account to authenticate via the Lit Login
-        Server or your own Login Server. This can be used to mint a PKP and then
-        sign messages.
+        {AUTH_NAME} uses your device's secure hardware (such as fingerprint
+        sensor, facial recognition, or security key) to authenticate you via the
+        FIDO2/WebAuthn standard. This can be used to mint a PKP and then sign
+        messages.
       </p>
 
       <GreyBoarderWhiteBgContainer>
@@ -367,7 +466,7 @@ export default function GoogleAuthTab({
             )}
           </li>
           <li>
-            Lit Login Server (eg. https://login.litgateway.com):{" "}
+            Lit Auth Server (eg. https://auth.litgateway.com):{" "}
             {true ? (
               <span style={{ color: "green" }}>✓ Initialised</span>
             ) : (
@@ -375,32 +474,64 @@ export default function GoogleAuthTab({
             )}
           </li>
           <li>
-            Lit Auth Server (eg. https://naga-dev-auth-service.getlit.dev):{" "}
-            {true ? (
-              <span style={{ color: "green" }}>✓ Initialised</span>
+            FIDO2-Compatible Device (such as a security key, fingerprint sensor,
+            or facial recognition system):{" "}
+            {isFido2Available === null ? (
+              <span style={{ color: "grey" }}>Checking...</span>
+            ) : isFido2Available ? (
+              <span style={{ color: "green" }}>✓ Available</span>
             ) : (
-              <span style={{ color: "red" }}>✗ Not initialised</span>
+              <span style={{ color: "red" }}>
+                ✗ Not available / Not supported
+              </span>
             )}
           </li>
         </ul>
       </GreyBoarderWhiteBgContainer>
 
-      <GreyBoarderWhiteBgContainer>
-        {/* ================================================ */}
-        {/*               Sign in with Google                */}
-        {/* ================================================ */}
-        <h3 style={{ marginTop: "20px" }}>Sign in with Google</h3>
+      {/* ================================================ */}
+      {/*         Get WebAuthn Registration Options        */}
+      {/* ================================================ */}
+      {/* <GreyBoarderWhiteBgContainer>
+        <h3 style={{ marginTop: "20px" }}>
+          Step 1: Get WebAuthn Registration Options
+        </h3>
         <p>
-          To sign in with Google, you can use the `authenticate` function
-          provided by the GoogleAuthenticator.
+          The first step is to get registration options from the server. These
+          options will be used to register a WebAuthn credential with your
+          device.
         </p>
 
         <DisplayCode
-          code={SIGN_IN_CODE}
+          code={GET_REGISTRATION_OPTIONS_CODE}
           language="typescript"
-          renderComponent={<GoogleSignInButton />}
-          resultData={authData}
-          resultLabel="Auth Data"
+          renderComponent={<GetRegistrationOptionsButton />}
+          resultData={registrationOptions}
+          resultLabel="Registration Options"
+          useSideBySide={true}
+          theme="dracula"
+        />
+      </GreyBoarderWhiteBgContainer> */}
+
+      <GreyBoarderWhiteBgContainer>
+        {/* ================================================ */}
+        {/*          Register WebAuthn Credential            */}
+        {/* ================================================ */}
+        <h3 style={{ marginTop: "20px" }}>
+          Step 1: Register WebAuthn Credential
+        </h3>
+        <p>
+          Register a new WebAuthn credential using the options obtained from the
+          server. This will prompt you to use your device's authentication
+          method (fingerprint, face ID, etc.).
+        </p>
+
+        <DisplayCode
+          code={REGISTER_CODE}
+          language="typescript"
+          renderComponent={<WebAuthnRegisterButton />}
+          resultData={registrationOptions}
+          resultLabel="WebAuthn Registration Data"
           useSideBySide={true}
           theme="dracula"
         />
@@ -408,12 +539,35 @@ export default function GoogleAuthTab({
 
       <GreyBoarderWhiteBgContainer>
         {/* ================================================ */}
-        {/*               Mint PKP via Google                */}
+        {/*          Authenticate with WebAuthn               */}
         {/* ================================================ */}
-        <h3 style={{ marginTop: "20px" }}>Mint PKP via Google</h3>
+        <h3 style={{ marginTop: "20px" }}>
+          Alternative Step 2: Authenticate with WebAuthn
+        </h3>
         <p>
-          Mint a new Programmable Key Pair (PKP) using your Google account. This
-          PKP will be associated with your Google identity.
+          If you already have a registered WebAuthn credential, you can
+          authenticate with it directly. This is useful for subsequent sessions.
+        </p>
+
+        <DisplayCode
+          code={AUTHENTICATE_CODE}
+          language="typescript"
+          renderComponent={<WebAuthnAuthenticateButton />}
+          resultData={authData}
+          resultLabel="WebAuthn Auth Data"
+          useSideBySide={true}
+          theme="dracula"
+        />
+      </GreyBoarderWhiteBgContainer>
+
+      <GreyBoarderWhiteBgContainer>
+        {/* ================================================ */}
+        {/*               Mint PKP via WebAuthn              */}
+        {/* ================================================ */}
+        <h3 style={{ marginTop: "20px" }}>Step 3: Mint PKP via WebAuthn</h3>
+        <p>
+          Mint a new Programmable Key Pair (PKP) using your WebAuthn credential.
+          This PKP will be associated with your WebAuthn identity.
         </p>
 
         <DisplayCode
@@ -432,7 +586,7 @@ export default function GoogleAuthTab({
         {/*               Create AuthContext                  */}
         {/* ================================================ */}
         <h3 style={{ marginTop: 0 }}>
-          Create AuthContext{" "}
+          Step 4: Create AuthContext{" "}
           {!pkpInfo && (
             <span style={{ color: "orange" }}>(Mint PKP first)</span>
           )}
@@ -475,7 +629,7 @@ export default function GoogleAuthTab({
 
       <GreyBoarderWhiteBgContainer>
         <h3>
-          Sign Message with PKP{" "}
+          Step 5: Sign Message with PKP{" "}
           {!(pkpInfo && authContext) && (
             <span style={{ color: "orange" }}>
               (Requires PKP and AuthContext)
