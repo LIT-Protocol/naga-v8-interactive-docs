@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, ReactNode, useRef, useEffect } from "react";
+import { Highlight, themes } from "prism-react-renderer";
 
 /**
  * DisplayCode Component
@@ -6,9 +7,11 @@ import React, { useState } from "react";
  * A component that displays code with line numbers and a copy button.
  * Features:
  * - Line numbers
- * - Syntax highlighting based on language
+ * - Syntax highlighting using Prism.js
  * - Copy to clipboard functionality
  * - Responsive design
+ * - Optional side-by-side layout with component rendering
+ * - Optional result display below (collapsible)
  */
 
 interface DisplayCodeProps {
@@ -38,6 +41,34 @@ interface DisplayCodeProps {
    * Custom class name for the container
    */
   className?: string;
+
+  /**
+   * Component to render alongside the code (for side-by-side view)
+   */
+  renderComponent?: ReactNode;
+
+  /**
+   * Result data to display below the code and component
+   */
+  resultData?: any;
+
+  /**
+   * Label for the result section
+   * @default "Result"
+   */
+  resultLabel?: string;
+
+  /**
+   * Whether to use side-by-side layout (code on left, component on right)
+   * @default false
+   */
+  useSideBySide?: boolean;
+
+  /**
+   * Theme for syntax highlighting
+   * @default "dracula"
+   */
+  theme?: keyof typeof themes;
 }
 
 export const DisplayCode: React.FC<DisplayCodeProps> = ({
@@ -46,14 +77,23 @@ export const DisplayCode: React.FC<DisplayCodeProps> = ({
   showLineNumbers = true,
   style,
   className,
+  renderComponent,
+  resultData,
+  resultLabel = "Result",
+  useSideBySide = false,
+  theme = "dracula",
 }) => {
   const [isCopied, setIsCopied] = useState(false);
+  const [isResultExpanded, setIsResultExpanded] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [contentHeight, setContentHeight] = useState(0);
 
-  // Calculate line numbers
-  const lines = code.split("\n");
-  const lineNumbers = showLineNumbers
-    ? Array.from({ length: lines.length }, (_, i) => i + 1)
-    : [];
+  // Measure the content height when data changes
+  useEffect(() => {
+    if (contentRef.current) {
+      setContentHeight(contentRef.current.scrollHeight);
+    }
+  }, [resultData]);
 
   // Handle copy to clipboard
   const handleCopy = async () => {
@@ -66,16 +106,24 @@ export const DisplayCode: React.FC<DisplayCodeProps> = ({
     }
   };
 
-  return (
+  // Toggle result section visibility
+  const toggleResult = () => {
+    setIsResultExpanded(!isResultExpanded);
+  };
+
+  // Render the code block
+  const codeBlock = (
     <div
       className={`display-code-container ${className || ""}`}
       style={{
         backgroundColor: "#1e1e1e",
         borderRadius: "8px",
+        height: "100%",
         overflow: "hidden",
         fontFamily: "monospace",
         position: "relative",
         ...style,
+        width: useSideBySide && renderComponent ? "48%" : "100%",
       }}
     >
       {/* Copy button */}
@@ -83,7 +131,7 @@ export const DisplayCode: React.FC<DisplayCodeProps> = ({
         onClick={handleCopy}
         style={{
           position: "absolute",
-          top: "10px",
+          bottom: "10px",
           right: "10px",
           backgroundColor: "rgba(255, 255, 255, 0.1)",
           border: "none",
@@ -104,147 +152,209 @@ export const DisplayCode: React.FC<DisplayCodeProps> = ({
       <div
         style={{
           display: "flex",
-          padding: "20px 0",
+          padding: "0",
           overflowX: "auto",
         }}
       >
-        {/* Line numbers */}
-        {showLineNumbers && (
-          <div
-            style={{
-              borderRight: "1px solid #333",
-              textAlign: "right",
-              padding: "0 10px",
-              color: "#666",
-              userSelect: "none",
-              backgroundColor: "#252525",
-              minWidth: "40px",
-            }}
-          >
-            {lineNumbers.map((num) => (
-              <div key={num} style={{ lineHeight: "1.5" }}>
-                {num}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Code content */}
-        <pre
-          style={{
-            margin: 0,
-            padding: "0 15px",
-            overflowX: "auto",
-            color: "#e6e6e6",
-            lineHeight: "1.5",
-            width: "100%",
-          }}
+        <Highlight
+          theme={themes[theme]}
+          code={code.trim()}
+          language={language as any}
         >
-          <code className={language}>
-            {lines.map((line, index) => {
-              // Basic syntax highlighting
-              const highlightedLine = highlightSyntax(line, language);
-              return (
-                <div key={index} style={{ whiteSpace: "pre" }}>
-                  {highlightedLine}
+          {({ className, style, tokens, getLineProps, getTokenProps }) => (
+            <pre
+              className={className}
+              style={{
+                ...style,
+                margin: 0,
+                padding: "20px 0",
+                width: "100%",
+                overflowX: "auto",
+              }}
+            >
+              <div style={{ display: "flex" }}>
+                {/* Line numbers */}
+                {showLineNumbers && (
+                  <div
+                    style={{
+                      borderRight: "1px solid #333",
+                      textAlign: "right",
+                      padding: "0 10px",
+                      color: "#666",
+                      userSelect: "none",
+                      backgroundColor: "#252525",
+                      minWidth: "40px",
+                    }}
+                  >
+                    {tokens.map((_, i) => (
+                      <div key={i} style={{ lineHeight: "1.5" }}>
+                        {i + 1}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Code content */}
+                <div
+                  style={{
+                    margin: 0,
+                    padding: "0 15px",
+                    overflowX: "auto",
+                    lineHeight: "1.5",
+                    width: "100%",
+                  }}
+                >
+                  {tokens.map((line, i) => (
+                    <div key={i} {...getLineProps({ line, key: i })}>
+                      {line.map((token, key) => (
+                        <span key={key} {...getTokenProps({ token, key })} />
+                      ))}
+                    </div>
+                  ))}
                 </div>
-              );
-            })}
-          </code>
-        </pre>
+              </div>
+            </pre>
+          )}
+        </Highlight>
       </div>
     </div>
   );
-};
 
-/**
- * Basic syntax highlighting function
- * Note: This is a simple implementation. For production use, consider using a library like Prism.js
- */
-function highlightSyntax(code: string, language: string): React.ReactNode {
-  // This is a simplified version of syntax highlighting
-  // For a more robust solution, consider using a library
+  // Render the component block (if provided)
+  const componentBlock = renderComponent ? (
+    <div
+      className="rendered-component-container"
+      style={{
+        width: useSideBySide ? "48%" : "100%",
+        padding: "20px",
+        border: "2px solid #4a90e2", // Enhanced border
+        borderRadius: "8px",
+        backgroundColor: "#fff",
+        marginTop: useSideBySide ? 0 : "20px",
+        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)", // Subtle shadow
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: "#f0f8ff",
+          margin: "-20px -20px 15px -20px",
+          padding: "8px 16px",
+          borderBottom: "1px solid #4a90e2",
+          borderTopLeftRadius: "6px",
+          borderTopRightRadius: "6px",
+          fontWeight: "500",
+          color: "#2c5282",
+        }}
+      >
+        Interactive Area
+      </div>
+      {renderComponent}
+    </div>
+  ) : null;
 
-  if (language === "typescript" || language === "javascript") {
-    // Keywords
-    const keywords = [
-      "const",
-      "let",
-      "var",
-      "function",
-      "return",
-      "if",
-      "else",
-      "for",
-      "while",
-      "import",
-      "export",
-      "from",
-      "class",
-      "interface",
-      "type",
-      "extends",
-      "implements",
-      "new",
-      "this",
-      "super",
-      "async",
-      "await",
-      "try",
-      "catch",
-      "finally",
-      "throw",
-      "true",
-      "false",
-      "null",
-      "undefined",
-    ];
+  // Render the result block (if provided)
+  const resultBlock = resultData ? (
+    <div
+      className="result-container"
+      style={{
+        width: "100%",
+        marginTop: "20px",
+        backgroundColor: "#f5f5f5",
+        borderRadius: "8px",
+        border: "1px solid #e0e0e0",
+        overflow: "hidden", // Important for the animation
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          cursor: "pointer",
+          padding: "15px",
+          borderBottom: isResultExpanded ? "1px solid #e0e0e0" : "none",
+        }}
+        onClick={toggleResult}
+      >
+        <h4 style={{ margin: 0 }}>{resultLabel}</h4>
+        <button
+          style={{
+            background: "none",
+            border: "none",
+            fontSize: "18px",
+            cursor: "pointer",
+            padding: "0 8px",
+            color: "#666",
+            transition: "transform 0.3s ease-in-out",
+          }}
+        >
+          <span
+            style={{
+              display: "inline-block",
+              transform: isResultExpanded ? "rotate(0deg)" : "rotate(-90deg)",
+              transition: "transform 0.3s ease-in-out",
+            }}
+          >
+            ▼
+          </span>
+        </button>
+      </div>
 
-    // Simple regex-based highlighting
-    let result = code;
+      <div
+        style={{
+          height: isResultExpanded ? `${contentHeight}px` : "0",
+          transition: "height 0.4s ease-in-out",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          ref={contentRef}
+          style={{
+            backgroundColor: "#1e1e1e",
+            padding: "15px",
+            color: "#e6e6e6",
+            fontFamily: "monospace",
+            overflowX: "auto",
+          }}
+        >
+          <pre style={{ margin: 0 }}>
+            {typeof resultData === "string"
+              ? resultData
+              : JSON.stringify(resultData, null, 2)}
+          </pre>
+        </div>
+      </div>
+    </div>
+  ) : null;
 
-    // Highlight strings
-    result = result.replace(
-      /(["'`])(.*?)\1/g,
-      '<span style="color: #ce9178">$&</span>'
+  // Conditional rendering based on layout choice
+  if (useSideBySide && renderComponent) {
+    return (
+      <div className="display-code-with-component">
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: "20px", // Add some spacing between code and component
+          }}
+        >
+          {codeBlock}
+          {componentBlock}
+        </div>
+        {resultBlock}
+      </div>
     );
-
-    // Highlight comments
-    result = result.replace(
-      /\/\/.*/g,
-      '<span style="color: #6a9955">$&</span>'
-    );
-
-    // Highlight keywords
-    for (const keyword of keywords) {
-      const regex = new RegExp(`\\b${keyword}\\b`, "g");
-      result = result.replace(regex, `<span style="color: #569cd6">$&</span>`);
-    }
-
-    // Highlight types
-    result = result.replace(
-      /\b([A-Z][A-Za-z0-9_]*)\b/g,
-      '<span style="color: #4ec9b0">$&</span>'
-    );
-
-    // Highlight functions
-    result = result.replace(
-      /\b([a-z][A-Za-z0-9_]*)\(/g,
-      '<span style="color: #dcdcaa">$1</span>('
-    );
-
-    // Highlight numbers
-    result = result.replace(
-      /\b(\d+)\b/g,
-      '<span style="color: #b5cea8">$&</span>'
-    );
-
-    // Return as dangerouslySetInnerHTML to render the HTML
-    return <span dangerouslySetInnerHTML={{ __html: result }} />;
   }
 
-  // For other languages or if no highlighting is needed, return the code as is
-  return code;
-}
+  // Default vertical layout
+  return (
+    <div className="display-code-with-component">
+      {codeBlock}
+      {componentBlock}
+      {resultBlock}
+    </div>
+  );
+};
 
 export default DisplayCode;

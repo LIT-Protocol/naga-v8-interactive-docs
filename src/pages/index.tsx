@@ -320,7 +320,7 @@ export const HomePage = () => {
         style={{
           display: "flex",
           height: "100vh",
-          maxWidth: "1200px",
+          // maxWidth: "1200px",
           margin: "0 auto",
         }}
       >

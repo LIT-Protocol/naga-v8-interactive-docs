@@ -3,9 +3,45 @@ import { createLitClient } from "@lit-protocol/lit-client";
 import { useState } from "react";
 import { DisplayCode } from "../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgContainer";
-import { replacer } from "../helper";
 
 const AUTH_NAME = "Google Authentication";
+
+// Code snippets for each functionality
+const SIGN_IN_CODE = `
+import { GoogleAuthenticator } from "@lit-protocol/auth";
+
+const authData = await GoogleAuthenticator.authenticate(
+  "https://login.litgateway.com"
+);`;
+
+const MINT_PKP_CODE = `
+const res = await litClient.mintWithAuth({
+  authData: authData,
+});`;
+
+const CREATE_AUTH_CONTEXT_CODE = `
+const authContext = await authManager.createPkpAuthContext({
+  authData: authData, // <-- Retrieved earlier
+  pkpPublicKey: pkpInfo.pubkey, // <-- Minted earlier
+  authConfig: {
+    resources: [
+      ["pkp-signing", "*"],
+      ["lit-action-execution", "*"],
+    ],
+    capabilityAuthSigs: [],
+    expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
+    statement: "",
+    domain: window.location.origin,
+  },
+  litClient: litClient,
+});`;
+
+const SIGN_MESSAGE_CODE = `
+const signatures = await litClient.chain.ethereum.pkpSign({
+  pubKey: pkpInfo.pubkey,
+  authContext: authContext,
+  toSign: messageToSign,
+});`;
 
 export default function GoogleAuthTab({
   getDependencyStatus,
@@ -51,7 +87,7 @@ export default function GoogleAuthTab({
       setStatus("Signing in with Google...");
 
       const authData = await GoogleAuthenticator.authenticate(
-        "http://localhost:3300"
+        "https://login.litgateway.com"
       );
 
       setAuthData(authData);
@@ -175,6 +211,130 @@ export default function GoogleAuthTab({
     }
   };
 
+  // Component to render Google Sign-In button
+  const GoogleSignInButton = () => (
+    <button
+      onClick={signIn}
+      disabled={isSigningIn}
+      style={{
+        padding: "10px 15px",
+        backgroundColor: isSigningIn ? "#cccccc" : "#4285F4",
+        color: "white",
+        border: "none",
+        borderRadius: "4px",
+        cursor: isSigningIn ? "not-allowed" : "pointer",
+        fontWeight: "500",
+      }}
+    >
+      {isSigningIn ? "Signing in..." : "Sign in with Google"}
+    </button>
+  );
+
+  // Component to render PKP Minting button
+  const MintPKPButton = () => (
+    <button
+      onClick={mintPkp}
+      disabled={!areDependenciesLoaded() || isAuthenticating || !authData}
+      style={{
+        padding: "10px 15px",
+        backgroundColor:
+          !areDependenciesLoaded() || isAuthenticating || !authData
+            ? "#cccccc"
+            : "#28a745",
+        color: "white",
+        border: "none",
+        borderRadius: "4px",
+        cursor:
+          !areDependenciesLoaded() || isAuthenticating || !authData
+            ? "not-allowed"
+            : "pointer",
+        fontWeight: "500",
+        marginBottom: "10px",
+      }}
+    >
+      {isAuthenticating ? "Minting PKP..." : "Mint New PKP with Google"}
+      {!authData && " (Sign in first)"}
+    </button>
+  );
+
+  // Component to render Create AuthContext button
+  const CreateAuthContextButton = () => (
+    <button
+      onClick={createAuthContext}
+      disabled={isCreatingAuthContext || !messageToSign.trim() || !pkpInfo}
+      style={{
+        padding: "12px 20px",
+        backgroundColor:
+          isCreatingAuthContext || !messageToSign.trim() || !pkpInfo
+            ? "#cccccc"
+            : "#007bff",
+        color: "white",
+        border: "none",
+        borderRadius: "4px",
+        cursor:
+          isCreatingAuthContext || !messageToSign.trim() || !pkpInfo
+            ? "not-allowed"
+            : "pointer",
+        fontWeight: "500",
+      }}
+    >
+      {isCreatingAuthContext
+        ? "Creating..."
+        : "Create AuthContext with Google PKP"}
+    </button>
+  );
+
+  // Component to render Sign Message UI
+  const SignMessageComponent = () => (
+    <div>
+      <div style={{ marginBottom: "15px" }}>
+        <label
+          htmlFor="google-pkp-message-input"
+          style={{
+            display: "block",
+            marginBottom: "8px",
+            fontWeight: "500",
+          }}
+        >
+          Message to Sign:
+        </label>
+        <input
+          id="google-pkp-message-input"
+          type="text"
+          value={messageToSign}
+          onChange={(e) => setMessageToSign(e.target.value)}
+          style={{
+            width: "100%",
+            padding: "10px",
+            border: "1px solid #dddddd",
+            borderRadius: "4px",
+            fontSize: "14px",
+            boxSizing: "border-box",
+          }}
+          placeholder="Enter a message to sign"
+          disabled={!(pkpInfo && authContext) || isSigning}
+        />
+      </div>
+      <button
+        onClick={signMessage}
+        disabled={!(pkpInfo && authContext) || isSigning}
+        style={{
+          padding: "10px 15px",
+          backgroundColor:
+            !(pkpInfo && authContext) || isSigning ? "#cccccc" : "#6f42c1",
+          color: "white",
+          border: "none",
+          borderRadius: "4px",
+          cursor:
+            !(pkpInfo && authContext) || isSigning ? "not-allowed" : "pointer",
+          fontWeight: "500",
+        }}
+      >
+        {isSigning ? "Signing..." : "Sign Message"}
+      </button>
+    </div>
+  );
+
   return (
     <div className="tab-content">
       <h2>{AUTH_NAME}</h2>
@@ -234,54 +394,19 @@ export default function GoogleAuthTab({
           To sign in with Google, you can use the `authenticate` function
           provided by the GoogleAuthenticator.
         </p>
-        <button
-          onClick={signIn}
-          disabled={isSigningIn}
-          style={{
-            padding: "10px 15px",
-            backgroundColor: isSigningIn ? "#cccccc" : "#4285F4",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: isSigningIn ? "not-allowed" : "pointer",
-            fontWeight: "500",
-          }}
-        >
-          {isSigningIn ? "Signing in..." : "Sign in with Google"}
-        </button>
 
-        {/* ================================================ */}
-        {/*         (Render) Auth Data after sign in          */}
-        {/* ================================================ */}
-        <div
-          style={{
-            marginTop: "20px",
-            opacity: authData ? 1 : 0.5,
-            pointerEvents: authData ? "auto" : "none",
-          }}
-        >
-          <h3>
-            Auth Data{" "}
-            {!authData && (
-              <span style={{ color: "orange" }}>(Sign in to view)</span>
-            )}
-          </h3>
+        <DisplayCode
+          code={SIGN_IN_CODE}
+          language="typescript"
+          renderComponent={<GoogleSignInButton />}
+          resultData={authData}
+          resultLabel="Auth Data"
+          useSideBySide={true}
+          theme="dracula"
+        />
+      </GreyBoarderWhiteBgContainer>
 
-          <p>
-            ❗️Please note that it's highly recommendeded to use your own Google
-            Login Server. The one used here is for demo purposes only (See
-            prerequisites)
-          </p>
-          <DisplayCode
-            code={
-              authData
-                ? JSON.stringify(authData, replacer, 2)
-                : "// Auth data will appear here after signing in"
-            }
-            language="typescript"
-          />
-        </div>
-
+      <GreyBoarderWhiteBgContainer>
         {/* ================================================ */}
         {/*               Mint PKP via Google                */}
         {/* ================================================ */}
@@ -290,63 +415,16 @@ export default function GoogleAuthTab({
           Mint a new Programmable Key Pair (PKP) using your Google account. This
           PKP will be associated with your Google identity.
         </p>
-        <button
-          onClick={mintPkp}
-          disabled={!areDependenciesLoaded() || isAuthenticating || !authData}
-          style={{
-            padding: "10px 15px",
-            backgroundColor:
-              !areDependenciesLoaded() || isAuthenticating || !authData
-                ? "#cccccc"
-                : "#28a745",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor:
-              !areDependenciesLoaded() || isAuthenticating || !authData
-                ? "not-allowed"
-                : "pointer",
-            fontWeight: "500",
-            marginBottom: "10px",
-          }}
-        >
-          {isAuthenticating ? "Minting PKP..." : "Mint New PKP with Google"}
-          {!authData && " (Sign in first)"}
-        </button>
 
-        {/* ================================================ */}
-        {/*         (Render) Minted PKP Information          */}
-        {/* ================================================ */}
-        <div
-          style={{
-            marginTop: "20px",
-            opacity: pkpInfo ? 1 : 0.5,
-          }}
-        >
-          <h3>
-            Minted PKP Information{" "}
-            {!pkpInfo && (
-              <span style={{ color: "orange" }}>(Mint PKP first)</span>
-            )}
-          </h3>
-          <div
-            style={{
-              backgroundColor: "#f5f5f5",
-              padding: "15px",
-              borderRadius: "6px",
-              overflowX: "auto",
-            }}
-          >
-            <DisplayCode
-              code={
-                pkpInfo
-                  ? JSON.stringify(pkpInfo, replacer, 2)
-                  : "// PKP information will appear here after minting"
-              }
-              language="typescript"
-            />
-          </div>
-        </div>
+        <DisplayCode
+          code={MINT_PKP_CODE}
+          language="typescript"
+          renderComponent={<MintPKPButton />}
+          resultData={pkpInfo}
+          resultLabel="Minted PKP Information"
+          useSideBySide={true}
+          theme="dracula"
+        />
       </GreyBoarderWhiteBgContainer>
 
       <GreyBoarderWhiteBgContainer>
@@ -354,7 +432,7 @@ export default function GoogleAuthTab({
         {/*               Create AuthContext                  */}
         {/* ================================================ */}
         <h3 style={{ marginTop: 0 }}>
-          Step 2: Create AuthContext{" "}
+          Create AuthContext{" "}
           {!pkpInfo && (
             <span style={{ color: "orange" }}>(Mint PKP first)</span>
           )}
@@ -380,65 +458,15 @@ export default function GoogleAuthTab({
           </li>
         </ul>
 
-        <button
-          onClick={createAuthContext}
-          disabled={isCreatingAuthContext || !messageToSign.trim() || !pkpInfo}
-          style={{
-            marginTop: "15px",
-            padding: "12px 20px",
-            backgroundColor:
-              isCreatingAuthContext || !messageToSign.trim() || !pkpInfo
-                ? "#cccccc"
-                : "#007bff",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor:
-              isCreatingAuthContext || !messageToSign.trim() || !pkpInfo
-                ? "not-allowed"
-                : "pointer",
-            fontWeight: "500",
-          }}
-        >
-          {isCreatingAuthContext
-            ? "Creating..."
-            : "Create AuthContext with Google PKP"}
-        </button>
-        {/* ================================================ */}
-        {/*         (Render) AuthContext Information          */}
-        {/* ================================================ */}
-        <div
-          style={{
-            marginTop: "20px",
-            opacity: authContext ? 1 : 0.5,
-          }}
-        >
-          <h3>
-            AuthContext Information{" "}
-            {!authContext && (
-              <span style={{ color: "orange" }}>
-                (Create AuthContext first)
-              </span>
-            )}
-          </h3>
-          <div
-            style={{
-              backgroundColor: "#f5f5f5",
-              padding: "15px",
-              borderRadius: "6px",
-              overflowX: "auto",
-            }}
-          >
-            <DisplayCode
-              code={
-                authContext
-                  ? JSON.stringify(authContext, replacer, 2)
-                  : "// AuthContext information will appear here after creation"
-              }
-              language="typescript"
-            />
-          </div>
-        </div>
+        <DisplayCode
+          code={CREATE_AUTH_CONTEXT_CODE}
+          language="typescript"
+          renderComponent={<CreateAuthContextButton />}
+          resultData={authContext}
+          resultLabel="AuthContext Information"
+          useSideBySide={true}
+          theme="dracula"
+        />
       </GreyBoarderWhiteBgContainer>
 
       {/* ================================================ */}
@@ -446,100 +474,34 @@ export default function GoogleAuthTab({
       {/* ================================================ */}
 
       <GreyBoarderWhiteBgContainer>
-        <div
-          style={{
-            marginTop: "20px",
-            opacity: pkpInfo && authContext ? 1 : 0.5,
-            pointerEvents: pkpInfo && authContext ? "auto" : "none",
-          }}
-        >
-          <h3>
-            Step 3: Sign Message with PKP{" "}
-            {!(pkpInfo && authContext) && (
-              <span style={{ color: "orange" }}>
-                (Requires PKP and AuthContext)
-              </span>
-            )}
-          </h3>
-          <p>Use your newly minted PKP to sign a message.</p>
+        <h3>
+          Sign Message with PKP{" "}
+          {!(pkpInfo && authContext) && (
+            <span style={{ color: "orange" }}>
+              (Requires PKP and AuthContext)
+            </span>
+          )}
+        </h3>
+        <p>Use your newly minted PKP to sign a message.</p>
 
-          <p>
-            <div style={{ marginTop: "15px" }}>
-              <label
-                htmlFor="google-pkp-message-input"
-                style={{
-                  display: "block",
-                  marginBottom: "8px",
-                  fontWeight: "500",
-                }}
-              >
-                Message to Sign:
-              </label>
-              <input
-                id="google-pkp-message-input"
-                type="text"
-                value={messageToSign}
-                onChange={(e) => setMessageToSign(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "10px",
-                  border: "1px solid #dddddd",
-                  borderRadius: "4px",
-                  fontSize: "14px",
-                  boxSizing: "border-box",
-                }}
-                placeholder="Enter a message to sign"
-                disabled={!(pkpInfo && authContext) || isSigning}
-              />
-            </div>
-          </p>
-          <p>
-            <button
-              onClick={signMessage}
-              disabled={!(pkpInfo && authContext) || isSigning}
+        <DisplayCode
+          code={SIGN_MESSAGE_CODE}
+          language="typescript"
+          renderComponent={
+            <div
               style={{
-                padding: "10px 15px",
-                backgroundColor:
-                  !(pkpInfo && authContext) || isSigning
-                    ? "#cccccc"
-                    : "#6f42c1",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor:
-                  !(pkpInfo && authContext) || isSigning
-                    ? "not-allowed"
-                    : "pointer",
-                fontWeight: "500",
+                opacity: pkpInfo && authContext ? 1 : 0.5,
+                pointerEvents: pkpInfo && authContext ? "auto" : "none",
               }}
             >
-              {isSigning ? "Signing..." : "Sign Message"}
-            </button>
-          </p>
-        </div>
-        {/* ================================================ */}
-        {/*               Signature Result                    */}
-        {/* ================================================ */}
-        <div
-          style={{
-            marginTop: "20px",
-            opacity: signature ? 1 : 0.5,
-          }}
-        >
-          <h4 style={{ marginBottom: "10px" }}>
-            Signature Result:{" "}
-            {!signature && (
-              <span style={{ color: "orange" }}>(Sign a message first)</span>
-            )}
-          </h4>
-          <DisplayCode
-            code={
-              signature
-                ? JSON.stringify(signature, replacer, 2)
-                : "// Signature results will appear here after signing a message"
-            }
-          />
-        </div>
+              <SignMessageComponent />
+            </div>
+          }
+          resultData={signature}
+          resultLabel="Signature Result"
+          useSideBySide={true}
+          theme="dracula"
+        />
       </GreyBoarderWhiteBgContainer>
     </div>
   );
