@@ -1,25 +1,17 @@
-import { createAuthManager, WebAuthnAuthenticator } from "@lit-protocol/auth";
-import { createLitClient } from "@lit-protocol/lit-client";
+import { WebAuthnAuthenticator } from "@lit-protocol/auth";
 import { useEffect, useState } from "react";
+import EoaAuthSection from "../components/common/EoaAuthSection";
 import { DisplayCode } from "../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgContainer";
-import EoaAuthSection from "../components/common/EoaAuthSection";
 import { useAppContext } from "../router";
 
 const AUTH_NAME = "WebAuthn Authentication";
 
 // Code snippets for each functionality
-const GET_REGISTRATION_OPTIONS_CODE = `
-// Get registration options from the server
-const options = await fetch('https://auth.litgateway.com/pkp/webauthn/generate-registration-options')
-  .then(res => res.json())
-  .then(res => res.data);
-`;
-
 const REGISTER_CODE = `
 import { WebAuthnAuthenticator } from "@lit-protocol/auth";
 
-const data = await WebAuthnAuthenticator.register({
+const { pkpInfo, webAuthnPublicKey } = await WebAuthnAuthenticator.registerAndMintPKP({
   authServerUrl: "http://localhost:3301",
 });
 `;
@@ -31,11 +23,6 @@ const authData = await WebAuthnAuthenticator.authenticate({
   authServerUrl: "http://localhost:3301",
 });
 `;
-
-const MINT_PKP_CODE = `
-const res = await litClient.authService.mintWithAuth({
-  authData: authData,
-});`;
 
 const CREATE_AUTH_CONTEXT_CODE = `
 const authContext = await authManager.createPkpAuthContext({
@@ -74,8 +61,6 @@ export default function WebAuthnTab() {
     siteAuthConfig,
   } = useAppContext();
 
-  const [isGettingRegistrationOptions, setIsGettingRegistrationOptions] =
-    useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [isMinting, setIsMinting] = useState(false);
@@ -86,9 +71,8 @@ export default function WebAuthnTab() {
     null
   );
 
-  const [registrationOptions, setRegistrationResponse] = useState<any>(null);
   const [authData, setAuthData] = useState<any>(null);
-  const [pkpInfo, setPkpInfo] = useState<any>(null);
+  const [pkpInfo, setPkpInfo] = useState<any>();
   const [messageToSign, setMessageToSign] = useState<string>(
     "Hello from WebAuthn PKP!"
   );
@@ -122,12 +106,13 @@ export default function WebAuthnTab() {
       // prompt user for username
       const username = prompt("Enter your username:");
 
-      const data = await WebAuthnAuthenticator.register({
-        authServerUrl: "http://localhost:3301",
-        username: username || `testuser-${Date.now()}`,
-      });
-      setRegistrationResponse(data);
-      setStatus("Successfully registered WebAuthn credential");
+      const { pkpInfo, webAuthnPublicKey } =
+        await WebAuthnAuthenticator.registerAndMintPKP({
+          authServerUrl: "http://localhost:3301",
+          username: username || `testuser-${Date.now()}`,
+        });
+      setPkpInfo(pkpInfo);
+      setStatus("Successfully registered WebAuthn credential and minted a PKP");
     } catch (error: any) {
       console.error("Error registering WebAuthn credential:", error);
       setStatus(
@@ -146,10 +131,7 @@ export default function WebAuthnTab() {
       setIsAuthenticating(true);
       setStatus("Authenticating with WebAuthn...");
 
-      const authData = await WebAuthnAuthenticator.authenticate({
-        registrationResponse: registrationOptions,
-        authServerUrl: "http://localhost:3301",
-      });
+      const authData = await WebAuthnAuthenticator.authenticate();
       setAuthData(authData);
       setStatus("Successfully authenticated with WebAuthn");
     } catch (error: any) {
@@ -506,20 +488,21 @@ export default function WebAuthnTab() {
         {/*          Register WebAuthn Credential            */}
         {/* ================================================ */}
         <h3 style={{ marginTop: "20px" }}>
-          Step 1: Register WebAuthn Credential
+          Step 1: Register WebAuthn Credential and mint a PKP
         </h3>
         <p>
           Register a new WebAuthn credential using the options obtained from the
           server. This will prompt you to use your device's authentication
-          method (fingerprint, face ID, etc.).
+          method (fingerprint, face ID, etc.). Then, we immediately mint a PKP
+          and associate it with it.
         </p>
 
         <DisplayCode
           code={REGISTER_CODE}
           language="typescript"
           renderComponent={<WebAuthnRegisterButton />}
-          resultData={registrationOptions}
-          resultLabel="WebAuthn Registration Data"
+          resultData={pkpInfo}
+          resultLabel="PKP Info"
           useSideBySide={true}
           theme="dracula"
         />
@@ -530,11 +513,11 @@ export default function WebAuthnTab() {
         {/*          Authenticate with WebAuthn               */}
         {/* ================================================ */}
         <h3 style={{ marginTop: "20px" }}>
-          Alternative Step 2: Authenticate with WebAuthn
+          Step 2: Authenticate with WebAuthn
         </h3>
         <p>
           If you already have a registered WebAuthn credential, you can
-          authenticate with it directly. This is useful for subsequent sessions.
+          authenticate with it directly.
         </p>
 
         <DisplayCode
@@ -548,11 +531,11 @@ export default function WebAuthnTab() {
         />
       </GreyBoarderWhiteBgContainer>
 
-      <GreyBoarderWhiteBgContainer>
-        {/* ================================================ */}
-        {/*               Mint PKP via WebAuthn              */}
-        {/* ================================================ */}
-        <h3 style={{ marginTop: "20px" }}>Step 3: Mint PKP via WebAuthn</h3>
+      {/* <GreyBoarderWhiteBgContainer> */}
+      {/* ================================================ */}
+      {/*               Mint PKP via WebAuthn              */}
+      {/* ================================================ */}
+      {/* <h3 style={{ marginTop: "20px" }}>Step 3: Mint PKP via WebAuthn</h3>
         <p>
           Mint a new Programmable Key Pair (PKP) using your WebAuthn credential.
           This PKP will be associated with your WebAuthn identity.
@@ -567,16 +550,16 @@ export default function WebAuthnTab() {
           useSideBySide={true}
           theme="dracula"
         />
-      </GreyBoarderWhiteBgContainer>
+      </GreyBoarderWhiteBgContainer> */}
 
       <GreyBoarderWhiteBgContainer>
         {/* ================================================ */}
         {/*               Create AuthContext                  */}
         {/* ================================================ */}
         <h3 style={{ marginTop: 0 }}>
-          Step 4: Create AuthContext{" "}
+          Step 3: Create AuthContext{" "}
           {!pkpInfo && (
-            <span style={{ color: "orange" }}>(Mint PKP first)</span>
+            <span style={{ color: "orange" }}>(Register & Mint PKP first)</span>
           )}
         </h3>
         <p>
@@ -645,7 +628,7 @@ export default function WebAuthnTab() {
           theme="dracula"
         />
       </GreyBoarderWhiteBgContainer>
-      
+
       {/* Add EOA Auth Section */}
       <EoaAuthSection tabName={AUTH_NAME} />
     </div>

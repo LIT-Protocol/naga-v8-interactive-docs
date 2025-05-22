@@ -2,19 +2,24 @@ import React from "react";
 import { DisplayCode } from "../DisplayCode";
 
 // Code snippets for EOA authentication
-const VIEM_ACCOUNT_AUTH_CODE = `// Step 1: Convert your EOA private key to a viem account object
+const VIEM_ACCOUNT_AUTH_CODE = `
+// For server environments with viem/accounts
+import { privateKeyToAccount } from 'viem/accounts';
+
 const myAccount = privateKeyToAccount(
   process.env.PRIVATE_KEY as \`0x\${string}\`
 );
-const { ViemAccountAuthenticator } = await import('@lit-protocol/auth');
 
-const authData = await ViemAccountAuthenticator.authenticate(myAccount);
-console.log('✅ authData:', authData);
+const authData = {
+  authMethodId: ...,
+  authMethodType: ...,
+  publicKey: ...,
+};
 
 // Minting a PKP with EOA Auth Method
 const mintedPkpWithEoaAuth = await litClient.mintWithAuth({
   account: myAccount,
-  authData: authData,
+  authData: authData, // <-- add it here
   scopes: ['sign-anything'],
 });
 
@@ -25,11 +30,17 @@ import { getWalletClient } from '@wagmi/core';
 const { WalletClientAuthenticator } = await import('@lit-protocol/auth');
 
 const walletClient = await getWalletClient();
-const authData = await WalletClientAuthenticator.authenticate(walletClient);
+
+const authData = {
+  authMethodId: ...,
+  authMethodType: ...,
+  publicKey: ...,
+};
 
 // Minting a PKP with Wallet Client Auth Method
 const mintedPkpWithWalletClient = await litClient.mintWithAuth({
-  authData: authData,
+  account: myAccount,
+  authData: authData, // <-- add it here
   scopes: ['sign-anything'],
 });
 
@@ -79,7 +90,7 @@ const EoaAuthSection: React.FC<EoaAuthSectionProps> = ({ tabName }) => {
             color: "#4b6cb7",
           }}
         >
-          Alternative: Mint PKP with EOA Wallet
+          Alternative: Mint PKP with your EOA
         </h3>
       </div>
 
@@ -90,7 +101,7 @@ const EoaAuthSection: React.FC<EoaAuthSectionProps> = ({ tabName }) => {
       </p>
 
       <h4 style={{ color: "#4b6cb7" }}>
-        Server-Side with ViemAccountAuthenticator
+        Server-Side with Private Key Account
       </h4>
       <p>
         The following approach is typically used on the server side where you
@@ -127,16 +138,12 @@ const EoaAuthSection: React.FC<EoaAuthSectionProps> = ({ tabName }) => {
         <strong style={{ color: "#4b6cb7" }}>Usage Notes:</strong>
         <ul>
           <li>
-            ViemAccountAuthenticator is suitable for server environments where
+            Viem Private Key Account is suitable for server environments where
             private keys can be securely stored.
           </li>
           <li>
             WalletClientAuthenticator is designed for browser environments where
             users interact with web3 wallets.
-          </li>
-          <li>
-            Browsers can use both authentication methods, but servers should
-            only use ViemAccountAuthenticator.
           </li>
           <li>
             This approach gives you more control over the minting process
