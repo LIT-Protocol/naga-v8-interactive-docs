@@ -412,7 +412,7 @@ export const HomePage = () => {
           {/* <h1>Demo</h1> */}
 
           {/* Status messages */}
-          {status && (
+          {/* {status && (
             <div
               style={{
                 marginTop: "10px",
@@ -426,7 +426,7 @@ export const HomePage = () => {
               <h3 style={{ margin: "0 0 5px 0" }}>Status:</h3>
               <p style={{ margin: 0 }}>{status}</p>
             </div>
-          )}
+          )} */}
 
           {/* EOA Authentication Tab */}
           {activeMethod === "eoa" && (
