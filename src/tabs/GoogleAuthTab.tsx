@@ -1,6 +1,8 @@
 import { createAuthManager, GoogleAuthenticator } from "@lit-protocol/auth";
 import { createLitClient } from "@lit-protocol/lit-client";
 import { useState } from "react";
+import { DisplayCode } from "../components/DisplayCode";
+import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgContainer";
 import { replacer } from "../helper";
 
 const AUTH_NAME = "Google Authentication";
@@ -32,54 +34,43 @@ export default function GoogleAuthTab({
   };
   siteAuthConfig: any;
 }) {
+  const [isSigningIn, setIsSigningIn] = useState(false);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const [authMethod, setAuthMethod] = useState<any>(null);
-  const [pkpInfo, setPkpInfo] = useState<any>(null);
+  const [isCreatingAuthContext, setIsCreatingAuthContext] = useState(false);
+  const [isSigning, setIsSigning] = useState(false);
+  const [authData, setAuthData] = useState<any>();
+  const [pkpInfo, setPkpInfo] = useState<any>();
   const [messageToSign, setMessageToSign] = useState<string>(
     "Hello from Google PKP!"
   );
-  const [isSigning, setIsSigning] = useState<boolean>(false);
   const [signature, setSignature] = useState<any>(null);
 
-  const googleAuth = async () => {
-    const { authManager, litClient } = assertDependenciesLoaded();
-
-    setStatus(`Authenticating with ${AUTH_NAME}...`);
-    setIsAuthenticating(true);
-    setPkpInfo(null);
-    setSignature(null);
-
-    try {
-      const newAuthContext = await authManager.createPkpAuthContext({
-        authMethod: authMethod,
-        pkpPublicKey: "",
-        authConfig: siteAuthConfig,
-        litClient: litClient,
-      });
-
-      setAuthContext(newAuthContext);
-      setActiveMethod("google-auth");
-      setStatus(`${AUTH_NAME} successful! AuthContext prepared.`);
-    } catch (error: any) {
-      console.error(`${AUTH_NAME} failed:`, error);
-      setStatus(`${AUTH_NAME} failed: ${error?.message || "Unknown error"}`);
-    } finally {
-      setIsAuthenticating(false);
-    }
-  };
-
   const signIn = async () => {
-    const authMethod = await GoogleAuthenticator.authenticate(
-      "https://login.litgateway.com"
-    );
+    try {
+      setIsSigningIn(true);
+      setStatus("Signing in with Google...");
 
-    setAuthMethod(authMethod);
+      const authData = await GoogleAuthenticator.authenticate(
+        "http://localhost:3300"
+      );
+
+      setAuthData(authData);
+      setStatus("Successfully signed in with Google");
+    } catch (error: any) {
+      console.error("Error signing in with Google:", error);
+      setStatus(
+        `Failed to sign in with Google: ${error?.message || "Unknown error"}`
+      );
+    } finally {
+      setIsSigningIn(false);
+    }
   };
 
   const mintPkp = async () => {
     const { authManager, litClient } = assertDependenciesLoaded();
-    if (!authMethod) {
-      throw new Error("No auth method found");
+
+    if (!authData) {
+      throw new Error("No auth data found");
     }
 
     setStatus("Minting PKP via Google Auth...");
@@ -88,10 +79,8 @@ export default function GoogleAuthTab({
     setSignature(null);
 
     try {
-      // Maybe this should be done inside authManager instead of LitClient?
       const res = await litClient.mintWithAuth({
-        authMethod: authMethod,
-        authServerBaseUrl: "http://localhost:3301",
+        authData: authData,
       });
 
       const mintedPkpInfo = res.data;
@@ -110,41 +99,80 @@ export default function GoogleAuthTab({
     }
   };
 
-  const signWithPkpFromGoogleAuth = async () => {
-    const { authManager, litClient } = assertDependenciesLoaded();
+  const createAuthContext = async () => {
+    try {
+      setIsCreatingAuthContext(true);
+      setStatus("Creating auth context...");
 
-    if (!pkpInfo) {
-      setStatus("Cannot sign: Missing PKP or Lit Client.");
-      return;
+      const { authManager, litClient } = assertDependenciesLoaded();
+
+      if (!pkpInfo) {
+        setStatus("Cannot sign: Missing PKP or Lit Client.");
+        return;
+      }
+
+      const _toSign = messageToSign;
+      const _authConfig = siteAuthConfig;
+      console.log("⭐️ PKPInfo:", pkpInfo);
+      console.log("⭐️ Message to sign:", _toSign);
+      console.log("⭐️ Auth Config:", _authConfig);
+
+      const authContext = await authManager.createPkpAuthContext({
+        authData: authData,
+        pkpPublicKey: pkpInfo.pubkey,
+        authConfig: {
+          capabilityAuthSigs: [],
+          expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
+          statement: "",
+          domain: "",
+          resources: [
+            ["pkp-signing", "*"],
+            ["lit-action-execution", "*"],
+          ],
+        },
+        litClient: litClient,
+      });
+
+      console.log("authContext:", authContext);
+      setAuthContext(authContext);
+      setStatus("Auth context created successfully");
+    } catch (error: any) {
+      console.error("Error creating auth context:", error);
+      setStatus(
+        `Failed to create auth context: ${error?.message || "Unknown error"}`
+      );
+    } finally {
+      setIsCreatingAuthContext(false);
     }
+  };
 
-    const message = messageToSign;
-    console.log("Message to sign:", message);
+  const signMessage = async () => {
+    try {
+      setIsSigning(true);
+      setStatus("Signing message...");
 
-    const authContext = await authManager.createPkpAuthContext({
-      authMethod: authMethod,
-      pkpPublicKey: pkpInfo.pubkey,
-      authConfig: siteAuthConfig,
-      litClient: litClient,
-    });
+      const { litClient } = assertDependenciesLoaded();
 
-    console.log("authContext:", authContext);
+      if (!authContext || !pkpInfo) {
+        setStatus("Cannot sign: Missing AuthContext or PKP.");
+        return;
+      }
 
-    // setStatus("Signing message with PKP from Google Auth...");
-    // setIsSigning(true);
-    // setSignature(null);
+      const signatures = await litClient.chain.ethereum.pkpSign({
+        pubKey: pkpInfo.pubkey,
+        authContext: authContext,
+        toSign: messageToSign,
+      });
 
-    // try {
-    //   console.log("Signing with PKP:", pkpInfo.pubkey);
-    //   console.log("Message to sign:", messageToSign);
-    //   await new Promise((resolve) => setTimeout(resolve, 1000));
-    //   setStatus("Placeholder: Message signing function called.");
-    // } catch (error: any) {
-    //   console.error("Error signing with PKP from Google Auth:", error);
-    //   setStatus(`Failed to sign message: ${error?.message || "Unknown error"}`);
-    // } finally {
-    //   setIsSigning(false);
-    // }
+      console.log("signatures:", signatures);
+      setSignature(signatures);
+      setStatus("Message signed successfully");
+    } catch (error: any) {
+      console.error("Error signing message:", error);
+      setStatus(`Failed to sign message: ${error?.message || "Unknown error"}`);
+    } finally {
+      setIsSigning(false);
+    }
   };
 
   return (
@@ -156,15 +184,10 @@ export default function GoogleAuthTab({
         sign messages.
       </p>
 
-      <div
-        style={{
-          marginTop: "20px",
-          padding: "20px",
-          backgroundColor: "#f9f9f9",
-          borderRadius: "6px",
-          border: "1px solid #e0e0e0",
-        }}
-      >
+      <GreyBoarderWhiteBgContainer>
+        {/* ================================================ */}
+        {/*                  Prerequisites                   */}
+        {/* ================================================ */}
         <h3 style={{ marginTop: 0 }}>Prerequisites</h3>
         <ul>
           <li>
@@ -200,7 +223,9 @@ export default function GoogleAuthTab({
             )}
           </li>
         </ul>
+      </GreyBoarderWhiteBgContainer>
 
+      <GreyBoarderWhiteBgContainer>
         {/* ================================================ */}
         {/*               Sign in with Google                */}
         {/* ================================================ */}
@@ -209,206 +234,313 @@ export default function GoogleAuthTab({
           To sign in with Google, you can use the `authenticate` function
           provided by the GoogleAuthenticator.
         </p>
-        <button onClick={signIn}>Sign in with Google</button>
+        <button
+          onClick={signIn}
+          disabled={isSigningIn}
+          style={{
+            padding: "10px 15px",
+            backgroundColor: isSigningIn ? "#cccccc" : "#4285F4",
+            color: "white",
+            border: "none",
+            borderRadius: "4px",
+            cursor: isSigningIn ? "not-allowed" : "pointer",
+            fontWeight: "500",
+          }}
+        >
+          {isSigningIn ? "Signing in..." : "Sign in with Google"}
+        </button>
 
-        {authMethod && (
-          <div style={{ marginTop: "20px" }}>
-            <h3>Auth Method</h3>
-            <pre style={{ margin: 0, fontSize: "13px" }}>
-              {JSON.stringify(authMethod, replacer, 2)}
-            </pre>
-          </div>
-        )}
+        {/* ================================================ */}
+        {/*         (Render) Auth Data after sign in          */}
+        {/* ================================================ */}
+        <div
+          style={{
+            marginTop: "20px",
+            opacity: authData ? 1 : 0.5,
+            pointerEvents: authData ? "auto" : "none",
+          }}
+        >
+          <h3>
+            Auth Data{" "}
+            {!authData && (
+              <span style={{ color: "orange" }}>(Sign in to view)</span>
+            )}
+          </h3>
 
-        <h3 style={{ marginTop: "20px" }}>Step 1a: Mint PKP via Google</h3>
+          <p>
+            ❗️Please note that it's highly recommendeded to use your own Google
+            Login Server. The one used here is for demo purposes only (See
+            prerequisites)
+          </p>
+          <DisplayCode
+            code={
+              authData
+                ? JSON.stringify(authData, replacer, 2)
+                : "// Auth data will appear here after signing in"
+            }
+            language="typescript"
+          />
+        </div>
+
+        {/* ================================================ */}
+        {/*               Mint PKP via Google                */}
+        {/* ================================================ */}
+        <h3 style={{ marginTop: "20px" }}>Mint PKP via Google</h3>
         <p>
           Mint a new Programmable Key Pair (PKP) using your Google account. This
           PKP will be associated with your Google identity.
         </p>
         <button
           onClick={mintPkp}
-          disabled={!areDependenciesLoaded() || isAuthenticating}
+          disabled={!areDependenciesLoaded() || isAuthenticating || !authData}
           style={{
             padding: "10px 15px",
             backgroundColor:
-              !areDependenciesLoaded() || isAuthenticating
+              !areDependenciesLoaded() || isAuthenticating || !authData
                 ? "#cccccc"
                 : "#28a745",
             color: "white",
             border: "none",
             borderRadius: "4px",
             cursor:
-              !areDependenciesLoaded() || isAuthenticating
+              !areDependenciesLoaded() || isAuthenticating || !authData
                 ? "not-allowed"
                 : "pointer",
             fontWeight: "500",
             marginBottom: "10px",
           }}
         >
-          {isAuthenticating ? "Processing..." : "Mint New PKP with Google"}
+          {isAuthenticating ? "Minting PKP..." : "Mint New PKP with Google"}
+          {!authData && " (Sign in first)"}
         </button>
 
-        {/* <h3 style={{ marginTop: "20px" }}>
-          Step 1b (Optional): Authenticate with Google (Existing PKP)
+        {/* ================================================ */}
+        {/*         (Render) Minted PKP Information          */}
+        {/* ================================================ */}
+        <div
+          style={{
+            marginTop: "20px",
+            opacity: pkpInfo ? 1 : 0.5,
+          }}
+        >
+          <h3>
+            Minted PKP Information{" "}
+            {!pkpInfo && (
+              <span style={{ color: "orange" }}>(Mint PKP first)</span>
+            )}
+          </h3>
+          <div
+            style={{
+              backgroundColor: "#f5f5f5",
+              padding: "15px",
+              borderRadius: "6px",
+              overflowX: "auto",
+            }}
+          >
+            <DisplayCode
+              code={
+                pkpInfo
+                  ? JSON.stringify(pkpInfo, replacer, 2)
+                  : "// PKP information will appear here after minting"
+              }
+              language="typescript"
+            />
+          </div>
+        </div>
+      </GreyBoarderWhiteBgContainer>
+
+      <GreyBoarderWhiteBgContainer>
+        {/* ================================================ */}
+        {/*               Create AuthContext                  */}
+        {/* ================================================ */}
+        <h3 style={{ marginTop: 0 }}>
+          Step 2: Create AuthContext{" "}
+          {!pkpInfo && (
+            <span style={{ color: "orange" }}>(Mint PKP first)</span>
+          )}
         </h3>
         <p>
-          If you have an existing PKP associated with your Google account, you
-          can authenticate to get an AuthContext for it.
+          Use your newly minted PKP to create an AuthContext. This method will
+          cache two things:
         </p>
+        <ul>
+          <li>
+            session key pair - a temporary cryptographic key pair generated on
+            the client side that acts as a temporary identity for the client
+            application. It consists of:
+            <ul>
+              <li>A public key - shared with the Lit nodes</li>
+              <li>A secret key (private key) - kept securely on the client</li>
+            </ul>
+          </li>
+          <li>
+            Delegation AuthSig aka. the inner auth sig - a cryptographic
+            attestation from the Lit Protocol nodes that authorises your session
+            key to act on behalf of your PKP.
+          </li>
+        </ul>
+
         <button
-          onClick={googleAuth}
-          disabled={!areDependenciesLoaded() || isAuthenticating}
+          onClick={createAuthContext}
+          disabled={isCreatingAuthContext || !messageToSign.trim() || !pkpInfo}
           style={{
+            marginTop: "15px",
             padding: "12px 20px",
             backgroundColor:
-              areDependenciesLoaded() && !isAuthenticating
-                ? "#3b82f6"
-                : "#cccccc",
+              isCreatingAuthContext || !messageToSign.trim() || !pkpInfo
+                ? "#cccccc"
+                : "#007bff",
             color: "white",
             border: "none",
             borderRadius: "4px",
             cursor:
-              areDependenciesLoaded() && !isAuthenticating
-                ? "pointer"
-                : "not-allowed",
+              isCreatingAuthContext || !messageToSign.trim() || !pkpInfo
+                ? "not-allowed"
+                : "pointer",
             fontWeight: "500",
           }}
         >
-          {!areDependenciesLoaded()
-            ? "Waiting for dependencies..."
-            : isAuthenticating
-            ? "Processing..."
-            : `Get AuthContext with Google`}
-        </button> */}
-      </div>
-
-      {authContext && activeMethod === "google-auth" && !pkpInfo && (
-        <div style={{ marginTop: "20px" }}>
-          <h3>Google AuthContext Result</h3>
-          <p>This context can be used if you authenticated an existing PKP.</p>
-          <div
-            style={{
-              backgroundColor: "#f5f5f5",
-              padding: "15px",
-              borderRadius: "6px",
-              overflowX: "auto",
-            }}
-          >
-            <pre style={{ margin: 0, fontSize: "13px" }}>
-              {JSON.stringify(authContext, replacer, 2)}
-            </pre>
-          </div>
-        </div>
-      )}
-
-      {pkpInfo && (
-        <div style={{ marginTop: "20px" }}>
-          <h3>Minted PKP Information</h3>
-          <div
-            style={{
-              backgroundColor: "#f5f5f5",
-              padding: "15px",
-              borderRadius: "6px",
-              overflowX: "auto",
-            }}
-          >
-            <pre style={{ margin: 0, fontSize: "13px" }}>
-              {JSON.stringify(pkpInfo, replacer, 2)}
-            </pre>
-          </div>
-        </div>
-      )}
-
-      {pkpInfo && (
+          {isCreatingAuthContext
+            ? "Creating..."
+            : "Create AuthContext with Google PKP"}
+        </button>
+        {/* ================================================ */}
+        {/*         (Render) AuthContext Information          */}
+        {/* ================================================ */}
         <div
           style={{
-            marginTop: "30px",
-            padding: "20px",
-            backgroundColor: "#f9f9f9",
-            borderRadius: "6px",
-            border: "1px solid #e0e0e0",
+            marginTop: "20px",
+            opacity: authContext ? 1 : 0.5,
           }}
         >
-          <h3 style={{ marginTop: 0 }}>Step 2: Sign Message with Minted PKP</h3>
+          <h3>
+            AuthContext Information{" "}
+            {!authContext && (
+              <span style={{ color: "orange" }}>
+                (Create AuthContext first)
+              </span>
+            )}
+          </h3>
+          <div
+            style={{
+              backgroundColor: "#f5f5f5",
+              padding: "15px",
+              borderRadius: "6px",
+              overflowX: "auto",
+            }}
+          >
+            <DisplayCode
+              code={
+                authContext
+                  ? JSON.stringify(authContext, replacer, 2)
+                  : "// AuthContext information will appear here after creation"
+              }
+              language="typescript"
+            />
+          </div>
+        </div>
+      </GreyBoarderWhiteBgContainer>
+
+      {/* ================================================ */}
+      {/*               Sign Message with PKP               */}
+      {/* ================================================ */}
+
+      <GreyBoarderWhiteBgContainer>
+        <div
+          style={{
+            marginTop: "20px",
+            opacity: pkpInfo && authContext ? 1 : 0.5,
+            pointerEvents: pkpInfo && authContext ? "auto" : "none",
+          }}
+        >
+          <h3>
+            Step 3: Sign Message with PKP{" "}
+            {!(pkpInfo && authContext) && (
+              <span style={{ color: "orange" }}>
+                (Requires PKP and AuthContext)
+              </span>
+            )}
+          </h3>
           <p>Use your newly minted PKP to sign a message.</p>
 
-          <div style={{ marginTop: "15px" }}>
-            <label
-              htmlFor="google-pkp-message-input"
+          <p>
+            <div style={{ marginTop: "15px" }}>
+              <label
+                htmlFor="google-pkp-message-input"
+                style={{
+                  display: "block",
+                  marginBottom: "8px",
+                  fontWeight: "500",
+                }}
+              >
+                Message to Sign:
+              </label>
+              <input
+                id="google-pkp-message-input"
+                type="text"
+                value={messageToSign}
+                onChange={(e) => setMessageToSign(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  border: "1px solid #dddddd",
+                  borderRadius: "4px",
+                  fontSize: "14px",
+                  boxSizing: "border-box",
+                }}
+                placeholder="Enter a message to sign"
+                disabled={!(pkpInfo && authContext) || isSigning}
+              />
+            </div>
+          </p>
+          <p>
+            <button
+              onClick={signMessage}
+              disabled={!(pkpInfo && authContext) || isSigning}
               style={{
-                display: "block",
-                marginBottom: "8px",
+                padding: "10px 15px",
+                backgroundColor:
+                  !(pkpInfo && authContext) || isSigning
+                    ? "#cccccc"
+                    : "#6f42c1",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor:
+                  !(pkpInfo && authContext) || isSigning
+                    ? "not-allowed"
+                    : "pointer",
                 fontWeight: "500",
               }}
             >
-              Message to Sign:
-            </label>
-            <input
-              id="google-pkp-message-input"
-              type="text"
-              value={messageToSign}
-              onChange={(e) => setMessageToSign(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "10px",
-                border: "1px solid #dddddd",
-                borderRadius: "4px",
-                fontSize: "14px",
-                boxSizing: "border-box",
-              }}
-              placeholder="Enter a message to sign"
-            />
-          </div>
-
-          <button
-            onClick={signWithPkpFromGoogleAuth}
-            disabled={isSigning || !messageToSign.trim() || !pkpInfo}
-            style={{
-              marginTop: "15px",
-              padding: "12px 20px",
-              backgroundColor:
-                isSigning || !messageToSign.trim() || !pkpInfo
-                  ? "#cccccc"
-                  : "#007bff",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor:
-                isSigning || !messageToSign.trim() || !pkpInfo
-                  ? "not-allowed"
-                  : "pointer",
-              fontWeight: "500",
-            }}
-          >
-            {isSigning ? "Signing..." : "Sign Message with Google PKP"}
-          </button>
-
-          {signature && (
-            <div style={{ marginTop: "20px" }}>
-              <h4 style={{ marginBottom: "10px" }}>Signature Result:</h4>
-              <div
-                style={{
-                  backgroundColor: "#e9ecef",
-                  padding: "15px",
-                  borderRadius: "6px",
-                  overflowX: "auto",
-                }}
-              >
-                <pre
-                  style={{
-                    margin: 0,
-                    fontSize: "13px",
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-all",
-                  }}
-                >
-                  {JSON.stringify(signature, replacer, 2)}
-                </pre>
-              </div>
-            </div>
-          )}
+              {isSigning ? "Signing..." : "Sign Message"}
+            </button>
+          </p>
         </div>
-      )}
+        {/* ================================================ */}
+        {/*               Signature Result                    */}
+        {/* ================================================ */}
+        <div
+          style={{
+            marginTop: "20px",
+            opacity: signature ? 1 : 0.5,
+          }}
+        >
+          <h4 style={{ marginBottom: "10px" }}>
+            Signature Result:{" "}
+            {!signature && (
+              <span style={{ color: "orange" }}>(Sign a message first)</span>
+            )}
+          </h4>
+          <DisplayCode
+            code={
+              signature
+                ? JSON.stringify(signature, replacer, 2)
+                : "// Signature results will appear here after signing a message"
+            }
+          />
+        </div>
+      </GreyBoarderWhiteBgContainer>
     </div>
   );
 }

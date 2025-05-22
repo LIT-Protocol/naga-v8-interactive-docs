@@ -48,6 +48,9 @@ export default function EoaAuthTab({
         litClient: litClient,
       });
 
+      console.log("eoaAuthContext:", eoaAuthContext);
+      return;
+
       setAuthContext(eoaAuthContext);
       setActiveMethod("eoa");
       setStatus("EOA Authentication successful!");

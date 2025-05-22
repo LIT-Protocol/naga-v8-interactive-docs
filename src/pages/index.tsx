@@ -122,7 +122,7 @@ const DependencyStatus = ({
       </table>
 
       {/* Add a hint for developers */}
-      <div
+      {/* <div
         style={{
           marginTop: "10px",
           fontSize: "12px",
@@ -133,7 +133,7 @@ const DependencyStatus = ({
       >
         <b>Dev Note:</b> To add new dependencies, update the{" "}
         <code>getDependencies()</code> function.
-      </div>
+      </div> */}
     </div>
   );
 };
@@ -409,7 +409,7 @@ export const HomePage = () => {
             overflowY: "auto",
           }}
         >
-          <h1>Demo</h1>
+          {/* <h1>Demo</h1> */}
 
           {/* Status messages */}
           {status && (

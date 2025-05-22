@@ -81,7 +81,7 @@ const MintAndUsePkp: React.FC<MintAndUsePkpProps> = ({
     try {
       // Construct a message to sign
       const messageToSignBytes = new TextEncoder().encode(messageToSign);
-
+      
       const signatures =
         await assertDependenciesLoaded().litClient.chain.ethereum.pkpSign({
           pubKey: pkpInfo.pubkey,
