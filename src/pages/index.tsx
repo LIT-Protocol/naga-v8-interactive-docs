@@ -10,6 +10,7 @@ import { MainLayout } from "../layouts/MainLayout";
 import { MintAndUsePkp } from "../tabs";
 import EoaAuthTab from "../tabs/EoaAuthTab";
 import GoogleAuthTab from "../tabs/GoogleAuthTab";
+import DiscordAuthTab from "../tabs/DiscordAuthTab";
 
 // --- Singleton instances ---
 type LitClient = Awaited<ReturnType<typeof createLitClientSingleton>>;
@@ -156,6 +157,12 @@ const ACTIONS = [
     id: "google-auth",
     name: "Auth with Google",
     description: "Authenticate using your Google account",
+    category: "PKP Auth Methods",
+  },
+  {
+    id: "discord-auth",
+    name: "Auth with Discord",
+    description: "Authenticate using your Discord account",
     category: "PKP Auth Methods",
   },
   // More authentication methods will be added here
@@ -445,6 +452,20 @@ export const HomePage = () => {
 
           {activeMethod === "google-auth" && (
             <GoogleAuthTab
+              getDependencyStatus={getDependencyStatus}
+              areDependenciesLoaded={areDependenciesLoaded}
+              authContext={authContext}
+              activeMethod={activeMethod}
+              setAuthContext={setAuthContext}
+              setActiveMethod={setActiveMethod}
+              setStatus={setStatus}
+              assertDependenciesLoaded={assertDependenciesLoaded}
+              siteAuthConfig={siteAuthConfig}
+            />
+          )}
+
+          {activeMethod === "discord-auth" && (
+            <DiscordAuthTab
               getDependencyStatus={getDependencyStatus}
               areDependenciesLoaded={areDependenciesLoaded}
               authContext={authContext}
