@@ -3,6 +3,8 @@ import { createLitClient } from "@lit-protocol/lit-client";
 import { useState } from "react";
 import { DisplayCode } from "../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgContainer";
+import EoaAuthSection from "../components/common/EoaAuthSection";
+import { useAppContext } from "../router";
 
 const AUTH_NAME = "Discord Authentication";
 
@@ -43,33 +45,19 @@ const signatures = await litClient.chain.ethereum.pkpSign({
   toSign: messageToSign,
 });`;
 
-export default function DiscordAuthTab({
-  getDependencyStatus,
-  areDependenciesLoaded,
-  authContext,
-  activeMethod,
-  setAuthContext,
-  setActiveMethod,
-  setStatus,
-  assertDependenciesLoaded,
-  siteAuthConfig,
-}: {
-  getDependencyStatus: () => {
-    litClient: boolean;
-    authManager: boolean;
-  };
-  areDependenciesLoaded: () => boolean;
-  authContext: any;
-  activeMethod: string;
-  setAuthContext: (authContext: any) => void;
-  setActiveMethod: (method: string) => void;
-  setStatus: (status: string) => void;
-  assertDependenciesLoaded: () => {
-    authManager: Awaited<ReturnType<typeof createAuthManager>>;
-    litClient: Awaited<ReturnType<typeof createLitClient>>;
-  };
-  siteAuthConfig: any;
-}) {
+export default function DiscordAuthTab() {
+  const {
+    getDependencyStatus,
+    areDependenciesLoaded,
+    authContext,
+    activeMethod,
+    setAuthContext,
+    setActiveMethod,
+    setStatus,
+    assertDependenciesLoaded,
+    siteAuthConfig,
+  } = useAppContext();
+
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [isCreatingAuthContext, setIsCreatingAuthContext] = useState(false);
@@ -503,6 +491,9 @@ export default function DiscordAuthTab({
           theme="dracula"
         />
       </GreyBoarderWhiteBgContainer>
+      
+      {/* Add EOA Auth Section */}
+      <EoaAuthSection tabName={AUTH_NAME} />
     </div>
   );
 }

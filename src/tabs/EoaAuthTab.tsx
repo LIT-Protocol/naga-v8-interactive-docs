@@ -1,35 +1,20 @@
 import { useState } from "react";
 import { replacer } from "../helper";
+import { useAppContext } from "../router";
 
-export default function EoaAuthTab({
-  getDependencyStatus,
-  areDependenciesLoaded,
-  authContext,
-  activeMethod,
-  setAuthContext,
-  setActiveMethod,
-  setStatus,
-  assertDependenciesLoaded,
-  siteAuthConfig,
-}: {
-  getDependencyStatus: () => {
-    walletClient: boolean;
-    litClient: boolean;
-    authManager: boolean;
-  };
-  areDependenciesLoaded: () => boolean;
-  authContext: any;
-  activeMethod: string;
-  setAuthContext: (authContext: any) => void;
-  setActiveMethod: (method: string) => void;
-  setStatus: (status: string) => void;
-  assertDependenciesLoaded: () => {
-    walletClient: any;
-    authManager: any;
-    litClient: any;
-  };
-  siteAuthConfig: any;
-}) {
+export default function EoaAuthTab() {
+  const {
+    getDependencyStatus,
+    areDependenciesLoaded,
+    authContext,
+    activeMethod,
+    setAuthContext,
+    setActiveMethod,
+    setStatus,
+    assertDependenciesLoaded,
+    siteAuthConfig,
+  } = useAppContext();
+
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   const eoaAuthenticate = async () => {

@@ -1,42 +1,30 @@
 import React, { useState } from "react";
 import { replacer } from "../helper";
+import { useAppContext } from "../router";
 
-// Define the props interface for the component
-interface MintAndUsePkpProps {
-  getDependencyStatus: () => {
-    walletClient: boolean;
-    authManager: boolean;
-    litClient: boolean;
-  };
-  canMintPkp: () => boolean;
-  loading: boolean;
-  authContext: any;
-  pkpInfo: any;
-  signature: any;
-  assertDependenciesLoaded: () => {
-    walletClient: any;
-    authManager: any;
-    litClient: any;
-  };
-  setStatus: (status: string) => void;
-  setPkpInfo: (pkpInfo: any) => void;
-  setSignature: (signature: any) => void;
-  setLoading: (loading: boolean) => void;
-}
-
-const MintAndUsePkp: React.FC<MintAndUsePkpProps> = ({
-  getDependencyStatus,
-  canMintPkp,
-  loading,
-  authContext,
-  pkpInfo,
-  signature,
-  assertDependenciesLoaded,
-  setStatus,
-  setPkpInfo,
-  setSignature,
-  setLoading,
-}) => {
+// Define the component with context from the router
+const MintAndUsePkp: React.FC = () => {
+  const context = useAppContext();
+  
+  // Make sure all properties exist and aren't undefined
+  if (!context || !context.canMintPkp || !context.setPkpInfo || !context.setSignature || !context.setLoading) {
+    return <div>Loading context...</div>;
+  }
+  
+  const {
+    getDependencyStatus,
+    canMintPkp,
+    loading,
+    authContext,
+    pkpInfo,
+    signature,
+    assertDependenciesLoaded,
+    setStatus,
+    setPkpInfo,
+    setSignature,
+    setLoading,
+  } = context;
+  
   const [messageToSign, setMessageToSign] = useState<string>(
     "Hello, Lit Protocol!"
   );
@@ -53,12 +41,12 @@ const MintAndUsePkp: React.FC<MintAndUsePkpProps> = ({
     setLoading(true);
 
     try {
-      const { data: mintedPkpInfo } = await litClient.mintPkp({
-        authContext: authContext,
-        scopes: ["sign-anything"],
+      // Use the authService.mintWithAuth method instead of mintPkp
+      const res = await litClient.authService.mintWithAuth({
+        authData: authContext,
       });
 
-      setPkpInfo(mintedPkpInfo);
+      setPkpInfo(res.data);
       setStatus("PKP minted successfully!");
     } catch (error: any) {
       console.error("Error minting PKP:", error);

@@ -6,12 +6,8 @@ import { createLitClient as createLitClientSingleton } from "@lit-protocol/lit-c
 import { nagaDev } from "@lit-protocol/networks";
 import { useEffect, useState } from "react";
 import { useWalletClient } from "wagmi";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { MainLayout } from "../layouts/MainLayout";
-import { MintAndUsePkp } from "../tabs";
-import EoaAuthTab from "../tabs/EoaAuthTab";
-import GoogleAuthTab from "../tabs/GoogleAuthTab";
-import DiscordAuthTab from "../tabs/DiscordAuthTab";
-import WebAuthnTab from "../tabs/WebAuthnTab";
 
 // --- Singleton instances ---
 type LitClient = Awaited<ReturnType<typeof createLitClientSingleton>>;
@@ -122,20 +118,6 @@ const DependencyStatus = ({
           ))}
         </tbody>
       </table>
-
-      {/* Add a hint for developers */}
-      {/* <div
-        style={{
-          marginTop: "10px",
-          fontSize: "12px",
-          color: "#666",
-          borderTop: "1px dashed #ccc",
-          paddingTop: "8px",
-        }}
-      >
-        <b>Dev Note:</b> To add new dependencies, update the{" "}
-        <code>getDependencies()</code> function.
-      </div> */}
     </div>
   );
 };
@@ -144,30 +126,35 @@ const DependencyStatus = ({
 const ACTIONS = [
   {
     id: "eoa",
+    path: "/eoa",
     name: "Auth with EOA",
     description: "Authenticate using your Ethereum wallet's EOA",
     category: "EOA Auth",
   },
   {
     id: "pkp",
+    path: "/pkp",
     name: "Mint & Use PKP",
     description: "Mint and use a Programmable Key Pair",
     category: "EOA Auth",
   },
   {
     id: "google-auth",
+    path: "/google-auth",
     name: "Auth with Google",
     description: "Authenticate using your Google account",
     category: "PKP Auth Methods",
   },
   {
     id: "discord-auth",
+    path: "/discord-auth",
     name: "Auth with Discord",
     description: "Authenticate using your Discord account",
     category: "PKP Auth Methods",
   },
   {
     id: "webauthn-auth",
+    path: "/webauthn-auth",
     name: "Auth with WebAuthn",
     description: "Authenticate using your WebAuthn device",
     category: "PKP Auth Methods",
@@ -177,6 +164,7 @@ const ACTIONS = [
 
 export const HomePage = () => {
   const { data: walletClient } = useWalletClient();
+  const location = useLocation();
 
   const [status, setStatus] = useState<string>("");
   const [signature, setSignature] = useState<any>("");
@@ -186,10 +174,6 @@ export const HomePage = () => {
   const [authManager, setAuthManager] = useState<AuthManager | null>(null);
   const [authContext, setAuthContext] = useState<any>(null);
   const [activeMethod, setActiveMethod] = useState<string>("eoa");
-  const [messageToSign, setMessageToSign] = useState<string>(
-    "Hello, Lit Protocol!"
-  );
-  const [isSigning, setIsSigning] = useState<boolean>(false);
   const [siteAuthConfig, setSiteAuthConfig] = useState<any>({
     domain: window.location.host,
     statement: "🫵 YOU AGREED TO THE TERMS AND CONDITIONS",
@@ -200,25 +184,6 @@ export const HomePage = () => {
     capabilityAuthSigs: [],
     expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
   });
-
-  // Load active tab from URL query parameter when component mounts
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const tab = urlParams.get("tab");
-    if (tab && ACTIONS.some((action) => action.id === tab)) {
-      setActiveMethod(tab);
-    } else if (urlParams.has("tab")) {
-      // If tab parameter exists but is invalid, remove it
-      urlParams.delete("tab");
-      window.history.replaceState(
-        null,
-        "",
-        `${window.location.pathname}${
-          urlParams.toString() ? "?" + urlParams.toString() : ""
-        }`
-      );
-    }
-  }, []);
 
   // Effect to initialize LitClient and AuthManager state using singletons
   useEffect(() => {
@@ -260,6 +225,13 @@ export const HomePage = () => {
     }
   }, [walletClient, litClient, authManager]);
 
+  // Update activeMethod based on the current path
+  useEffect(() => {
+    const path = location.pathname;
+    const actionId = ACTIONS.find(action => action.path === path)?.id || "eoa";
+    setActiveMethod(actionId);
+  }, [location.pathname]);
+
   function assertDependenciesLoaded() {
     if (!walletClient || !authManager || !litClient) {
       throw new Error(
@@ -275,19 +247,6 @@ export const HomePage = () => {
       litClient,
     };
   }
-
-  // Handle tab selection (navigation only, no action execution)
-  const handleTabSelect = (actionId: string) => {
-    setActiveMethod(actionId);
-    // Update URL query parameter to reflect active tab
-    const urlParams = new URLSearchParams(window.location.search);
-    urlParams.set("tab", actionId);
-    window.history.pushState(
-      null,
-      "",
-      `${window.location.pathname}?${urlParams.toString()}`
-    );
-  };
 
   // Check if all dependencies are loaded
   const areDependenciesLoaded = () => {
@@ -327,6 +286,25 @@ export const HomePage = () => {
     return areDependenciesLoaded() && !!authContext;
   };
 
+  const contextValue = {
+    getDependencyStatus,
+    areDependenciesLoaded,
+    authContext,
+    activeMethod,
+    setAuthContext,
+    setActiveMethod,
+    setStatus,
+    assertDependenciesLoaded,
+    siteAuthConfig,
+    canMintPkp,
+    loading,
+    pkpInfo,
+    signature,
+    setPkpInfo,
+    setSignature,
+    setLoading,
+  };
+
   return (
     <MainLayout>
       <div
@@ -334,11 +312,10 @@ export const HomePage = () => {
         style={{
           display: "flex",
           height: "100vh",
-          // maxWidth: "1200px",
           margin: "0 auto",
         }}
       >
-        {/* Sidebar with tabs */}
+        {/* Sidebar with navigation */}
         <div
           className="sidebar"
           style={{
@@ -383,10 +360,11 @@ export const HomePage = () => {
                       {category}
                     </h3>
                     {actionsInCategory.map((action) => (
-                      <button
+                      <Link
                         key={action.id}
-                        onClick={() => handleTabSelect(action.id)}
+                        to={action.path}
                         style={{
+                          display: "block",
                           padding: "10px 15px",
                           marginBottom: "10px",
                           borderRadius: "4px",
@@ -402,10 +380,11 @@ export const HomePage = () => {
                           width: "100%",
                           textAlign: "left",
                           fontWeight: "500",
+                          textDecoration: "none",
                         }}
                       >
                         {action.name}
-                      </button>
+                      </Link>
                     ))}
                   </div>
                 )
@@ -423,98 +402,7 @@ export const HomePage = () => {
             overflowY: "auto",
           }}
         >
-          {/* <h1>Demo</h1> */}
-
-          {/* Status messages */}
-          {/* {status && (
-            <div
-              style={{
-                marginTop: "10px",
-                marginBottom: "20px",
-                padding: "15px",
-                backgroundColor: loading ? "#fffbeb" : "#f0f9ff",
-                borderRadius: "4px",
-                borderLeft: `4px solid ${loading ? "#facc15" : "#3b82f6"}`,
-              }}
-            >
-              <h3 style={{ margin: "0 0 5px 0" }}>Status:</h3>
-              <p style={{ margin: 0 }}>{status}</p>
-            </div>
-          )} */}
-
-          {/* EOA Authentication Tab */}
-          {activeMethod === "eoa" && (
-            <EoaAuthTab
-              getDependencyStatus={getDependencyStatus}
-              areDependenciesLoaded={areDependenciesLoaded}
-              authContext={authContext}
-              activeMethod={activeMethod}
-              setAuthContext={setAuthContext}
-              setActiveMethod={setActiveMethod}
-              setStatus={setStatus}
-              assertDependenciesLoaded={assertDependenciesLoaded}
-              siteAuthConfig={siteAuthConfig}
-            />
-          )}
-
-          {activeMethod === "google-auth" && (
-            <GoogleAuthTab
-              getDependencyStatus={getDependencyStatus}
-              areDependenciesLoaded={areDependenciesLoaded}
-              authContext={authContext}
-              activeMethod={activeMethod}
-              setAuthContext={setAuthContext}
-              setActiveMethod={setActiveMethod}
-              setStatus={setStatus}
-              assertDependenciesLoaded={assertDependenciesLoaded}
-              siteAuthConfig={siteAuthConfig}
-            />
-          )}
-
-          {activeMethod === "discord-auth" && (
-            <DiscordAuthTab
-              getDependencyStatus={getDependencyStatus}
-              areDependenciesLoaded={areDependenciesLoaded}
-              authContext={authContext}
-              activeMethod={activeMethod}
-              setAuthContext={setAuthContext}
-              setActiveMethod={setActiveMethod}
-              setStatus={setStatus}
-              assertDependenciesLoaded={assertDependenciesLoaded}
-              siteAuthConfig={siteAuthConfig}
-            />
-          )}
-
-          {activeMethod === "webauthn-auth" && (
-            <WebAuthnTab
-              getDependencyStatus={getDependencyStatus}
-              areDependenciesLoaded={areDependenciesLoaded}
-              authContext={authContext}
-              activeMethod={activeMethod}
-              setAuthContext={setAuthContext}
-              setActiveMethod={setActiveMethod}
-              setStatus={setStatus}
-              assertDependenciesLoaded={assertDependenciesLoaded}
-              siteAuthConfig={siteAuthConfig}
-            />
-          )}
-
-          {/* PKP Tab */}
-          {activeMethod === "pkp" && (
-            <MintAndUsePkp
-              getDependencyStatus={getDependencyStatus}
-              canMintPkp={canMintPkp}
-              loading={loading}
-              authContext={authContext}
-              pkpInfo={pkpInfo}
-              signature={signature}
-              assertDependenciesLoaded={assertDependenciesLoaded}
-              setStatus={setStatus}
-              setPkpInfo={setPkpInfo}
-              setSignature={setSignature}
-              setLoading={setLoading}
-            />
-          )}
+          <Outlet context={contextValue} />
         </div>
       </div>
     </MainLayout>

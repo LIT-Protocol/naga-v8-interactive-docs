@@ -6,8 +6,7 @@ import "@rainbow-me/rainbowkit/styles.css";
 import { WagmiProvider, http } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import { routes } from "./utils/routes";
+import { RouterProvider } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { mainnet, sepolia, base, arbitrum } from "wagmi/chains";
 import { connectorsForWallets } from "@rainbow-me/rainbowkit";
@@ -20,6 +19,7 @@ import {
 } from "@rainbow-me/rainbowkit/wallets";
 import { createConfig } from "wagmi";
 import { APP_INFO, NETWORKS, THEME, WALLET_CONNECT, WALLETS } from "./_config";
+import { router } from "./router";
 
 const queryClient = new QueryClient();
 
@@ -43,9 +43,6 @@ const chronicleTestnet = {
 //   ...yellowstoneChainConfig,
 //   ...NETWORKS.chronicleYellowstone,
 // } as any; // Type cast to avoid chain type errors
-
-// Create router from routes configuration
-const router = createBrowserRouter(routes);
 
 // Configure custom RainbowKit theme with Lit Protocol branding
 const litTheme = darkTheme({
