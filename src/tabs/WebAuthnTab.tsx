@@ -13,7 +13,7 @@ const REGISTER_CODE = `
 import { WebAuthnAuthenticator } from "@lit-protocol/auth";
 
 const { pkpInfo, webAuthnPublicKey } = await WebAuthnAuthenticator.registerAndMintPKP({
-  authServerUrl: "http://localhost:3301",
+  authServiceBaseUrl: "http://localhost:3301",
 });
 `;
 
@@ -21,7 +21,7 @@ const AUTHENTICATE_CODE = `
 import { WebAuthnAuthenticator } from "@lit-protocol/auth";
 
 const authData = await WebAuthnAuthenticator.authenticate({
-  authServerUrl: "http://localhost:3301",
+  authServiceBaseUrl: "http://localhost:3301",
 });
 `;
 
@@ -97,7 +97,7 @@ export default function WebAuthnTab() {
 
       const { pkpInfo, webAuthnPublicKey } =
         await WebAuthnAuthenticator.registerAndMintPKP({
-          authServerUrl: "http://localhost:3301",
+          authServiceBaseUrl: "http://localhost:3301",
           username: username || `testuser-${Date.now()}`,
         });
       setPkpInfo(pkpInfo);
@@ -289,16 +289,11 @@ export default function WebAuthnTab() {
       style={{
         padding: "12px 20px",
         backgroundColor:
-          isCreatingAuthContext || !pkpInfo
-            ? "#cccccc"
-            : "#007bff",
+          isCreatingAuthContext || !pkpInfo ? "#cccccc" : "#007bff",
         color: "white",
         border: "none",
         borderRadius: "4px",
-        cursor:
-          isCreatingAuthContext || !pkpInfo
-            ? "not-allowed"
-            : "pointer",
+        cursor: isCreatingAuthContext || !pkpInfo ? "not-allowed" : "pointer",
         fontWeight: "500",
       }}
     >
@@ -513,9 +508,6 @@ export default function WebAuthnTab() {
           componentTitle={`Step 5: Sign Message with PKP (${AUTH_NAME})`}
         />
       </GreyBoarderWhiteBgContainer>
-
-      {/* Add EOA Auth Section */}
-      <EoaAuthSection tabName={AUTH_NAME} />
     </div>
   );
 }

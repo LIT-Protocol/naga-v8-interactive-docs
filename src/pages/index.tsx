@@ -125,19 +125,20 @@ const DependencyStatus = ({
 // Authentication methods configuration
 const ACTIONS = [
   {
-    id: "eoa",
-    path: "/eoa",
-    name: "Auth with EOA",
-    description: "Authenticate using your Ethereum wallet's EOA",
+    id: "eoa-native",
+    path: "/eoa-native",
+    name: "EOA Native",
+    description: "Direct EOA usage for PKP management",
     category: "EOA Auth",
   },
   {
-    id: "pkp",
-    path: "/pkp",
-    name: "Mint & Use PKP",
-    description: "Mint and use a Programmable Key Pair",
-    category: "EOA Auth",
+    id: "eoa-auth",
+    path: "/eoa-auth",
+    name: "Auth with EOA",
+    description: "Authenticate using your EOA account",
+    category: "PKP Auth Methods",
   },
+
   {
     id: "google-auth",
     path: "/google-auth",
@@ -159,11 +160,19 @@ const ACTIONS = [
     description: "Authenticate using your WebAuthn device",
     category: "PKP Auth Methods",
   },
+  {
+    id: "stytch-email-otp-auth",
+    path: "/stytch-email-otp-auth",
+    name: "Auth with Stytch Email OTP",
+    description: "Authenticate using Stytch Email OTP verification",
+    category: "PKP Auth Methods",
+  },
+
   // More authentication methods will be added here
 ];
 
 export const HomePage = () => {
-  const { data: walletClient } = useWalletClient();
+  // const { data: walletClient } = useWalletClient();
   const location = useLocation();
 
   const [status, setStatus] = useState<string>("");
@@ -208,13 +217,14 @@ export const HomePage = () => {
 
   // Effect to update loading and status messages based on client availability
   useEffect(() => {
-    if (walletClient && litClient && authManager) {
+    // if (walletClient && litClient && authManager) {
+    if (litClient && authManager) {
       setLoading(false);
       setStatus("All dependencies loaded successfully!");
     } else {
       setLoading(true);
       const missingDeps = [];
-      if (!walletClient) missingDeps.push("Wallet Client");
+      // if (!walletClient) missingDeps.push("Wallet Client");
       if (!litClient) missingDeps.push("Lit Client");
       if (!authManager) missingDeps.push("Auth Manager");
       setStatus(
@@ -223,26 +233,28 @@ export const HomePage = () => {
           : "Initializing..."
       );
     }
-  }, [walletClient, litClient, authManager]);
+  }, [litClient, authManager]);
 
   // Update activeMethod based on the current path
   useEffect(() => {
     const path = location.pathname;
-    const actionId = ACTIONS.find(action => action.path === path)?.id || "eoa";
+    const actionId =
+      ACTIONS.find((action) => action.path === path)?.id || "eoa";
     setActiveMethod(actionId);
   }, [location.pathname]);
 
   function assertDependenciesLoaded() {
-    if (!walletClient || !authManager || !litClient) {
+    // if (!walletClient || !authManager || !litClient) {
+    if (!authManager || !litClient) {
       throw new Error(
-        `Missing dependencies: ${walletClient ? "" : "walletClient"} ${
-          authManager ? "" : "authManager"
-        } ${litClient ? "" : "litClient"}`
+        `Missing dependencies: ${authManager ? "" : "authManager"} ${
+          litClient ? "" : "litClient"
+        }`
       );
     }
 
     return {
-      walletClient,
+      // walletClient,
       authManager,
       litClient,
     };
@@ -250,13 +262,14 @@ export const HomePage = () => {
 
   // Check if all dependencies are loaded
   const areDependenciesLoaded = () => {
-    return !!(walletClient && authManager && litClient);
+    // return !!(walletClient && authManager && litClient);
+    return !!(authManager && litClient);
   };
 
   // Get dependency status for display
   const getDependencyStatus = () => {
     return {
-      walletClient: !!walletClient,
+      // walletClient: !!walletClient,
       authManager: !!authManager,
       litClient: !!litClient,
     };
@@ -265,17 +278,17 @@ export const HomePage = () => {
   // Get dependencies for the DependencyStatus component
   const getDependencies = (): Dependency[] => {
     return [
+      // {
+      //   name: "Wallet Client",
+      //   isLoaded: !!walletClient,
+      // },
       {
-        name: "Wallet Client",
-        isLoaded: !!walletClient,
+        name: "Lit Client",
+        isLoaded: !!litClient,
       },
       {
         name: "Auth Manager",
         isLoaded: !!authManager,
-      },
-      {
-        name: "Lit Client",
-        isLoaded: !!litClient,
       },
       // Add new dependencies here by adding a new object with name, isLoaded, and optional description
     ];

@@ -1,5 +1,6 @@
 import React, { useState, ReactNode, useRef, useEffect } from "react";
 import { Highlight, themes } from "prism-react-renderer";
+import { replacer } from "../helper";
 
 /**
  * DisplayCode Component
@@ -320,7 +321,7 @@ export const DisplayCode: React.FC<DisplayCodeProps> = ({
           <pre style={{ margin: 0 }}>
             {typeof resultData === "string"
               ? resultData
-              : JSON.stringify(resultData, null, 2)}
+              : JSON.stringify(resultData, replacer, 2)}
           </pre>
         </div>
       </div>

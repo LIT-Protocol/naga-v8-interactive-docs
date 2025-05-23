@@ -10,16 +10,16 @@ export const Header = () => {
           {FEATURES.enableFlameAnimation && <span className="flame-icon">🔥</span>} {APP_INFO.name}
         </Link>
         <div className="nav-links">
-          {NAVIGATION.main.map((link) => (
+          {/* {NAVIGATION.main.map((link) => (
             <Link key={link.path} to={link.path}>
               {link.name}
             </Link>
-          ))}
+          ))} */}
         </div>
       </nav>
-      <div className="header-controls">
+      {/* <div className="header-controls">
         <WalletButton />
-      </div>
+      </div> */}
     </header>
   );
 };

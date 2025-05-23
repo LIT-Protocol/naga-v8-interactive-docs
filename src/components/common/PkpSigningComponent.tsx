@@ -127,129 +127,6 @@ export default function PkpSigningComponent({
     }
   };
 
-  const renderSigningUI = () => (
-    <div>
-      <div style={{ marginBottom: "15px" }}>
-        <label
-          htmlFor={`pkp-message-input-${pkpInfo?.pkpAddress}`} // Unique ID
-          style={{
-            display: "block",
-            marginBottom: "8px",
-            fontWeight: "500",
-          }}
-        >
-          Message to Sign:
-        </label>
-        <input
-          id={`pkp-message-input-${pkpInfo?.pkpAddress}`}
-          type="text"
-          value={messageToSign}
-          onChange={(e) => setMessageToSign(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "10px",
-            border: "1px solid #dddddd",
-            borderRadius: "4px",
-            fontSize: "14px",
-            boxSizing: "border-box",
-          }}
-          placeholder="Enter a message to sign"
-          disabled={!(pkpInfo && authContext) || isSigning}
-        />
-      </div>
-
-      {/* Chain Selection Dropdown */}
-      <div style={{ marginBottom: "15px" }}>
-        <label
-          htmlFor={`pkp-chain-select-${pkpInfo?.pkpAddress}`}
-          style={{
-            display: "block",
-            marginBottom: "8px",
-            fontWeight: "500",
-          }}
-        >
-          Chain:
-        </label>
-        <select
-          id={`pkp-chain-select-${pkpInfo?.pkpAddress}`}
-          value={selectedChain}
-          onChange={(e) => setSelectedChain(e.target.value as SupportedChain)}
-          style={{
-            width: "100%",
-            padding: "10px",
-            border: "1px solid #dddddd",
-            borderRadius: "4px",
-            fontSize: "14px",
-            boxSizing: "border-box",
-          }}
-          disabled={!(pkpInfo && authContext) || isSigning}
-        >
-          {AVAILABLE_CHAINS.map((chain) => (
-            <option key={chain.key} value={chain.key}>
-              {chain.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Signing Scheme Dropdown */}
-      <div style={{ marginBottom: "15px" }}>
-        <label
-          htmlFor={`pkp-signing-scheme-select-${pkpInfo?.pkpAddress}`}
-          style={{
-            display: "block",
-            marginBottom: "8px",
-            fontWeight: "500",
-          }}
-        >
-          Signing Scheme:
-        </label>
-        <select
-          id={`pkp-signing-scheme-select-${pkpInfo?.pkpAddress}`}
-          value={selectedScheme}
-          onChange={(e) => setSelectedScheme(e.target.value as SupportedScheme)}
-          style={{
-            width: "100%",
-            padding: "10px",
-            border: "1px solid #dddddd",
-            borderRadius: "4px",
-            fontSize: "14px",
-            boxSizing: "border-box",
-          }}
-          disabled={!(pkpInfo && authContext) || isSigning}
-        >
-          {SIGNING_SCHEMES.map((scheme) => (
-            <option key={scheme} value={scheme}>
-              {scheme}
-            </option>
-          ))}
-        </select>
-        <small style={{ display: "block", marginTop: "5px", color: "#555" }}>
-          Note: The message will be UTF-8 encoded. Hashing is automatically
-          handled by Lit Protocol based on the selected chain.
-        </small>
-      </div>
-
-      <button
-        onClick={signMessage}
-        disabled={!(pkpInfo && authContext) || isSigning}
-        style={{
-          padding: "10px 15px",
-          backgroundColor:
-            !(pkpInfo && authContext) || isSigning ? "#cccccc" : "#6f42c1",
-          color: "white",
-          border: "none",
-          borderRadius: "4px",
-          cursor:
-            !(pkpInfo && authContext) || isSigning ? "not-allowed" : "pointer",
-          fontWeight: "500",
-        }}
-      >
-        {isSigning ? "Signing..." : "Sign Message"}
-      </button>
-    </div>
-  );
-
   return (
     <>
       <h3>
@@ -265,7 +142,128 @@ export default function PkpSigningComponent({
       <DisplayCode
         code={SIGN_MESSAGE_CODE_SNIPPET}
         language="typescript"
-        renderComponent={renderSigningUI()}
+        renderComponent={
+          <div>
+            <div style={{ marginBottom: "15px" }}>
+              <label
+                htmlFor={`pkp-message-input-${pkpInfo?.pkpAddress}`} // Unique ID
+                style={{
+                  display: "block",
+                  marginBottom: "8px",
+                  fontWeight: "500",
+                }}
+              >
+                Message to Sign:
+              </label>
+              <input
+                id={`pkp-message-input-${pkpInfo?.pkpAddress}`}
+                type="text"
+                value={messageToSign}
+                onChange={(e) => setMessageToSign(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  border: "1px solid #dddddd",
+                  borderRadius: "4px",
+                  fontSize: "14px",
+                  boxSizing: "border-box",
+                }}
+                placeholder="Enter a message to sign"
+                disabled={!(pkpInfo && authContext) || isSigning}
+              />
+            </div>
+
+            {/* Chain Selection Dropdown */}
+            <div style={{ marginBottom: "15px" }}>
+              <label
+                htmlFor={`pkp-chain-select-${pkpInfo?.pkpAddress}`}
+                style={{
+                  display: "block",
+                  marginBottom: "8px",
+                  fontWeight: "500",
+                }}
+              >
+                Chain:
+              </label>
+              <select
+                id={`pkp-chain-select-${pkpInfo?.pkpAddress}`}
+                value={selectedChain}
+                onChange={(e) => setSelectedChain(e.target.value as SupportedChain)}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  border: "1px solid #dddddd",
+                  borderRadius: "4px",
+                  fontSize: "14px",
+                  boxSizing: "border-box",
+                }}
+                disabled={!(pkpInfo && authContext) || isSigning}
+              >
+                {AVAILABLE_CHAINS.map((chain) => (
+                  <option key={chain.key} value={chain.key}>
+                    {chain.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Signing Scheme Dropdown */}
+            <div style={{ marginBottom: "15px" }}>
+              <label
+                htmlFor={`pkp-signing-scheme-select-${pkpInfo?.pkpAddress}`}
+                style={{
+                  display: "block",
+                  marginBottom: "8px",
+                  fontWeight: "500",
+                }}
+              >
+                Signing Scheme:
+              </label>
+              <select
+                id={`pkp-signing-scheme-select-${pkpInfo?.pkpAddress}`}
+                value={selectedScheme}
+                onChange={(e) => setSelectedScheme(e.target.value as SupportedScheme)}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  border: "1px solid #dddddd",
+                  borderRadius: "4px",
+                  fontSize: "14px",
+                  boxSizing: "border-box",
+                }}
+                disabled={!(pkpInfo && authContext) || isSigning}
+              >
+                {SIGNING_SCHEMES.map((scheme) => (
+                  <option key={scheme} value={scheme}>
+                    {scheme}
+                  </option>
+                ))}
+              </select>
+              <small style={{ display: "block", marginTop: "5px", color: "#555" }}>
+                Note: The message will be UTF-8 encoded. Hashing is automatically
+                handled by Lit Protocol based on the selected chain.
+              </small>
+            </div>
+
+            <button
+              onClick={signMessage}
+              disabled={!(pkpInfo && authContext) || isSigning}
+              style={{
+                padding: "10px 15px",
+                backgroundColor:
+                  !(pkpInfo && authContext) || isSigning ? "#cccccc" : "#6f42c1",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor:
+                  !(pkpInfo && authContext) || isSigning ? "not-allowed" : "pointer",
+                fontWeight: "500",
+              }}
+            >
+              {isSigning ? "Signing..." : "Sign Message"}
+            </button>
+          </div>
+        }
         resultData={signature}
         resultLabel="Signature Result"
         useSideBySide={true}

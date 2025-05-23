@@ -210,8 +210,7 @@ export default function GoogleAuthTab() {
         color: "white",
         border: "none",
         borderRadius: "4px",
-        cursor:
-          isCreatingAuthContext || !pkpInfo ? "not-allowed" : "pointer",
+        cursor: isCreatingAuthContext || !pkpInfo ? "not-allowed" : "pointer",
         fontWeight: "500",
       }}
     >
@@ -369,9 +368,6 @@ export default function GoogleAuthTab() {
           componentTitle={`Sign Message with PKP (${AUTH_NAME})`}
         />
       </GreyBoarderWhiteBgContainer>
-      
-      {/* Add EOA Auth Section */}
-      <EoaAuthSection tabName={AUTH_NAME} />
     </div>
   );
 }

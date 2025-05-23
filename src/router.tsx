@@ -1,21 +1,26 @@
-import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
-import { MainLayout } from "./layouts/MainLayout";
-import EoaAuthTab from "./tabs/EoaAuthTab";
-import GoogleAuthTab from "./tabs/GoogleAuthTab";
-import DiscordAuthTab from "./tabs/DiscordAuthTab";
-import WebAuthnTab from "./tabs/WebAuthnTab";
-import { MintAndUsePkp } from "./tabs";
-import { Outlet, useOutletContext } from "react-router-dom";
 import { createAuthManager } from "@lit-protocol/auth";
 import { createLitClient } from "@lit-protocol/lit-client";
+import {
+  createBrowserRouter,
+  Navigate,
+  Outlet,
+  useOutletContext,
+} from "react-router-dom";
+import { MainLayout } from "./layouts/MainLayout";
 import { HomePage } from "./pages";
+import DiscordAuthTab from "./tabs/DiscordAuthTab";
+import GoogleAuthTab from "./tabs/GoogleAuthTab";
+import WebAuthnTab from "./tabs/WebAuthnTab";
+import EoaAuthTab from "./tabs/EoaAuthTab";
+import EoaNativeTab from "./tabs/EoaNativeTab";
+import StytchEmailOtpAuthTab from "./tabs/StytchEmailOtpAuthTab";
 
 // Create a type for the context
 type ContextType = {
   getDependencyStatus: () => {
     litClient: boolean;
     authManager: boolean;
-    walletClient?: boolean;
+    // walletClient?: boolean;
   };
   areDependenciesLoaded: () => boolean;
   authContext: any;
@@ -26,7 +31,7 @@ type ContextType = {
   assertDependenciesLoaded: () => {
     authManager: Awaited<ReturnType<typeof createAuthManager>>;
     litClient: Awaited<ReturnType<typeof createLitClient>>;
-    walletClient?: any;
+    // walletClient?: any;
   };
   siteAuthConfig: any;
   canMintPkp?: () => boolean;
@@ -65,15 +70,11 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Navigate to="/eoa" replace />,
+        element: <Navigate to="/eoa-native" replace />,
       },
       {
-        path: "eoa",
-        element: <EoaAuthTab />,
-      },
-      {
-        path: "pkp",
-        element: <MintAndUsePkp />,
+        path: "eoa-native",
+        element: <EoaNativeTab />,
       },
       {
         path: "google-auth",
@@ -87,6 +88,14 @@ export const router = createBrowserRouter([
         path: "webauthn-auth",
         element: <WebAuthnTab />,
       },
+      {
+        path: "eoa-auth",
+        element: <EoaAuthTab />,
+      },
+      {
+        path: "stytch-email-otp-auth",
+        element: <StytchEmailOtpAuthTab />,
+      },
     ],
   },
 ]);
@@ -94,4 +103,4 @@ export const router = createBrowserRouter([
 // Export the context hook
 export function useAppContext() {
   return useOutletContext<ContextType>();
-} 
+}

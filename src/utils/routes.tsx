@@ -10,16 +10,16 @@ export const routes: RouteObject[] = [
     path: '/',
     element: <HomePage />,
   },
-  {
-    path: '/about',
-    element: <AboutPage />,
-  },
-  {
-    path: '/products',
-    element: <ProductsPage />,
-  },
-  {
-    path: '/products/:id',
-    element: <ProductDetailPage />,
-  },
+  // {
+  //   path: '/about',
+  //   element: <AboutPage />,
+  // },
+  // {
+  //   path: '/products',
+  //   element: <ProductsPage />,
+  // },
+  // {
+  //   path: '/products/:id',
+  //   element: <ProductDetailPage />,
+  // },
 ]; 

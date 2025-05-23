@@ -369,9 +369,6 @@ export default function DiscordAuthTab() {
           componentTitle={`Sign Message with PKP (${AUTH_NAME})`}
         />
       </GreyBoarderWhiteBgContainer>
-
-      {/* Add EOA Auth Section */}
-      <EoaAuthSection tabName={AUTH_NAME} />
     </div>
   );
 }

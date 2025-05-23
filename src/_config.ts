@@ -101,9 +101,9 @@ export const NETWORKS = {
 // Navigation Links
 export const NAVIGATION = {
   main: [
-    { name: "Home", path: "/" },
-    { name: "About", path: "/about" },
-    { name: "Products", path: "/products" },
+    // { name: "Home", path: "/" },
+    // { name: "About", path: "/about" },
+    // { name: "Products", path: "/products" },
   ],
   // Add more navigation sections as needed (e.g., footer, mobile, etc.)
 };
