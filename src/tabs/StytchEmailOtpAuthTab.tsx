@@ -33,6 +33,23 @@ const res = await litClient.authService.mintWithAuth({
   authData: authData,
 });`;
 
+const TOTP_SETUP_CODE = `
+import { StytchTotp2FAAuthenticator } from "@lit-protocol/auth";
+
+// Step 1: Create TOTP registration
+const registrationData = await StytchTotp2FAAuthenticator.initiateTotpRegistration({
+  userId:authData?.metadata?.userId // from your email auth
+  authServiceBaseUrl: "http://localhost:3301"
+});
+
+// Step 2: Verify TOTP setup with code from authenticator app
+const verifyResult = await StytchTotp2FAAuthenticator.verifyTotpRegistration({
+  userId:authData?.metadata?.userId
+  totpRegistrationId: registrationData.totpRegistrationId,
+  totpCode: "123456", // from authenticator app
+  authServiceBaseUrl: "http://localhost:3301"
+});`;
+
 const CREATE_AUTH_CONTEXT_CODE = `
 const authContext = await authManager.createPkpAuthContext({
   authData: authData, // <-- Retrieved earlier
@@ -67,6 +84,13 @@ export default function StytchEmailOtpAuthTab() {
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [isMinting, setIsMinting] = useState(false);
   const [isCreatingAuthContext, setIsCreatingAuthContext] = useState(false);
+
+  // 2FA Setup state
+  const [isSettingUpTotp, setIsSettingUpTotp] = useState(false);
+  const [isVerifyingTotpSetup, setIsVerifyingTotpSetup] = useState(false);
+  const [showTotpSetup, setShowTotpSetup] = useState(false);
+  const [totpRegistrationData, setTotpRegistrationData] = useState<any>(null);
+  const [totpSetupCode, setTotpSetupCode] = useState<string>("");
 
   const [email, setEmail] = useState<string>("");
   const [otpCode, setOtpCode] = useState<string>("");
@@ -131,12 +155,94 @@ export default function StytchEmailOtpAuthTab() {
       });
 
       setAuthData(authData);
-      setStatus("OTP verified successfully! You can now mint a PKP.");
+      setStatus(
+        "OTP verified successfully! You can now optionally set up 2FA or mint a PKP directly."
+      );
+
+      // Cache the userId
+      if (authData?.metadata?.userId && email) {
+        localStorage.setItem(`stytchEmailOtp:${email}`, authData.metadata.userId);
+        console.log(`Cached userId for stytchEmailOtp:${email}`);
+      }
     } catch (error: any) {
       console.error("Error verifying OTP:", error);
       setStatus(`Failed to verify OTP: ${error?.message || "Unknown error"}`);
     } finally {
       setIsVerifyingOtp(false);
+    }
+  };
+
+  // 2FA Setup Functions
+  const setupTotp = async () => {
+    try {
+      setIsSettingUpTotp(true);
+      setStatus("Setting up TOTP 2FA...");
+
+      console.log("authData:", authData);
+
+      if (!authData?.metadata?.userId) {
+        throw new Error(
+          "No user ID found in auth data. Please verify OTP first."
+        );
+      }
+
+      // Import StytchTotp2FAAuthenticator dynamically
+      const { StytchTotp2FAAuthenticator } = await import("@lit-protocol/auth");
+
+      const registrationData =
+        await StytchTotp2FAAuthenticator.initiateTotpRegistration({
+          userId: authData?.metadata?.userId,
+          authServiceBaseUrl: authServiceBaseUrl,
+        });
+
+      setTotpRegistrationData(registrationData);
+      setStatus(
+        "TOTP 2FA setup initiated! Scan the QR code with your authenticator app and enter the code to complete setup."
+      );
+    } catch (error: any) {
+      console.error("Error setting up TOTP:", error);
+      setStatus(`Failed to setup TOTP: ${error?.message || "Unknown error"}`);
+    } finally {
+      setIsSettingUpTotp(false);
+    }
+  };
+
+  const verifyTotpSetup = async () => {
+    try {
+      setIsVerifyingTotpSetup(true);
+      setStatus("Verifying TOTP setup...");
+
+      if (!totpSetupCode || !totpRegistrationData?.totpRegistrationId) {
+        throw new Error(
+          "Please enter the TOTP code from your authenticator app."
+        );
+      }
+
+      // Import StytchTotp2FAAuthenticator dynamically
+      const { StytchTotp2FAAuthenticator } = await import("@lit-protocol/auth");
+
+
+      const verifyResult =
+        await StytchTotp2FAAuthenticator.verifyTotpRegistration({
+          userId: authData.metadata.userId,
+          totpRegistrationId: totpRegistrationData.totpRegistrationId,
+          totpCode: totpSetupCode,
+          authServiceBaseUrl: authServiceBaseUrl,
+        });
+
+      console.log("verifyResult:", verifyResult);
+
+      setStatus(
+        "🎉 TOTP 2FA setup completed successfully! You can now use the TOTP 2FA tab for future logins."
+      );
+      setShowTotpSetup(false);
+    } catch (error: any) {
+      console.error("Error verifying TOTP setup:", error);
+      setStatus(
+        `Failed to verify TOTP setup: ${error?.message || "Unknown error"}`
+      );
+    } finally {
+      setIsVerifyingTotpSetup(false);
     }
   };
 
@@ -301,7 +407,11 @@ export default function StytchEmailOtpAuthTab() {
               <div style={{ marginBottom: "10px" }}>
                 <label
                   htmlFor="email"
-                  style={{ display: "block", marginBottom: "5px", fontWeight: "500" }}
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontWeight: "500",
+                  }}
                 >
                   Email Address:
                 </label>
@@ -324,7 +434,11 @@ export default function StytchEmailOtpAuthTab() {
               <div style={{ marginBottom: "10px" }}>
                 <label
                   htmlFor="authServiceBaseUrl"
-                  style={{ display: "block", marginBottom: "5px", fontWeight: "500" }}
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontWeight: "500",
+                  }}
                 >
                   Auth Service Base URL:
                 </label>
@@ -344,7 +458,8 @@ export default function StytchEmailOtpAuthTab() {
                   }}
                 />
                 <small style={{ color: "#666", fontSize: "12px" }}>
-                  URL of your authentication service that handles Stytch interaction.
+                  URL of your authentication service that handles Stytch
+                  interaction.
                 </small>
               </div>
 
@@ -353,7 +468,8 @@ export default function StytchEmailOtpAuthTab() {
                 disabled={isSendingOtp || !email}
                 style={{
                   padding: "10px 15px",
-                  backgroundColor: isSendingOtp || !email ? "#cccccc" : "#4285F4",
+                  backgroundColor:
+                    isSendingOtp || !email ? "#cccccc" : "#4285F4",
                   color: "white",
                   border: "none",
                   borderRadius: "4px",
@@ -391,7 +507,11 @@ export default function StytchEmailOtpAuthTab() {
               <div style={{ marginBottom: "10px" }}>
                 <label
                   htmlFor="otpCode"
-                  style={{ display: "block", marginBottom: "5px", fontWeight: "500" }}
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontWeight: "500",
+                  }}
                 >
                   OTP Code:
                 </label>
@@ -423,12 +543,16 @@ export default function StytchEmailOtpAuthTab() {
                 style={{
                   padding: "10px 15px",
                   backgroundColor:
-                    isVerifyingOtp || !otpCode || !methodId ? "#cccccc" : "#4285F4",
+                    isVerifyingOtp || !otpCode || !methodId
+                      ? "#cccccc"
+                      : "#4285F4",
                   color: "white",
                   border: "none",
                   borderRadius: "4px",
                   cursor:
-                    isVerifyingOtp || !otpCode || !methodId ? "not-allowed" : "pointer",
+                    isVerifyingOtp || !otpCode || !methodId
+                      ? "not-allowed"
+                      : "pointer",
                   fontWeight: "500",
                 }}
               >
@@ -443,6 +567,343 @@ export default function StytchEmailOtpAuthTab() {
           theme="dracula"
         />
       </GreyBoarderWhiteBgContainer>
+
+      {/* ================================================ */}
+      {/*              OPTIONAL: 2FA SETUP                */}
+      {/* ================================================ */}
+      {authData && (
+        <GreyBoarderWhiteBgContainer>
+          <h3 style={{ marginTop: "20px", color: "#0066cc" }}>
+            Optional: Set Up TOTP 2FA{" "}
+            {!authData && (
+              <span style={{ color: "orange" }}>(Verify OTP first)</span>
+            )}
+          </h3>
+          <p>
+            Add an extra layer of security to your account by setting up TOTP
+            (Time-based One-Time Password) 2FA. This will allow you to use
+            authenticator apps like Google Authenticator, Authy, or 1Password
+            for future logins.
+          </p>
+
+          {!showTotpSetup ? (
+            <div style={{ marginBottom: "20px" }}>
+              <button
+                onClick={() => setShowTotpSetup(true)}
+                disabled={!authData}
+                style={{
+                  padding: "10px 15px",
+                  backgroundColor: !authData ? "#cccccc" : "#0066cc",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: !authData ? "not-allowed" : "pointer",
+                  fontWeight: "500",
+                  marginRight: "10px",
+                }}
+              >
+                🔐 Set Up 2FA (Recommended)
+              </button>
+              <button
+                onClick={() => setShowTotpSetup(false)}
+                style={{
+                  padding: "10px 15px",
+                  backgroundColor: "#6c757d",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontWeight: "500",
+                }}
+              >
+                Skip for Now
+              </button>
+            </div>
+          ) : (
+            <div>
+              {/* Step 1: Setup TOTP */}
+              <h4>Step 1: Create TOTP Registration</h4>
+              <DisplayCode
+                code={TOTP_SETUP_CODE}
+                language="typescript"
+                renderComponent={
+                  <div style={{ marginBottom: "10px" }}>
+                    <button
+                      onClick={setupTotp}
+                      disabled={isSettingUpTotp || !authData?.metadata?.userId}
+                      style={{
+                        padding: "10px 15px",
+                        backgroundColor:
+                          isSettingUpTotp || !authData?.metadata?.userId
+                            ? "#cccccc"
+                            : "#0066cc",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor:
+                          isSettingUpTotp || !authData?.metadata?.userId
+                            ? "not-allowed"
+                            : "pointer",
+                        fontWeight: "500",
+                      }}
+                    >
+                      {isSettingUpTotp
+                        ? "Setting up..."
+                        : "Generate QR Code & Secret"}
+                    </button>
+                  </div>
+                }
+                resultData={totpRegistrationData}
+                resultLabel="TOTP Registration Data"
+                useSideBySide={true}
+                theme="dracula"
+              />
+
+              {/* QR Code Display */}
+              {totpRegistrationData?.qrCode && (
+                <div
+                  style={{
+                    marginTop: "15px",
+                    padding: "15px",
+                    backgroundColor: "#f0f9ff",
+                    borderRadius: "4px",
+                    border: "1px solid #bee3f8",
+                  }}
+                >
+                  <h4 style={{ margin: "0 0 10px 0" }}>
+                    📱 Set Up Your Authenticator App
+                  </h4>
+                  <p style={{ margin: "0 0 15px 0" }}>
+                    Scan this QR code with your authenticator app (Google
+                    Authenticator, Authy, 1Password, etc.):
+                  </p>
+                  <div style={{ textAlign: "center", marginBottom: "15px" }}>
+                    <img
+                      src={totpRegistrationData.qrCode}
+                      alt="TOTP QR Code"
+                      style={{
+                        maxWidth: "200px",
+                        border: "1px solid #ddd",
+                        borderRadius: "4px",
+                      }}
+                    />
+                  </div>
+                  <p style={{ margin: "0 0 10px 0" }}>
+                    <strong>Or manually enter this secret:</strong>
+                  </p>
+                  <code
+                    style={{
+                      display: "block",
+                      padding: "8px",
+                      backgroundColor: "#ffffff",
+                      border: "1px solid #ddd",
+                      borderRadius: "4px",
+                      fontFamily: "monospace",
+                      wordBreak: "break-all",
+                    }}
+                  >
+                    {totpRegistrationData.secret}
+                  </code>
+                  {totpRegistrationData.recoveryCodes &&
+                    totpRegistrationData.recoveryCodes.length > 0 && (
+                      <div style={{ marginTop: "15px" }}>
+                        <p
+                          style={{
+                            margin: "0 0 10px 0",
+                            color: "#dc3545",
+                            fontWeight: "600",
+                          }}
+                        >
+                          🔑 Recovery Codes - Save These Immediately!
+                        </p>
+                        <div
+                          style={{
+                            padding: "12px",
+                            backgroundColor: "#fff5f5",
+                            border: "2px solid #fecaca",
+                            borderRadius: "6px",
+                            marginBottom: "10px",
+                          }}
+                        >
+                          <p
+                            style={{
+                              margin: "0 0 8px 0",
+                              fontSize: "13px",
+                              color: "#7f1d1d",
+                              fontWeight: "500",
+                            }}
+                          >
+                            ⚠️ Store these recovery codes in a safe place. Each
+                            code can only be used once to regain access if you
+                            lose your authenticator device.
+                          </p>
+                        </div>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "1fr 1fr",
+                            gap: "8px",
+                            padding: "12px",
+                            backgroundColor: "#f8fafc",
+                            border: "1px solid #e2e8f0",
+                            borderRadius: "6px",
+                            marginBottom: "10px",
+                          }}
+                        >
+                          {totpRegistrationData.recoveryCodes.map(
+                            (code: string, index: number) => (
+                              <div
+                                key={index}
+                                style={{
+                                  padding: "6px 8px",
+                                  backgroundColor: "#ffffff",
+                                  border: "1px solid #d1d5db",
+                                  borderRadius: "4px",
+                                  fontFamily: "monospace",
+                                  fontSize: "13px",
+                                  textAlign: "center",
+                                  color: "#374151",
+                                  fontWeight: "500",
+                                }}
+                              >
+                                {code}
+                              </div>
+                            )
+                          )}
+                        </div>
+                        <button
+                          onClick={() => {
+                            const codesText =
+                              totpRegistrationData.recoveryCodes.join("\n");
+                            navigator.clipboard
+                              .writeText(codesText)
+                              .then(() => {
+                                // Brief visual feedback
+                                const button =
+                                  document.activeElement as HTMLButtonElement;
+                                const originalText = button.textContent;
+                                button.textContent = "✓ Copied!";
+                                button.style.backgroundColor = "#10b981";
+                                setTimeout(() => {
+                                  button.textContent = originalText;
+                                  button.style.backgroundColor = "#6366f1";
+                                }, 2000);
+                              })
+                              .catch(() => {
+                                alert(
+                                  "Failed to copy codes. Please manually save them."
+                                );
+                              });
+                          }}
+                          style={{
+                            padding: "8px 16px",
+                            backgroundColor: "#6366f1",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                            fontSize: "13px",
+                            fontWeight: "500",
+                            transition: "background-color 0.2s",
+                          }}
+                        >
+                          📋 Copy All Codes
+                        </button>
+                      </div>
+                    )}
+                </div>
+              )}
+
+              {/* Step 2: Verify TOTP Setup */}
+              {totpRegistrationData && (
+                <div style={{ marginTop: "20px" }}>
+                  <h4>Step 2: Verify TOTP Setup</h4>
+                  <p>
+                    Enter the 6-digit code from your authenticator app to
+                    complete the 2FA setup:
+                  </p>
+
+                  <div style={{ marginBottom: "10px" }}>
+                    <div style={{ marginBottom: "10px" }}>
+                      <label
+                        htmlFor="totpSetupCode"
+                        style={{
+                          display: "block",
+                          marginBottom: "5px",
+                          fontWeight: "500",
+                        }}
+                      >
+                        TOTP Code from Authenticator App:
+                      </label>
+                      <input
+                        id="totpSetupCode"
+                        type="text"
+                        value={totpSetupCode}
+                        onChange={(e) => setTotpSetupCode(e.target.value)}
+                        placeholder="123456"
+                        maxLength={6}
+                        style={{
+                          width: "100%",
+                          padding: "8px 12px",
+                          border: "1px solid #ddd",
+                          borderRadius: "4px",
+                          fontSize: "16px",
+                          fontFamily: "monospace",
+                          letterSpacing: "2px",
+                        }}
+                      />
+                    </div>
+
+                    <button
+                      onClick={verifyTotpSetup}
+                      disabled={isVerifyingTotpSetup || !totpSetupCode}
+                      style={{
+                        padding: "10px 15px",
+                        backgroundColor:
+                          isVerifyingTotpSetup || !totpSetupCode
+                            ? "#cccccc"
+                            : "#28a745",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor:
+                          isVerifyingTotpSetup || !totpSetupCode
+                            ? "not-allowed"
+                            : "pointer",
+                        fontWeight: "500",
+                        marginRight: "10px",
+                      }}
+                    >
+                      {isVerifyingTotpSetup
+                        ? "Verifying..."
+                        : "Complete 2FA Setup"}
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setShowTotpSetup(false);
+                        setTotpRegistrationData(null);
+                        setTotpSetupCode("");
+                      }}
+                      style={{
+                        padding: "10px 15px",
+                        backgroundColor: "#6c757d",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                        fontWeight: "500",
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </GreyBoarderWhiteBgContainer>
+      )}
 
       <GreyBoarderWhiteBgContainer>
         {/* ================================================ */}
@@ -535,7 +996,8 @@ export default function StytchEmailOtpAuthTab() {
                 color: "white",
                 border: "none",
                 borderRadius: "4px",
-                cursor: isCreatingAuthContext || !pkpInfo ? "not-allowed" : "pointer",
+                cursor:
+                  isCreatingAuthContext || !pkpInfo ? "not-allowed" : "pointer",
                 fontWeight: "500",
               }}
             >
