@@ -174,6 +174,13 @@ const ACTIONS = [
     description: "Authenticate using Stytch SMS OTP verification",
     category: "PKP Auth Methods",
   },
+  {
+    id: "stytch-whatsapp-otp-auth",
+    path: "/stytch-whatsapp-otp-auth",
+    name: "Auth with Stytch WhatsApp OTP",
+    description: "Authenticate using Stytch WhatsApp OTP verification",
+    category: "PKP Auth Methods",
+  },
 
   // More authentication methods will be added here
 ];

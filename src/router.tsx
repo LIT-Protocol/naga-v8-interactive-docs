@@ -15,6 +15,7 @@ import EoaAuthTab from "./tabs/EoaAuthTab";
 import EoaNativeTab from "./tabs/EoaNativeTab";
 import StytchEmailOtpAuthTab from "./tabs/StytchEmailOtpAuthTab";
 import StytchSmsOtpAuthTab from "./tabs/StytchSmsOtpAuthTab";
+import StytchWhatsAppOtpAuthTab from "./tabs/StytchWhatsAppOtpAuthTab";
 
 // Create a type for the context
 type ContextType = {
@@ -100,6 +101,10 @@ export const router = createBrowserRouter([
       {
         path: "stytch-sms-otp-auth",
         element: <StytchSmsOtpAuthTab />,
+      },
+      {
+        path: "stytch-whatsapp-otp-auth",
+        element: <StytchWhatsAppOtpAuthTab />,
       },
     ],
   },
