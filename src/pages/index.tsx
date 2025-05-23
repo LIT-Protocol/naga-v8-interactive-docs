@@ -130,6 +130,7 @@ const ACTIONS = [
     name: "EOA Native",
     description: "Direct EOA usage for PKP management",
     category: "EOA Auth",
+    type: "primary",
   },
   {
     id: "eoa-auth",
@@ -137,6 +138,7 @@ const ACTIONS = [
     name: "EOA",
     description: "Authenticate using your EOA account",
     category: "PKP Auth Methods",
+    type: "primary",
   },
 
   {
@@ -145,6 +147,7 @@ const ACTIONS = [
     name: "Google",
     description: "Authenticate using your Google account",
     category: "PKP Auth Methods",
+    type: "primary",
   },
   {
     id: "discord-auth",
@@ -152,6 +155,7 @@ const ACTIONS = [
     name: "Discord",
     description: "Authenticate using your Discord account",
     category: "PKP Auth Methods",
+    type: "primary",
   },
   {
     id: "webauthn-auth",
@@ -159,6 +163,7 @@ const ACTIONS = [
     name: "WebAuthn",
     description: "Authenticate using your WebAuthn device",
     category: "PKP Auth Methods",
+    type: "primary",
   },
   {
     id: "stytch-email-otp-auth",
@@ -166,6 +171,7 @@ const ACTIONS = [
     name: "Stytch Email OTP",
     description: "Authenticate using Stytch Email OTP verification",
     category: "PKP Auth Methods",
+    type: "primary",
   },
   {
     id: "stytch-sms-otp-auth",
@@ -173,6 +179,7 @@ const ACTIONS = [
     name: "Stytch SMS OTP",
     description: "Authenticate using Stytch SMS OTP verification",
     category: "PKP Auth Methods",
+    type: "primary",
   },
   {
     id: "stytch-whatsapp-otp-auth",
@@ -180,6 +187,7 @@ const ACTIONS = [
     name: "Stytch WhatsApp OTP",
     description: "Authenticate using Stytch WhatsApp OTP verification",
     category: "PKP Auth Methods",
+    type: "primary",
   },
   {
     id: "stytch-totp-auth",
@@ -187,6 +195,7 @@ const ACTIONS = [
     name: "(2FA) Stytch TOTP",
     description: "Authenticate using Stytch TOTP (Authenticator App)",
     category: "PKP Auth Methods",
+    type: "secondary",
   },
 
   // More authentication methods will be added here
@@ -204,6 +213,9 @@ export const HomePage = () => {
   const [authManager, setAuthManager] = useState<AuthManager | null>(null);
   const [authContext, setAuthContext] = useState<any>(null);
   const [activeMethod, setActiveMethod] = useState<string>("eoa");
+  const [collapsedCategories, setCollapsedCategories] = useState<{
+    [key: string]: boolean;
+  }>({});
   const [siteAuthConfig, setSiteAuthConfig] = useState<any>({
     domain: window.location.host,
     statement: "🫵 YOU AGREED TO THE TERMS AND CONDITIONS",
@@ -214,6 +226,14 @@ export const HomePage = () => {
     capabilityAuthSigs: [],
     expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
   });
+
+  // Function to toggle category collapse state
+  const toggleCategoryCollapse = (categoryKey: string) => {
+    setCollapsedCategories((prev) => ({
+      ...prev,
+      [categoryKey]: !prev[categoryKey],
+    }));
+  };
 
   // Effect to initialize LitClient and AuthManager state using singletons
   useEffect(() => {
@@ -376,52 +396,167 @@ export const HomePage = () => {
               });
 
               return Object.entries(groupedActions).map(
-                ([category, actionsInCategory], categoryIndex) => (
-                  <div key={category}>
-                    {categoryIndex > 0 && (
-                      <hr
-                        style={{ margin: "15px 0", borderColor: "#dddddd" }}
-                      />
-                    )}
-                    <h3
-                      style={{
-                        fontSize: "1rem",
-                        color: "#555",
-                        marginBottom: "10px",
-                        marginTop: "10px",
-                      }}
-                    >
-                      {category}
-                    </h3>
-                    {actionsInCategory.map((action) => (
-                      <Link
-                        key={action.id}
-                        to={action.path}
+                ([category, actionsInCategory], categoryIndex) => {
+                  // Separate primary and secondary actions
+                  const primaryActions = actionsInCategory.filter(
+                    (action) => action.type === "primary"
+                  );
+                  const secondaryActions = actionsInCategory.filter(
+                    (action) => action.type === "secondary"
+                  );
+
+                  const hasSecondaryActions = secondaryActions.length > 0;
+                  const categoryKey = category;
+                  const secondaryKey = `${category}-secondary`;
+                  const isCategoryCollapsed = collapsedCategories[categoryKey];
+                  const isSecondaryCollapsed = collapsedCategories[secondaryKey];
+
+                  return (
+                    <div key={category}>
+                      {categoryIndex > 0 && (
+                        <hr
+                          style={{ margin: "15px 0", borderColor: "#dddddd" }}
+                        />
+                      )}
+                      
+                      {/* Collapsible Category Header */}
+                      <button
+                        onClick={() => toggleCategoryCollapse(categoryKey)}
                         style={{
-                          display: "block",
-                          padding: "10px 15px",
-                          marginBottom: "10px",
-                          borderRadius: "4px",
-                          cursor: "pointer",
-                          backgroundColor:
-                            activeMethod === action.id ? "#3b82f6" : "#ffffff",
-                          color:
-                            activeMethod === action.id ? "#ffffff" : "#333333",
-                          border: `1px solid ${
-                            activeMethod === action.id ? "#3b82f6" : "#dddddd"
-                          }`,
-                          transition: "all 0.2s",
+                          display: "flex",
+                          alignItems: "center",
                           width: "100%",
+                          padding: "12px 0",
+                          backgroundColor: "transparent",
+                          border: "none",
+                          cursor: "pointer",
+                          fontSize: "1rem",
+                          color: "#555",
+                          fontWeight: "600",
                           textAlign: "left",
-                          fontWeight: "500",
-                          textDecoration: "none",
                         }}
                       >
-                        {action.name}
-                      </Link>
-                    ))}
-                  </div>
-                )
+                        <span style={{ marginRight: "8px" }}>
+                          {isCategoryCollapsed ? "▶" : "▼"}
+                        </span>
+                        {category}
+                        <span style={{ marginLeft: "8px", fontSize: "0.8rem", color: "#888" }}>
+                          ({actionsInCategory.length})
+                        </span>
+                      </button>
+                      
+                      {/* Category Content */}
+                      {!isCategoryCollapsed && (
+                        <div style={{ marginLeft: "0px" }}>
+                          {/* Primary Actions */}
+                          {primaryActions.map((action) => (
+                            <Link
+                              key={action.id}
+                              to={action.path}
+                              style={{
+                                display: "block",
+                                padding: "10px 15px",
+                                marginBottom: "4px",
+                                borderRadius: "4px",
+                                cursor: "pointer",
+                                backgroundColor:
+                                  activeMethod === action.id
+                                    ? "#3b82f6"
+                                    : "#ffffff",
+                                color:
+                                  activeMethod === action.id
+                                    ? "#ffffff"
+                                    : "#333333",
+                                border: `1px solid ${
+                                  activeMethod === action.id ? "#3b82f6" : "#dddddd"
+                                }`,
+                                transition: "all 0.2s",
+                                width: "100%",
+                                textAlign: "left",
+                                fontWeight: "500",
+                                textDecoration: "none",
+                              }}
+                            >
+                              {action.name}
+                            </Link>
+                          ))}
+
+                          {/* Secondary Actions - Collapsible Tree */}
+                          {hasSecondaryActions && (
+                            <>
+                              {/* Toggle Button for Secondary Actions */}
+                              <button
+                                onClick={() => toggleCategoryCollapse(secondaryKey)}
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  width: "100%",
+                                  padding: "8px 15px",
+                                  marginTop: "8px",
+                                  marginBottom: "4px",
+                                  backgroundColor: "transparent",
+                                  border: "1px solid #e0e0e0",
+                                  borderRadius: "4px",
+                                  cursor: "pointer",
+                                  fontSize: "0.85rem",
+                                  color: "#666",
+                                  fontWeight: "600",
+                                }}
+                              >
+                                <span style={{ marginRight: "8px" }}>
+                                  {isSecondaryCollapsed ? "▶" : "▼"}
+                                </span>
+                                Secondary Methods ({secondaryActions.length})
+                              </button>
+
+                              {/* Secondary Actions List */}
+                              {!isSecondaryCollapsed &&
+                                secondaryActions.map((action) => (
+                                  <div
+                                    key={action.id}
+                                    style={{ marginBottom: "4px" }}
+                                  >
+                                    <Link
+                                      to={action.path}
+                                      style={{
+                                        display: "block",
+                                        padding: "8px 15px",
+                                        paddingLeft: "35px", // Indent to show hierarchy
+                                        borderRadius: "4px",
+                                        cursor: "pointer",
+                                        backgroundColor:
+                                          activeMethod === action.id
+                                            ? "#3b82f6"
+                                            : "#f8f9fa",
+                                        color:
+                                          activeMethod === action.id
+                                            ? "#ffffff"
+                                            : "#333333",
+                                        border: `1px solid ${
+                                          activeMethod === action.id
+                                            ? "#3b82f6"
+                                            : "#e9ecef"
+                                        }`,
+                                        borderLeft: `3px solid #fbbf24`, // Visual indicator for dependency
+                                        transition: "all 0.2s",
+                                        width: "100%",
+                                        textAlign: "left",
+                                        fontWeight: "500",
+                                        textDecoration: "none",
+                                        fontSize: "0.9rem",
+                                      }}
+                                    >
+                                      {action.name}
+                                    </Link>
+                                  </div>
+                                ))}
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
               );
             })()}
           </div>
