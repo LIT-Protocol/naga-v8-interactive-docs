@@ -167,6 +167,13 @@ const ACTIONS = [
     description: "Authenticate using Stytch Email OTP verification",
     category: "PKP Auth Methods",
   },
+  {
+    id: "stytch-sms-otp-auth",
+    path: "/stytch-sms-otp-auth",
+    name: "Auth with Stytch SMS OTP",
+    description: "Authenticate using Stytch SMS OTP verification",
+    category: "PKP Auth Methods",
+  },
 
   // More authentication methods will be added here
 ];
