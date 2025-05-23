@@ -4,6 +4,7 @@ import EoaAuthSection from "../components/common/EoaAuthSection";
 import { DisplayCode } from "../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgContainer";
 import { useAppContext } from "../router";
+import PkpSigningComponent from "../components/common/PkpSigningComponent";
 
 const AUTH_NAME = "WebAuthn Authentication";
 
@@ -41,13 +42,6 @@ const authContext = await authManager.createPkpAuthContext({
   litClient: litClient,
 });`;
 
-const SIGN_MESSAGE_CODE = `
-const signatures = await litClient.chain.ethereum.pkpSign({
-  pubKey: pkpInfo.pubkey,
-  authContext: authContext,
-  toSign: messageToSign,
-});`;
-
 export default function WebAuthnTab() {
   const {
     getDependencyStatus,
@@ -65,7 +59,6 @@ export default function WebAuthnTab() {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [isMinting, setIsMinting] = useState(false);
   const [isCreatingAuthContext, setIsCreatingAuthContext] = useState(false);
-  const [isSigning, setIsSigning] = useState(false);
 
   const [isFido2Available, setIsFido2Available] = useState<boolean | null>(
     null
@@ -73,10 +66,6 @@ export default function WebAuthnTab() {
 
   const [authData, setAuthData] = useState<any>(null);
   const [pkpInfo, setPkpInfo] = useState<any>();
-  const [messageToSign, setMessageToSign] = useState<string>(
-    "Hello from WebAuthn PKP!"
-  );
-  const [signature, setSignature] = useState<any>(null);
 
   // Effect to check for FIDO2 compatibility
   useEffect(() => {
@@ -157,7 +146,6 @@ export default function WebAuthnTab() {
     setStatus("Minting PKP via WebAuthn Auth...");
     setIsMinting(true);
     setPkpInfo(null);
-    setSignature(null);
 
     try {
       const res = await litClient.authService.mintWithAuth({
@@ -193,10 +181,8 @@ export default function WebAuthnTab() {
         return;
       }
 
-      const _toSign = messageToSign;
       const _authConfig = siteAuthConfig;
       console.log("⭐️ PKPInfo:", pkpInfo);
-      console.log("⭐️ Message to sign:", _toSign);
       console.log("⭐️ Auth Config:", _authConfig);
 
       const authContext = await authManager.createPkpAuthContext({
@@ -225,36 +211,6 @@ export default function WebAuthnTab() {
       );
     } finally {
       setIsCreatingAuthContext(false);
-    }
-  };
-
-  // Step 5: Sign a message using the PKP
-  const signMessage = async () => {
-    try {
-      setIsSigning(true);
-      setStatus("Signing message...");
-
-      const { litClient } = assertDependenciesLoaded();
-
-      if (!authContext || !pkpInfo) {
-        setStatus("Cannot sign: Missing AuthContext or PKP.");
-        return;
-      }
-
-      const signatures = await litClient.chain.ethereum.pkpSign({
-        pubKey: pkpInfo.pubkey,
-        authContext: authContext,
-        toSign: messageToSign,
-      });
-
-      console.log("signatures:", signatures);
-      setSignature(signatures);
-      setStatus("Message signed successfully");
-    } catch (error: any) {
-      console.error("Error signing message:", error);
-      setStatus(`Failed to sign message: ${error?.message || "Unknown error"}`);
-    } finally {
-      setIsSigning(false);
     }
   };
 
@@ -329,18 +285,18 @@ export default function WebAuthnTab() {
   const CreateAuthContextButton = () => (
     <button
       onClick={createAuthContext}
-      disabled={isCreatingAuthContext || !messageToSign.trim() || !pkpInfo}
+      disabled={isCreatingAuthContext || !pkpInfo}
       style={{
         padding: "12px 20px",
         backgroundColor:
-          isCreatingAuthContext || !messageToSign.trim() || !pkpInfo
+          isCreatingAuthContext || !pkpInfo
             ? "#cccccc"
             : "#007bff",
         color: "white",
         border: "none",
         borderRadius: "4px",
         cursor:
-          isCreatingAuthContext || !messageToSign.trim() || !pkpInfo
+          isCreatingAuthContext || !pkpInfo
             ? "not-allowed"
             : "pointer",
         fontWeight: "500",
@@ -350,57 +306,6 @@ export default function WebAuthnTab() {
         ? "Creating..."
         : "Create AuthContext with WebAuthn PKP"}
     </button>
-  );
-
-  // Component to render Sign Message UI
-  const SignMessageComponent = () => (
-    <div>
-      <div style={{ marginBottom: "15px" }}>
-        <label
-          htmlFor="webauthn-pkp-message-input"
-          style={{
-            display: "block",
-            marginBottom: "8px",
-            fontWeight: "500",
-          }}
-        >
-          Message to Sign:
-        </label>
-        <input
-          id="webauthn-pkp-message-input"
-          type="text"
-          value={messageToSign}
-          onChange={(e) => setMessageToSign(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "10px",
-            border: "1px solid #dddddd",
-            borderRadius: "4px",
-            fontSize: "14px",
-            boxSizing: "border-box",
-          }}
-          placeholder="Enter a message to sign"
-          disabled={!(pkpInfo && authContext) || isSigning}
-        />
-      </div>
-      <button
-        onClick={signMessage}
-        disabled={!(pkpInfo && authContext) || isSigning}
-        style={{
-          padding: "10px 15px",
-          backgroundColor:
-            !(pkpInfo && authContext) || isSigning ? "#cccccc" : "#6f42c1",
-          color: "white",
-          border: "none",
-          borderRadius: "4px",
-          cursor:
-            !(pkpInfo && authContext) || isSigning ? "not-allowed" : "pointer",
-          fontWeight: "500",
-        }}
-      >
-        {isSigning ? "Signing..." : "Sign Message"}
-      </button>
-    </div>
   );
 
   return (
@@ -599,33 +504,13 @@ export default function WebAuthnTab() {
       {/* ================================================ */}
 
       <GreyBoarderWhiteBgContainer>
-        <h3>
-          Step 5: Sign Message with PKP{" "}
-          {!(pkpInfo && authContext) && (
-            <span style={{ color: "orange" }}>
-              (Requires PKP and AuthContext)
-            </span>
-          )}
-        </h3>
-        <p>Use your newly minted PKP to sign a message.</p>
-
-        <DisplayCode
-          code={SIGN_MESSAGE_CODE}
-          language="typescript"
-          renderComponent={
-            <div
-              style={{
-                opacity: pkpInfo && authContext ? 1 : 0.5,
-                pointerEvents: pkpInfo && authContext ? "auto" : "none",
-              }}
-            >
-              <SignMessageComponent />
-            </div>
-          }
-          resultData={signature}
-          resultLabel="Signature Result"
-          useSideBySide={true}
-          theme="dracula"
+        <PkpSigningComponent
+          authContext={authContext}
+          pkpInfo={pkpInfo}
+          setStatus={setStatus}
+          assertDependenciesLoaded={assertDependenciesLoaded}
+          defaultMessage="Hello from WebAuthn PKP!"
+          componentTitle={`Step 5: Sign Message with PKP (${AUTH_NAME})`}
         />
       </GreyBoarderWhiteBgContainer>
 

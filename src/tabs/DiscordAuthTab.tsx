@@ -1,10 +1,10 @@
-import { createAuthManager, DiscordAuthenticator } from "@lit-protocol/auth";
-import { createLitClient } from "@lit-protocol/lit-client";
+import { DiscordAuthenticator } from "@lit-protocol/auth";
 import { useState } from "react";
 import { DisplayCode } from "../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgContainer";
 import EoaAuthSection from "../components/common/EoaAuthSection";
 import { useAppContext } from "../router";
+import PkpSigningComponent from "../components/common/PkpSigningComponent";
 
 const AUTH_NAME = "Discord Authentication";
 
@@ -38,12 +38,7 @@ const authContext = await authManager.createPkpAuthContext({
   litClient: litClient,
 });`;
 
-const SIGN_MESSAGE_CODE = `
-const signatures = await litClient.chain.ethereum.pkpSign({
-  pubKey: pkpInfo.pubkey,
-  authContext: authContext,
-  toSign: messageToSign,
-});`;
+// SIGN_MESSAGE_CODE, SupportedChain, SupportedScheme, SIGNING_SCHEMES, AVAILABLE_CHAINS are removed
 
 export default function DiscordAuthTab() {
   const {
@@ -61,13 +56,8 @@ export default function DiscordAuthTab() {
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [isCreatingAuthContext, setIsCreatingAuthContext] = useState(false);
-  const [isSigning, setIsSigning] = useState(false);
   const [authData, setAuthData] = useState<any>();
   const [pkpInfo, setPkpInfo] = useState<any>();
-  const [messageToSign, setMessageToSign] = useState<string>(
-    "Hello from Discord PKP!"
-  );
-  const [signature, setSignature] = useState<any>(null);
 
   const signIn = async () => {
     try {
@@ -100,7 +90,6 @@ export default function DiscordAuthTab() {
     setStatus("Minting PKP via Discord Auth...");
     setIsAuthenticating(true);
     setPkpInfo(null);
-    setSignature(null);
 
     try {
       const res = await litClient.authService.mintWithAuth({
@@ -135,12 +124,6 @@ export default function DiscordAuthTab() {
         return;
       }
 
-      const _toSign = messageToSign;
-      const _authConfig = siteAuthConfig;
-      console.log("⭐️ PKPInfo:", pkpInfo);
-      console.log("⭐️ Message to sign:", _toSign);
-      console.log("⭐️ Auth Config:", _authConfig);
-
       const authContext = await authManager.createPkpAuthContext({
         authData: authData,
         pkpPublicKey: pkpInfo.pubkey,
@@ -167,35 +150,6 @@ export default function DiscordAuthTab() {
       );
     } finally {
       setIsCreatingAuthContext(false);
-    }
-  };
-
-  const signMessage = async () => {
-    try {
-      setIsSigning(true);
-      setStatus("Signing message...");
-
-      const { litClient } = assertDependenciesLoaded();
-
-      if (!authContext || !pkpInfo) {
-        setStatus("Cannot sign: Missing AuthContext or PKP.");
-        return;
-      }
-
-      const signatures = await litClient.chain.ethereum.pkpSign({
-        pubKey: pkpInfo.pubkey,
-        authContext: authContext,
-        toSign: messageToSign,
-      });
-
-      console.log("signatures:", signatures);
-      setSignature(signatures);
-      setStatus("Message signed successfully");
-    } catch (error: any) {
-      console.error("Error signing message:", error);
-      setStatus(`Failed to sign message: ${error?.message || "Unknown error"}`);
-    } finally {
-      setIsSigning(false);
     }
   };
 
@@ -249,20 +203,15 @@ export default function DiscordAuthTab() {
   const CreateAuthContextButton = () => (
     <button
       onClick={createAuthContext}
-      disabled={isCreatingAuthContext || !messageToSign.trim() || !pkpInfo}
+      disabled={isCreatingAuthContext || !pkpInfo}
       style={{
         padding: "12px 20px",
         backgroundColor:
-          isCreatingAuthContext || !messageToSign.trim() || !pkpInfo
-            ? "#cccccc"
-            : "#007bff",
+          isCreatingAuthContext || !pkpInfo ? "#cccccc" : "#007bff",
         color: "white",
         border: "none",
         borderRadius: "4px",
-        cursor:
-          isCreatingAuthContext || !messageToSign.trim() || !pkpInfo
-            ? "not-allowed"
-            : "pointer",
+        cursor: isCreatingAuthContext || !pkpInfo ? "not-allowed" : "pointer",
         fontWeight: "500",
       }}
     >
@@ -270,57 +219,6 @@ export default function DiscordAuthTab() {
         ? "Creating..."
         : "Create AuthContext with Discord PKP"}
     </button>
-  );
-
-  // Component to render Sign Message UI
-  const SignMessageComponent = () => (
-    <div>
-      <div style={{ marginBottom: "15px" }}>
-        <label
-          htmlFor="Discord-pkp-message-input"
-          style={{
-            display: "block",
-            marginBottom: "8px",
-            fontWeight: "500",
-          }}
-        >
-          Message to Sign:
-        </label>
-        <input
-          id="Discord-pkp-message-input"
-          type="text"
-          value={messageToSign}
-          onChange={(e) => setMessageToSign(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "10px",
-            border: "1px solid #dddddd",
-            borderRadius: "4px",
-            fontSize: "14px",
-            boxSizing: "border-box",
-          }}
-          placeholder="Enter a message to sign"
-          disabled={!(pkpInfo && authContext) || isSigning}
-        />
-      </div>
-      <button
-        onClick={signMessage}
-        disabled={!(pkpInfo && authContext) || isSigning}
-        style={{
-          padding: "10px 15px",
-          backgroundColor:
-            !(pkpInfo && authContext) || isSigning ? "#cccccc" : "#6f42c1",
-          color: "white",
-          border: "none",
-          borderRadius: "4px",
-          cursor:
-            !(pkpInfo && authContext) || isSigning ? "not-allowed" : "pointer",
-          fontWeight: "500",
-        }}
-      >
-        {isSigning ? "Signing..." : "Sign Message"}
-      </button>
-    </div>
   );
 
   return (
@@ -462,36 +360,16 @@ export default function DiscordAuthTab() {
       {/* ================================================ */}
 
       <GreyBoarderWhiteBgContainer>
-        <h3>
-          Sign Message with PKP{" "}
-          {!(pkpInfo && authContext) && (
-            <span style={{ color: "orange" }}>
-              (Requires PKP and AuthContext)
-            </span>
-          )}
-        </h3>
-        <p>Use your newly minted PKP to sign a message.</p>
-
-        <DisplayCode
-          code={SIGN_MESSAGE_CODE}
-          language="typescript"
-          renderComponent={
-            <div
-              style={{
-                opacity: pkpInfo && authContext ? 1 : 0.5,
-                pointerEvents: pkpInfo && authContext ? "auto" : "none",
-              }}
-            >
-              <SignMessageComponent />
-            </div>
-          }
-          resultData={signature}
-          resultLabel="Signature Result"
-          useSideBySide={true}
-          theme="dracula"
+        <PkpSigningComponent
+          authContext={authContext}
+          pkpInfo={pkpInfo}
+          setStatus={setStatus}
+          assertDependenciesLoaded={assertDependenciesLoaded}
+          defaultMessage="Hello from Discord PKP!"
+          componentTitle={`Sign Message with PKP (${AUTH_NAME})`}
         />
       </GreyBoarderWhiteBgContainer>
-      
+
       {/* Add EOA Auth Section */}
       <EoaAuthSection tabName={AUTH_NAME} />
     </div>
