@@ -76,6 +76,8 @@ export default function EoaAuthTab() {
     setStatus,
     assertDependenciesLoaded,
     siteAuthConfig,
+    showError,
+    clearError,
   } = useAppContext();
 
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
@@ -91,6 +93,35 @@ export default function EoaAuthTab() {
   const [authData, setAuthData] = useState<any>(null);
   const [pkpInfo, setPkpInfo] = useState<any>(null);
 
+  // Success feedback state
+  const [successActions, setSuccessActions] = useState<Set<string>>(new Set());
+
+  // Function to show success feedback
+  const showSuccess = (actionId: string) => {
+    setSuccessActions((prev) => new Set([...prev, actionId]));
+    // Auto-clear after 3 seconds
+    setTimeout(() => {
+      setSuccessActions((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(actionId);
+        return newSet;
+      });
+    }, 3000);
+  };
+
+  // Utility function to format error messages properly
+  const formatErrorMessage = (prefix: string, error: any): string => {
+    let errorMessage = prefix;
+    if (error?.message) {
+      errorMessage += error.message;
+    } else if (typeof error === "object") {
+      errorMessage += JSON.stringify(error, null, 2);
+    } else {
+      errorMessage += String(error);
+    }
+    return errorMessage;
+  };
+
   const createAccountFromPrivateKey = async () => {
     try {
       setIsCreatingAccount(true);
@@ -105,11 +136,12 @@ export default function EoaAuthTab() {
       const myAccount = privateKeyToAccount(privateKey as `0x${string}`);
       setAccount(myAccount);
       setStatus(`Successfully created account: ${myAccount.address}`);
+      showSuccess("eoa-create-account");
     } catch (error: any) {
       console.error("Error creating account:", error);
-      setStatus(
-        `Failed to create account: ${error?.message || "Unknown error"}`
-      );
+      const errorMessage = formatErrorMessage("Failed to create account: ", error);
+      setStatus(errorMessage);
+      showError?.(errorMessage);
     } finally {
       setIsCreatingAccount(false);
     }
@@ -130,11 +162,12 @@ export default function EoaAuthTab() {
       setStatus(
         `Successfully got account from wallet: ${walletClient.account.address}`
       );
+      showSuccess("eoa-get-wallet-account");
     } catch (error: any) {
       console.error("Error getting wallet account:", error);
-      setStatus(
-        `Failed to get wallet account: ${error?.message || "Unknown error"}`
-      );
+      const errorMessage = formatErrorMessage("Failed to get wallet account: ", error);
+      setStatus(errorMessage);
+      showError?.(errorMessage);
     } finally {
       setIsCreatingAccount(false);
     }
@@ -181,11 +214,12 @@ export default function EoaAuthTab() {
           accountMethod === "privateKey" ? "private key" : "wallet client"
         }`
       );
+      showSuccess("eoa-authenticate");
     } catch (error: any) {
       console.error("Error authenticating with EOA:", error);
-      setStatus(
-        `Failed to authenticate with EOA: ${error?.message || "Unknown error"}`
-      );
+      const errorMessage = formatErrorMessage("Failed to authenticate with EOA: ", error);
+      setStatus(errorMessage);
+      showError?.(errorMessage);
     } finally {
       setIsAuthenticating(false);
     }
@@ -233,11 +267,12 @@ export default function EoaAuthTab() {
           accountMethod === "privateKey" ? "private key" : "wallet client"
         }!`
       );
+      showSuccess("eoa-mint-pkp");
     } catch (error: any) {
       console.error("Error minting PKP with EOA Auth:", error);
-      setStatus(
-        `Failed to mint PKP with EOA Auth: ${error?.message || "Unknown error"}`
-      );
+      const errorMessage = formatErrorMessage("Failed to mint PKP with EOA Auth: ", error);
+      setStatus(errorMessage);
+      showError?.(errorMessage);
     } finally {
       setIsMinting(false);
     }
@@ -274,11 +309,12 @@ export default function EoaAuthTab() {
       console.log("authContext:", authContext);
       setAuthContext(authContext);
       setStatus("Auth context created successfully");
+      showSuccess("eoa-create-auth-context");
     } catch (error: any) {
       console.error("Error creating auth context:", error);
-      setStatus(
-        `Failed to create auth context: ${error?.message || "Unknown error"}`
-      );
+      const errorMessage = formatErrorMessage("Failed to create auth context: ", error);
+      setStatus(errorMessage);
+      showError?.(errorMessage);
     } finally {
       setIsCreatingAuthContext(false);
     }
@@ -511,6 +547,7 @@ export default function EoaAuthTab() {
           resultLabel="Account Information"
           useSideBySide={true}
           theme="dracula"
+          isSuccess={successActions.has("eoa-create-account") || successActions.has("eoa-get-wallet-account")}
         />
       </GreyBoarderWhiteBgContainer>
 
@@ -554,6 +591,7 @@ export default function EoaAuthTab() {
           resultLabel="Auth Data"
           useSideBySide={true}
           theme="dracula"
+          isSuccess={successActions.has("eoa-authenticate")}
         />
       </GreyBoarderWhiteBgContainer>
 
@@ -603,6 +641,7 @@ export default function EoaAuthTab() {
           resultLabel="Minted PKP Information"
           useSideBySide={true}
           theme="dracula"
+          isSuccess={successActions.has("eoa-mint-pkp")}
         />
       </GreyBoarderWhiteBgContainer>
 
@@ -664,6 +703,7 @@ export default function EoaAuthTab() {
           resultLabel="AuthContext Information"
           useSideBySide={true}
           theme="dracula"
+          isSuccess={successActions.has("eoa-create-auth-context")}
         />
       </GreyBoarderWhiteBgContainer>
 

@@ -78,6 +78,8 @@ export default function StytchEmailOtpAuthTab() {
     setStatus,
     assertDependenciesLoaded,
     siteAuthConfig,
+    showError,
+    clearError,
   } = useAppContext();
 
   const [isSendingOtp, setIsSendingOtp] = useState(false);
@@ -100,6 +102,35 @@ export default function StytchEmailOtpAuthTab() {
   const [methodId, setMethodId] = useState<string>("");
   const [authData, setAuthData] = useState<any>(null);
   const [pkpInfo, setPkpInfo] = useState<any>(null);
+
+  // Success feedback state
+  const [successActions, setSuccessActions] = useState<Set<string>>(new Set());
+
+  // Function to show success feedback
+  const showSuccess = (actionId: string) => {
+    setSuccessActions((prev) => new Set([...prev, actionId]));
+    // Auto-clear after 3 seconds
+    setTimeout(() => {
+      setSuccessActions((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(actionId);
+        return newSet;
+      });
+    }, 3000);
+  };
+
+  // Utility function to format error messages properly
+  const formatErrorMessage = (prefix: string, error: any): string => {
+    let errorMessage = prefix;
+    if (error?.message) {
+      errorMessage += error.message;
+    } else if (typeof error === "object") {
+      errorMessage += JSON.stringify(error, null, 2);
+    } else {
+      errorMessage += String(error);
+    }
+    return errorMessage;
+  };
 
   const sendOtp = async () => {
     try {
@@ -124,9 +155,12 @@ export default function StytchEmailOtpAuthTab() {
       setStatus(
         `OTP sent successfully to ${email}. Check your email for the verification code.`
       );
+      showSuccess("stytch-email-send-otp");
     } catch (error: any) {
       console.error("Error sending OTP:", error);
-      setStatus(`Failed to send OTP: ${error?.message || "Unknown error"}`);
+      const errorMessage = formatErrorMessage("Failed to send OTP: ", error);
+      setStatus(errorMessage);
+      showError?.(errorMessage);
     } finally {
       setIsSendingOtp(false);
     }
@@ -158,6 +192,7 @@ export default function StytchEmailOtpAuthTab() {
       setStatus(
         "OTP verified successfully! You can now optionally set up 2FA or mint a PKP directly."
       );
+      showSuccess("stytch-email-verify-otp");
 
       // Cache the userId
       if (authData?.metadata?.userId && email) {
@@ -166,7 +201,9 @@ export default function StytchEmailOtpAuthTab() {
       }
     } catch (error: any) {
       console.error("Error verifying OTP:", error);
-      setStatus(`Failed to verify OTP: ${error?.message || "Unknown error"}`);
+      const errorMessage = formatErrorMessage("Failed to verify OTP: ", error);
+      setStatus(errorMessage);
+      showError?.(errorMessage);
     } finally {
       setIsVerifyingOtp(false);
     }
@@ -199,9 +236,12 @@ export default function StytchEmailOtpAuthTab() {
       setStatus(
         "TOTP 2FA setup initiated! Scan the QR code with your authenticator app and enter the code to complete setup."
       );
+      showSuccess("stytch-email-setup-totp");
     } catch (error: any) {
       console.error("Error setting up TOTP:", error);
-      setStatus(`Failed to setup TOTP: ${error?.message || "Unknown error"}`);
+      const errorMessage = formatErrorMessage("Failed to setup TOTP: ", error);
+      setStatus(errorMessage);
+      showError?.(errorMessage);
     } finally {
       setIsSettingUpTotp(false);
     }
@@ -236,11 +276,12 @@ export default function StytchEmailOtpAuthTab() {
         "🎉 TOTP 2FA setup completed successfully! You can now use the TOTP 2FA tab for future logins."
       );
       setShowTotpSetup(false);
+      showSuccess("stytch-email-verify-totp-setup");
     } catch (error: any) {
       console.error("Error verifying TOTP setup:", error);
-      setStatus(
-        `Failed to verify TOTP setup: ${error?.message || "Unknown error"}`
-      );
+      const errorMessage = formatErrorMessage("Failed to verify TOTP setup: ", error);
+      setStatus(errorMessage);
+      showError?.(errorMessage);
     } finally {
       setIsVerifyingTotpSetup(false);
     }
@@ -266,13 +307,12 @@ export default function StytchEmailOtpAuthTab() {
       setPkpInfo(mintedPkpInfo);
       console.log("Minted PKP Info:", mintedPkpInfo);
       setStatus("PKP minted successfully via Stytch Email OTP Auth!");
+      showSuccess("stytch-email-mint-pkp");
     } catch (error: any) {
       console.error("Error minting PKP with Stytch Email OTP Auth:", error);
-      setStatus(
-        `Failed to mint PKP with Stytch Email OTP Auth: ${
-          error?.message || "Unknown error"
-        }`
-      );
+      const errorMessage = formatErrorMessage("Failed to mint PKP with Stytch Email OTP Auth: ", error);
+      setStatus(errorMessage);
+      showError?.(errorMessage);
     } finally {
       setIsMinting(false);
     }
@@ -309,11 +349,12 @@ export default function StytchEmailOtpAuthTab() {
       console.log("authContext:", authContext);
       setAuthContext(authContext);
       setStatus("Auth context created successfully");
+      showSuccess("stytch-email-create-auth-context");
     } catch (error: any) {
       console.error("Error creating auth context:", error);
-      setStatus(
-        `Failed to create auth context: ${error?.message || "Unknown error"}`
-      );
+      const errorMessage = formatErrorMessage("Failed to create auth context: ", error);
+      setStatus(errorMessage);
+      showError?.(errorMessage);
     } finally {
       setIsCreatingAuthContext(false);
     }
@@ -486,6 +527,7 @@ export default function StytchEmailOtpAuthTab() {
           resultLabel="Method ID"
           useSideBySide={true}
           theme="dracula"
+          isSuccess={successActions.has("stytch-email-send-otp")}
         />
       </GreyBoarderWhiteBgContainer>
 
@@ -565,6 +607,7 @@ export default function StytchEmailOtpAuthTab() {
           resultLabel="Auth Data"
           useSideBySide={true}
           theme="dracula"
+          isSuccess={successActions.has("stytch-email-verify-otp")}
         />
       </GreyBoarderWhiteBgContainer>
 
@@ -657,6 +700,7 @@ export default function StytchEmailOtpAuthTab() {
                 resultLabel="TOTP Registration Data"
                 useSideBySide={true}
                 theme="dracula"
+                isSuccess={successActions.has("stytch-email-setup-totp")}
               />
 
               {/* QR Code Display */}
@@ -948,6 +992,7 @@ export default function StytchEmailOtpAuthTab() {
           resultLabel="Minted PKP Information"
           useSideBySide={true}
           theme="dracula"
+          isSuccess={successActions.has("stytch-email-mint-pkp")}
         />
       </GreyBoarderWhiteBgContainer>
 
@@ -1010,6 +1055,7 @@ export default function StytchEmailOtpAuthTab() {
           resultLabel="AuthContext Information"
           useSideBySide={true}
           theme="dracula"
+          isSuccess={successActions.has("stytch-email-create-auth-context")}
         />
       </GreyBoarderWhiteBgContainer>
 

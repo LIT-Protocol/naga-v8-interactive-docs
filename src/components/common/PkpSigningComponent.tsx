@@ -68,6 +68,7 @@ interface PkpSigningComponentProps {
   assertDependenciesLoaded: () => { litClient: any /* other deps */ };
   defaultMessage?: string;
   componentTitle?: string;
+  showError?: (errorMessage: string, autoHide?: boolean) => void;
 }
 
 export default function PkpSigningComponent({
@@ -77,6 +78,7 @@ export default function PkpSigningComponent({
   assertDependenciesLoaded,
   defaultMessage = "Hello from Lit PKP!",
   componentTitle = "Sign Message with PKP",
+  showError,
 }: PkpSigningComponentProps) {
   const [messageToSign, setMessageToSign] = useState<string>(defaultMessage);
   const [selectedScheme, setSelectedScheme] = useState<SupportedScheme>(
@@ -87,6 +89,31 @@ export default function PkpSigningComponent({
   );
   const [signature, setSignature] = useState<any>(null);
   const [isSigning, setIsSigning] = useState(false);
+
+  // Success feedback state
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  // Function to show success feedback
+  const showSuccess = () => {
+    setIsSuccess(true);
+    // Auto-clear after 3 seconds
+    setTimeout(() => {
+      setIsSuccess(false);
+    }, 3000);
+  };
+
+  // Utility function to format error messages properly
+  const formatErrorMessage = (prefix: string, error: any): string => {
+    let errorMessage = prefix;
+    if (error?.message) {
+      errorMessage += error.message;
+    } else if (typeof error === "object") {
+      errorMessage += JSON.stringify(error, null, 2);
+    } else {
+      errorMessage += String(error);
+    }
+    return errorMessage;
+  };
 
   const signMessage = async () => {
     const { litClient } = assertDependenciesLoaded();
@@ -108,10 +135,13 @@ export default function PkpSigningComponent({
         `Signing with: chain='${selectedChain}', scheme='${selectedScheme}', message='${messageToSign}'`
       );
 
+      console.log("pkpInfo:", pkpInfo);
+      console.log("authContext:", authContext);
+
       const signatures = await litClient.chain.raw.pkpSign({
         chain: selectedChain,
         signingScheme: selectedScheme,
-        pubKey: pkpInfo.pubkey,
+        pubKey: pkpInfo.pubkey || authContext.pkpPublicKey,
         authContext: authContext,
         toSign: messageBytes,
       });
@@ -119,9 +149,12 @@ export default function PkpSigningComponent({
       console.log("signatures:", signatures);
       setSignature(signatures);
       setStatus("Message signed successfully");
+      showSuccess();
     } catch (error: any) {
       console.error("Error signing message:", error);
-      setStatus(`Failed to sign message: ${error?.message || "Unknown error"}`);
+      const errorMessage = formatErrorMessage("Failed to sign message: ", error);
+      setStatus(errorMessage);
+      showError?.(errorMessage);
     } finally {
       setIsSigning(false);
     }
@@ -268,6 +301,7 @@ export default function PkpSigningComponent({
         resultLabel="Signature Result"
         useSideBySide={true}
         theme="dracula"
+        isSuccess={isSuccess}
       />
     </>
   );

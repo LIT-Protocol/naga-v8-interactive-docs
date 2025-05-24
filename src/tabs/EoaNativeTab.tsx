@@ -75,6 +75,8 @@ export default function EoaNativeTab() {
     areDependenciesLoaded,
     setStatus,
     assertDependenciesLoaded,
+    showError,
+    clearError,
   } = useAppContext();
 
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
@@ -95,6 +97,35 @@ export default function EoaNativeTab() {
   const [pkpPermissions, setPkpPermissions] = useState<any>(null);
   const [addPermissionsResult, setAddPermissionsResult] = useState<any>(null);
 
+  // Success feedback state
+  const [successActions, setSuccessActions] = useState<Set<string>>(new Set());
+
+  // Function to show success feedback
+  const showSuccess = (actionId: string) => {
+    setSuccessActions((prev) => new Set([...prev, actionId]));
+    // Auto-clear after 3 seconds
+    setTimeout(() => {
+      setSuccessActions((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(actionId);
+        return newSet;
+      });
+    }, 3000);
+  };
+
+  // Utility function to format error messages properly
+  const formatErrorMessage = (prefix: string, error: any): string => {
+    let errorMessage = prefix;
+    if (error?.message) {
+      errorMessage += error.message;
+    } else if (typeof error === "object") {
+      errorMessage += JSON.stringify(error, null, 2);
+    } else {
+      errorMessage += String(error);
+    }
+    return errorMessage;
+  };
+
   const createAccountFromPrivateKey = async () => {
     try {
       setIsCreatingAccount(true);
@@ -109,11 +140,12 @@ export default function EoaNativeTab() {
       const myAccount = privateKeyToAccount(privateKey as `0x${string}`);
       setAccount(myAccount);
       setStatus(`Successfully created account: ${myAccount.address}`);
+      showSuccess("eoa-native-create-account");
     } catch (error: any) {
       console.error("Error creating account:", error);
-      setStatus(
-        `Failed to create account: ${error?.message || "Unknown error"}`
-      );
+      const errorMessage = formatErrorMessage("Failed to create account: ", error);
+      setStatus(errorMessage);
+      showError?.(errorMessage);
     } finally {
       setIsCreatingAccount(false);
     }
@@ -134,11 +166,12 @@ export default function EoaNativeTab() {
       setStatus(
         `Successfully got account from wallet: ${walletClient.account.address}`
       );
+      showSuccess("eoa-native-get-wallet-account");
     } catch (error: any) {
       console.error("Error getting wallet account:", error);
-      setStatus(
-        `Failed to get wallet account: ${error?.message || "Unknown error"}`
-      );
+      const errorMessage = formatErrorMessage("Failed to get wallet account: ", error);
+      setStatus(errorMessage);
+      showError?.(errorMessage);
     } finally {
       setIsCreatingAccount(false);
     }
@@ -175,11 +208,12 @@ export default function EoaNativeTab() {
       setStatus(
         "PKP minted successfully with EOA! Note: You need to add permissions before it can be used."
       );
+      showSuccess("eoa-native-mint-pkp");
     } catch (error: any) {
       console.error("Error minting PKP with EOA:", error);
-      setStatus(
-        `Failed to mint PKP with EOA: ${error?.message || "Unknown error"}`
-      );
+      const errorMessage = formatErrorMessage("Failed to mint PKP with EOA: ", error);
+      setStatus(errorMessage);
+      showError?.(errorMessage);
     } finally {
       setIsMinting(false);
     }
@@ -206,13 +240,12 @@ export default function EoaNativeTab() {
 
       setPkpPermissionsManager(pkpPermissionsManager);
       setStatus("PKP permissions manager obtained successfully!");
+      showSuccess("eoa-native-get-permissions-manager");
     } catch (error: any) {
       console.error("Error getting PKP permissions manager:", error);
-      setStatus(
-        `Failed to get PKP permissions manager: ${
-          error?.message || "Unknown error"
-        }`
-      );
+      const errorMessage = formatErrorMessage("Failed to get PKP permissions manager: ", error);
+      setStatus(errorMessage);
+      showError?.(errorMessage);
     } finally {
       setIsGettingManager(false);
     }
@@ -237,11 +270,12 @@ export default function EoaNativeTab() {
       setPkpPermissions(res);
       console.log("✅ viewPKPPermissions:", res);
       setStatus("PKP permissions viewed successfully!");
+      showSuccess("eoa-native-view-permissions");
     } catch (error: any) {
       console.error("Error viewing PKP permissions:", error);
-      setStatus(
-        `Failed to view PKP permissions: ${error?.message || "Unknown error"}`
-      );
+      const errorMessage = formatErrorMessage("Failed to view PKP permissions: ", error);
+      setStatus(errorMessage);
+      showError?.(errorMessage);
     } finally {
       setIsViewingPermissions(false);
     }
@@ -266,11 +300,12 @@ export default function EoaNativeTab() {
       setAddPermissionsResult(addPermissionsTx);
       console.log("✅ addPermissions result:", addPermissionsTx);
       setStatus("Permissions added to PKP successfully!");
+      showSuccess("eoa-native-add-permissions");
     } catch (error: any) {
       console.error("Error adding permissions to PKP:", error);
-      setStatus(
-        `Failed to add permissions to PKP: ${error?.message || "Unknown error"}`
-      );
+      const errorMessage = formatErrorMessage("Failed to add permissions to PKP: ", error);
+      setStatus(errorMessage);
+      showError?.(errorMessage);
     } finally {
       setIsAddingPermissions(false);
     }
@@ -614,6 +649,7 @@ export default function EoaNativeTab() {
           resultLabel="Account Information"
           useSideBySide={true}
           theme="dracula"
+          isSuccess={successActions.has("eoa-native-create-account") || successActions.has("eoa-native-get-wallet-account")}
         />
       </GreyBoarderWhiteBgContainer>
 
@@ -638,6 +674,7 @@ export default function EoaNativeTab() {
           resultLabel="Minted PKP Information"
           useSideBySide={true}
           theme="dracula"
+          isSuccess={successActions.has("eoa-native-mint-pkp")}
         />
       </GreyBoarderWhiteBgContainer>
 
@@ -672,6 +709,7 @@ export default function EoaNativeTab() {
           resultLabel="PKP Permissions Manager"
           useSideBySide={true}
           theme="dracula"
+          isSuccess={successActions.has("eoa-native-get-permissions-manager")}
         />
       </GreyBoarderWhiteBgContainer>
 
@@ -698,6 +736,7 @@ export default function EoaNativeTab() {
           resultLabel="PKP Permissions"
           useSideBySide={true}
           theme="dracula"
+          isSuccess={successActions.has("eoa-native-view-permissions")}
         />
       </GreyBoarderWhiteBgContainer>
 
@@ -725,6 +764,7 @@ export default function EoaNativeTab() {
           resultLabel="Add Permissions Result"
           useSideBySide={true}
           theme="dracula"
+          isSuccess={successActions.has("eoa-native-add-permissions")}
         />
       </GreyBoarderWhiteBgContainer>
 

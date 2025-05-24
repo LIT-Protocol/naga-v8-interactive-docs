@@ -70,6 +70,12 @@ interface DisplayCodeProps {
    * @default "dracula"
    */
   theme?: keyof typeof themes;
+
+  /**
+   * Whether to show success styling (green border animation)
+   * @default false
+   */
+  isSuccess?: boolean;
 }
 
 export const DisplayCode: React.FC<DisplayCodeProps> = ({
@@ -83,6 +89,7 @@ export const DisplayCode: React.FC<DisplayCodeProps> = ({
   resultLabel = "Result",
   useSideBySide = false,
   theme = "dracula",
+  isSuccess = false,
 }) => {
   const [isCopied, setIsCopied] = useState(false);
   const [isResultExpanded, setIsResultExpanded] = useState(false);
@@ -262,8 +269,10 @@ export const DisplayCode: React.FC<DisplayCodeProps> = ({
         marginTop: "20px",
         backgroundColor: "#f5f5f5",
         borderRadius: "8px",
-        border: "1px solid #e0e0e0",
+        border: isSuccess ? "2px solid #28a745" : "1px solid #e0e0e0",
         overflow: "hidden", // Important for the animation
+        boxShadow: isSuccess ? "0 0 20px rgba(40, 167, 69, 0.3)" : "none",
+        transition: "all 0.3s ease-in-out",
       }}
     >
       <div
@@ -274,10 +283,17 @@ export const DisplayCode: React.FC<DisplayCodeProps> = ({
           cursor: "pointer",
           padding: "15px",
           borderBottom: isResultExpanded ? "1px solid #e0e0e0" : "none",
+          backgroundColor: isSuccess ? "rgba(40, 167, 69, 0.1)" : "transparent",
         }}
         onClick={toggleResult}
       >
-        <h4 style={{ margin: 0 }}>{resultLabel}</h4>
+        <h4 style={{ 
+          margin: 0,
+          color: isSuccess ? "#28a745" : "inherit",
+          fontWeight: isSuccess ? "600" : "normal"
+        }}>
+          {isSuccess ? "✅ " : ""}{resultLabel}
+        </h4>
         <button
           style={{
             background: "none",

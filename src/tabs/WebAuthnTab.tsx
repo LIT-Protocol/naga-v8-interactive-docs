@@ -53,6 +53,8 @@ export default function WebAuthnTab() {
     setStatus,
     assertDependenciesLoaded,
     siteAuthConfig,
+    showError,
+    clearError,
   } = useAppContext();
 
   const [isRegistering, setIsRegistering] = useState(false);
@@ -66,6 +68,35 @@ export default function WebAuthnTab() {
 
   const [authData, setAuthData] = useState<any>(null);
   const [pkpInfo, setPkpInfo] = useState<any>();
+
+  // Success feedback state
+  const [successActions, setSuccessActions] = useState<Set<string>>(new Set());
+
+  // Function to show success feedback
+  const showSuccess = (actionId: string) => {
+    setSuccessActions((prev) => new Set([...prev, actionId]));
+    // Auto-clear after 3 seconds
+    setTimeout(() => {
+      setSuccessActions((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(actionId);
+        return newSet;
+      });
+    }, 3000);
+  };
+
+  // Utility function to format error messages properly
+  const formatErrorMessage = (prefix: string, error: any): string => {
+    let errorMessage = prefix;
+    if (error?.message) {
+      errorMessage += error.message;
+    } else if (typeof error === "object") {
+      errorMessage += JSON.stringify(error, null, 2);
+    } else {
+      errorMessage += String(error);
+    }
+    return errorMessage;
+  };
 
   // Effect to check for FIDO2 compatibility
   useEffect(() => {
@@ -102,13 +133,12 @@ export default function WebAuthnTab() {
         });
       setPkpInfo(pkpInfo);
       setStatus("Successfully registered WebAuthn credential and minted a PKP");
+      showSuccess("webauthn-register");
     } catch (error: any) {
       console.error("Error registering WebAuthn credential:", error);
-      setStatus(
-        `Failed to register WebAuthn credential: ${
-          error?.message || "Unknown error"
-        }`
-      );
+      const errorMessage = formatErrorMessage("Failed to register WebAuthn credential: ", error);
+      setStatus(errorMessage);
+      showError?.(errorMessage);
     } finally {
       setIsRegistering(false);
     }
@@ -123,13 +153,12 @@ export default function WebAuthnTab() {
       const authData = await WebAuthnAuthenticator.authenticate();
       setAuthData(authData);
       setStatus("Successfully authenticated with WebAuthn");
+      showSuccess("webauthn-authenticate");
     } catch (error: any) {
       console.error("Error authenticating with WebAuthn:", error);
-      setStatus(
-        `Failed to authenticate with WebAuthn: ${
-          error?.message || "Unknown error"
-        }`
-      );
+      const errorMessage = formatErrorMessage("Failed to authenticate with WebAuthn: ", error);
+      setStatus(errorMessage);
+      showError?.(errorMessage);
     } finally {
       setIsAuthenticating(false);
     }
@@ -156,13 +185,12 @@ export default function WebAuthnTab() {
       setPkpInfo(mintedPkpInfo);
       console.log("Minted PKP Info:", mintedPkpInfo);
       setStatus("PKP minted successfully via WebAuthn Auth!");
+      showSuccess("webauthn-mint-pkp");
     } catch (error: any) {
       console.error("Error minting PKP with WebAuthn Auth:", error);
-      setStatus(
-        `Failed to mint PKP with WebAuthn Auth: ${
-          error?.message || "Unknown error"
-        }`
-      );
+      const errorMessage = formatErrorMessage("Failed to mint PKP with WebAuthn Auth: ", error);
+      setStatus(errorMessage);
+      showError?.(errorMessage);
     } finally {
       setIsMinting(false);
     }
@@ -204,11 +232,12 @@ export default function WebAuthnTab() {
       console.log("authContext:", authContext);
       setAuthContext(authContext);
       setStatus("Auth context created successfully");
+      showSuccess("webauthn-create-auth-context");
     } catch (error: any) {
       console.error("Error creating auth context:", error);
-      setStatus(
-        `Failed to create auth context: ${error?.message || "Unknown error"}`
-      );
+      const errorMessage = formatErrorMessage("Failed to create auth context: ", error);
+      setStatus(errorMessage);
+      showError?.(errorMessage);
     } finally {
       setIsCreatingAuthContext(false);
     }
@@ -405,6 +434,7 @@ export default function WebAuthnTab() {
           resultLabel="PKP Info"
           useSideBySide={true}
           theme="dracula"
+          isSuccess={successActions.has("webauthn-register")}
         />
       </GreyBoarderWhiteBgContainer>
 
@@ -428,6 +458,7 @@ export default function WebAuthnTab() {
           resultLabel="WebAuthn Auth Data"
           useSideBySide={true}
           theme="dracula"
+          isSuccess={successActions.has("webauthn-authenticate")}
         />
       </GreyBoarderWhiteBgContainer>
 
@@ -491,6 +522,7 @@ export default function WebAuthnTab() {
           resultLabel="AuthContext Information"
           useSideBySide={true}
           theme="dracula"
+          isSuccess={successActions.has("webauthn-create-auth-context")}
         />
       </GreyBoarderWhiteBgContainer>
 

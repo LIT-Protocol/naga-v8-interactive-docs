@@ -51,6 +51,8 @@ export default function DiscordAuthTab() {
     setStatus,
     assertDependenciesLoaded,
     siteAuthConfig,
+    showError,
+    clearError,
   } = useAppContext();
 
   const [isSigningIn, setIsSigningIn] = useState(false);
@@ -58,6 +60,35 @@ export default function DiscordAuthTab() {
   const [isCreatingAuthContext, setIsCreatingAuthContext] = useState(false);
   const [authData, setAuthData] = useState<any>();
   const [pkpInfo, setPkpInfo] = useState<any>();
+
+  // Success feedback state
+  const [successActions, setSuccessActions] = useState<Set<string>>(new Set());
+
+  // Function to show success feedback
+  const showSuccess = (actionId: string) => {
+    setSuccessActions((prev) => new Set([...prev, actionId]));
+    // Auto-clear after 3 seconds
+    setTimeout(() => {
+      setSuccessActions((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(actionId);
+        return newSet;
+      });
+    }, 3000);
+  };
+
+  // Utility function to format error messages properly
+  const formatErrorMessage = (prefix: string, error: any): string => {
+    let errorMessage = prefix;
+    if (error?.message) {
+      errorMessage += error.message;
+    } else if (typeof error === "object") {
+      errorMessage += JSON.stringify(error, null, 2);
+    } else {
+      errorMessage += String(error);
+    }
+    return errorMessage;
+  };
 
   const signIn = async () => {
     try {
@@ -70,11 +101,12 @@ export default function DiscordAuthTab() {
 
       setAuthData(authData);
       setStatus("Successfully signed in with Discord");
+      showSuccess("discord-signin");
     } catch (error: any) {
       console.error("Error signing in with Discord:", error);
-      setStatus(
-        `Failed to sign in with Discord: ${error?.message || "Unknown error"}`
-      );
+      const errorMessage = formatErrorMessage("Failed to sign in with Discord: ", error);
+      setStatus(errorMessage);
+      showError?.(errorMessage);
     } finally {
       setIsSigningIn(false);
     }
@@ -100,13 +132,12 @@ export default function DiscordAuthTab() {
       setPkpInfo(mintedPkpInfo);
       console.log("Minted PKP Info:", mintedPkpInfo);
       setStatus("PKP minted successfully via Discord Auth!");
+      showSuccess("discord-mint-pkp");
     } catch (error: any) {
       console.error("Error minting PKP with Discord Auth:", error);
-      setStatus(
-        `Failed to mint PKP with Discord Auth: ${
-          error?.message || "Unknown error"
-        }`
-      );
+      const errorMessage = formatErrorMessage("Failed to mint PKP with Discord Auth: ", error);
+      setStatus(errorMessage);
+      showError?.(errorMessage);
     } finally {
       setIsAuthenticating(false);
     }
@@ -143,11 +174,12 @@ export default function DiscordAuthTab() {
       console.log("authContext:", authContext);
       setAuthContext(authContext);
       setStatus("Auth context created successfully");
+      showSuccess("discord-create-auth-context");
     } catch (error: any) {
       console.error("Error creating auth context:", error);
-      setStatus(
-        `Failed to create auth context: ${error?.message || "Unknown error"}`
-      );
+      const errorMessage = formatErrorMessage("Failed to create auth context: ", error);
+      setStatus(errorMessage);
+      showError?.(errorMessage);
     } finally {
       setIsCreatingAuthContext(false);
     }
@@ -289,6 +321,7 @@ export default function DiscordAuthTab() {
           resultLabel="Auth Data"
           useSideBySide={true}
           theme="dracula"
+          isSuccess={successActions.has("discord-signin")}
         />
       </GreyBoarderWhiteBgContainer>
 
@@ -310,6 +343,7 @@ export default function DiscordAuthTab() {
           resultLabel="Minted PKP Information"
           useSideBySide={true}
           theme="dracula"
+          isSuccess={successActions.has("discord-mint-pkp")}
         />
       </GreyBoarderWhiteBgContainer>
 
@@ -352,6 +386,7 @@ export default function DiscordAuthTab() {
           resultLabel="AuthContext Information"
           useSideBySide={true}
           theme="dracula"
+          isSuccess={successActions.has("discord-create-auth-context")}
         />
       </GreyBoarderWhiteBgContainer>
 

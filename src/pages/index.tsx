@@ -44,6 +44,118 @@ type Dependency = {
   description?: string; // Optional description for each dependency
 };
 
+// Error Display Component
+interface ErrorDisplayProps {
+  error: string | null;
+  isVisible: boolean;
+  onClear: () => void;
+}
+
+const ErrorDisplay = ({ error, isVisible, onClear }: ErrorDisplayProps) => {
+  if (!error || !isVisible) {
+    return null;
+  }
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: "20px",
+        right: "20px",
+        zIndex: 9999,
+        maxWidth: "450px",
+        minWidth: "300px",
+        padding: "20px",
+        backgroundColor: "#fff5f5",
+        border: "2px solid #feb2b2",
+        borderLeft: "5px solid #e53e3e",
+        borderRadius: "8px",
+        boxShadow: "0 8px 25px rgba(0, 0, 0, 0.15)",
+        animation: "slideInFromRight 0.3s ease-out",
+      }}
+    >
+      <style>
+        {`
+          @keyframes slideInFromRight {
+            from {
+              transform: translateX(100%);
+              opacity: 0;
+            }
+            to {
+              transform: translateX(0);
+              opacity: 1;
+            }
+          }
+          
+          @keyframes pulse {
+            0%, 100% { 
+              box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            }
+            50% { 
+              box-shadow: 0 8px 25px rgba(229, 62, 62, 0.3);
+            }
+          }
+        `}
+      </style>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+        <div style={{ 
+          fontSize: "24px", 
+          color: "#e53e3e",
+          lineHeight: "1",
+          animation: "pulse 2s ease-in-out infinite"
+        }}>
+          ❌
+        </div>
+        <div style={{ flex: 1 }}>
+          <h4 style={{ 
+            margin: "0 0 10px 0", 
+            color: "#c53030",
+            fontSize: "16px",
+            fontWeight: "700",
+            textTransform: "uppercase",
+            letterSpacing: "0.5px"
+          }}>
+            Error
+          </h4>
+          <div style={{ 
+            color: "#742a2a",
+            fontSize: "14px",
+            lineHeight: "1.5",
+            fontFamily: "monospace",
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+            backgroundColor: "#fed7d7",
+            padding: "10px",
+            borderRadius: "4px",
+            border: "1px solid #feb2b2"
+          }}>
+            {error}
+          </div>
+        </div>
+        <button
+          onClick={onClear}
+          style={{
+            background: "#e53e3e",
+            border: "none",
+            fontSize: "14px",
+            color: "white",
+            cursor: "pointer",
+            padding: "6px 8px",
+            borderRadius: "4px",
+            fontWeight: "bold",
+            transition: "background-color 0.2s",
+          }}
+          title="Close error"
+          onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#c53030")}
+          onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#e53e3e")}
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  );
+};
+
 interface DependencyStatusProps {
   dependencies: Dependency[];
   title?: string; // Optional custom title
@@ -235,6 +347,51 @@ export const HomePage = () => {
     expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
   });
 
+  // Error state management
+  const [error, setError] = useState<string | null>(null);
+  const [isErrorVisible, setIsErrorVisible] = useState<boolean>(false);
+
+  // Function to show error with auto-hide
+  const showError = (errorMessage: string, autoHide: boolean = true) => {
+    setError(errorMessage);
+    setIsErrorVisible(true);
+    
+    // Play error sound for better user experience
+    try {
+      // Create a simple beep sound
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+      oscillator.frequency.setValueAtTime(400, audioContext.currentTime + 0.1);
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.2);
+    } catch (e) {
+      console.log("Could not play error sound:", e);
+    }
+    
+    if (autoHide) {
+      // Auto-hide after 5 seconds
+      setTimeout(() => {
+        setIsErrorVisible(false);
+      }, 5000);
+    }
+  };
+
+  // Function to clear error
+  const clearError = () => {
+    setError(null);
+    setIsErrorVisible(false);
+  };
+
   // Function to toggle category collapse state
   const toggleCategoryCollapse = (categoryKey: string) => {
     setCollapsedCategories((prev) => ({
@@ -365,10 +522,17 @@ export const HomePage = () => {
     setPkpInfo,
     setSignature,
     setLoading,
+    error,
+    showError,
+    clearError,
+    isErrorVisible,
   };
 
   return (
     <MainLayout>
+      {/* Fixed Error Toast - positioned outside of sidebar */}
+      <ErrorDisplay error={error} isVisible={isErrorVisible} onClear={clearError} />
+      
       <div
         className="doc-layout"
         style={{

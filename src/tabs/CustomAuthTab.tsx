@@ -34,6 +34,8 @@ const EXAMPLE_DAPP_CONFIG = {
 // Code snippets for each step
 const SITE_OWNER_BACKEND_CODE = `
 class myDappBackend {
+
+  // Create a unique secret name of your dApp (you can share it if you want to share the authMethodType)
   uniqueDappName: string = 'my-supa-dupa-app-name';
   
   // Use Lit client utilities to generate unique auth method type
@@ -43,7 +45,17 @@ class myDappBackend {
   
   // Validation IPFS CID (immutable validation logic)
   public static validationIpfsCid = 'QmYLeVmwJPVs7Uebk85YdVPivMyrvoeKR6X37kyVRZUXW4';
-  
+
+  // [DEMO] Not a very safe database of registered users
+  public registeredUsers: Array<{
+    userId: string;
+    password: string;
+    pkpPublicKey: string | null;
+  }> = [
+    { userId: 'alice', password: 'password-1', pkpPublicKey: null },
+    { userId: 'bob', password: 'password-2', pkpPublicKey: null },
+  ];
+
   // Generate unique auth data for each user using Lit utilities
   private _generateAuthData(userId: string) {
     return litClient.utils.generateAuthData({
@@ -55,22 +67,87 @@ class myDappBackend {
   
   // Site owner mints PKPs for users
   async mintPKPForUser(userId: string) {
-    const uniqueUserAuthData = this._generateAuthData(userId);
-    
-    const { pkpData: mintedPKP } = await litClient.mintWithCustomAuth({
-      account: myAccount,
-      authData: uniqueUserAuthData,
-      scope: 'sign-anything',
-      validationIpfsCid: myDappBackend.validationIpfsCid,
-    });
-    
-    // Store PKP for user in database
-    user.pkpPublicKey = mintedPKP.data.pubkey;
-  }
-}`;
+      // 1. Check if the user is registered
+      if (!this.registeredUsers.find((user) => user.userId === userId)) {
+        throw new Error('User not registered');
+      }
+
+      // 2. Generate the auth data from the unique user id
+      const uniqueUserAuthData = this._generateAuthData(userId);
+      console.log('✅ uniqueUserAuthData:', uniqueUserAuthData);
+
+      // 3. Mint a PKP for the user. Then, we will send the PKP to itself, since itself is also
+      // a valid ETH Wallet. The owner of the PKP will have NO permissions. To access the PKP,
+      // the user will need to pass the immutable validation code which lives inside the Lit Action.
+      const { pkpData: mintedPKP, validationIpfsCid } =
+        await litClient.mintWithCustomAuth({
+          account: myAccount,
+          authData: uniqueUserAuthData,
+          scope: 'sign-anything',
+          validationIpfsCid: myDappBackend.validationIpfsCid,
+        });
+
+      console.log('✅ validationIpfsCid:', validationIpfsCid);
+      console.log('✅ mintedPKP:', mintedPKP);
+      console.log(
+        '✅ hexedUniqueAuthMethodType:',
+        this.hexedUniqueAuthMethodType
+      );
+
+      // find the user first
+      const user = this.registeredUsers.find((user) => user.userId === userId);
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // update the user with the PKP public key
+      user.pkpPublicKey = mintedPKP.data.pubkey;
+    }
+}
+
+// Example usage
+const ownerDapp = new myDappBackend();
+await ownerDapp.mintPKPForUser('alice');
+
+`;
 
 const USER_FRONTEND_CODE = `
+
+class myDappFrontend {
+  constructor(private readonly myDappBackend: myDappBackend) {
+    this.myDappBackend = myDappBackend;
+  }
+
+  userDashboard(userId: string) {
+    const user = this.myDappBackend.registeredUsers.find(
+      (user) => user.userId === userId
+    );
+    const uniqueAuthMethodId = \${this.myDappBackend.uniqueDappName}-userId}
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    return {
+      getMyPkpPublicKey() {
+        return user.pkpPublicKey;
+      },
+
+      getAuthMethodId() {
+        return keccak256(toBytes(uniqueAuthMethodId));
+      },
+
+      // Ideally, as the site owner you will publish this to the public
+      // so they can see the validation logic.
+      getValidationIpfsCid() {
+        return myDappBackend.validationIpfsCid;
+      },
+    };
+  }
+}
+  
 // User gets their PKP info from dApp
+const frontend = new myDappFrontend(ownerDapp);
 const userDashboard = frontend.userDashboard('alice');
 const userPkpPublicKey = userDashboard.getMyPkpPublicKey();
 const validationIpfsCid = userDashboard.getValidationIpfsCid();
@@ -80,6 +157,13 @@ const authData = litClient.utils.generateAuthData({
   uniqueDappName: 'my-supa-dupa-app-name',
   uniqueAuthMethodType: BigInt('0x22b562b86d5d467a9f06c3f20137b37ed13981f63bd5dbdf6fc1e0fb97015401'),
   userId: 'alice'
+});
+
+const authManager = createAuthManager({
+  storage: storagePlugins.localStorage({
+    appName: 'my-app', // namespace for isolating auth data
+    networkName: 'naga-dev', // useful for distinguishing environments
+  }),
 });
 
 // Create custom auth context
@@ -191,7 +275,22 @@ export default function CustomAuthTab() {
     setAuthContext,
     setStatus,
     assertDependenciesLoaded,
+    showError,
+    clearError,
   } = useAppContext();
+
+  // Utility function to format error messages properly
+  const formatErrorMessage = (prefix: string, error: any): string => {
+    let errorMessage = prefix;
+    if (error?.message) {
+      errorMessage += error.message;
+    } else if (typeof error === "object") {
+      errorMessage += JSON.stringify(error, null, 2);
+    } else {
+      errorMessage += String(error);
+    }
+    return errorMessage;
+  };
 
   const [authServiceBaseUrl, setAuthServiceBaseUrl] = useState<string>(
     DEFAULT_AUTH_SERVICE_BASE_URL
@@ -216,6 +315,22 @@ export default function CustomAuthTab() {
   const [isCreatingAuthContext, setIsCreatingAuthContext] = useState(false);
   const [mockAuthContext, setMockAuthContext] = useState<any>(null);
   const [hasCreatedAuthContext, setHasCreatedAuthContext] = useState(false);
+
+  // Success feedback state
+  const [successActions, setSuccessActions] = useState<Set<string>>(new Set());
+
+  // Function to show success feedback
+  const showSuccess = (actionId: string) => {
+    setSuccessActions((prev) => new Set([...prev, actionId]));
+    // Auto-clear after 3 seconds
+    setTimeout(() => {
+      setSuccessActions((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(actionId);
+        return newSet;
+      });
+    }, 3000);
+  };
 
   // Editable jsParams for Lit Action
   const [editableJsParams, setEditableJsParams] = useState<{
@@ -254,13 +369,15 @@ export default function CustomAuthTab() {
 
       setAuthMethodConfig(authMethodConfig);
       setStatus(`Generated auth method type for dApp: ${dappName}`);
+      showSuccess("generate-auth-method");
     } catch (error: any) {
       console.error("Error generating auth method type:", error);
-      setStatus(
-        `Failed to generate auth method type: ${
-          error?.message || "Unknown error"
-        }`
+      const errorMessage = formatErrorMessage(
+        "Failed to generate auth method type: ",
+        error
       );
+      setStatus(errorMessage);
+      showError?.(errorMessage);
     } finally {
       setIsGeneratingAuthMethod(false);
     }
@@ -288,6 +405,9 @@ export default function CustomAuthTab() {
   const setValidationCidManually = (cid: string) => {
     setValidationCid(cid);
     setStatus(`Validation CID set: ${cid}`);
+    if (cid) {
+      showSuccess("set-validation-cid");
+    }
   };
 
   const mintPkpForUser = async (userId: string) => {
@@ -333,9 +453,12 @@ export default function CustomAuthTab() {
 
       setMintedPkps((prev) => [...prev, pkpInfo]);
       setStatus(`PKP minted successfully for user: ${userId}`);
+      showSuccess("mint-pkp");
     } catch (error: any) {
       console.error("Error minting PKP:", error);
-      setStatus(`Failed to mint PKP: ${error?.message || "Unknown error"}`);
+      const errorMessage = formatErrorMessage("Failed to mint PKP: ", error);
+      setStatus(errorMessage);
+      showError?.(errorMessage);
     } finally {
       setIsMintingPkp(false);
     }
@@ -372,11 +495,15 @@ export default function CustomAuthTab() {
       });
 
       setStatus(`Successfully retrieved PKP info for user '${demoUsername}'`);
+      showSuccess("select-user");
     } catch (error: any) {
       console.error("Error selecting user:", error);
-      setStatus(
-        `Failed to get user PKP info: ${error?.message || "Unknown error"}`
+      const errorMessage = formatErrorMessage(
+        "Failed to get user PKP info: ",
+        error
       );
+      setStatus(errorMessage);
+      showError?.(errorMessage);
     }
   };
 
@@ -451,10 +578,11 @@ export default function CustomAuthTab() {
       setAuthContext(customAuthContext);
       setMockAuthContext({
         ...customAuthContext,
-        pkpPublicKey: selectedUser.pkpPublicKey,
+        pubkey: selectedUser.pkpPublicKey,
       });
       setStatus("Custom auth context created successfully");
       setHasCreatedAuthContext(true);
+      showSuccess("create-auth-context");
     } catch (error: any) {
       console.error("❌ Error creating custom auth context:", error);
       console.error("Error details:", {
@@ -462,11 +590,13 @@ export default function CustomAuthTab() {
         stack: error.stack,
         cause: error.cause,
       });
-      setStatus(
-        `Failed to create custom auth context: ${
-          error?.message || "Unknown error"
-        }`
+
+      const errorMessage = formatErrorMessage(
+        "Failed to create custom auth context: ",
+        error
       );
+      setStatus(errorMessage);
+      showError?.(error); // Enable auto-hide (default 5 seconds)
     } finally {
       setIsCreatingAuthContext(false);
     }
@@ -475,18 +605,36 @@ export default function CustomAuthTab() {
   return (
     <div className="tab-content">
       <h2>{AUTH_NAME}</h2>
-      <p>
-        This demonstrates the complete{" "}
-        <strong>dApp-centric custom authentication</strong> flow from both
-        perspectives: the <strong>Site Owner</strong> who sets up the system and
-        the <strong>User</strong> who interacts with it.
-      </p>
+
+      {/* ================================================ */}
+      {/*            COMPREHENSIVE OVERVIEW                */}
+      {/* ================================================ */}
+      <GreyBoarderWhiteBgContainer>
+        <h3 style={{ marginTop: 0, color: "#2563eb" }}>
+          🎯 What is Custom Authentication?
+        </h3>
+        <p>
+          Custom Authentication allows <strong>dApp owners</strong> to provide
+          crypto wallets (PKPs) to their users without requiring them to
+          understand blockchain technology or manage private keys. Instead of
+          forcing users to learn new authentication methods, you can leverage
+          your existing authentication systems (OAuth, APIs, databases) while
+          providing them with powerful web3 capabilities.
+        </p>
+        <p>
+          This demonstrates the complete{" "}
+          <strong>dApp-centric custom authentication</strong> flow from both
+          perspectives: the <strong>Site Owner</strong> who sets up the system
+          and the <strong>User</strong> who interacts with it.
+        </p>
+      </GreyBoarderWhiteBgContainer>
 
       <GreyBoarderWhiteBgContainer>
         {/* ================================================ */}
         {/*                  Prerequisites                   */}
         {/* ================================================ */}
         <h3 style={{ marginTop: 0 }}>Prerequisites</h3>
+
         <ul>
           <li>
             Lit Client:{" "}
@@ -670,6 +818,7 @@ console.log('Auth Method Type (bigint):', authMethodConfig.bigint);`}
               resultLabel="Generated Auth Method Configuration"
               useSideBySide={true}
               theme="dracula"
+              isSuccess={successActions.has("generate-auth-method")}
             />
           </GreyBoarderWhiteBgContainer>
 
@@ -979,6 +1128,7 @@ for (const userId of ['alice', 'bob']) {
               resultLabel="Minted PKPs Database"
               useSideBySide={true}
               theme="dracula"
+              isSuccess={successActions.has("mint-pkp")}
             />
           </GreyBoarderWhiteBgContainer>
         </div>
@@ -1129,6 +1279,7 @@ console.log('Validation CID:', userPkpInfo.validationCid);`}
               resultLabel="User PKP Information"
               useSideBySide={true}
               theme="dracula"
+              isSuccess={successActions.has("select-user")}
             />
           </GreyBoarderWhiteBgContainer>
 
@@ -1379,6 +1530,7 @@ const customAuthContext = await authManager.createCustomAuthContext({
               resultLabel="Custom AuthContext Information"
               useSideBySide={true}
               theme="dracula"
+              isSuccess={successActions.has("create-auth-context")}
             />
           </GreyBoarderWhiteBgContainer>
 
@@ -1399,6 +1551,24 @@ const customAuthContext = await authManager.createCustomAuthContext({
       {/* ================================================ */}
       {/*               REFERENCE CODE SECTIONS           */}
       {/* ================================================ */}
+
+      <GreyBoarderWhiteBgContainer>
+        <h3 style={{ marginTop: "20px", color: "#6366f1" }}>
+          📋 Reference: Complete Validation Lit Action
+        </h3>
+        <p>
+          This is the complete immutable validation code that site owners pin to
+          IPFS for their custom authentication logic.
+        </p>
+
+        <DisplayCode
+          code={VALIDATION_LIT_ACTION_CODE}
+          language="typescript"
+          useSideBySide={false}
+          theme="dracula"
+        />
+      </GreyBoarderWhiteBgContainer>
+
       <GreyBoarderWhiteBgContainer>
         <h3 style={{ marginTop: "20px", color: "#28a745" }}>
           📋 Reference: Complete Site Owner Backend Implementation
@@ -1431,88 +1601,6 @@ const customAuthContext = await authManager.createCustomAuthContext({
           useSideBySide={false}
           theme="dracula"
         />
-      </GreyBoarderWhiteBgContainer>
-
-      <GreyBoarderWhiteBgContainer>
-        <h3 style={{ marginTop: "20px", color: "#6366f1" }}>
-          📋 Reference: Complete Validation Lit Action
-        </h3>
-        <p>
-          This is the complete immutable validation code that site owners pin to
-          IPFS for their custom authentication logic.
-        </p>
-
-        <DisplayCode
-          code={VALIDATION_LIT_ACTION_CODE}
-          language="typescript"
-          useSideBySide={false}
-          theme="dracula"
-        />
-
-        <div
-          style={{
-            marginTop: "15px",
-            padding: "15px",
-            backgroundColor: "#fff9e6",
-            borderRadius: "8px",
-            border: "1px solid #ffd700",
-          }}
-        >
-          <h4 style={{ margin: "0 0 10px 0" }}>
-            💡 Key Benefits of this Architecture:
-          </h4>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "15px",
-            }}
-          >
-            <div>
-              <h5 style={{ margin: "0 0 5px 0", color: "#28a745" }}>
-                Site Owner Benefits:
-              </h5>
-              <ul
-                style={{ margin: "0", paddingLeft: "20px", fontSize: "14px" }}
-              >
-                <li>
-                  <strong>Scalable:</strong> Mint PKPs for all users centrally
-                </li>
-                <li>
-                  <strong>Immutable:</strong> Validation logic pinned to IPFS
-                </li>
-                <li>
-                  <strong>Flexible:</strong> Define custom validation rules
-                </li>
-                <li>
-                  <strong>Secure:</strong> PKP permissions tied to auth method
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h5 style={{ margin: "0 0 5px 0", color: "#007bff" }}>
-                User Benefits:
-              </h5>
-              <ul
-                style={{ margin: "0", paddingLeft: "20px", fontSize: "14px" }}
-              >
-                <li>
-                  <strong>Simple:</strong> Don't need to mint own PKPs
-                </li>
-                <li>
-                  <strong>Fast:</strong> Pre-minted PKPs ready to use
-                </li>
-                <li>
-                  <strong>Familiar:</strong> Standard login experience
-                </li>
-                <li>
-                  <strong>Utilities:</strong> Built-in Lit client helper
-                  functions
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
       </GreyBoarderWhiteBgContainer>
     </div>
   );

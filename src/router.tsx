@@ -45,6 +45,10 @@ type ContextType = {
   setPkpInfo?: (pkpInfo: any) => void;
   setSignature?: (signature: any) => void;
   setLoading?: (loading: boolean) => void;
+  error?: string | null;
+  showError?: (errorMessage: string, autoHide?: boolean) => void;
+  clearError?: () => void;
+  isErrorVisible?: boolean;
 };
 
 // Create a layout component that provides context to the routes
