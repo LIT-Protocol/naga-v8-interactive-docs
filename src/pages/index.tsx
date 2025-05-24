@@ -197,6 +197,14 @@ const ACTIONS = [
     category: "PKP Auth Methods",
     type: "secondary",
   },
+  {
+    id: "custom-auth",
+    path: "/custom-auth",
+    name: "Custom Auth (Demo IdP)",
+    description: "Build your own custom authentication with Lit Actions",
+    category: "PKP Custom Auth",
+    type: "primary",
+  },
 
   // More authentication methods will be added here
 ];

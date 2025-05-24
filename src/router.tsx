@@ -17,6 +17,7 @@ import StytchEmailOtpAuthTab from "./tabs/StytchEmailOtpAuthTab";
 import StytchSmsOtpAuthTab from "./tabs/StytchSmsOtpAuthTab";
 import StytchWhatsAppOtpAuthTab from "./tabs/StytchWhatsAppOtpAuthTab";
 import StytchTotpAuthTab from "./tabs/StytchTotpAuthTab";
+import CustomAuthTab from "./tabs/CustomAuthTab";
 
 // Create a type for the context
 type ContextType = {
@@ -110,6 +111,10 @@ export const router = createBrowserRouter([
       {
         path: "stytch-totp-auth",
         element: <StytchTotpAuthTab />,
+      },
+      {
+        path: "custom-auth",
+        element: <CustomAuthTab />,
       },
     ],
   },
