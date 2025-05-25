@@ -388,7 +388,10 @@ export default function CustomAuthTab() {
     const popupWindow = window.open(
       "https://explorer.litprotocol.com/create-action",
       "litActionCreator",
-      "width=1200,height=800,scrollbars=yes,resizable=yes"
+      "width=1200,height=800,scrollbars=yes,resizable=yes,left=" +
+        (window.screen.width - 1200) / 2 +
+        ",top=" +
+        (window.screen.height - 800) / 2
     );
 
     if (popupWindow) {
@@ -596,7 +599,7 @@ export default function CustomAuthTab() {
         error
       );
       setStatus(errorMessage);
-      showError?.(error); // Enable auto-hide (default 5 seconds)
+      showError?.(errorMessage); // Enable auto-hide (default 5 seconds)
     } finally {
       setIsCreatingAuthContext(false);
     }
@@ -875,13 +878,8 @@ console.log('Auth Method Type (bigint):', authMethodConfig.bigint);`}
                         marginBottom: "15px",
                       }}
                     >
-                      <strong>⚠️ Important:</strong> Copy ONLY the
-                      self-executing JavaScript function on the left to Lit
-                      Explorer.
-                      <br />
-                      <strong>Do NOT copy</strong> any comments or wrapper code
-                      - just the self-executing function starting with{" "}
-                      <code>(async () =&gt;</code>.
+                      <strong>⚠️ Important:</strong> Copy the self-executing
+                      JavaScript function on the left to Lit Explorer.
                       <br />
                       Your unique auth method type{" "}
                       <code
@@ -1040,7 +1038,7 @@ console.log('Auth Method Type (bigint):', authMethodConfig.bigint);`}
             </p>
 
             <DisplayCode
-              code={`// Mint PKP for each user
+              code={`// Mint PKP for each user, assuming that's what you want to do
 for (const userId of ['alice', 'bob']) {
   const authData = litClient.utils.generateAuthData({
     uniqueDappName: '${dappName}',
@@ -1520,8 +1518,9 @@ const customAuthContext = await authManager.createCustomAuthContext({
                         fontStyle: "italic",
                       }}
                     >
-                      Next click will clear cached auth signatures and
-                      re-authenticate with current jsParams
+                      👋 Next click will clear cached auth signatures and
+                      re-authenticate with current jsParams, try to change the
+                      jsParams you will get an error
                     </small>
                   )}
                 </div>

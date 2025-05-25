@@ -1,17 +1,13 @@
-import {
-  createAuthManager as createAuthManagerSingleton,
-  storagePlugins as storagePluginsSingleton,
-} from "@lit-protocol/auth";
-import { createLitClient as createLitClientSingleton } from "@lit-protocol/lit-client";
+import { createAuthManager, storagePlugins } from "@lit-protocol/auth";
+import { createLitClient } from "@lit-protocol/lit-client";
 import { nagaDev } from "@lit-protocol/networks";
 import { useEffect, useState } from "react";
-import { useWalletClient } from "wagmi";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { MainLayout } from "../layouts/MainLayout";
 
 // --- Singleton instances ---
-type LitClient = Awaited<ReturnType<typeof createLitClientSingleton>>;
-type AuthManager = Awaited<ReturnType<typeof createAuthManagerSingleton>>;
+type LitClient = Awaited<ReturnType<typeof createLitClient>>;
+type AuthManager = Awaited<ReturnType<typeof createAuthManager>>;
 
 let litClientInstance: LitClient | null = null;
 let authManagerInstance: AuthManager | null = null;
@@ -19,7 +15,7 @@ let authManagerInstance: AuthManager | null = null;
 const getLitClient = async (): Promise<LitClient> => {
   if (!litClientInstance) {
     console.log("Creating new LitClient instance (should happen only once)");
-    litClientInstance = await createLitClientSingleton({ network: nagaDev });
+    litClientInstance = await createLitClient({ network: nagaDev });
   }
   return litClientInstance;
 };
@@ -27,8 +23,8 @@ const getLitClient = async (): Promise<LitClient> => {
 const getAuthManager = (): AuthManager => {
   if (!authManagerInstance) {
     console.log("Creating new AuthManager instance (should happen only once)");
-    authManagerInstance = createAuthManagerSingleton({
-      storage: storagePluginsSingleton.localStorage({
+    authManagerInstance = createAuthManager({
+      storage: storagePlugins.localStorage({
         appName: "my-app",
         networkName: "naga-dev",
       }),
@@ -98,37 +94,43 @@ const ErrorDisplay = ({ error, isVisible, onClear }: ErrorDisplayProps) => {
         `}
       </style>
       <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
-        <div style={{ 
-          fontSize: "24px", 
-          color: "#e53e3e",
-          lineHeight: "1",
-          animation: "pulse 2s ease-in-out infinite"
-        }}>
+        <div
+          style={{
+            fontSize: "24px",
+            color: "#e53e3e",
+            lineHeight: "1",
+            animation: "pulse 2s ease-in-out infinite",
+          }}
+        >
           ❌
         </div>
         <div style={{ flex: 1 }}>
-          <h4 style={{ 
-            margin: "0 0 10px 0", 
-            color: "#c53030",
-            fontSize: "16px",
-            fontWeight: "700",
-            textTransform: "uppercase",
-            letterSpacing: "0.5px"
-          }}>
+          <h4
+            style={{
+              margin: "0 0 10px 0",
+              color: "#c53030",
+              fontSize: "16px",
+              fontWeight: "700",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+            }}
+          >
             Error
           </h4>
-          <div style={{ 
-            color: "#742a2a",
-            fontSize: "14px",
-            lineHeight: "1.5",
-            fontFamily: "monospace",
-            whiteSpace: "pre-wrap",
-            wordBreak: "break-word",
-            backgroundColor: "#fed7d7",
-            padding: "10px",
-            borderRadius: "4px",
-            border: "1px solid #feb2b2"
-          }}>
+          <div
+            style={{
+              color: "#742a2a",
+              fontSize: "14px",
+              lineHeight: "1.5",
+              fontFamily: "monospace",
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+              backgroundColor: "#fed7d7",
+              padding: "10px",
+              borderRadius: "4px",
+              border: "1px solid #feb2b2",
+            }}
+          >
             {error}
           </div>
         </div>
@@ -146,8 +148,12 @@ const ErrorDisplay = ({ error, isVisible, onClear }: ErrorDisplayProps) => {
             transition: "background-color 0.2s",
           }}
           title="Close error"
-          onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#c53030")}
-          onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#e53e3e")}
+          onMouseOver={(e) =>
+            (e.currentTarget.style.backgroundColor = "#c53030")
+          }
+          onMouseOut={(e) =>
+            (e.currentTarget.style.backgroundColor = "#e53e3e")
+          }
         >
           ✕
         </button>
@@ -236,6 +242,41 @@ const DependencyStatus = ({
 
 // Authentication methods configuration
 const ACTIONS = [
+  // Getting Started - Foundation Setup
+  {
+    id: "setup-lit-client",
+    path: "/setup-lit-client",
+    name: "Setup Lit Client",
+    description: "Create and configure your Lit Protocol client instance",
+    category: "Getting Started",
+    type: "primary",
+  },
+  {
+    id: "setup-auth-manager",
+    path: "/setup-auth-manager",
+    name: "Setup Auth Manager",
+    description: "Create and configure authentication manager with storage",
+    category: "Getting Started",
+    type: "primary",
+  },
+  {
+    id: "network-configuration",
+    path: "/network-configuration",
+    name: "Network Configuration",
+    description: "Configure Lit Protocol network settings (nagaDev)",
+    category: "Getting Started",
+    type: "primary",
+  },
+  {
+    id: "storage-plugins",
+    path: "/storage-plugins",
+    name: "Storage Plugins",
+    description: "Configure localStorage and other storage options",
+    category: "Getting Started",
+    type: "primary",
+  },
+
+  // EOA Authentication
   {
     id: "eoa-native",
     path: "/eoa-native",
@@ -355,29 +396,33 @@ export const HomePage = () => {
   const showError = (errorMessage: string, autoHide: boolean = true) => {
     setError(errorMessage);
     setIsErrorVisible(true);
-    
+
     // Play error sound for better user experience
     try {
       // Create a simple beep sound
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const audioContext = new (window.AudioContext ||
+        (window as any).webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
-      
+
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
-      
+
       oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
       oscillator.frequency.setValueAtTime(400, audioContext.currentTime + 0.1);
-      
+
       gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-      
+      gainNode.gain.exponentialRampToValueAtTime(
+        0.01,
+        audioContext.currentTime + 0.2
+      );
+
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + 0.2);
     } catch (e) {
       console.log("Could not play error sound:", e);
     }
-    
+
     if (autoHide) {
       // Auto-hide after 5 seconds
       setTimeout(() => {
@@ -531,8 +576,12 @@ export const HomePage = () => {
   return (
     <MainLayout>
       {/* Fixed Error Toast - positioned outside of sidebar */}
-      <ErrorDisplay error={error} isVisible={isErrorVisible} onClear={clearError} />
-      
+      <ErrorDisplay
+        error={error}
+        isVisible={isErrorVisible}
+        onClear={clearError}
+      />
+
       <div
         className="doc-layout"
         style={{
@@ -581,7 +630,8 @@ export const HomePage = () => {
                   const categoryKey = category;
                   const secondaryKey = `${category}-secondary`;
                   const isCategoryCollapsed = collapsedCategories[categoryKey];
-                  const isSecondaryCollapsed = collapsedCategories[secondaryKey];
+                  const isSecondaryCollapsed =
+                    collapsedCategories[secondaryKey];
 
                   return (
                     <div key={category}>
@@ -590,7 +640,7 @@ export const HomePage = () => {
                           style={{ margin: "15px 0", borderColor: "#dddddd" }}
                         />
                       )}
-                      
+
                       {/* Collapsible Category Header */}
                       <button
                         onClick={() => toggleCategoryCollapse(categoryKey)}
@@ -612,11 +662,17 @@ export const HomePage = () => {
                           {isCategoryCollapsed ? "▶" : "▼"}
                         </span>
                         {category}
-                        <span style={{ marginLeft: "8px", fontSize: "0.8rem", color: "#888" }}>
+                        <span
+                          style={{
+                            marginLeft: "8px",
+                            fontSize: "0.8rem",
+                            color: "#888",
+                          }}
+                        >
                           ({actionsInCategory.length})
                         </span>
                       </button>
-                      
+
                       {/* Category Content */}
                       {!isCategoryCollapsed && (
                         <div style={{ marginLeft: "0px" }}>
@@ -640,7 +696,9 @@ export const HomePage = () => {
                                     ? "#ffffff"
                                     : "#333333",
                                 border: `1px solid ${
-                                  activeMethod === action.id ? "#3b82f6" : "#dddddd"
+                                  activeMethod === action.id
+                                    ? "#3b82f6"
+                                    : "#dddddd"
                                 }`,
                                 transition: "all 0.2s",
                                 width: "100%",
@@ -658,7 +716,9 @@ export const HomePage = () => {
                             <>
                               {/* Toggle Button for Secondary Actions */}
                               <button
-                                onClick={() => toggleCategoryCollapse(secondaryKey)}
+                                onClick={() =>
+                                  toggleCategoryCollapse(secondaryKey)
+                                }
                                 style={{
                                   display: "flex",
                                   alignItems: "center",

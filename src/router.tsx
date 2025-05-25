@@ -18,6 +18,10 @@ import StytchSmsOtpAuthTab from "./tabs/StytchSmsOtpAuthTab";
 import StytchWhatsAppOtpAuthTab from "./tabs/StytchWhatsAppOtpAuthTab";
 import StytchTotpAuthTab from "./tabs/StytchTotpAuthTab";
 import CustomAuthTab from "./tabs/CustomAuthTab";
+import SetupLitClientTab from "./tabs/SetupLitClientTab";
+import SetupAuthManagerTab from "./tabs/SetupAuthManagerTab";
+import NetworkConfigurationTab from "./tabs/NetworkConfigurationTab";
+import StoragePluginsTab from "./tabs/StoragePluginsTab";
 
 // Create a type for the context
 type ContextType = {
@@ -78,8 +82,26 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Navigate to="/eoa-native" replace />,
+        element: <Navigate to="/setup-lit-client" replace />,
       },
+      // Getting Started Routes
+      {
+        path: "setup-lit-client",
+        element: <SetupLitClientTab />,
+      },
+      {
+        path: "setup-auth-manager", 
+        element: <SetupAuthManagerTab />,
+      },
+      {
+        path: "network-configuration",
+        element: <NetworkConfigurationTab />,
+      },
+      {
+        path: "storage-plugins",
+        element: <StoragePluginsTab />,
+      },
+      // EOA and Auth Routes
       {
         path: "eoa-native",
         element: <EoaNativeTab />,
