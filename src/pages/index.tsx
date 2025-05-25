@@ -242,6 +242,14 @@ const DependencyStatus = ({
 
 // Authentication methods configuration
 const ACTIONS = [
+  {
+    id: "demo",
+    path: "/demo",
+    name: "Demo",
+    description: "Demo page",
+    category: "Demo",
+    type: "primary",
+  },
   // Getting Started - Foundation Setup
   {
     id: "setup-lit-client",

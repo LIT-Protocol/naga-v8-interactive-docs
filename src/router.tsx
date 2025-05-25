@@ -22,6 +22,8 @@ import SetupLitClientTab from "./tabs/SetupLitClientTab";
 import SetupAuthManagerTab from "./tabs/SetupAuthManagerTab";
 import NetworkConfigurationTab from "./tabs/NetworkConfigurationTab";
 import StoragePluginsTab from "./tabs/StoragePluginsTab";
+import { LitAuthDemo } from "./components/LitAuthDemo";
+import LitAuthProviderDemoTab from "./tabs/LitAuthProviderDemoTab";
 
 // Create a type for the context
 type ContextType = {
@@ -84,13 +86,17 @@ export const router = createBrowserRouter([
         index: true,
         element: <Navigate to="/setup-lit-client" replace />,
       },
+      {
+        path: "demo",
+        element: <LitAuthProviderDemoTab />,
+      },
       // Getting Started Routes
       {
         path: "setup-lit-client",
         element: <SetupLitClientTab />,
       },
       {
-        path: "setup-auth-manager", 
+        path: "setup-auth-manager",
         element: <SetupAuthManagerTab />,
       },
       {
