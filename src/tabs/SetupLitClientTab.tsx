@@ -81,7 +81,7 @@ const getLitClient = async () => {
 const client = await getLitClient();`;
 
   return (
-    <div style={{ maxWidth: "800px" }}>
+    <div style={{ maxWidth: "90%" }}>
       <div style={{ marginBottom: "30px" }}>
         <h1>Setup Lit Client</h1>
         <p style={{ color: "#666", fontSize: "16px", lineHeight: "1.6" }}>

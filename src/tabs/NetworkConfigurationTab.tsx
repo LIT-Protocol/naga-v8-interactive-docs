@@ -94,7 +94,7 @@ const devClient = await createLitClient({ network: nagaDev });
 // const testClient = await createLitClient({ network: nagaTest });`;
 
   return (
-    <div style={{ maxWidth: "800px" }}>
+    <div style={{ maxWidth: "90%" }}>
       <div style={{ marginBottom: "30px" }}>
         <h1>Network Configuration</h1>
         <p style={{ color: "#666", fontSize: "16px", lineHeight: "1.6" }}>

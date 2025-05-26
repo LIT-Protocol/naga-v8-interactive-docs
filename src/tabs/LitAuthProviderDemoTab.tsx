@@ -76,6 +76,16 @@ const authMethods = [
 
   return (
     <div className="tab-content">
+      <GreyBoarderWhiteBgContainer>
+        <h2>
+          ❗️ This is just a demo. If you would like us to create a modal for this,
+          we will do it 💪!
+        </h2>
+        <p>
+          LMK at anson[@]litprotocol.com
+        </p>
+      </GreyBoarderWhiteBgContainer>
+
       <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "20px" }}>
         <h1>🚀 Lit Auth Provider - Modal Demo</h1>
         <GreyBoarderWhiteBgContainer>
@@ -113,12 +123,12 @@ const authMethods = [
           </div>
         </GreyBoarderWhiteBgContainer>
 
-        <GreyBoarderWhiteBgContainer>
+        {/* <GreyBoarderWhiteBgContainer>
           <h2>Usage Example</h2>
           <DisplayCode code={usageCode} language="typescript" theme="dracula" />
-        </GreyBoarderWhiteBgContainer>
+        </GreyBoarderWhiteBgContainer> */}
 
-        <GreyBoarderWhiteBgContainer>
+        {/* <GreyBoarderWhiteBgContainer>
           <h2>🔧 All Authentication Methods</h2>
           <p style={{ marginBottom: "20px", color: "#666" }}>
             The compact modal now supports all major authentication methods with
@@ -129,7 +139,7 @@ const authMethods = [
             language="typescript"
             theme="dracula"
           />
-        </GreyBoarderWhiteBgContainer>
+        </GreyBoarderWhiteBgContainer> */}
       </div>
     </div>
   );

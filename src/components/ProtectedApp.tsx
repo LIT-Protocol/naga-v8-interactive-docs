@@ -108,7 +108,7 @@ export const ProtectedApp: React.FC = () => {
     >
       <div
         style={{
-          maxWidth: "800px",
+          maxWidth: "90%",
           margin: "0 auto",
           backgroundColor: "white",
           borderRadius: "12px",
@@ -376,7 +376,7 @@ export const ProtectedApp: React.FC = () => {
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <span style={{ color: "#065f46", fontSize: "16px" }}>✅</span>
               <span style={{ color: "#92400e" }}>
-                Build decentralized applications without seed phrases
+                Build decentralised applications without seed phrases
               </span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
