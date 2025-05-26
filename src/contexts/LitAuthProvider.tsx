@@ -864,7 +864,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                   Setting up Lit Protocol
                 </h3>
                 <p style={{ color: "#666", margin: 0 }}>
-                  Initializing services...
+                  Initialising services...
                 </p>
               </div>
             )}

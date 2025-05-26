@@ -4,6 +4,7 @@ import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgCo
 import EoaAuthSection from "../components/common/EoaAuthSection";
 import { useAppContext } from "../router";
 import PkpSigningComponent from "../components/common/PkpSigningComponent";
+import ExecuteJsComponent from "../components/common/ExecuteJsComponent";
 
 const AUTH_NAME = "Stytch Email OTP Authentication";
 
@@ -1071,6 +1072,22 @@ export default function StytchEmailOtpAuthTab() {
           assertDependenciesLoaded={assertDependenciesLoaded}
           defaultMessage="Hello from Stytch Email OTP PKP!"
           componentTitle={`Step 5: Sign Message with PKP (${AUTH_NAME})`}
+        />
+      </GreyBoarderWhiteBgContainer>
+
+      {/* ================================================ */}
+      {/*               Execute Lit Action                  */}
+      {/* ================================================ */}
+
+      <GreyBoarderWhiteBgContainer>
+        <ExecuteJsComponent
+          authContext={authContext}
+          pkpInfo={pkpInfo}
+          setStatus={setStatus}
+          assertDependenciesLoaded={assertDependenciesLoaded}
+          defaultMessage="Hello from Stytch Email OTP Lit Action!"
+          componentTitle={`Step 6: Execute Lit Action (${AUTH_NAME})`}
+          showError={showError}
         />
       </GreyBoarderWhiteBgContainer>
     </div>

@@ -27,7 +27,15 @@ const MyEditorComponent: React.FC<MyEditorComponentProps> = ({
       setCode(initialCode);
       // Also update the editor content if it's mounted
       if (editorRef.current) {
+        // Use a flag to prevent onChange from firing during programmatic updates
+        editorRef.current.__isUpdatingProgrammatically = true;
         editorRef.current.setValue(initialCode);
+        // Clear the flag after a short delay to allow normal onChange behavior
+        setTimeout(() => {
+          if (editorRef.current) {
+            editorRef.current.__isUpdatingProgrammatically = false;
+          }
+        }, 0);
       }
     }
   }, [initialCode]); // Removed 'code' dependency to prevent circular updates
@@ -684,7 +692,12 @@ declare namespace Lit {
       height={height || "100%"}
       defaultLanguage={language || "javascript"}
       defaultValue={code}
-      onChange={(value) => setCode(value || "")}
+      onChange={(value) => {
+        // Only update state if this is not a programmatic update
+        if (!editorRef.current?.__isUpdatingProgrammatically) {
+          setCode(value || "");
+        }
+      }}
       beforeMount={handleEditorWillMount}
       onMount={(editor) => (editorRef.current = editor)}
       options={{

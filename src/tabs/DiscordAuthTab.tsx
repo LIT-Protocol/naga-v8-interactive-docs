@@ -4,6 +4,7 @@ import PkpSigningComponent from "../components/common/PkpSigningComponent";
 import { DisplayCode } from "../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgContainer";
 import { useAppContext } from "../router";
+import ExecuteJsComponent from "../components/common/ExecuteJsComponent";
 
 const AUTH_NAME = "Discord Authentication";
 
@@ -410,6 +411,22 @@ export default function DiscordAuthTab() {
           assertDependenciesLoaded={assertDependenciesLoaded}
           defaultMessage="Hello from Discord PKP!"
           componentTitle={`Sign Message with PKP (${AUTH_NAME})`}
+        />
+      </GreyBoarderWhiteBgContainer>
+
+      {/* ================================================ */}
+      {/*               Execute Lit Action                  */}
+      {/* ================================================ */}
+
+      <GreyBoarderWhiteBgContainer>
+        <ExecuteJsComponent
+          authContext={authContext}
+          pkpInfo={pkpInfo}
+          setStatus={setStatus}
+          assertDependenciesLoaded={assertDependenciesLoaded}
+          defaultMessage="Hello from Discord Lit Action!"
+          componentTitle={`Execute Lit Action (${AUTH_NAME})`}
+          showError={showError}
         />
       </GreyBoarderWhiteBgContainer>
     </div>

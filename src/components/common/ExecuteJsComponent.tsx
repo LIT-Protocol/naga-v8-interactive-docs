@@ -960,6 +960,75 @@ export default function ExecuteJsComponent({
                   </div>
                 )}
               </div>
+
+              {/* SDK Parameter Structure Disclaimer - Bottom Right */}
+              <div
+                style={{
+                  backgroundColor: "#2d3748",
+                  border: "1px solid #4a5568",
+                  borderRadius: "6px",
+                  padding: "10px",
+                  marginTop: "10px",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "flex-start", gap: "6px" }}>
+                  <span style={{ fontSize: "14px", flexShrink: 0 }}>ℹ️</span>
+                  <div style={{ fontSize: "12px", lineHeight: "1.4", color: "#e2e8f0" }}>
+                    <strong>SDK Parameter Structure:</strong> All your parameters are wrapped within a{" "}
+                    <code
+                      style={{
+                        backgroundColor: "#1a202c",
+                        padding: "1px 3px",
+                        borderRadius: "2px",
+                        color: "#90cdf4",
+                        fontSize: "11px",
+                      }}
+                    >
+                      jsParams
+                    </code>{" "}
+                    object. Access them as{" "}
+                    <code
+                      style={{
+                        backgroundColor: "#1a202c",
+                        padding: "1px 3px",
+                        borderRadius: "2px",
+                        color: "#90cdf4",
+                        fontSize: "11px",
+                      }}
+                    >
+                      jsParams.parameterName
+                    </code>{" "}
+                    in your Lit Action.
+                  </div>
+                </div>
+              </div>
+
+              {/* LitActions API Documentation Link - Bottom Right */}
+              <div
+                style={{
+                  backgroundColor: "#2d3748",
+                  border: "1px solid #4a5568",
+                  borderRadius: "6px",
+                  padding: "10px",
+                  marginTop: "8px",
+                  textAlign: "center",
+                }}
+              >
+                <a
+                  href="https://actions-docs.litprotocol.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    color: "#90cdf4",
+                    textDecoration: "none",
+                    fontWeight: "500",
+                    fontSize: "13px",
+                    display: "block",
+                  }}
+                >
+                  📚 View Full LitActions API Documentation →
+                </a>
+              </div>
             </div>
           </div>
         </div>
