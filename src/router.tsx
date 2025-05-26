@@ -24,6 +24,7 @@ import NetworkConfigurationTab from "./tabs/NetworkConfigurationTab";
 import StoragePluginsTab from "./tabs/StoragePluginsTab";
 import LitAuthProviderDemoTab from "./tabs/LitAuthProviderDemoTab";
 import EncryptionTab from "./tabs/EncryptionTab";
+import SetupAuthServicesTab from "./tabs/SetupAuthServicesTab";
 
 // Create a type for the context
 type ContextType = {
@@ -99,6 +100,10 @@ export const router = createBrowserRouter([
       {
         path: "setup-auth-manager",
         element: <SetupAuthManagerTab />,
+      },
+      {
+        path: "setup-auth-services",
+        element: <SetupAuthServicesTab />,
       },
       {
         path: "network-configuration",

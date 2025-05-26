@@ -8,6 +8,7 @@ import { useAppContext } from "../router";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { FEATURES } from "../_config";
 import EoaAuthSection from "../components/common/EoaAuthSection";
+import ExecuteJsComponent from "../components/common/ExecuteJsComponent";
 
 const AUTH_NAME = "EOA Authentication";
 
@@ -139,7 +140,10 @@ export default function EoaAuthTab() {
       showSuccess("eoa-create-account");
     } catch (error: any) {
       console.error("Error creating account:", error);
-      const errorMessage = formatErrorMessage("Failed to create account: ", error);
+      const errorMessage = formatErrorMessage(
+        "Failed to create account: ",
+        error
+      );
       setStatus(errorMessage);
       showError?.(errorMessage);
     } finally {
@@ -165,7 +169,10 @@ export default function EoaAuthTab() {
       showSuccess("eoa-get-wallet-account");
     } catch (error: any) {
       console.error("Error getting wallet account:", error);
-      const errorMessage = formatErrorMessage("Failed to get wallet account: ", error);
+      const errorMessage = formatErrorMessage(
+        "Failed to get wallet account: ",
+        error
+      );
       setStatus(errorMessage);
       showError?.(errorMessage);
     } finally {
@@ -217,7 +224,10 @@ export default function EoaAuthTab() {
       showSuccess("eoa-authenticate");
     } catch (error: any) {
       console.error("Error authenticating with EOA:", error);
-      const errorMessage = formatErrorMessage("Failed to authenticate with EOA: ", error);
+      const errorMessage = formatErrorMessage(
+        "Failed to authenticate with EOA: ",
+        error
+      );
       setStatus(errorMessage);
       showError?.(errorMessage);
     } finally {
@@ -270,7 +280,10 @@ export default function EoaAuthTab() {
       showSuccess("eoa-mint-pkp");
     } catch (error: any) {
       console.error("Error minting PKP with EOA Auth:", error);
-      const errorMessage = formatErrorMessage("Failed to mint PKP with EOA Auth: ", error);
+      const errorMessage = formatErrorMessage(
+        "Failed to mint PKP with EOA Auth: ",
+        error
+      );
       setStatus(errorMessage);
       showError?.(errorMessage);
     } finally {
@@ -312,7 +325,10 @@ export default function EoaAuthTab() {
       showSuccess("eoa-create-auth-context");
     } catch (error: any) {
       console.error("Error creating auth context:", error);
-      const errorMessage = formatErrorMessage("Failed to create auth context: ", error);
+      const errorMessage = formatErrorMessage(
+        "Failed to create auth context: ",
+        error
+      );
       setStatus(errorMessage);
       showError?.(errorMessage);
     } finally {
@@ -418,11 +434,17 @@ export default function EoaAuthTab() {
               {/* Account Method Selector */}
               <div style={{ marginBottom: "15px" }}>
                 <label
-                  style={{ display: "block", marginBottom: "8px", fontWeight: "500" }}
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontWeight: "500",
+                  }}
                 >
                   Choose Account Method:
                 </label>
-                <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
+                <div
+                  style={{ display: "flex", gap: "10px", marginBottom: "10px" }}
+                >
                   <button
                     onClick={() => setAccountMethod("privateKey")}
                     style={{
@@ -443,8 +465,11 @@ export default function EoaAuthTab() {
                     style={{
                       padding: "8px 15px",
                       backgroundColor:
-                        accountMethod === "walletClient" ? "#4285F4" : "#f0f0f0",
-                      color: accountMethod === "walletClient" ? "white" : "#333",
+                        accountMethod === "walletClient"
+                          ? "#4285F4"
+                          : "#f0f0f0",
+                      color:
+                        accountMethod === "walletClient" ? "white" : "#333",
                       border: "1px solid #ddd",
                       borderRadius: "4px",
                       cursor: "pointer",
@@ -461,7 +486,11 @@ export default function EoaAuthTab() {
                 <div style={{ marginBottom: "10px" }}>
                   <label
                     htmlFor="privateKey"
-                    style={{ display: "block", marginBottom: "5px", fontWeight: "500" }}
+                    style={{
+                      display: "block",
+                      marginBottom: "5px",
+                      fontWeight: "500",
+                    }}
                   >
                     Private Key:
                   </label>
@@ -481,8 +510,8 @@ export default function EoaAuthTab() {
                     }}
                   />
                   <small style={{ color: "#666", fontSize: "12px" }}>
-                    Default test private key is provided. Replace with your own for
-                    production use.
+                    Default test private key is provided. Replace with your own
+                    for production use.
                   </small>
                 </div>
               )}
@@ -503,8 +532,8 @@ export default function EoaAuthTab() {
                     currently connected wallet account (e.g., MetaMask).
                   </p>
                   <p style={{ margin: "0", fontSize: "12px", color: "#666" }}>
-                    Make sure your wallet is connected and you have test tokens. Need
-                    tokens? Visit the{" "}
+                    Make sure your wallet is connected and you have test tokens.
+                    Need tokens? Visit the{" "}
                     <a
                       href={FAUCET_URL}
                       target="_blank"
@@ -547,7 +576,10 @@ export default function EoaAuthTab() {
           resultLabel="Account Information"
           useSideBySide={true}
           theme="dracula"
-          isSuccess={successActions.has("eoa-create-account") || successActions.has("eoa-get-wallet-account")}
+          isSuccess={
+            successActions.has("eoa-create-account") ||
+            successActions.has("eoa-get-wallet-account")
+          }
         />
       </GreyBoarderWhiteBgContainer>
 
@@ -575,11 +607,13 @@ export default function EoaAuthTab() {
               disabled={isAuthenticating || !account}
               style={{
                 padding: "10px 15px",
-                backgroundColor: isAuthenticating || !account ? "#cccccc" : "#4285F4",
+                backgroundColor:
+                  isAuthenticating || !account ? "#cccccc" : "#4285F4",
                 color: "white",
                 border: "none",
                 borderRadius: "4px",
-                cursor: isAuthenticating || !account ? "not-allowed" : "pointer",
+                cursor:
+                  isAuthenticating || !account ? "not-allowed" : "pointer",
                 fontWeight: "500",
               }}
             >
@@ -615,7 +649,9 @@ export default function EoaAuthTab() {
           renderComponent={
             <button
               onClick={mintPkp}
-              disabled={!areDependenciesLoaded() || isMinting || !authData || !account}
+              disabled={
+                !areDependenciesLoaded() || isMinting || !authData || !account
+              }
               style={{
                 padding: "10px 15px",
                 backgroundColor:
@@ -690,7 +726,8 @@ export default function EoaAuthTab() {
                 color: "white",
                 border: "none",
                 borderRadius: "4px",
-                cursor: isCreatingAuthContext || !pkpInfo ? "not-allowed" : "pointer",
+                cursor:
+                  isCreatingAuthContext || !pkpInfo ? "not-allowed" : "pointer",
                 fontWeight: "500",
               }}
             >
@@ -719,6 +756,22 @@ export default function EoaAuthTab() {
           assertDependenciesLoaded={assertDependenciesLoaded}
           defaultMessage="Hello from EOA Auth PKP!"
           componentTitle={`Step 5: Sign Message with PKP (${AUTH_NAME})`}
+        />
+      </GreyBoarderWhiteBgContainer>
+
+      {/* ================================================ */}
+      {/*               Execute Lit Action                  */}
+      {/* ================================================ */}
+
+      <GreyBoarderWhiteBgContainer>
+        <ExecuteJsComponent
+          authContext={authContext}
+          pkpInfo={pkpInfo}
+          setStatus={setStatus}
+          assertDependenciesLoaded={assertDependenciesLoaded}
+          defaultMessage="Hello from EOA Lit Action!"
+          componentTitle={`Step 6: Execute Lit Action (${AUTH_NAME})`}
+          showError={showError}
         />
       </GreyBoarderWhiteBgContainer>
 

@@ -6,6 +6,7 @@ import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgCo
 import EoaAuthSection from "../components/common/EoaAuthSection";
 import { useAppContext } from "../router";
 import PkpSigningComponent from "../components/common/PkpSigningComponent";
+import ExecuteJsComponent from "../components/common/ExecuteJsComponent";
 
 const AUTH_NAME = "Google Authentication";
 
@@ -103,7 +104,10 @@ export default function GoogleAuthTab() {
       showSuccess("google-signin");
     } catch (error: any) {
       console.error("Error signing in with Google:", error);
-      const errorMessage = formatErrorMessage("Failed to sign in with Google: ", error);
+      const errorMessage = formatErrorMessage(
+        "Failed to sign in with Google: ",
+        error
+      );
       setStatus(errorMessage);
       showError?.(errorMessage);
     } finally {
@@ -134,7 +138,10 @@ export default function GoogleAuthTab() {
       showSuccess("google-mint-pkp");
     } catch (error: any) {
       console.error("Error minting PKP with Google Auth:", error);
-      const errorMessage = formatErrorMessage("Failed to mint PKP with Google Auth: ", error);
+      const errorMessage = formatErrorMessage(
+        "Failed to mint PKP with Google Auth: ",
+        error
+      );
       setStatus(errorMessage);
       showError?.(errorMessage);
     } finally {
@@ -176,7 +183,10 @@ export default function GoogleAuthTab() {
       showSuccess("google-create-auth-context");
     } catch (error: any) {
       console.error("Error creating auth context:", error);
-      const errorMessage = formatErrorMessage("Failed to create auth context: ", error);
+      const errorMessage = formatErrorMessage(
+        "Failed to create auth context: ",
+        error
+      );
       setStatus(errorMessage);
       showError?.(errorMessage);
     } finally {
@@ -401,6 +411,22 @@ export default function GoogleAuthTab() {
           assertDependenciesLoaded={assertDependenciesLoaded}
           defaultMessage="Hello from Google PKP!"
           componentTitle={`Sign Message with PKP (${AUTH_NAME})`}
+        />
+      </GreyBoarderWhiteBgContainer>
+
+      {/* ================================================ */}
+      {/*               Execute Lit Action                  */}
+      {/* ================================================ */}
+
+      <GreyBoarderWhiteBgContainer>
+        <ExecuteJsComponent
+          authContext={authContext}
+          pkpInfo={pkpInfo}
+          setStatus={setStatus}
+          assertDependenciesLoaded={assertDependenciesLoaded}
+          defaultMessage="Hello from EOA Lit Action!"
+          componentTitle={`Step 6: Execute Lit Action (${AUTH_NAME})`}
+          showError={showError}
         />
       </GreyBoarderWhiteBgContainer>
     </div>
