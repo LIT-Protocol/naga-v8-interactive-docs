@@ -1,61 +1,55 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DisplayCode } from "../DisplayCode";
+import MyEditorComponent from "./MyEditorComponent";
 
 // Default Lit Action code for demonstration
-const DEFAULT_LIT_ACTION_CODE = `
+export const DEFAULT_LIT_ACTION_CODE = `
 (async () => {
-  try {
-    // Log some information
-    console.log("🔥 Lit Action started");
-    console.log("Params received:", JSON.stringify(jsParams));
-    
-    // Get parameters
-    const message = jsParams.message || "Hello from Lit Action!";
-    const timestamp = Date.now();
-    
-    console.log("Processing message:", message);
-    console.log("Current timestamp:", timestamp);
-    
-    // Perform some computation
-    const processedData = {
-      originalMessage: message,
-      processedAt: timestamp,
-      messageLength: message.length,
-      reversedMessage: message.split('').reverse().join(''),
-      uppercaseMessage: message.toUpperCase(),
-    };
-    
-    console.log("✅ Data processing completed successfully");
-    console.log("Processed data:", JSON.stringify(processedData));
-    
-    // Return some response data
-    LitActions.setResponse({
-      response: JSON.stringify({
-        message: "Lit Action executed successfully",
-        timestamp: timestamp,
-        processedData: processedData,
-        success: true
-      })
-    });
-    
-    console.log("🎉 Lit Action completed");
-  } catch (error) {
-    console.error("❌ Error in Lit Action:", error);
-    LitActions.setResponse({
-      response: JSON.stringify({
-        error: error.message,
-        success: false
-      })
-    });
-  }
+
+  const { sigName, toSign, publicKey, } = jsParams;
+  const { keccak256, arrayify } = ethers.utils;
+  
+  // We are performing the hash here in the Lit Action
+  // to show case the ethers library.
+  // Alternatively, you could hash your data to a 32-byte array 
+  // before passing it into jsParams, then use it directly
+  const toSignBytes = new TextEncoder().encode(toSign);
+  const toSignBytes32 = keccak256(toSignBytes);
+  const toSignBytes32Array = arrayify(toSignBytes32);
+  
+  // this requests a signature share from the Lit Node
+  // the signature share will be automatically returned in the HTTP response from the node
+  const sigShare = await Lit.Actions.signEcdsa({
+    toSign: toSignBytes32Array,
+    publicKey,
+    sigName,
+  });
+  
 })();`.trim();
 
-// Default jsParams for demonstration
-const DEFAULT_JS_PARAMS = `{
-  "message": "Hello from ExecuteJs Component!",
-  "userId": 123,
-  "timestamp": "${new Date().toISOString()}"
-}`;
+// Default jsParams for demonstration - will be updated with PKP public key
+const getDefaultJsParams = (authContext?: any, pkpInfo?: any) => {
+  const baseParams: any = {
+    sigName: "sig-identifier",
+    toSign: "Just getting started baby!"
+  };
+
+  // Add PKP public key if available - use same logic as PkpSigningComponent
+  let publicKey = null;
+
+  // Primary: pkpInfo.pubkey, Fallback: authContext.pkpPublicKey
+  if (pkpInfo?.pubkey) {
+    publicKey = pkpInfo.pubkey;
+  } else if (authContext?.pkpPublicKey) {
+    publicKey = authContext.pkpPublicKey;
+  }
+
+  if (publicKey) {
+    baseParams.publicKey = publicKey;
+  }
+
+  return JSON.stringify(baseParams, null, 2);
+};
 
 // Code snippet for display
 const EXECUTE_JS_CODE_SNIPPET = `
@@ -97,11 +91,16 @@ export default function ExecuteJsComponent({
   showError,
 }: ExecuteJsComponentProps) {
   const [executionMode, setExecutionMode] = useState<"code" | "ipfs">("code");
-  const [litActionCode, setLitActionCode] = useState<string>(DEFAULT_LIT_ACTION_CODE);
+  const [litActionCode, setLitActionCode] = useState<string>(
+    DEFAULT_LIT_ACTION_CODE
+  );
   const [ipfsCid, setIpfsCid] = useState<string>("");
-  const [jsParamsText, setJsParamsText] = useState<string>(DEFAULT_JS_PARAMS);
+  const [jsParamsText, setJsParamsText] = useState<string>(
+    getDefaultJsParams(authContext, pkpInfo)
+  );
   const [executeResult, setExecuteResult] = useState<any>(null);
   const [isExecuting, setIsExecuting] = useState(false);
+  const [isEditorExpanded, setIsEditorExpanded] = useState(false);
 
   // Success feedback state
   const [isSuccess, setIsSuccess] = useState(false);
@@ -114,6 +113,22 @@ export default function ExecuteJsComponent({
       setIsSuccess(false);
     }, 3000);
   };
+
+  // Handle code changes from Monaco editor
+  const handleCodeChange = (code: string) => {
+    setLitActionCode(code);
+  };
+
+  // Reset code to default
+  const resetToDefaultCode = () => {
+    setLitActionCode(DEFAULT_LIT_ACTION_CODE);
+  };
+
+  // Update jsParams when authContext changes
+  useEffect(() => {
+    const newJsParams = getDefaultJsParams(authContext, pkpInfo);
+    setJsParamsText(newJsParams);
+  }, [authContext, pkpInfo]);
 
   // Utility function to format error messages properly
   const formatErrorMessage = (prefix: string, error: any): string => {
@@ -158,14 +173,16 @@ export default function ExecuteJsComponent({
         try {
           parsedJsParams = JSON.parse(jsParamsText);
         } catch (parseError: any) {
-          throw new Error(`Invalid JSON in jsParams: ${parseError.message || parseError}`);
+          throw new Error(
+            `Invalid JSON in jsParams: ${parseError.message || parseError}`
+          );
         }
       }
 
       console.log(
         `Executing Lit Action with mode='${executionMode}'`,
-        executionMode === "code" 
-          ? { codeLength: litActionCode.length } 
+        executionMode === "code"
+          ? { codeLength: litActionCode.length }
           : { ipfsCid }
       );
       console.log("jsParams:", parsedJsParams);
@@ -194,7 +211,10 @@ export default function ExecuteJsComponent({
       showSuccess();
     } catch (error: any) {
       console.error("Error executing Lit Action:", error);
-      const errorMessage = formatErrorMessage("Failed to execute Lit Action: ", error);
+      const errorMessage = formatErrorMessage(
+        "Failed to execute Lit Action: ",
+        error
+      );
       setStatus(errorMessage);
       showError?.(errorMessage);
     } finally {
@@ -202,23 +222,172 @@ export default function ExecuteJsComponent({
     }
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsEditorExpanded(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+  // Handle Escape key to close modal and Cmd+Enter to execute
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isEditorExpanded) {
+        setIsEditorExpanded(false);
+      }
+      
+      // Handle Cmd+Enter (Mac) or Ctrl+Enter (Windows/Linux) to execute Lit Action
+      if (isEditorExpanded && e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault(); // Prevent default behavior
+        if (authContext && !isExecuting) {
+          executeJs();
+        }
+      }
+    };
+
+    if (isEditorExpanded) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isEditorExpanded, authContext, isExecuting]); // Added dependencies for the executeJs function
+
   return (
     <>
       <h3>
         {componentTitle}{" "}
         {!authContext && (
-          <span style={{ color: "orange" }}>
-            (Requires AuthContext)
-          </span>
+          <span style={{ color: "orange" }}>(Requires AuthContext)</span>
         )}
       </h3>
-      <p>Execute custom Lit Actions using your authenticated context. Choose between custom code or IPFS-stored actions.</p>
+      <p>
+        Execute custom Lit Actions using your authenticated context. Choose
+        between custom code or IPFS-stored actions.
+      </p>
+
+      {/* SDK Parameter Structure Disclaimer - Moved to top */}
+      <div
+        style={{
+          backgroundColor: "#fff3cd",
+          border: "1px solid #ffeaa7",
+          borderRadius: "6px",
+          padding: "12px",
+          marginBottom: "20px",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
+          <span style={{ fontSize: "16px", flexShrink: 0 }}>ℹ️</span>
+          <div style={{ fontSize: "14px", lineHeight: "1.4" }}>
+            <strong>SDK Parameter Structure:</strong> In this SDK version, all
+            your parameters are wrapped within a{" "}
+            <code
+              style={{
+                backgroundColor: "#f8f9fa",
+                padding: "2px 4px",
+                borderRadius: "3px",
+              }}
+            >
+              jsParams
+            </code>{" "}
+            object. This means you can access all parameters as properties of{" "}
+            <code
+              style={{
+                backgroundColor: "#f8f9fa",
+                padding: "2px 4px",
+                borderRadius: "3px",
+              }}
+            >
+              jsParams
+            </code>{" "}
+            in your Lit Action, making validation and parameter management much
+            clearer.
+          </div>
+        </div>
+      </div>
+
+      {/* Information about LitActions API and Editor Features */}
+      <div
+        style={{
+          backgroundColor: "#f8f9fa",
+          border: "1px solid #e9ecef",
+          borderRadius: "6px",
+          padding: "16px",
+          marginBottom: "20px",
+        }}
+      >
+        <h4
+          style={{ margin: "0 0 12px 0", fontSize: "16px", fontWeight: "600" }}
+        >
+          📝 Enhanced Code Editor Features
+        </h4>
+        <ul style={{ margin: "0", paddingLeft: "20px", fontSize: "14px" }}>
+          <li>
+            <strong>IntelliSense & Auto-completion:</strong> Full TypeScript
+            support with syntax highlighting
+          </li>
+          <li>
+            <strong>LitActions Global Namespace:</strong> Access all Lit
+            Protocol functions directly (e.g.,{" "}
+            <code>LitActions.setResponse()</code>,{" "}
+            <code>LitActions.signEcdsa()</code>)
+          </li>
+        </ul>
+        <div style={{ marginTop: "12px" }}>
+          <a
+            href="https://actions-docs.litprotocol.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              color: "#6f42c1",
+              textDecoration: "none",
+              fontWeight: "500",
+              fontSize: "14px",
+            }}
+          >
+            📚 View Full LitActions API Documentation →
+          </a>
+        </div>
+      </div>
 
       <DisplayCode
         code={EXECUTE_JS_CODE_SNIPPET}
         language="typescript"
         renderComponent={
           <div>
+            {/* Editor Expand Button - Top Right Corner of the right panel */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                marginBottom: "15px",
+              }}
+            >
+              <button
+                onClick={() => setIsEditorExpanded(true)}
+                style={{
+                  padding: "6px 12px",
+                  backgroundColor: "#6f42c1",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                  fontWeight: "500",
+                }}
+              >
+                🖥️ Fullscreen Editor
+              </button>
+            </div>
+
             {/* Execution Mode Selector */}
             <div style={{ marginBottom: "20px" }}>
               <label
@@ -230,12 +399,15 @@ export default function ExecuteJsComponent({
               >
                 Execution Mode:
               </label>
-              <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
+              <div
+                style={{ display: "flex", gap: "10px", marginBottom: "10px" }}
+              >
                 <button
                   onClick={() => setExecutionMode("code")}
                   style={{
                     padding: "8px 15px",
-                    backgroundColor: executionMode === "code" ? "#6f42c1" : "#f0f0f0",
+                    backgroundColor:
+                      executionMode === "code" ? "#6f42c1" : "#f0f0f0",
                     color: executionMode === "code" ? "white" : "#333",
                     border: "1px solid #ddd",
                     borderRadius: "4px",
@@ -250,7 +422,8 @@ export default function ExecuteJsComponent({
                   onClick={() => setExecutionMode("ipfs")}
                   style={{
                     padding: "8px 15px",
-                    backgroundColor: executionMode === "ipfs" ? "#6f42c1" : "#f0f0f0",
+                    backgroundColor:
+                      executionMode === "ipfs" ? "#6f42c1" : "#f0f0f0",
                     color: executionMode === "ipfs" ? "white" : "#333",
                     border: "1px solid #ddd",
                     borderRadius: "4px",
@@ -267,43 +440,64 @@ export default function ExecuteJsComponent({
             {/* Conditional Input Based on Execution Mode */}
             {executionMode === "code" ? (
               <div style={{ marginBottom: "15px" }}>
-                <label
-                  htmlFor={`lit-action-code-${authContext?.sessionKey || 'default'}`}
-                  style={{
-                    display: "block",
-                    marginBottom: "8px",
-                    fontWeight: "500",
-                  }}
-                >
-                  Lit Action Code:
-                </label>
-                <textarea
-                  id={`lit-action-code-${authContext?.sessionKey || 'default'}`}
-                  value={litActionCode}
-                  onChange={(e) => setLitActionCode(e.target.value)}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                  <label
+                    style={{
+                      fontWeight: "500",
+                    }}
+                  >
+                    Lit Action Code:
+                  </label>
+                  <button
+                    onClick={resetToDefaultCode}
+                    disabled={!authContext || isExecuting}
+                    style={{
+                      padding: "4px 8px",
+                      backgroundColor: "#28a745",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "3px",
+                      cursor: !authContext || isExecuting ? "not-allowed" : "pointer",
+                      fontSize: "12px",
+                      fontWeight: "500",
+                      opacity: !authContext || isExecuting ? 0.6 : 1,
+                    }}
+                  >
+                    🔄 Reset to Default
+                  </button>
+                </div>
+                <div
                   style={{
                     width: "100%",
-                    height: "200px",
-                    padding: "10px",
+                    height: "400px",
                     border: "1px solid #dddddd",
                     borderRadius: "4px",
-                    fontSize: "14px",
-                    fontFamily: "monospace",
-                    boxSizing: "border-box",
-                    resize: "vertical",
+                    overflow: "hidden",
+                    opacity: !authContext || isExecuting ? 0.6 : 1,
+                    pointerEvents:
+                      !authContext || isExecuting ? "none" : "auto",
                   }}
-                  placeholder="Enter your Lit Action JavaScript code here..."
-                  disabled={!authContext || isExecuting}
-                />
-                <small style={{ display: "block", marginTop: "5px", color: "#555" }}>
-                  Write JavaScript code that will be executed on Lit Protocol nodes. 
-                  Use <code>jsParams</code> to access passed parameters and <code>LitActions.setResponse()</code> to return data.
+                >
+                  <MyEditorComponent
+                    onCodeChange={handleCodeChange}
+                    initialCode={litActionCode}
+                  />
+                </div>
+                <small
+                  style={{ display: "block", marginTop: "5px", color: "#555" }}
+                >
+                  ✨ <strong>Enhanced with IntelliSense:</strong> Use{" "}
+                  <code>LitActions.*</code> for all Lit Protocol functions.
+                  Global variables like <code>jsParams</code>,{" "}
+                  <code>publicKey</code> are auto-completed.
                 </small>
               </div>
             ) : (
               <div style={{ marginBottom: "15px" }}>
                 <label
-                  htmlFor={`ipfs-cid-input-${authContext?.sessionKey || 'default'}`}
+                  htmlFor={`ipfs-cid-input-${
+                    authContext?.sessionKey || "default"
+                  }`}
                   style={{
                     display: "block",
                     marginBottom: "8px",
@@ -313,7 +507,7 @@ export default function ExecuteJsComponent({
                   IPFS CID:
                 </label>
                 <input
-                  id={`ipfs-cid-input-${authContext?.sessionKey || 'default'}`}
+                  id={`ipfs-cid-input-${authContext?.sessionKey || "default"}`}
                   type="text"
                   value={ipfsCid}
                   onChange={(e) => setIpfsCid(e.target.value)}
@@ -329,8 +523,11 @@ export default function ExecuteJsComponent({
                   placeholder="QmXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXx"
                   disabled={!authContext || isExecuting}
                 />
-                <small style={{ display: "block", marginTop: "5px", color: "#555" }}>
-                  Enter the IPFS CID of a Lit Action that has been previously uploaded to IPFS.
+                <small
+                  style={{ display: "block", marginTop: "5px", color: "#555" }}
+                >
+                  Enter the IPFS CID of a Lit Action that has been previously
+                  uploaded to IPFS.
                 </small>
               </div>
             )}
@@ -338,7 +535,9 @@ export default function ExecuteJsComponent({
             {/* jsParams Input */}
             <div style={{ marginBottom: "15px" }}>
               <label
-                htmlFor={`js-params-input-${authContext?.sessionKey || 'default'}`}
+                htmlFor={`js-params-input-${
+                  authContext?.sessionKey || "default"
+                }`}
                 style={{
                   display: "block",
                   marginBottom: "8px",
@@ -347,27 +546,30 @@ export default function ExecuteJsComponent({
               >
                 JavaScript Parameters (JSON):
               </label>
-              <textarea
-                id={`js-params-input-${authContext?.sessionKey || 'default'}`}
-                value={jsParamsText}
-                onChange={(e) => setJsParamsText(e.target.value)}
+              <div
                 style={{
                   width: "100%",
-                  height: "120px",
-                  padding: "10px",
+                  height: "150px",
                   border: "1px solid #dddddd",
                   borderRadius: "4px",
-                  fontSize: "14px",
-                  fontFamily: "monospace",
-                  boxSizing: "border-box",
-                  resize: "vertical",
+                  overflow: "hidden",
+                  opacity: !authContext || isExecuting ? 0.6 : 1,
+                  pointerEvents: !authContext || isExecuting ? "none" : "auto",
                 }}
-                placeholder='{"key": "value", "message": "Hello World"}'
-                disabled={!authContext || isExecuting}
-              />
-              <small style={{ display: "block", marginTop: "5px", color: "#555" }}>
-                Parameters to pass to your Lit Action. Must be valid JSON format. 
-                Access these in your Lit Action using <code>jsParams.parameterName</code>.
+              >
+                <MyEditorComponent
+                  onCodeChange={setJsParamsText}
+                  initialCode={jsParamsText}
+                  language="json"
+                  height="150px"
+                />
+              </div>
+              <small
+                style={{ display: "block", marginTop: "5px", color: "#555" }}
+              >
+                Parameters to pass to your Lit Action. Must be valid JSON
+                format. Access these in your Lit Action using{" "}
+                <code>jsParams.parameterName</code>.
               </small>
             </div>
 
@@ -381,13 +583,16 @@ export default function ExecuteJsComponent({
                 color: "white",
                 border: "none",
                 borderRadius: "4px",
-                cursor:
-                  !authContext || isExecuting ? "not-allowed" : "pointer",
+                cursor: !authContext || isExecuting ? "not-allowed" : "pointer",
                 fontWeight: "500",
                 fontSize: "16px",
               }}
             >
-              {isExecuting ? "Executing..." : `Execute Lit Action (${executionMode === "code" ? "Code" : "IPFS"})`}
+              {isExecuting
+                ? "🔄 Executing..."
+                : `🚀 Execute Lit Action (${
+                    executionMode === "code" ? "Code" : "IPFS"
+                  })`}
             </button>
           </div>
         }
@@ -397,6 +602,368 @@ export default function ExecuteJsComponent({
         theme="dracula"
         isSuccess={isSuccess}
       />
+
+      {/* Fullscreen Modal for Expanded Editor */}
+      {isEditorExpanded && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.9)",
+            zIndex: 9999,
+            display: "flex",
+            flexDirection: "column",
+            padding: "20px",
+            color: "white",
+          }}
+          onClick={(e) => {
+            // Close modal when clicking on backdrop
+            if (e.target === e.currentTarget) {
+              setIsEditorExpanded(false);
+            }
+          }}
+        >
+          {/* Modal Header */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "20px",
+              padding: "0 10px",
+            }}
+          >
+            <div>
+              <h2 style={{ margin: 0, fontSize: "24px", fontWeight: "600" }}>
+                🖥️ Fullscreen Lit Action Editor
+              </h2>
+              <p style={{ 
+                margin: "4px 0 0 0", 
+                fontSize: "14px", 
+                color: "#ccc",
+                fontStyle: "italic" 
+              }}>
+                Press <kbd style={{ 
+                  backgroundColor: "#444", 
+                  padding: "2px 6px", 
+                  borderRadius: "3px", 
+                  fontSize: "12px",
+                  border: "1px solid #666"
+                }}>⌘+Enter</kbd> or <kbd style={{ 
+                  backgroundColor: "#444", 
+                  padding: "2px 6px", 
+                  borderRadius: "3px", 
+                  fontSize: "12px",
+                  border: "1px solid #666"
+                }}>Ctrl+Enter</kbd> to execute
+              </p>
+            </div>
+            <button
+              onClick={() => setIsEditorExpanded(false)}
+              style={{
+                padding: "8px 16px",
+                backgroundColor: "#dc3545",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: "500",
+              }}
+            >
+              ✕ Close
+            </button>
+          </div>
+
+          {/* Modal Content */}
+          <div
+            style={{
+              display: "flex",
+              flex: 1,
+              gap: "20px",
+              minHeight: 0, // Important for flexbox
+            }}
+          >
+            {/* Left Panel - Code Editor */}
+            <div
+              style={{
+                width: "60%", // Fixed width instead of flex
+                display: "flex",
+                flexDirection: "column",
+                gap: "15px",
+              }}
+            >
+              {/* Execution Mode Selector */}
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontWeight: "500",
+                    color: "white",
+                  }}
+                >
+                  Execution Mode:
+                </label>
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <button
+                    onClick={() => setExecutionMode("code")}
+                    style={{
+                      padding: "8px 15px",
+                      backgroundColor:
+                        executionMode === "code" ? "#6f42c1" : "#555",
+                      color: "white",
+                      border: "1px solid #666",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      fontSize: "14px",
+                      fontWeight: "500",
+                    }}
+                  >
+                    Custom Code
+                  </button>
+                  <button
+                    onClick={() => setExecutionMode("ipfs")}
+                    style={{
+                      padding: "8px 15px",
+                      backgroundColor:
+                        executionMode === "ipfs" ? "#6f42c1" : "#555",
+                      color: "white",
+                      border: "1px solid #666",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      fontSize: "14px",
+                      fontWeight: "500",
+                    }}
+                  >
+                    IPFS CID
+                  </button>
+                </div>
+              </div>
+
+              {/* Editor Area */}
+              {executionMode === "code" ? (
+                <div
+                  style={{ flex: 1, display: "flex", flexDirection: "column" }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                    <label
+                      style={{
+                        fontWeight: "500",
+                        color: "white",
+                      }}
+                    >
+                      Lit Action Code:
+                    </label>
+                    <button
+                      onClick={resetToDefaultCode}
+                      disabled={!authContext || isExecuting}
+                      style={{
+                        padding: "4px 8px",
+                        backgroundColor: "#28a745",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "3px",
+                        cursor: !authContext || isExecuting ? "not-allowed" : "pointer",
+                        fontSize: "12px",
+                        fontWeight: "500",
+                        opacity: !authContext || isExecuting ? 0.6 : 1,
+                      }}
+                    >
+                      🔄 Reset to Default
+                    </button>
+                  </div>
+                  <div
+                    style={{
+                      flex: 1,
+                      border: "1px solid #555",
+                      borderRadius: "6px",
+                      overflow: "hidden",
+                      opacity: !authContext || isExecuting ? 0.6 : 1,
+                      pointerEvents:
+                        !authContext || isExecuting ? "none" : "auto",
+                    }}
+                  >
+                    <MyEditorComponent
+                      onCodeChange={handleCodeChange}
+                      initialCode={litActionCode}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "8px",
+                      fontWeight: "500",
+                      color: "white",
+                    }}
+                  >
+                    IPFS CID:
+                  </label>
+                  <input
+                    type="text"
+                    value={ipfsCid}
+                    onChange={(e) => setIpfsCid(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "10px",
+                      border: "1px solid #555",
+                      borderRadius: "4px",
+                      fontSize: "14px",
+                      fontFamily: "monospace",
+                      backgroundColor: "#333",
+                      color: "white",
+                      boxSizing: "border-box",
+                    }}
+                    placeholder="QmXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXx"
+                    disabled={!authContext || isExecuting}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Right Panel - Controls and Results */}
+            <div
+              style={{
+                width: "40%", // Fixed width instead of flex
+                display: "flex",
+                flexDirection: "column",
+                gap: "15px",
+                borderLeft: "1px solid #555",
+                paddingLeft: "20px",
+              }}
+            >
+              {/* jsParams Input */}
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontWeight: "500",
+                    color: "white",
+                  }}
+                >
+                  JavaScript Parameters (JSON):
+                </label>
+                <div
+                  style={{
+                    width: "100%",
+                    height: "150px",
+                    border: "1px solid #555",
+                    borderRadius: "4px",
+                    overflow: "hidden",
+                    opacity: !authContext || isExecuting ? 0.6 : 1,
+                    pointerEvents:
+                      !authContext || isExecuting ? "none" : "auto",
+                  }}
+                >
+                  <MyEditorComponent
+                    onCodeChange={setJsParamsText}
+                    initialCode={jsParamsText}
+                    language="json"
+                    height="150px"
+                  />
+                </div>
+                <small
+                  style={{ display: "block", marginTop: "5px", color: "#ccc" }}
+                >
+                  Parameters to pass to your Lit Action. Must be valid JSON
+                  format. Access these in your Lit Action using{" "}
+                  <code>jsParams.parameterName</code>.
+                </small>
+              </div>
+
+              {/* Execute Button */}
+              <button
+                onClick={executeJs}
+                disabled={!authContext || isExecuting}
+                style={{
+                  padding: "12px 20px",
+                  backgroundColor:
+                    !authContext || isExecuting ? "#555" : "#6f42c1",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor:
+                    !authContext || isExecuting ? "not-allowed" : "pointer",
+                  fontWeight: "500",
+                  fontSize: "16px",
+                }}
+              >
+                {isExecuting
+                  ? "🔄 Executing..."
+                  : `🚀 Execute Lit Action (${
+                      executionMode === "code" ? "Code" : "IPFS"
+                    })`}
+              </button>
+
+              {/* Results Panel */}
+              <div
+                style={{ 
+                  height: "300px",
+                  display: "flex", 
+                  flexDirection: "column" 
+                }}
+              >
+                <h4
+                  style={{
+                    margin: "0 0 10px 0",
+                    color: "white",
+                    fontSize: "16px",
+                  }}
+                >
+                  📊 Execution Results
+                </h4>
+                {executeResult ? (
+                  <div
+                    style={{
+                      flex: 1,
+                      border: `1px solid ${isSuccess ? "#22c55e" : "#555"}`,
+                      borderRadius: "6px",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <MyEditorComponent
+                      onCodeChange={() => {}} // Read-only, no changes needed
+                      initialCode={JSON.stringify(executeResult, null, 2)}
+                      language="json"
+                      height="100%"
+                    />
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      flex: 1,
+                      backgroundColor: "#1a1a1a",
+                      border: "1px solid #333",
+                      borderRadius: "6px",
+                      padding: "16px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <div
+                      style={{
+                        textAlign: "center",
+                        color: "#999",
+                        fontStyle: "italic",
+                      }}
+                    >
+                      Execute a Lit Action to see results here...
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
-} 
+}
