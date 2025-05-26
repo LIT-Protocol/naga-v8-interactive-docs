@@ -367,6 +367,16 @@ const ACTIONS = [
     type: "primary",
   },
 
+  // Encryption & Access Control
+  {
+    id: "encryption",
+    path: "/encryption",
+    name: "Encryption & Decryption",
+    description: "Encrypt and decrypt data using access control conditions",
+    category: "Encryption & Access Control",
+    type: "primary",
+  },
+
   // More authentication methods will be added here
 ];
 

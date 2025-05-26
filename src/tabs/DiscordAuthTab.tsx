@@ -1,10 +1,9 @@
 import { DiscordAuthenticator } from "@lit-protocol/auth";
 import { useState } from "react";
+import PkpSigningComponent from "../components/common/PkpSigningComponent";
 import { DisplayCode } from "../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgContainer";
-import EoaAuthSection from "../components/common/EoaAuthSection";
 import { useAppContext } from "../router";
-import PkpSigningComponent from "../components/common/PkpSigningComponent";
 
 const AUTH_NAME = "Discord Authentication";
 
@@ -104,7 +103,10 @@ export default function DiscordAuthTab() {
       showSuccess("discord-signin");
     } catch (error: any) {
       console.error("Error signing in with Discord:", error);
-      const errorMessage = formatErrorMessage("Failed to sign in with Discord: ", error);
+      const errorMessage = formatErrorMessage(
+        "Failed to sign in with Discord: ",
+        error
+      );
       setStatus(errorMessage);
       showError?.(errorMessage);
     } finally {
@@ -135,7 +137,10 @@ export default function DiscordAuthTab() {
       showSuccess("discord-mint-pkp");
     } catch (error: any) {
       console.error("Error minting PKP with Discord Auth:", error);
-      const errorMessage = formatErrorMessage("Failed to mint PKP with Discord Auth: ", error);
+      const errorMessage = formatErrorMessage(
+        "Failed to mint PKP with Discord Auth: ",
+        error
+      );
       setStatus(errorMessage);
       showError?.(errorMessage);
     } finally {
@@ -177,7 +182,10 @@ export default function DiscordAuthTab() {
       showSuccess("discord-create-auth-context");
     } catch (error: any) {
       console.error("Error creating auth context:", error);
-      const errorMessage = formatErrorMessage("Failed to create auth context: ", error);
+      const errorMessage = formatErrorMessage(
+        "Failed to create auth context: ",
+        error
+      );
       setStatus(errorMessage);
       showError?.(errorMessage);
     } finally {

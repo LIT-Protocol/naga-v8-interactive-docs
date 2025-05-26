@@ -4,6 +4,7 @@ import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgCo
 import { useAppContext } from "../router";
 import PkpSigningComponent from "../components/common/PkpSigningComponent";
 import { privateKeyToAccount } from "viem/accounts";
+import { utils as litUtils } from '@lit-protocol/lit-client';
 
 const AUTH_NAME = "Custom Authentication (dApp-Centric)";
 
@@ -16,30 +17,18 @@ const DEFAULT_DEMO_PASSWORD = "lit";
 const SITE_OWNER_PRIVATE_KEY =
   "0x65b80901b185bd7bd9c07178c8e3b2bfae62472feeeb86d3dd834e5b14c2d5f8";
 
-// Example dApp configuration (as would be provided by site owner)
-const EXAMPLE_DAPP_CONFIG = {
-  uniqueDappName: "my-supa-dupa-app-name",
-  // Generated using: litClient.utils.generateUniqueAuthMethodType({ uniqueDappName: 'my-supa-dupa-app-name' })
-  authMethodType:
-    "0x22b562b86d5d467a9f06c3f20137b37ed13981f63bd5dbdf6fc1e0fb97015401",
-  // Validation IPFS CID (site owner pins their Lit Action here)
-  validationCid: "QmYLeVmwJPVs7Uebk85YdVPivMyrvoeKR6X37kyVRZUXW4",
-  // Mock registered users (as would exist in site owner's backend)
-  registeredUsers: [
-    { userId: "alice", password: "lit", pkpPublicKey: "0x04..." }, // Mock PKP
-    { userId: "bob", password: "password", pkpPublicKey: "0x05..." }, // Mock PKP
-  ],
-};
 
 // Code snippets for each step
 const SITE_OWNER_BACKEND_CODE = `
+import { utils as litUtils } from '@lit-protocol/lit-client';
+
 class myDappBackend {
 
   // Create a unique secret name of your dApp (you can share it if you want to share the authMethodType)
   uniqueDappName: string = 'my-supa-dupa-app-name';
   
   // Use Lit client utilities to generate unique auth method type
-  authMethodConfig = litClient.utils.generateUniqueAuthMethodType({
+  authMethodConfig = litUtils.generateUniqueAuthMethodType({
     uniqueDappName: this.uniqueDappName
   });
   
@@ -58,7 +47,7 @@ class myDappBackend {
 
   // Generate unique auth data for each user using Lit utilities
   private _generateAuthData(userId: string) {
-    return litClient.utils.generateAuthData({
+    return litUtils.generateAuthData({
       uniqueDappName: this.uniqueDappName,
       uniqueAuthMethodType: this.authMethodConfig.bigint,
       userId: userId
@@ -112,6 +101,7 @@ await ownerDapp.mintPKPForUser('alice');
 `;
 
 const USER_FRONTEND_CODE = `
+import { utils as litUtils } from '@lit-protocol/lit-client';
 
 class myDappFrontend {
   constructor(private readonly myDappBackend: myDappBackend) {
@@ -153,7 +143,7 @@ const userPkpPublicKey = userDashboard.getMyPkpPublicKey();
 const validationIpfsCid = userDashboard.getValidationIpfsCid();
 
 // Generate authMethodId using the same utilities (or get from backend)
-const authData = litClient.utils.generateAuthData({
+const authData = litUtils.generateAuthData({
   uniqueDappName: 'my-supa-dupa-app-name',
   uniqueAuthMethodType: BigInt('0x22b562b86d5d467a9f06c3f20137b37ed13981f63bd5dbdf6fc1e0fb97015401'),
   userId: 'alice'
@@ -193,9 +183,10 @@ const signature = await litClient.chain.ethereum.pkpSign({
 });`;
 
 const VALIDATION_LIT_ACTION_CODE = `
-// Example dApp Authenticator (provided by site owner as SDK)
+import { utils as litUtils } from '@lit-protocol/lit-client';
+
 export class ExampleAppAuthenticator {
-  // Generated using: litClient.utils.generateUniqueAuthMethodType({ uniqueDappName: 'my-supa-dupa-app-name' })
+  // Generated using: litUtils.generateUniqueAuthMethodType({ uniqueDappName: 'my-supa-dupa-app-name' })
   public static readonly AUTH_METHOD_TYPE = 
     '0x22b562b86d5d467a9f06c3f20137b37ed13981f63bd5dbdf6fc1e0fb97015401';
   
@@ -363,7 +354,7 @@ export default function CustomAuthTab() {
       const { litClient } = assertDependenciesLoaded();
 
       // Use real Lit client utilities to generate unique auth method type
-      const authMethodConfig = litClient.utils.generateUniqueAuthMethodType({
+      const authMethodConfig = litUtils.generateUniqueAuthMethodType({
         uniqueDappName: dappName,
       });
 
@@ -432,7 +423,7 @@ export default function CustomAuthTab() {
       );
 
       // Generate auth data for user using real Lit utilities
-      const authData = litClient.utils.generateAuthData({
+      const authData = litUtils.generateAuthData({
         uniqueDappName: dappName,
         uniqueAuthMethodType: authMethodConfig.bigint,
         userId: userId,
@@ -728,7 +719,9 @@ export default function CustomAuthTab() {
 
             <DisplayCode
               code={`// Generate unique auth method type for dApp
-const authMethodConfig = litClient.utils.generateUniqueAuthMethodType({
+import { utils as litUtils } from '@lit-protocol/lit-client';
+
+const authMethodConfig = litUtils.generateUniqueAuthMethodType({
   uniqueDappName: '${dappName}'
 });
 
@@ -1038,9 +1031,12 @@ console.log('Auth Method Type (bigint):', authMethodConfig.bigint);`}
             </p>
 
             <DisplayCode
-              code={`// Mint PKP for each user, assuming that's what you want to do
+              code={`
+import { utils as litUtils } from '@lit-protocol/lit-client';
+
+// Mint PKP for each user, assuming that's what you want to do
 for (const userId of ['alice', 'bob']) {
-  const authData = litClient.utils.generateAuthData({
+  const authData = litUtils.generateAuthData({
     uniqueDappName: '${dappName}',
     uniqueAuthMethodType: authMethodConfig.bigint,
     userId: userId

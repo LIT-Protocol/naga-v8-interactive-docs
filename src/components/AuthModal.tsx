@@ -1,23 +1,36 @@
 /**
  * AuthModal.tsx
- * 
+ *
  * Unified authentication modal that provides access to all supported authentication methods.
  * Handles the complete authentication flow and PKP management for each method.
  */
 
-import React, { useState } from 'react';
-import { GoogleAuthenticator, DiscordAuthenticator } from '@lit-protocol/auth';
-import { privateKeyToAccount } from 'viem/accounts';
-import { useWalletClient } from 'wagmi';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
-import PkpSigningComponent from './common/PkpSigningComponent';
+import React, { useState } from "react";
+import { GoogleAuthenticator, DiscordAuthenticator } from "@lit-protocol/auth";
+import { privateKeyToAccount } from "viem/accounts";
+import { useWalletClient } from "wagmi";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
+import PkpSigningComponent from "./common/PkpSigningComponent";
+
+// Import icon assets
+import googleIcon from "../assets/google.png";
+import discordIcon from "../assets/discord.png";
+import web3WalletIcon from "../assets/web3-wallet.svg";
+import passkeyIcon from "../assets/passkey.svg";
 
 // Configuration constants
-const DEFAULT_PRIVATE_KEY = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+const DEFAULT_PRIVATE_KEY =
+  "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
 const FAUCET_URL = "https://chronicle-yellowstone-faucet.getlit.dev/";
 
-type AuthMethod = 'google' | 'discord' | 'eoa' | 'eoa-native' | 'custom';
-type AuthStep = 'select' | 'authenticate' | 'mint' | 'context' | 'sign' | 'complete';
+type AuthMethod = "google" | "discord" | "eoa" | "eoa-native" | "custom";
+type AuthStep =
+  | "select"
+  | "authenticate"
+  | "mint"
+  | "context"
+  | "sign"
+  | "complete";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -41,79 +54,82 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   onAuthSuccess,
   litClient,
-  authManager
+  authManager,
 }) => {
   const { data: walletClient } = useWalletClient();
-  
+
   // State management
-  const [currentStep, setCurrentStep] = useState<AuthStep>('select');
+  const [currentStep, setCurrentStep] = useState<AuthStep>("select");
   const [selectedMethod, setSelectedMethod] = useState<AuthMethod | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Auth data state
   const [authData, setAuthData] = useState<any>(null);
   const [pkpInfo, setPkpInfo] = useState<any>(null);
   const [authContext, setAuthContext] = useState<any>(null);
   const [account, setAccount] = useState<any>(null);
-  
+
   // EOA specific state
   const [privateKey, setPrivateKey] = useState(DEFAULT_PRIVATE_KEY);
-  const [accountMethod, setAccountMethod] = useState<'privateKey' | 'wallet'>('privateKey');
+  const [accountMethod, setAccountMethod] = useState<"privateKey" | "wallet">(
+    "privateKey"
+  );
 
   // Authentication methods configuration
   const authMethods: AuthMethodInfo[] = [
     {
-      id: 'google',
-      name: 'Google',
-      icon: '🔵',
-      description: 'Sign in with your Google account via Lit Login Server',
-      color: '#4285F4',
-      available: true
+      id: "google",
+      name: "Google",
+      icon: googleIcon,
+      description: "Sign in with your Google account via Lit Login Server",
+      color: "#4285F4",
+      available: true,
     },
     {
-      id: 'discord',
-      name: 'Discord',
-      icon: '🟣',
-      description: 'Sign in with your Discord account via Lit Login Server',
-      color: '#5865F2',
-      available: true
+      id: "discord",
+      name: "Discord",
+      icon: discordIcon,
+      description: "Sign in with your Discord account via Lit Login Server",
+      color: "#5865F2",
+      available: true,
     },
     {
-      id: 'eoa',
-      name: 'EOA Auth',
-      icon: '🟠',
-      description: 'Use your Ethereum wallet with authentication flow',
-      color: '#F7931A',
-      available: true
+      id: "eoa",
+      name: "EOA Auth",
+      icon: web3WalletIcon,
+      description: "Use your Ethereum wallet with authentication flow",
+      color: "#F7931A",
+      available: true,
     },
     {
-      id: 'eoa-native',
-      name: 'EOA Native',
-      icon: '🟡',
-      description: 'Direct EOA management with manual permissions',
-      color: '#FFD700',
-      available: true
+      id: "eoa-native",
+      name: "EOA Native",
+      icon: passkeyIcon,
+      description: "Direct EOA management with manual permissions",
+      color: "#FFD700",
+      available: true,
     },
     {
-      id: 'custom',
-      name: 'Custom Auth',
-      icon: '⚙️',
-      description: 'dApp-centric custom authentication (Advanced)',
-      color: '#6366F1',
-      available: false // Disabled for now as it requires more setup
-    }
+      id: "custom",
+      name: "Custom Auth",
+      icon: passkeyIcon,
+      description: "dApp-centric custom authentication (Advanced)",
+      color: "#6366F1",
+      available: false, // Disabled for now as it requires more setup
+    },
   ];
 
   // Utility functions
   const formatError = (prefix: string, error: any): string => {
     if (error?.message) return `${prefix}${error.message}`;
-    if (typeof error === 'object') return `${prefix}${JSON.stringify(error, null, 2)}`;
+    if (typeof error === "object")
+      return `${prefix}${JSON.stringify(error, null, 2)}`;
     return `${prefix}${String(error)}`;
   };
 
   const resetState = () => {
-    setCurrentStep('select');
+    setCurrentStep("select");
     setSelectedMethod(null);
     setIsProcessing(false);
     setError(null);
@@ -141,12 +157,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     try {
       setIsProcessing(true);
       setError(null);
-      
-      const authData = await GoogleAuthenticator.authenticate("https://login.litgateway.com");
+
+      const authData = await GoogleAuthenticator.authenticate(
+        "https://login.litgateway.com"
+      );
       setAuthData(authData);
-      setCurrentStep('mint');
+      setCurrentStep("mint");
     } catch (error) {
-      handleError(error, 'Google authentication failed');
+      handleError(error, "Google authentication failed");
     } finally {
       setIsProcessing(false);
     }
@@ -156,12 +174,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     try {
       setIsProcessing(true);
       setError(null);
-      
-      const authData = await DiscordAuthenticator.authenticate("https://login.litgateway.com");
+
+      const authData = await DiscordAuthenticator.authenticate(
+        "https://login.litgateway.com"
+      );
       setAuthData(authData);
-      setCurrentStep('mint');
+      setCurrentStep("mint");
     } catch (error) {
-      handleError(error, 'Discord authentication failed');
+      handleError(error, "Discord authentication failed");
     } finally {
       setIsProcessing(false);
     }
@@ -171,33 +191,35 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     try {
       setIsProcessing(true);
       setError(null);
-      
+
       let account;
       let authData;
-      
-      if (accountMethod === 'privateKey') {
-        if (!privateKey.startsWith('0x') || privateKey.length !== 66) {
-          throw new Error('Invalid private key format');
+
+      if (accountMethod === "privateKey") {
+        if (!privateKey.startsWith("0x") || privateKey.length !== 66) {
+          throw new Error("Invalid private key format");
         }
         account = privateKeyToAccount(privateKey as `0x${string}`);
-        
-        const { ViemAccountAuthenticator } = await import('@lit-protocol/auth');
+
+        const { ViemAccountAuthenticator } = await import("@lit-protocol/auth");
         authData = await ViemAccountAuthenticator.authenticate(account);
       } else {
         if (!walletClient?.account) {
-          throw new Error('No wallet connected');
+          throw new Error("No wallet connected");
         }
         account = walletClient;
-        
-        const { WalletClientAuthenticator } = await import('@lit-protocol/auth');
+
+        const { WalletClientAuthenticator } = await import(
+          "@lit-protocol/auth"
+        );
         authData = await WalletClientAuthenticator.authenticate(walletClient);
       }
-      
+
       setAccount(account);
       setAuthData(authData);
-      setCurrentStep('mint');
+      setCurrentStep("mint");
     } catch (error) {
-      handleError(error, 'EOA authentication failed');
+      handleError(error, "EOA authentication failed");
     } finally {
       setIsProcessing(false);
     }
@@ -207,25 +229,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     try {
       setIsProcessing(true);
       setError(null);
-      
+
       let account;
-      
-      if (accountMethod === 'privateKey') {
-        if (!privateKey.startsWith('0x') || privateKey.length !== 66) {
-          throw new Error('Invalid private key format');
+
+      if (accountMethod === "privateKey") {
+        if (!privateKey.startsWith("0x") || privateKey.length !== 66) {
+          throw new Error("Invalid private key format");
         }
         account = privateKeyToAccount(privateKey as `0x${string}`);
       } else {
         if (!walletClient?.account) {
-          throw new Error('No wallet connected');
+          throw new Error("No wallet connected");
         }
         account = walletClient;
       }
-      
+
       setAccount(account);
-      setCurrentStep('mint');
+      setCurrentStep("mint");
     } catch (error) {
-      handleError(error, 'EOA native setup failed');
+      handleError(error, "EOA native setup failed");
     } finally {
       setIsProcessing(false);
     }
@@ -237,36 +259,36 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     try {
       setIsProcessing(true);
       setError(null);
-      
+
       let result;
-      
-      if (selectedMethod === 'eoa-native') {
+
+      if (selectedMethod === "eoa-native") {
         // EOA Native: Direct minting
         result = await litClient.mintWithEoa({ account });
-      } else if (selectedMethod === 'eoa') {
+      } else if (selectedMethod === "eoa") {
         // EOA Auth: Mint with auth data
-        if (accountMethod === 'privateKey') {
+        if (accountMethod === "privateKey") {
           result = await litClient.mintWithAuth({
             account,
             authData,
-            scopes: ['sign-anything']
+            scopes: ["sign-anything"],
           });
         } else {
           result = await litClient.mintWithAuth({
             account: walletClient,
             authData,
-            scopes: ['sign-anything']
+            scopes: ["sign-anything"],
           });
         }
       } else {
         // OAuth methods (Google, Discord)
         result = await litClient.authService.mintWithAuth({ authData });
       }
-      
+
       setPkpInfo(result.data);
-      setCurrentStep(selectedMethod === 'eoa-native' ? 'sign' : 'context');
+      setCurrentStep(selectedMethod === "eoa-native" ? "sign" : "context");
     } catch (error) {
-      handleError(error, 'PKP minting failed');
+      handleError(error, "PKP minting failed");
     } finally {
       setIsProcessing(false);
     }
@@ -278,7 +300,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     try {
       setIsProcessing(true);
       setError(null);
-      
+
       const context = await authManager.createPkpAuthContext({
         authData,
         pkpPublicKey: pkpInfo.pubkey,
@@ -294,11 +316,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         },
         litClient,
       });
-      
+
       setAuthContext(context);
-      setCurrentStep('sign');
+      setCurrentStep("sign");
     } catch (error) {
-      handleError(error, 'Auth context creation failed');
+      handleError(error, "Auth context creation failed");
     } finally {
       setIsProcessing(false);
     }
@@ -307,49 +329,92 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   // ========== RENDER METHODS ==========
 
   const renderMethodSelection = () => (
-    <div style={{ padding: '20px' }}>
-      <h2 style={{ marginBottom: '20px', textAlign: 'center' }}>Choose Authentication Method</h2>
-      <div style={{ display: 'grid', gap: '15px', maxWidth: '500px', margin: '0 auto' }}>
+    <div style={{ padding: "20px" }}>
+      <h2 style={{ marginBottom: "20px", textAlign: "center" }}>
+        Choose Authentication Method
+      </h2>
+      <div
+        style={{
+          display: "grid",
+          gap: "10px",
+          maxWidth: "450px",
+          margin: "0 auto",
+        }}
+      >
         {authMethods.map((method) => (
           <button
             key={method.id}
             onClick={() => {
               if (!method.available) return;
               setSelectedMethod(method.id);
-              setCurrentStep('authenticate');
+              setCurrentStep("authenticate");
             }}
             disabled={!method.available}
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '15px',
-              padding: '20px',
-              border: `2px solid ${method.available ? method.color : '#ccc'}`,
-              borderRadius: '12px',
-              backgroundColor: method.available ? 'white' : '#f5f5f5',
-              cursor: method.available ? 'pointer' : 'not-allowed',
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              padding: "12px 16px",
+              border: `1px solid ${method.available ? method.color : "#ccc"}`,
+              borderRadius: "8px",
+              backgroundColor: method.available ? "white" : "#f5f5f5",
+              cursor: method.available ? "pointer" : "not-allowed",
               opacity: method.available ? 1 : 0.6,
-              transition: 'all 0.2s',
-              textAlign: 'left'
+              transition: "all 0.2s",
+              textAlign: "left",
+              minHeight: "60px",
             }}
             onMouseEnter={(e) => {
               if (method.available) {
-                e.currentTarget.style.backgroundColor = method.color + '10';
+                e.currentTarget.style.backgroundColor = method.color + "10";
+                e.currentTarget.style.borderColor = method.color;
               }
             }}
             onMouseLeave={(e) => {
               if (method.available) {
-                e.currentTarget.style.backgroundColor = 'white';
+                e.currentTarget.style.backgroundColor = "white";
+                e.currentTarget.style.borderColor = method.color;
               }
             }}
           >
-            <span style={{ fontSize: '24px' }}>{method.icon}</span>
-            <div style={{ flex: 1 }}>
-              <h3 style={{ margin: '0 0 5px 0', color: method.available ? method.color : '#999' }}>
+            <img
+              src={method.icon}
+              alt={method.name}
+              style={{
+                width: "24px",
+                height: "24px",
+                objectFit: "contain",
+                flexShrink: 0,
+              }}
+            />
+            <div
+              style={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                textAlign: "center",
+              }}
+            >
+              <h3
+                style={{
+                  margin: "0 0 4px 0",
+                  color: method.available ? method.color : "#999",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                }}
+              >
                 {method.name}
-                {!method.available && ' (Coming Soon)'}
+                {!method.available && " (Coming Soon)"}
               </h3>
-              <p style={{ margin: 0, fontSize: '14px', color: '#666' }}>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "12px",
+                  color: "#666",
+                  lineHeight: "1.3",
+                }}
+              >
                 {method.description}
               </p>
             </div>
@@ -360,20 +425,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   );
 
   const renderAuthentication = () => {
-    const method = authMethods.find(m => m.id === selectedMethod);
+    const method = authMethods.find((m) => m.id === selectedMethod);
     if (!method) return null;
 
     return (
-      <div style={{ padding: '20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+      <div style={{ padding: "20px" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            marginBottom: "20px",
+          }}
+        >
           <button
-            onClick={() => setCurrentStep('select')}
+            onClick={() => setCurrentStep("select")}
             style={{
-              padding: '8px 12px',
-              backgroundColor: '#f0f0f0',
-              border: '1px solid #ddd',
-              borderRadius: '6px',
-              cursor: 'pointer'
+              padding: "8px 12px",
+              backgroundColor: "#f0f0f0",
+              border: "1px solid #ddd",
+              borderRadius: "6px",
+              cursor: "pointer",
             }}
           >
             ← Back
@@ -384,78 +456,94 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         </div>
 
         {error && (
-          <div style={{
-            padding: '15px',
-            backgroundColor: '#fee',
-            border: '1px solid #fcc',
-            borderRadius: '6px',
-            marginBottom: '20px',
-            color: '#c00'
-          }}>
+          <div
+            style={{
+              padding: "15px",
+              backgroundColor: "#fee",
+              border: "1px solid #fcc",
+              borderRadius: "6px",
+              marginBottom: "20px",
+              color: "#c00",
+            }}
+          >
             {error}
           </div>
         )}
 
-        {(selectedMethod === 'eoa' || selectedMethod === 'eoa-native') && (
-          <div style={{ marginBottom: '20px' }}>
+        {(selectedMethod === "eoa" || selectedMethod === "eoa-native") && (
+          <div style={{ marginBottom: "20px" }}>
             <h4>Choose Account Method:</h4>
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+            <div style={{ display: "flex", gap: "10px", marginBottom: "15px" }}>
               <button
-                onClick={() => setAccountMethod('privateKey')}
+                onClick={() => setAccountMethod("privateKey")}
                 style={{
-                  padding: '8px 15px',
-                  backgroundColor: accountMethod === 'privateKey' ? method.color : '#f0f0f0',
-                  color: accountMethod === 'privateKey' ? 'white' : '#333',
-                  border: '1px solid #ddd',
-                  borderRadius: '6px',
-                  cursor: 'pointer'
+                  padding: "8px 15px",
+                  backgroundColor:
+                    accountMethod === "privateKey" ? method.color : "#f0f0f0",
+                  color: accountMethod === "privateKey" ? "white" : "#333",
+                  border: "1px solid #ddd",
+                  borderRadius: "6px",
+                  cursor: "pointer",
                 }}
               >
                 Private Key
               </button>
               <button
-                onClick={() => setAccountMethod('wallet')}
+                onClick={() => setAccountMethod("wallet")}
                 style={{
-                  padding: '8px 15px',
-                  backgroundColor: accountMethod === 'wallet' ? method.color : '#f0f0f0',
-                  color: accountMethod === 'wallet' ? 'white' : '#333',
-                  border: '1px solid #ddd',
-                  borderRadius: '6px',
-                  cursor: 'pointer'
+                  padding: "8px 15px",
+                  backgroundColor:
+                    accountMethod === "wallet" ? method.color : "#f0f0f0",
+                  color: accountMethod === "wallet" ? "white" : "#333",
+                  border: "1px solid #ddd",
+                  borderRadius: "6px",
+                  cursor: "pointer",
                 }}
               >
                 Connected Wallet
               </button>
             </div>
 
-            {accountMethod === 'privateKey' ? (
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px' }}>Private Key:</label>
+            {accountMethod === "privateKey" ? (
+              <div style={{ marginBottom: "15px" }}>
+                <label style={{ display: "block", marginBottom: "5px" }}>
+                  Private Key:
+                </label>
                 <input
                   type="password"
                   value={privateKey}
                   onChange={(e) => setPrivateKey(e.target.value)}
                   placeholder="0x..."
                   style={{
-                    width: '100%',
-                    padding: '10px',
-                    border: '1px solid #ddd',
-                    borderRadius: '6px',
-                    fontFamily: 'monospace'
+                    width: "100%",
+                    padding: "10px",
+                    border: "1px solid #ddd",
+                    borderRadius: "6px",
+                    fontFamily: "monospace",
                   }}
                 />
-                <small style={{ color: '#666' }}>
-                  Default test key provided. Get tokens from{' '}
-                  <a href={FAUCET_URL} target="_blank" rel="noopener noreferrer">
+                <small style={{ color: "#666" }}>
+                  Default test key provided. Get tokens from{" "}
+                  <a
+                    href={FAUCET_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     Chronicle Yellowstone Faucet
                   </a>
                 </small>
               </div>
             ) : (
-              <div style={{ marginBottom: '15px' }}>
+              <div style={{ marginBottom: "15px" }}>
                 <ConnectButton />
                 {!walletClient?.account && (
-                  <p style={{ color: '#666', fontSize: '14px', marginTop: '10px' }}>
+                  <p
+                    style={{
+                      color: "#666",
+                      fontSize: "14px",
+                      marginTop: "10px",
+                    }}
+                  >
                     Please connect your wallet to continue
                   </p>
                 )}
@@ -467,157 +555,179 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         <button
           onClick={() => {
             switch (selectedMethod) {
-              case 'google': authenticateGoogle(); break;
-              case 'discord': authenticateDiscord(); break;
-              case 'eoa': authenticateEOA(); break;
-              case 'eoa-native': authenticateEOANative(); break;
+              case "google":
+                authenticateGoogle();
+                break;
+              case "discord":
+                authenticateDiscord();
+                break;
+              case "eoa":
+                authenticateEOA();
+                break;
+              case "eoa-native":
+                authenticateEOANative();
+                break;
             }
           }}
-          disabled={isProcessing || (accountMethod === 'wallet' && !walletClient?.account)}
+          disabled={
+            isProcessing ||
+            (accountMethod === "wallet" && !walletClient?.account)
+          }
           style={{
-            width: '100%',
-            padding: '15px',
-            backgroundColor: isProcessing ? '#ccc' : method.color,
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '16px',
-            fontWeight: 'bold',
-            cursor: isProcessing ? 'not-allowed' : 'pointer'
+            width: "100%",
+            padding: "15px",
+            backgroundColor: isProcessing ? "#ccc" : method.color,
+            color: "white",
+            border: "none",
+            borderRadius: "8px",
+            fontSize: "16px",
+            fontWeight: "bold",
+            cursor: isProcessing ? "not-allowed" : "pointer",
           }}
         >
-          {isProcessing ? 'Processing...' : `Authenticate with ${method.name}`}
+          {isProcessing ? "Processing..." : `Authenticate with ${method.name}`}
         </button>
       </div>
     );
   };
 
   const renderMinting = () => {
-    const method = authMethods.find(m => m.id === selectedMethod);
+    const method = authMethods.find((m) => m.id === selectedMethod);
     if (!method) return null;
 
     return (
-      <div style={{ padding: '20px' }}>
-        <h2 style={{ marginBottom: '20px', color: method.color }}>
+      <div style={{ padding: "20px" }}>
+        <h2 style={{ marginBottom: "20px", color: method.color }}>
           {method.icon} Mint PKP with {method.name}
         </h2>
 
         {error && (
-          <div style={{
-            padding: '15px',
-            backgroundColor: '#fee',
-            border: '1px solid #fcc',
-            borderRadius: '6px',
-            marginBottom: '20px',
-            color: '#c00'
-          }}>
+          <div
+            style={{
+              padding: "15px",
+              backgroundColor: "#fee",
+              border: "1px solid #fcc",
+              borderRadius: "6px",
+              marginBottom: "20px",
+              color: "#c00",
+            }}
+          >
             {error}
           </div>
         )}
 
-        <p style={{ marginBottom: '20px' }}>
-          Ready to mint your Programmable Key Pair (PKP). This will create a new wallet
-          associated with your {method.name} identity.
+        <p style={{ marginBottom: "20px" }}>
+          Ready to mint your Programmable Key Pair (PKP). This will create a new
+          wallet associated with your {method.name} identity.
         </p>
 
         <button
           onClick={mintPKP}
           disabled={isProcessing}
           style={{
-            width: '100%',
-            padding: '15px',
-            backgroundColor: isProcessing ? '#ccc' : method.color,
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '16px',
-            fontWeight: 'bold',
-            cursor: isProcessing ? 'not-allowed' : 'pointer'
+            width: "100%",
+            padding: "15px",
+            backgroundColor: isProcessing ? "#ccc" : method.color,
+            color: "white",
+            border: "none",
+            borderRadius: "8px",
+            fontSize: "16px",
+            fontWeight: "bold",
+            cursor: isProcessing ? "not-allowed" : "pointer",
           }}
         >
-          {isProcessing ? 'Minting PKP...' : 'Mint PKP'}
+          {isProcessing ? "Minting PKP..." : "Mint PKP"}
         </button>
       </div>
     );
   };
 
   const renderContextCreation = () => {
-    const method = authMethods.find(m => m.id === selectedMethod);
+    const method = authMethods.find((m) => m.id === selectedMethod);
     if (!method) return null;
 
     return (
-      <div style={{ padding: '20px' }}>
-        <h2 style={{ marginBottom: '20px', color: method.color }}>
+      <div style={{ padding: "20px" }}>
+        <h2 style={{ marginBottom: "20px", color: method.color }}>
           {method.icon} Create Authentication Context
         </h2>
 
         {error && (
-          <div style={{
-            padding: '15px',
-            backgroundColor: '#fee',
-            border: '1px solid #fcc',
-            borderRadius: '6px',
-            marginBottom: '20px',
-            color: '#c00'
-          }}>
+          <div
+            style={{
+              padding: "15px",
+              backgroundColor: "#fee",
+              border: "1px solid #fcc",
+              borderRadius: "6px",
+              marginBottom: "20px",
+              color: "#c00",
+            }}
+          >
             {error}
           </div>
         )}
 
-        <p style={{ marginBottom: '20px' }}>
-          PKP minted successfully! Now creating an authentication context for signing operations.
+        <p style={{ marginBottom: "20px" }}>
+          PKP minted successfully! Now creating an authentication context for
+          signing operations.
         </p>
 
-        <div style={{
-          padding: '15px',
-          backgroundColor: '#f0f8ff',
-          border: '1px solid #b3d9ff',
-          borderRadius: '6px',
-          marginBottom: '20px'
-        }}>
+        <div
+          style={{
+            padding: "15px",
+            backgroundColor: "#f0f8ff",
+            border: "1px solid #b3d9ff",
+            borderRadius: "6px",
+            marginBottom: "20px",
+          }}
+        >
           <strong>PKP Public Key:</strong>
           <br />
-          <code style={{ fontSize: '12px', wordBreak: 'break-all' }}>{pkpInfo?.pubkey}</code>
+          <code style={{ fontSize: "12px", wordBreak: "break-all" }}>
+            {pkpInfo?.pubkey}
+          </code>
         </div>
 
         <button
           onClick={createAuthContext}
           disabled={isProcessing}
           style={{
-            width: '100%',
-            padding: '15px',
-            backgroundColor: isProcessing ? '#ccc' : method.color,
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '16px',
-            fontWeight: 'bold',
-            cursor: isProcessing ? 'not-allowed' : 'pointer'
+            width: "100%",
+            padding: "15px",
+            backgroundColor: isProcessing ? "#ccc" : method.color,
+            color: "white",
+            border: "none",
+            borderRadius: "8px",
+            fontSize: "16px",
+            fontWeight: "bold",
+            cursor: isProcessing ? "not-allowed" : "pointer",
           }}
         >
-          {isProcessing ? 'Creating Context...' : 'Create Auth Context'}
+          {isProcessing ? "Creating Context..." : "Create Auth Context"}
         </button>
       </div>
     );
   };
 
   const renderSigning = () => {
-    const method = authMethods.find(m => m.id === selectedMethod);
+    const method = authMethods.find((m) => m.id === selectedMethod);
     if (!method) return null;
 
     return (
-      <div style={{ padding: '20px' }}>
-        <h2 style={{ marginBottom: '20px', color: method.color }}>
+      <div style={{ padding: "20px" }}>
+        <h2 style={{ marginBottom: "20px", color: method.color }}>
           {method.icon} Sign with Your PKP
         </h2>
 
-        <div style={{
-          padding: '15px',
-          backgroundColor: '#f0f8ff',
-          border: '1px solid #b3d9ff',
-          borderRadius: '6px',
-          marginBottom: '20px'
-        }}>
+        <div
+          style={{
+            padding: "15px",
+            backgroundColor: "#f0f8ff",
+            border: "1px solid #b3d9ff",
+            borderRadius: "6px",
+            marginBottom: "20px",
+          }}
+        >
           <strong>🎉 Authentication Complete!</strong>
           <br />
           Your PKP is ready for signing operations.
@@ -632,7 +742,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           componentTitle="Test Your PKP"
         />
 
-        <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
+        <div style={{ marginTop: "20px", display: "flex", gap: "10px" }}>
           <button
             onClick={() => {
               onAuthSuccess?.(authContext, pkpInfo, selectedMethod!);
@@ -640,14 +750,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             }}
             style={{
               flex: 1,
-              padding: '15px',
-              backgroundColor: '#28a745',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              cursor: 'pointer'
+              padding: "15px",
+              backgroundColor: "#28a745",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              fontSize: "16px",
+              fontWeight: "bold",
+              cursor: "pointer",
             }}
           >
             Complete Setup
@@ -656,14 +766,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             onClick={handleClose}
             style={{
               flex: 1,
-              padding: '15px',
-              backgroundColor: '#6c757d',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              cursor: 'pointer'
+              padding: "15px",
+              backgroundColor: "#6c757d",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              fontSize: "16px",
+              fontWeight: "bold",
+              cursor: "pointer",
             }}
           >
             Close
@@ -676,50 +786,54 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000
-    }}>
-      <div style={{
-        backgroundColor: 'white',
-        borderRadius: '12px',
-        maxWidth: '600px',
-        maxHeight: '90vh',
-        overflow: 'auto',
-        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
-        position: 'relative'
-      }}>
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1000,
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: "white",
+          borderRadius: "12px",
+          maxWidth: "600px",
+          maxHeight: "90vh",
+          overflow: "auto",
+          boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
+          position: "relative",
+        }}
+      >
         <button
           onClick={handleClose}
           style={{
-            position: 'absolute',
-            top: '15px',
-            right: '15px',
-            background: 'none',
-            border: 'none',
-            fontSize: '24px',
-            cursor: 'pointer',
-            color: '#666',
-            zIndex: 1001
+            position: "absolute",
+            top: "15px",
+            right: "15px",
+            background: "none",
+            border: "none",
+            fontSize: "24px",
+            cursor: "pointer",
+            color: "#666",
+            zIndex: 1001,
           }}
         >
           ×
         </button>
 
-        {currentStep === 'select' && renderMethodSelection()}
-        {currentStep === 'authenticate' && renderAuthentication()}
-        {currentStep === 'mint' && renderMinting()}
-        {currentStep === 'context' && renderContextCreation()}
-        {currentStep === 'sign' && renderSigning()}
+        {currentStep === "select" && renderMethodSelection()}
+        {currentStep === "authenticate" && renderAuthentication()}
+        {currentStep === "mint" && renderMinting()}
+        {currentStep === "context" && renderContextCreation()}
+        {currentStep === "sign" && renderSigning()}
       </div>
     </div>
   );
-}; 
+};

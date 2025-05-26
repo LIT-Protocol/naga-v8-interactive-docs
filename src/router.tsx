@@ -22,8 +22,8 @@ import SetupLitClientTab from "./tabs/SetupLitClientTab";
 import SetupAuthManagerTab from "./tabs/SetupAuthManagerTab";
 import NetworkConfigurationTab from "./tabs/NetworkConfigurationTab";
 import StoragePluginsTab from "./tabs/StoragePluginsTab";
-import { LitAuthDemo } from "./components/LitAuthDemo";
 import LitAuthProviderDemoTab from "./tabs/LitAuthProviderDemoTab";
+import EncryptionTab from "./tabs/EncryptionTab";
 
 // Create a type for the context
 type ContextType = {
@@ -90,6 +90,7 @@ export const router = createBrowserRouter([
         path: "demo",
         element: <LitAuthProviderDemoTab />,
       },
+
       // Getting Started Routes
       {
         path: "setup-lit-client",
@@ -147,6 +148,10 @@ export const router = createBrowserRouter([
       {
         path: "custom-auth",
         element: <CustomAuthTab />,
+      },
+      {
+        path: "encryption",
+        element: <EncryptionTab />,
       },
     ],
   },
