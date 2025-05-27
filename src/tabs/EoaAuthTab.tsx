@@ -2,6 +2,7 @@ import { useState } from "react";
 import { privateKeyToAccount } from "viem/accounts";
 import { useWalletClient } from "wagmi";
 import PkpSigningComponent from "../components/common/PkpSigningComponent";
+import PkpSelectionComponent from "../components/common/PkpSelectionComponent";
 import { DisplayCode } from "../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgContainer";
 import { useAppContext } from "../router";
@@ -83,7 +84,6 @@ export default function EoaAuthTab() {
 
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const [isMinting, setIsMinting] = useState(false);
   const [isCreatingAuthContext, setIsCreatingAuthContext] = useState(false);
 
   const [accountMethod, setAccountMethod] = useState<
@@ -232,62 +232,6 @@ export default function EoaAuthTab() {
       showError?.(errorMessage);
     } finally {
       setIsAuthenticating(false);
-    }
-  };
-
-  const mintPkp = async () => {
-    const { authManager, litClient } = assertDependenciesLoaded();
-
-    if (!authData || !account) {
-      throw new Error("No auth data or account found");
-    }
-
-    setStatus("Minting PKP via EOA Auth...");
-    setIsMinting(true);
-    setPkpInfo(null);
-
-    try {
-      let mintResult;
-      if (accountMethod === "privateKey") {
-        // For private key accounts, use the account directly
-        mintResult = await litClient.mintWithAuth({
-          account: account,
-          authData: authData,
-          scopes: ["sign-anything"],
-        });
-      } else {
-        // For wallet client accounts, use the wallet client
-        if (!walletClient) {
-          throw new Error(
-            "No wallet client available. Please connect your wallet."
-          );
-        }
-        mintResult = await litClient.mintWithAuth({
-          account: walletClient,
-          authData: authData,
-          scopes: ["sign-anything"],
-        });
-      }
-
-      const mintedPkpInfo = mintResult.data;
-      setPkpInfo(mintedPkpInfo);
-      console.log("Minted PKP Info:", mintedPkpInfo);
-      setStatus(
-        `PKP minted successfully via EOA Auth using ${
-          accountMethod === "privateKey" ? "private key" : "wallet client"
-        }!`
-      );
-      showSuccess("eoa-mint-pkp");
-    } catch (error: any) {
-      console.error("Error minting PKP with EOA Auth:", error);
-      const errorMessage = formatErrorMessage(
-        "Failed to mint PKP with EOA Auth: ",
-        error
-      );
-      setStatus(errorMessage);
-      showError?.(errorMessage);
-    } finally {
-      setIsMinting(false);
     }
   };
 
@@ -633,51 +577,18 @@ export default function EoaAuthTab() {
         {/* ================================================ */}
         {/*               Mint PKP via EOA Auth              */}
         {/* ================================================ */}
-        <h3 style={{ marginTop: "20px" }}>Step 3: Mint PKP via EOA Auth</h3>
-        <p>
-          Mint a new Programmable Key Pair (PKP) using your EOA authentication
-          data. This PKP will be associated with your{" "}
-          {accountMethod === "privateKey"
-            ? "private key account"
-            : "connected wallet"}{" "}
-          identity.
-        </p>
-
-        <DisplayCode
-          code={MINT_PKP_CODE}
-          language="typescript"
-          renderComponent={
-            <button
-              onClick={mintPkp}
-              disabled={
-                !areDependenciesLoaded() || isMinting || !authData || !account
-              }
-              style={{
-                padding: "10px 15px",
-                backgroundColor:
-                  !areDependenciesLoaded() || isMinting || !authData || !account
-                    ? "#cccccc"
-                    : "#28a745",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor:
-                  !areDependenciesLoaded() || isMinting || !authData || !account
-                    ? "not-allowed"
-                    : "pointer",
-                fontWeight: "500",
-                marginBottom: "10px",
-              }}
-            >
-              {isMinting ? "Minting PKP..." : "Mint New PKP with EOA Auth"}
-              {(!authData || !account) && " (Authenticate first)"}
-            </button>
-          }
-          resultData={pkpInfo}
-          resultLabel="Minted PKP Information"
-          useSideBySide={true}
-          theme="dracula"
-          isSuccess={successActions.has("eoa-mint-pkp")}
+        <PkpSelectionComponent
+          authData={authData}
+          account={account}
+          walletClient={walletClient}
+          accountMethod={accountMethod}
+          onPkpSelected={setPkpInfo}
+          setStatus={setStatus}
+          assertDependenciesLoaded={assertDependenciesLoaded}
+          showError={showError}
+          authMethodName="EOA Auth"
+          mintCodeSnippet={MINT_PKP_CODE}
+          disabled={!authData || !account}
         />
       </GreyBoarderWhiteBgContainer>
 
@@ -688,7 +599,7 @@ export default function EoaAuthTab() {
         <h3 style={{ marginTop: 0 }}>
           Step 4: Create AuthContext{" "}
           {!pkpInfo && (
-            <span style={{ color: "orange" }}>(Mint PKP first)</span>
+            <span style={{ color: "orange" }}>(Select or mint PKP first)</span>
           )}
         </h3>
         <p>

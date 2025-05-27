@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { DisplayCode } from "../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgContainer";
 import EoaAuthSection from "../components/common/EoaAuthSection";
+import PkpSelectionComponent from "../components/common/PkpSelectionComponent";
 import { useAppContext } from "../router";
 import PkpSigningComponent from "../components/common/PkpSigningComponent";
 import ExecuteJsComponent from "../components/common/ExecuteJsComponent";
@@ -66,7 +67,6 @@ export default function StytchTotpAuthTab() {
   const [authData, setAuthData] = useState<any>(null);
   const [pkpInfo, setPkpInfo] = useState<any>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const [isMinting, setIsMinting] = useState(false);
   const [isCreatingAuthContext, setIsCreatingAuthContext] = useState(false);
   const [cachedUserIds, setCachedUserIds] = useState<Record<string, string>>(
     {}
@@ -134,38 +134,6 @@ export default function StytchTotpAuthTab() {
       );
     } finally {
       setIsAuthenticating(false);
-    }
-  };
-
-  const mintPkp = async () => {
-    const { authManager, litClient } = assertDependenciesLoaded();
-
-    if (!authData) {
-      throw new Error("No auth data found");
-    }
-
-    setStatus("Minting PKP via Stytch TOTP Auth...");
-    setIsMinting(true);
-    setPkpInfo(null);
-
-    try {
-      const res = await litClient.authService.mintWithAuth({
-        authData: authData,
-      });
-
-      const mintedPkpInfo = res.data;
-      setPkpInfo(mintedPkpInfo);
-      console.log("Minted PKP Info:", mintedPkpInfo);
-      setStatus("PKP minted successfully via Stytch TOTP Auth!");
-    } catch (error: any) {
-      console.error("Error minting PKP with Stytch TOTP Auth:", error);
-      setStatus(
-        `Failed to mint PKP with Stytch TOTP Auth: ${
-          error?.message || "Unknown error"
-        }`
-      );
-    } finally {
-      setIsMinting(false);
     }
   };
 
@@ -462,51 +430,21 @@ export default function StytchTotpAuthTab() {
       </GreyBoarderWhiteBgContainer>
 
       {/* ================================================ */}
-      {/*             MINT PKP & SIGN                     */}
+      {/*             GET OR MINT PKP                     */}
       {/* ================================================ */}
       <GreyBoarderWhiteBgContainer>
-        <h3 style={{ marginTop: "20px" }}>
-          Step 2: Mint PKP via Stytch 2FA Auth
-        </h3>
-        <p>
-          Mint a new Programmable Key Pair (PKP) using your Stytch TOTP 2FA
-          authentication data.
-        </p>
-
-        <DisplayCode
-          code={MINT_PKP_CODE}
-          language="typescript"
-          renderComponent={
-            <button
-              onClick={mintPkp}
-              disabled={!areDependenciesLoaded() || isMinting || !authData}
-              style={{
-                padding: "10px 15px",
-                backgroundColor:
-                  !areDependenciesLoaded() || isMinting || !authData
-                    ? "#cccccc"
-                    : "#28a745",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor:
-                  !areDependenciesLoaded() || isMinting || !authData
-                    ? "not-allowed"
-                    : "pointer",
-                fontWeight: "500",
-                marginBottom: "10px",
-              }}
-            >
-              {isMinting
-                ? "Minting PKP..."
-                : "Mint New PKP with Stytch 2FA Auth"}
-              {!authData && " (Authenticate with TOTP first)"}
-            </button>
-          }
-          resultData={pkpInfo}
-          resultLabel="Minted PKP Information"
-          useSideBySide={true}
-          theme="dracula"
+        {/* ================================================ */}
+        {/*               Get or Mint PKP via Stytch 2FA    */}
+        {/* ================================================ */}
+        <PkpSelectionComponent
+          authData={authData}
+          onPkpSelected={setPkpInfo}
+          setStatus={setStatus}
+          assertDependenciesLoaded={assertDependenciesLoaded}
+          showError={showError}
+          authMethodName="Stytch TOTP 2FA Auth"
+          mintCodeSnippet={MINT_PKP_CODE}
+          disabled={!authData}
         />
       </GreyBoarderWhiteBgContainer>
 
@@ -514,7 +452,7 @@ export default function StytchTotpAuthTab() {
         <h3 style={{ marginTop: 0 }}>
           Step 3: Create AuthContext{" "}
           {!pkpInfo && (
-            <span style={{ color: "orange" }}>(Mint PKP first)</span>
+            <span style={{ color: "orange" }}>(Select or mint PKP first)</span>
           )}
         </h3>
         <p>

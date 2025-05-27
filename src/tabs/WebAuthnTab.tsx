@@ -1,6 +1,7 @@
 import { WebAuthnAuthenticator } from "@lit-protocol/auth";
 import { useEffect, useState } from "react";
 import EoaAuthSection from "../components/common/EoaAuthSection";
+import PkpSelectionComponent from "../components/common/PkpSelectionComponent";
 import { DisplayCode } from "../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgContainer";
 import { useAppContext } from "../router";
@@ -25,6 +26,11 @@ const authData = await WebAuthnAuthenticator.authenticate({
   authServiceBaseUrl: "http://localhost:3301",
 });
 `;
+
+const MINT_PKP_CODE = `
+const res = await litClient.authService.mintWithAuth({
+  authData: authData,
+});`;
 
 const CREATE_AUTH_CONTEXT_CODE = `
 const authContext = await authManager.createPkpAuthContext({
@@ -60,7 +66,6 @@ export default function WebAuthnTab() {
 
   const [isRegistering, setIsRegistering] = useState(false);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const [isMinting, setIsMinting] = useState(false);
   const [isCreatingAuthContext, setIsCreatingAuthContext] = useState(false);
 
   const [isFido2Available, setIsFido2Available] = useState<boolean | null>(
@@ -165,38 +170,6 @@ export default function WebAuthnTab() {
     }
   };
 
-  // Step 3: Mint PKP with the WebAuthn auth data
-  const mintPkp = async () => {
-    const { authManager, litClient } = assertDependenciesLoaded();
-
-    if (!authData) {
-      throw new Error("No auth data found");
-    }
-
-    setStatus("Minting PKP via WebAuthn Auth...");
-    setIsMinting(true);
-    setPkpInfo(null);
-
-    try {
-      const res = await litClient.authService.mintWithAuth({
-        authData: authData,
-      });
-
-      const mintedPkpInfo = res.data;
-      setPkpInfo(mintedPkpInfo);
-      console.log("Minted PKP Info:", mintedPkpInfo);
-      setStatus("PKP minted successfully via WebAuthn Auth!");
-      showSuccess("webauthn-mint-pkp");
-    } catch (error: any) {
-      console.error("Error minting PKP with WebAuthn Auth:", error);
-      const errorMessage = formatErrorMessage("Failed to mint PKP with WebAuthn Auth: ", error);
-      setStatus(errorMessage);
-      showError?.(errorMessage);
-    } finally {
-      setIsMinting(false);
-    }
-  };
-
   // Step 4: Create an auth context with the PKP
   const createAuthContext = async () => {
     try {
@@ -284,33 +257,6 @@ export default function WebAuthnTab() {
     </div>
   );
 
-  // Component to render PKP Minting button
-  const MintPKPButton = () => (
-    <button
-      onClick={mintPkp}
-      disabled={!areDependenciesLoaded() || isMinting || !authData}
-      style={{
-        padding: "10px 15px",
-        backgroundColor:
-          !areDependenciesLoaded() || isMinting || !authData
-            ? "#cccccc"
-            : "#28a745",
-        color: "white",
-        border: "none",
-        borderRadius: "4px",
-        cursor:
-          !areDependenciesLoaded() || isMinting || !authData
-            ? "not-allowed"
-            : "pointer",
-        fontWeight: "500",
-        marginBottom: "10px",
-      }}
-    >
-      {isMinting ? "Minting PKP..." : "Mint New PKP with WebAuthn"}
-      {!authData && " (Authenticate first)"}
-    </button>
-  );
-
   // Component to render Create AuthContext button
   const CreateAuthContextButton = () => (
     <button
@@ -389,30 +335,6 @@ export default function WebAuthnTab() {
         </ul>
       </GreyBoarderWhiteBgContainer>
 
-      {/* ================================================ */}
-      {/*         Get WebAuthn Registration Options        */}
-      {/* ================================================ */}
-      {/* <GreyBoarderWhiteBgContainer>
-        <h3 style={{ marginTop: "20px" }}>
-          Step 1: Get WebAuthn Registration Options
-        </h3>
-        <p>
-          The first step is to get registration options from the server. These
-          options will be used to register a WebAuthn credential with your
-          device.
-        </p>
-
-        <DisplayCode
-          code={GET_REGISTRATION_OPTIONS_CODE}
-          language="typescript"
-          renderComponent={<GetRegistrationOptionsButton />}
-          resultData={registrationOptions}
-          resultLabel="Registration Options"
-          useSideBySide={true}
-          theme="dracula"
-        />
-      </GreyBoarderWhiteBgContainer> */}
-
       <GreyBoarderWhiteBgContainer>
         {/* ================================================ */}
         {/*          Register WebAuthn Credential            */}
@@ -463,26 +385,21 @@ export default function WebAuthnTab() {
         />
       </GreyBoarderWhiteBgContainer>
 
-      {/* <GreyBoarderWhiteBgContainer> */}
-      {/* ================================================ */}
-      {/*               Mint PKP via WebAuthn              */}
-      {/* ================================================ */}
-      {/* <h3 style={{ marginTop: "20px" }}>Step 3: Mint PKP via WebAuthn</h3>
-        <p>
-          Mint a new Programmable Key Pair (PKP) using your WebAuthn credential.
-          This PKP will be associated with your WebAuthn identity.
-        </p>
-
-        <DisplayCode
-          code={MINT_PKP_CODE}
-          language="typescript"
-          renderComponent={<MintPKPButton />}
-          resultData={pkpInfo}
-          resultLabel="Minted PKP Information"
-          useSideBySide={true}
-          theme="dracula"
+      <GreyBoarderWhiteBgContainer>
+        {/* ================================================ */}
+        {/*               Get or Mint PKP via WebAuthn       */}
+        {/* ================================================ */}
+        <PkpSelectionComponent
+          authData={authData}
+          onPkpSelected={setPkpInfo}
+          setStatus={setStatus}
+          assertDependenciesLoaded={assertDependenciesLoaded}
+          showError={showError}
+          authMethodName="WebAuthn Auth"
+          mintCodeSnippet={MINT_PKP_CODE}
+          disabled={!authData}
         />
-      </GreyBoarderWhiteBgContainer> */}
+      </GreyBoarderWhiteBgContainer>
 
       <GreyBoarderWhiteBgContainer>
         {/* ================================================ */}
@@ -538,7 +455,7 @@ export default function WebAuthnTab() {
           setStatus={setStatus}
           assertDependenciesLoaded={assertDependenciesLoaded}
           defaultMessage="Hello from WebAuthn PKP!"
-          componentTitle={`Step 5: Sign Message with PKP (${AUTH_NAME})`}
+          componentTitle={`Step 4: Sign Message with PKP (${AUTH_NAME})`}
         />
       </GreyBoarderWhiteBgContainer>
 
@@ -553,7 +470,7 @@ export default function WebAuthnTab() {
           setStatus={setStatus}
           assertDependenciesLoaded={assertDependenciesLoaded}
           defaultMessage="Hello from WebAuthn Lit Action!"
-          componentTitle={`Step 6: Execute Lit Action (${AUTH_NAME})`}
+          componentTitle={`Step 5: Execute Lit Action (${AUTH_NAME})`}
           showError={showError}
         />
       </GreyBoarderWhiteBgContainer>

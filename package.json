@@ -11,6 +11,7 @@
     "clean": "rimraf dist node_modules"
   },
   "dependencies": {
+    "@lit-protocol/access-control-conditions": "link:@lit-protocol/access-control-conditions",
     "@lit-protocol/auth": "link:@lit-protocol/auth",
     "@lit-protocol/auth-helpers": "link:@lit-protocol/auth-helpers",
     "@lit-protocol/lit-client": "link:@lit-protocol/lit-client",

@@ -1,6 +1,7 @@
 import { DiscordAuthenticator } from "@lit-protocol/auth";
 import { useState } from "react";
 import PkpSigningComponent from "../components/common/PkpSigningComponent";
+import PkpSelectionComponent from "../components/common/PkpSelectionComponent";
 import { DisplayCode } from "../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgContainer";
 import { useAppContext } from "../router";
@@ -56,7 +57,6 @@ export default function DiscordAuthTab() {
   } = useAppContext();
 
   const [isSigningIn, setIsSigningIn] = useState(false);
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [isCreatingAuthContext, setIsCreatingAuthContext] = useState(false);
   const [authData, setAuthData] = useState<any>();
   const [pkpInfo, setPkpInfo] = useState<any>();
@@ -112,40 +112,6 @@ export default function DiscordAuthTab() {
       showError?.(errorMessage);
     } finally {
       setIsSigningIn(false);
-    }
-  };
-
-  const mintPkp = async () => {
-    const { authManager, litClient } = assertDependenciesLoaded();
-
-    if (!authData) {
-      throw new Error("No auth data found");
-    }
-
-    setStatus("Minting PKP via Discord Auth...");
-    setIsAuthenticating(true);
-    setPkpInfo(null);
-
-    try {
-      const res = await litClient.authService.mintWithAuth({
-        authData: authData,
-      });
-
-      const mintedPkpInfo = res.data;
-      setPkpInfo(mintedPkpInfo);
-      console.log("Minted PKP Info:", mintedPkpInfo);
-      setStatus("PKP minted successfully via Discord Auth!");
-      showSuccess("discord-mint-pkp");
-    } catch (error: any) {
-      console.error("Error minting PKP with Discord Auth:", error);
-      const errorMessage = formatErrorMessage(
-        "Failed to mint PKP with Discord Auth: ",
-        error
-      );
-      setStatus(errorMessage);
-      showError?.(errorMessage);
-    } finally {
-      setIsAuthenticating(false);
     }
   };
 
@@ -210,33 +176,6 @@ export default function DiscordAuthTab() {
       }}
     >
       {isSigningIn ? "Signing in..." : "Sign in with Discord"}
-    </button>
-  );
-
-  // Component to render PKP Minting button
-  const MintPKPButton = () => (
-    <button
-      onClick={mintPkp}
-      disabled={!areDependenciesLoaded() || isAuthenticating || !authData}
-      style={{
-        padding: "10px 15px",
-        backgroundColor:
-          !areDependenciesLoaded() || isAuthenticating || !authData
-            ? "#cccccc"
-            : "#28a745",
-        color: "white",
-        border: "none",
-        borderRadius: "4px",
-        cursor:
-          !areDependenciesLoaded() || isAuthenticating || !authData
-            ? "not-allowed"
-            : "pointer",
-        fontWeight: "500",
-        marginBottom: "10px",
-      }}
-    >
-      {isAuthenticating ? "Minting PKP..." : "Mint New PKP with Discord"}
-      {!authData && " (Sign in first)"}
     </button>
   );
 
@@ -316,7 +255,7 @@ export default function DiscordAuthTab() {
         {/* ================================================ */}
         {/*               Sign in with Discord                */}
         {/* ================================================ */}
-        <h3 style={{ marginTop: "20px" }}>Sign in with Discord</h3>
+        <h3 style={{ marginTop: "20px" }}>Step 1: Sign in with Discord</h3>
         <p>
           To sign in with Discord, you can use the `authenticate` function
           provided by the DiscordAuthenticator.
@@ -336,23 +275,17 @@ export default function DiscordAuthTab() {
 
       <GreyBoarderWhiteBgContainer>
         {/* ================================================ */}
-        {/*               Mint PKP via Discord                */}
+        {/*               Get or Mint PKP via Discord        */}
         {/* ================================================ */}
-        <h3 style={{ marginTop: "20px" }}>Mint PKP via Discord</h3>
-        <p>
-          Mint a new Programmable Key Pair (PKP) using your Discord account.
-          This PKP will be associated with your Discord identity.
-        </p>
-
-        <DisplayCode
-          code={MINT_PKP_CODE}
-          language="typescript"
-          renderComponent={<MintPKPButton />}
-          resultData={pkpInfo}
-          resultLabel="Minted PKP Information"
-          useSideBySide={true}
-          theme="dracula"
-          isSuccess={successActions.has("discord-mint-pkp")}
+        <PkpSelectionComponent
+          authData={authData}
+          onPkpSelected={setPkpInfo}
+          setStatus={setStatus}
+          assertDependenciesLoaded={assertDependenciesLoaded}
+          showError={showError}
+          authMethodName="Discord Auth"
+          mintCodeSnippet={MINT_PKP_CODE}
+          disabled={!authData}
         />
       </GreyBoarderWhiteBgContainer>
 
@@ -361,9 +294,9 @@ export default function DiscordAuthTab() {
         {/*               Create AuthContext                  */}
         {/* ================================================ */}
         <h3 style={{ marginTop: 0 }}>
-          Create AuthContext{" "}
+          Step 3: Create AuthContext{" "}
           {!pkpInfo && (
-            <span style={{ color: "orange" }}>(Mint PKP first)</span>
+            <span style={{ color: "orange" }}>(Select or mint PKP first)</span>
           )}
         </h3>
         <p>
@@ -410,7 +343,7 @@ export default function DiscordAuthTab() {
           setStatus={setStatus}
           assertDependenciesLoaded={assertDependenciesLoaded}
           defaultMessage="Hello from Discord PKP!"
-          componentTitle={`Sign Message with PKP (${AUTH_NAME})`}
+          componentTitle={`Step 4: Sign Message with PKP (${AUTH_NAME})`}
         />
       </GreyBoarderWhiteBgContainer>
 
@@ -425,7 +358,7 @@ export default function DiscordAuthTab() {
           setStatus={setStatus}
           assertDependenciesLoaded={assertDependenciesLoaded}
           defaultMessage="Hello from Discord Lit Action!"
-          componentTitle={`Execute Lit Action (${AUTH_NAME})`}
+          componentTitle={`Step 5: Execute Lit Action (${AUTH_NAME})`}
           showError={showError}
         />
       </GreyBoarderWhiteBgContainer>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { DisplayCode } from "../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgContainer";
 import EoaAuthSection from "../components/common/EoaAuthSection";
+import PkpSelectionComponent from "../components/common/PkpSelectionComponent";
 import { useAppContext } from "../router";
 import PkpSigningComponent from "../components/common/PkpSigningComponent";
 import ExecuteJsComponent from "../components/common/ExecuteJsComponent";
@@ -85,7 +86,6 @@ export default function StytchWhatsAppOtpAuthTab() {
 
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
-  const [isMinting, setIsMinting] = useState(false);
   const [isCreatingAuthContext, setIsCreatingAuthContext] = useState(false);
 
   // 2FA Setup state
@@ -241,38 +241,6 @@ export default function StytchWhatsAppOtpAuthTab() {
       );
     } finally {
       setIsVerifyingTotpSetup(false);
-    }
-  };
-
-  const mintPkp = async () => {
-    const { authManager, litClient } = assertDependenciesLoaded();
-
-    if (!authData) {
-      throw new Error("No auth data found");
-    }
-
-    setStatus("Minting PKP via Stytch WhatsApp OTP Auth...");
-    setIsMinting(true);
-    setPkpInfo(null);
-
-    try {
-      const res = await litClient.authService.mintWithAuth({
-        authData: authData,
-      });
-
-      const mintedPkpInfo = res.data;
-      setPkpInfo(mintedPkpInfo);
-      console.log("Minted PKP Info:", mintedPkpInfo);
-      setStatus("PKP minted successfully via Stytch WhatsApp OTP Auth!");
-    } catch (error: any) {
-      console.error("Error minting PKP with Stytch WhatsApp OTP Auth:", error);
-      setStatus(
-        `Failed to mint PKP with Stytch WhatsApp OTP Auth: ${
-          error?.message || "Unknown error"
-        }`
-      );
-    } finally {
-      setIsMinting(false);
     }
   };
 
@@ -898,47 +866,17 @@ export default function StytchWhatsAppOtpAuthTab() {
 
       <GreyBoarderWhiteBgContainer>
         {/* ================================================ */}
-        {/*               Mint PKP via Stytch               */}
+        {/*               Get or Mint PKP via Stytch        */}
         {/* ================================================ */}
-        <h3 style={{ marginTop: "20px" }}>Step 3: Mint PKP via Stytch Auth</h3>
-        <p>
-          Mint a new Programmable Key Pair (PKP) using your Stytch WhatsApp OTP
-          authentication data. This PKP will be associated with your WhatsApp
-          account identity.
-        </p>
-
-        <DisplayCode
-          code={MINT_PKP_CODE}
-          language="typescript"
-          renderComponent={
-            <button
-              onClick={mintPkp}
-              disabled={!areDependenciesLoaded() || isMinting || !authData}
-              style={{
-                padding: "10px 15px",
-                backgroundColor:
-                  !areDependenciesLoaded() || isMinting || !authData
-                    ? "#cccccc"
-                    : "#28a745",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor:
-                  !areDependenciesLoaded() || isMinting || !authData
-                    ? "not-allowed"
-                    : "pointer",
-                fontWeight: "500",
-                marginBottom: "10px",
-              }}
-            >
-              {isMinting ? "Minting PKP..." : "Mint New PKP with Stytch Auth"}
-              {!authData && " (Verify OTP first)"}
-            </button>
-          }
-          resultData={pkpInfo}
-          resultLabel="Minted PKP Information"
-          useSideBySide={true}
-          theme="dracula"
+        <PkpSelectionComponent
+          authData={authData}
+          onPkpSelected={setPkpInfo}
+          setStatus={setStatus}
+          assertDependenciesLoaded={assertDependenciesLoaded}
+          showError={showError}
+          authMethodName="Stytch WhatsApp OTP Auth"
+          mintCodeSnippet={MINT_PKP_CODE}
+          disabled={!authData}
         />
       </GreyBoarderWhiteBgContainer>
 
@@ -949,7 +887,7 @@ export default function StytchWhatsAppOtpAuthTab() {
         <h3 style={{ marginTop: 0 }}>
           Step 4: Create AuthContext{" "}
           {!pkpInfo && (
-            <span style={{ color: "orange" }}>(Mint PKP first)</span>
+            <span style={{ color: "orange" }}>(Select or mint PKP first)</span>
           )}
         </h3>
         <p>

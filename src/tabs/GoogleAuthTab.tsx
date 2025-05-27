@@ -6,6 +6,7 @@ import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgCo
 import EoaAuthSection from "../components/common/EoaAuthSection";
 import { useAppContext } from "../router";
 import PkpSigningComponent from "../components/common/PkpSigningComponent";
+import PkpSelectionComponent from "../components/common/PkpSelectionComponent";
 import ExecuteJsComponent from "../components/common/ExecuteJsComponent";
 
 const AUTH_NAME = "Google Authentication";
@@ -56,7 +57,6 @@ export default function GoogleAuthTab() {
   } = useAppContext();
 
   const [isSigningIn, setIsSigningIn] = useState(false);
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [isCreatingAuthContext, setIsCreatingAuthContext] = useState(false);
   const [authData, setAuthData] = useState<any>();
   const [pkpInfo, setPkpInfo] = useState<any>();
@@ -112,40 +112,6 @@ export default function GoogleAuthTab() {
       showError?.(errorMessage);
     } finally {
       setIsSigningIn(false);
-    }
-  };
-
-  const mintPkp = async () => {
-    const { authManager, litClient } = assertDependenciesLoaded();
-
-    if (!authData) {
-      throw new Error("No auth data found");
-    }
-
-    setStatus("Minting PKP via Google Auth...");
-    setIsAuthenticating(true);
-    setPkpInfo(null);
-
-    try {
-      const res = await litClient.authService.mintWithAuth({
-        authData: authData,
-      });
-
-      const mintedPkpInfo = res.data;
-      setPkpInfo(mintedPkpInfo);
-      console.log("Minted PKP Info:", mintedPkpInfo);
-      setStatus("PKP minted successfully via Google Auth!");
-      showSuccess("google-mint-pkp");
-    } catch (error: any) {
-      console.error("Error minting PKP with Google Auth:", error);
-      const errorMessage = formatErrorMessage(
-        "Failed to mint PKP with Google Auth: ",
-        error
-      );
-      setStatus(errorMessage);
-      showError?.(errorMessage);
-    } finally {
-      setIsAuthenticating(false);
     }
   };
 
@@ -210,33 +176,6 @@ export default function GoogleAuthTab() {
       }}
     >
       {isSigningIn ? "Signing in..." : "Sign in with Google"}
-    </button>
-  );
-
-  // Component to render PKP Minting button
-  const MintPKPButton = () => (
-    <button
-      onClick={mintPkp}
-      disabled={!areDependenciesLoaded() || isAuthenticating || !authData}
-      style={{
-        padding: "10px 15px",
-        backgroundColor:
-          !areDependenciesLoaded() || isAuthenticating || !authData
-            ? "#cccccc"
-            : "#28a745",
-        color: "white",
-        border: "none",
-        borderRadius: "4px",
-        cursor:
-          !areDependenciesLoaded() || isAuthenticating || !authData
-            ? "not-allowed"
-            : "pointer",
-        fontWeight: "500",
-        marginBottom: "10px",
-      }}
-    >
-      {isAuthenticating ? "Minting PKP..." : "Mint New PKP with Google"}
-      {!authData && " (Sign in first)"}
     </button>
   );
 
@@ -316,7 +255,7 @@ export default function GoogleAuthTab() {
         {/* ================================================ */}
         {/*               Sign in with Google                */}
         {/* ================================================ */}
-        <h3 style={{ marginTop: "20px" }}>Sign in with Google</h3>
+        <h3 style={{ marginTop: "20px" }}>Step 1: Sign in with Google</h3>
         <p>
           To sign in with Google, you can use the `authenticate` function
           provided by the GoogleAuthenticator.
@@ -336,23 +275,17 @@ export default function GoogleAuthTab() {
 
       <GreyBoarderWhiteBgContainer>
         {/* ================================================ */}
-        {/*               Mint PKP via Google                */}
+        {/*               Get or Mint PKP via Google         */}
         {/* ================================================ */}
-        <h3 style={{ marginTop: "20px" }}>Mint PKP via Google</h3>
-        <p>
-          Mint a new Programmable Key Pair (PKP) using your Google account. This
-          PKP will be associated with your Google identity.
-        </p>
-
-        <DisplayCode
-          code={MINT_PKP_CODE}
-          language="typescript"
-          renderComponent={<MintPKPButton />}
-          resultData={pkpInfo}
-          resultLabel="Minted PKP Information"
-          useSideBySide={true}
-          theme="dracula"
-          isSuccess={successActions.has("google-mint-pkp")}
+        <PkpSelectionComponent
+          authData={authData}
+          onPkpSelected={setPkpInfo}
+          setStatus={setStatus}
+          assertDependenciesLoaded={assertDependenciesLoaded}
+          showError={showError}
+          authMethodName="Google Auth"
+          mintCodeSnippet={MINT_PKP_CODE}
+          disabled={!authData}
         />
       </GreyBoarderWhiteBgContainer>
 
@@ -361,9 +294,9 @@ export default function GoogleAuthTab() {
         {/*               Create AuthContext                  */}
         {/* ================================================ */}
         <h3 style={{ marginTop: 0 }}>
-          Create AuthContext{" "}
+          Step 3: Create AuthContext{" "}
           {!pkpInfo && (
-            <span style={{ color: "orange" }}>(Mint PKP first)</span>
+            <span style={{ color: "orange" }}>(Select or mint PKP first)</span>
           )}
         </h3>
         <p>
@@ -410,7 +343,7 @@ export default function GoogleAuthTab() {
           setStatus={setStatus}
           assertDependenciesLoaded={assertDependenciesLoaded}
           defaultMessage="Hello from Google PKP!"
-          componentTitle={`Sign Message with PKP (${AUTH_NAME})`}
+          componentTitle={`Step 4: Sign Message with PKP (${AUTH_NAME})`}
         />
       </GreyBoarderWhiteBgContainer>
 
@@ -424,8 +357,8 @@ export default function GoogleAuthTab() {
           pkpInfo={pkpInfo}
           setStatus={setStatus}
           assertDependenciesLoaded={assertDependenciesLoaded}
-          defaultMessage="Hello from EOA Lit Action!"
-          componentTitle={`Step 6: Execute Lit Action (${AUTH_NAME})`}
+          defaultMessage="Hello from Google Lit Action!"
+          componentTitle={`Step 5: Execute Lit Action (${AUTH_NAME})`}
           showError={showError}
         />
       </GreyBoarderWhiteBgContainer>
