@@ -1,33 +1,23 @@
 import { useState } from "react";
-import { privateKeyToAccount } from "viem/accounts";
 import { useWalletClient } from "wagmi";
 import EoaAuthSection from "../components/common/EoaAuthSection";
+import AccountMethodSelector, { 
+  AccountMethod, 
+  CREATE_ACCOUNT_PRIVATE_KEY_CODE, 
+  CREATE_ACCOUNT_WALLET_CLIENT_CODE 
+} from "../components/common/AccountMethodSelector";
 import { DisplayCode } from "../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgContainer";
 import { useAppContext } from "../router";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 const OPERATION_NAME = "EOA Auth";
 
 // Configuration constants
-const DEFAULT_PRIVATE_KEY =
-  "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
 const FAUCET_URL = "https://chronicle-yellowstone-faucet.getlit.dev/";
 
-// Code snippets for each functionality
-const CREATE_ACCOUNT_PRIVATE_KEY_CODE = `
-import { privateKeyToAccount } from 'viem/accounts';
-
-// Step 1: Convert your EOA private key to a viem account object
-const myAccount = privateKeyToAccount(
-  process.env.PRIVATE_KEY as \`0x\${string}\`
-);`;
-
-const CREATE_ACCOUNT_WALLET_CLIENT_CODE = `
-import { useWalletClient } from 'wagmi';
-
-// Use your connected wallet as the account
-const { data: myAccount } = useWalletClient();`;
+// Remove the old code snippets since they're now exported from AccountMethodSelector
+// const CREATE_ACCOUNT_PRIVATE_KEY_CODE = `...` (removed)
+// const CREATE_ACCOUNT_WALLET_CLIENT_CODE = `...` (removed)
 
 const MINT_PKP_WITH_EOA_CODE = `
 // 3a. Mint a PKP using your account. This is then owned by the account
@@ -62,12 +52,12 @@ const addPermissionsTx = await pkpPermissionsManager.addPermittedAction({
 ]);`;
 
 import { createLitClient } from "@lit-protocol/lit-client";
-import { FEATURES } from "../_config";
 type LitClient = Awaited<
   ReturnType<
     Awaited<ReturnType<typeof createLitClient>>["getPKPPermissionsManager"]
   >
 >;
+
 export default function EoaNativeTab() {
   const { data: walletClient } = useWalletClient();
   const {
@@ -79,16 +69,12 @@ export default function EoaNativeTab() {
     clearError,
   } = useAppContext();
 
-  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [isMinting, setIsMinting] = useState(false);
   const [isGettingManager, setIsGettingManager] = useState(false);
   const [isViewingPermissions, setIsViewingPermissions] = useState(false);
   const [isAddingPermissions, setIsAddingPermissions] = useState(false);
 
-  const [accountMethod, setAccountMethod] = useState<
-    "privateKey" | "walletClient"
-  >("privateKey");
-  const [privateKey, setPrivateKey] = useState<string>(DEFAULT_PRIVATE_KEY);
+  const [accountMethod, setAccountMethod] = useState<AccountMethod>("walletClient"); // Default to wallet client
   const [account, setAccount] = useState<any>(null);
   const [mintedPkpInfo, setMintedPkpInfo] = useState<any>(null);
   const [pkpPermissionsManager, setPkpPermissionsManager] = useState<LitClient>(
@@ -124,65 +110,6 @@ export default function EoaNativeTab() {
       errorMessage += String(error);
     }
     return errorMessage;
-  };
-
-  const createAccountFromPrivateKey = async () => {
-    try {
-      setIsCreatingAccount(true);
-      setStatus("Creating viem account from private key...");
-
-      if (!privateKey.startsWith("0x") || privateKey.length !== 66) {
-        throw new Error(
-          "Invalid private key format. Must be a hex string starting with 0x and 66 characters long."
-        );
-      }
-
-      const myAccount = privateKeyToAccount(privateKey as `0x${string}`);
-      setAccount(myAccount);
-      setStatus(`Successfully created account: ${myAccount.address}`);
-      showSuccess("eoa-native-create-account");
-    } catch (error: any) {
-      console.error("Error creating account:", error);
-      const errorMessage = formatErrorMessage("Failed to create account: ", error);
-      setStatus(errorMessage);
-      showError?.(errorMessage);
-    } finally {
-      setIsCreatingAccount(false);
-    }
-  };
-
-  const createAccountFromWalletClient = async () => {
-    try {
-      setIsCreatingAccount(true);
-      setStatus("Getting account from connected wallet...");
-
-      if (!walletClient || !walletClient.account) {
-        throw new Error(
-          "No wallet connected. Please connect your wallet first."
-        );
-      }
-
-      setAccount(walletClient);
-      setStatus(
-        `Successfully got account from wallet: ${walletClient.account.address}`
-      );
-      showSuccess("eoa-native-get-wallet-account");
-    } catch (error: any) {
-      console.error("Error getting wallet account:", error);
-      const errorMessage = formatErrorMessage("Failed to get wallet account: ", error);
-      setStatus(errorMessage);
-      showError?.(errorMessage);
-    } finally {
-      setIsCreatingAccount(false);
-    }
-  };
-
-  const createAccount = async () => {
-    if (accountMethod === "privateKey") {
-      return createAccountFromPrivateKey();
-    } else {
-      return createAccountFromWalletClient();
-    }
   };
 
   const mintPkpWithEoa = async () => {
@@ -310,135 +237,6 @@ export default function EoaNativeTab() {
       setIsAddingPermissions(false);
     }
   };
-
-  // Component to render Account Method Selector and Create Account button
-  const CreateAccountComponent = () => (
-    <div style={{ marginBottom: "10px" }}>
-      {/* Account Method Selector */}
-      <div style={{ marginBottom: "15px" }}>
-        <label
-          style={{ display: "block", marginBottom: "8px", fontWeight: "500" }}
-        >
-          Choose Account Method:
-        </label>
-        <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
-          <button
-            onClick={() => setAccountMethod("privateKey")}
-            style={{
-              padding: "8px 15px",
-              backgroundColor:
-                accountMethod === "privateKey" ? "#4285F4" : "#f0f0f0",
-              color: accountMethod === "privateKey" ? "white" : "#333",
-              border: "1px solid #ddd",
-              borderRadius: "4px",
-              cursor: "pointer",
-              fontSize: "14px",
-            }}
-          >
-            Private Key
-          </button>
-          <button
-            onClick={() => setAccountMethod("walletClient")}
-            style={{
-              padding: "8px 15px",
-              backgroundColor:
-                accountMethod === "walletClient" ? "#4285F4" : "#f0f0f0",
-              color: accountMethod === "walletClient" ? "white" : "#333",
-              border: "1px solid #ddd",
-              borderRadius: "4px",
-              cursor: "pointer",
-              fontSize: "14px",
-            }}
-          >
-            Connected Wallet
-          </button>
-        </div>
-      </div>
-
-      {/* Private Key Input (only show when private key method is selected) */}
-      {accountMethod === "privateKey" && (
-        <div style={{ marginBottom: "10px" }}>
-          <label
-            htmlFor="privateKey"
-            style={{ display: "block", marginBottom: "5px", fontWeight: "500" }}
-          >
-            Private Key:
-          </label>
-          <input
-            id="privateKey"
-            type="password"
-            value={privateKey}
-            onChange={(e) => setPrivateKey(e.target.value)}
-            placeholder="0x..."
-            style={{
-              width: "100%",
-              padding: "8px 12px",
-              border: "1px solid #ddd",
-              borderRadius: "4px",
-              fontFamily: "monospace",
-              fontSize: "14px",
-            }}
-          />
-          <small style={{ color: "#666", fontSize: "12px" }}>
-            Default test private key is provided. Replace with your own for
-            production use.
-          </small>
-        </div>
-      )}
-
-      {/* Wallet Client Info (only show when wallet client method is selected) */}
-      {accountMethod === "walletClient" && (
-        <div
-          style={{
-            marginBottom: "10px",
-            padding: "10px",
-            backgroundColor: "#f8f9fa",
-            borderRadius: "4px",
-            border: "1px solid #e9ecef",
-          }}
-        >
-          <p style={{ margin: "0 0 8px 0", fontSize: "14px" }}>
-            <strong>Using Connected Wallet:</strong> This will use your
-            currently connected wallet account (e.g., MetaMask).
-          </p>
-          <p style={{ margin: "0", fontSize: "12px", color: "#666" }}>
-            Make sure your wallet is connected and you have test tokens. Need
-            tokens? Visit the{" "}
-            <a
-              href={FAUCET_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: "#4285F4", textDecoration: "underline" }}
-            >
-              Chronicle Yellowstone Faucet
-            </a>
-            <div style={{ marginTop: "10px" }}>
-              <ConnectButton showBalance={FEATURES.showWalletBalance} />
-            </div>
-          </p>
-        </div>
-      )}
-      <button
-        onClick={createAccount}
-        disabled={isCreatingAccount}
-        style={{
-          padding: "10px 15px",
-          backgroundColor: isCreatingAccount ? "#cccccc" : "#4285F4",
-          color: "white",
-          border: "none",
-          borderRadius: "4px",
-          cursor: isCreatingAccount ? "not-allowed" : "pointer",
-          fontWeight: "500",
-        }}
-      >
-        {isCreatingAccount
-          ? "Creating..."
-          : accountMethod === "privateKey"
-          ? "Create Account from Private Key"
-          : "Use Connected Wallet Account"}
-      </button>
-    </div>
-  );
 
   // Component to render Mint PKP button
   const MintPKPButton = () => (
@@ -583,7 +381,7 @@ export default function EoaNativeTab() {
           {accountMethod === "privateKey" ? (
             <li>
               Private Key:{" "}
-              {privateKey ? (
+              {account ? (
                 <span style={{ color: "green" }}>✓ Provided</span>
               ) : (
                 <span style={{ color: "red" }}>✗ Not provided</span>
@@ -642,7 +440,20 @@ export default function EoaNativeTab() {
               : CREATE_ACCOUNT_WALLET_CLIENT_CODE
           }
           language="typescript"
-          renderComponent={<CreateAccountComponent />}
+          renderComponent={
+            <AccountMethodSelector
+              onAccountCreated={setAccount}
+              onMethodChange={setAccountMethod}
+              setStatus={setStatus}
+              showError={showError}
+              showSuccess={showSuccess}
+              successActionIds={{
+                createAccount: "eoa-native-create-account",
+                getWalletAccount: "eoa-native-get-wallet-account",
+              }}
+              successActions={successActions}
+            />
+          }
           resultData={
             account ? { address: account.address, type: account.type } : null
           }
