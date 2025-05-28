@@ -1,0 +1,128 @@
+/**
+ * AddAddressForm Component
+ * 
+ * Form for adding permitted addresses to a PKP
+ */
+
+import React, { useState } from 'react';
+import { ScopeCheckboxes } from '../ui/ScopeCheckboxes';
+import { AVAILABLE_SCOPES } from '../../types';
+import { usePKPPermissions } from '../../contexts/PKPPermissionsContext';
+
+interface AddAddressFormProps {
+  disabled?: boolean;
+}
+
+export const AddAddressForm: React.FC<AddAddressFormProps> = ({ disabled = false }) => {
+  const { addPermittedAddress } = usePKPPermissions();
+  const [newPermittedAddress, setNewPermittedAddress] = useState(
+    "0xef3eE1bD838aF5B36482FAe8a6Fc394C68d5Fa9F"
+  );
+  const [newAddressSelectedScopes, setNewAddressSelectedScopes] = useState<string[]>(["sign-anything"]);
+  const [isAdding, setIsAdding] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!newPermittedAddress.trim() || newAddressSelectedScopes.length === 0) {
+      return;
+    }
+
+    setIsAdding(true);
+    try {
+      await addPermittedAddress(newPermittedAddress, newAddressSelectedScopes);
+      
+      // Clear form on success
+      setNewPermittedAddress("");
+      setNewAddressSelectedScopes([]);
+    } catch (error) {
+      console.error("Failed to add permitted address:", error);
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  return (
+    <div
+      style={{
+        padding: "20px",
+        backgroundColor: "#ffffff",
+        borderRadius: "12px",
+        border: "1px solid #e5e7eb",
+        boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+      }}
+    >
+      <h3 style={{ margin: "0 0 16px 0", color: "#1f2937" }}>
+        🏠 Add Address Permission
+      </h3>
+      <p
+        style={{
+          margin: "0 0 16px 0",
+          color: "#6b7280",
+          fontSize: "14px",
+        }}
+      >
+        Allow a specific address to use your PKP.
+      </p>
+
+      <input
+        type="text"
+        value={newPermittedAddress}
+        onChange={(e) => setNewPermittedAddress(e.target.value)}
+        placeholder="Ethereum Address (0x...)"
+        disabled={disabled || isAdding}
+        style={{
+          width: "100%",
+          padding: "12px",
+          border: "1px solid #d1d5db",
+          borderRadius: "8px",
+          fontSize: "13px",
+          marginBottom: "16px",
+          fontFamily: "monospace",
+          backgroundColor: disabled ? "#f3f4f6" : "#ffffff",
+          color: disabled ? "#6b7280" : "#000000",
+        }}
+      />
+
+      <ScopeCheckboxes
+        availableScopes={AVAILABLE_SCOPES}
+        selectedScopes={newAddressSelectedScopes}
+        onScopeChange={setNewAddressSelectedScopes}
+        disabled={disabled || isAdding}
+      />
+
+      <button
+        onClick={handleSubmit}
+        disabled={
+          disabled ||
+          isAdding ||
+          !newPermittedAddress.trim() ||
+          newAddressSelectedScopes.length === 0
+        }
+        style={{
+          width: "100%",
+          padding: "12px",
+          backgroundColor:
+            disabled ||
+            isAdding ||
+            !newPermittedAddress.trim() ||
+            newAddressSelectedScopes.length === 0
+              ? "#9ca3af"
+              : "#3b82f6",
+          color: "white",
+          border: "none",
+          borderRadius: "8px",
+          fontSize: "14px",
+          fontWeight: "500",
+          cursor:
+            disabled ||
+            isAdding ||
+            !newPermittedAddress.trim() ||
+            newAddressSelectedScopes.length === 0
+              ? "not-allowed"
+              : "pointer",
+        }}
+      >
+        {isAdding ? "Adding..." : "Add Address Permission"}
+      </button>
+    </div>
+  );
+}; 
