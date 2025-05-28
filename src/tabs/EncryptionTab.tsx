@@ -3,7 +3,7 @@
  *
  * Demonstrates Lit Protocol's encryption and decryption capabilities using the official
  * access control conditions builder and new encrypt/decrypt API.
- * 
+ *
  * Usage: Alice encrypts data, Bob decrypts it using access control conditions.
  */
 
@@ -13,7 +13,7 @@ import {
   createAccBuilder,
   humanizeUnifiedAccessControlConditions,
   validateAccessControlConditions,
-} from '@lit-protocol/access-control-conditions';
+} from "@lit-protocol/access-control-conditions";
 import { DisplayCode } from "../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgContainer";
 import { useAppContext } from "../router";
@@ -136,7 +136,8 @@ export default function EncryptionTab() {
 
   // Access control conditions
   const [selectedTemplate, setSelectedTemplate] = useState("wallet-owner");
-  const [unifiedAccessControlConditions, setUnifiedAccessControlConditions] = useState<any>(null);
+  const [unifiedAccessControlConditions, setUnifiedAccessControlConditions] =
+    useState<any>(null);
   const [humanizedConditions, setHumanizedConditions] = useState("");
   const [conditionsValid, setConditionsValid] = useState(false);
 
@@ -158,11 +159,11 @@ export default function EncryptionTab() {
 
   // Helper function to format file sizes
   const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   // Utility function to format error messages properly
@@ -179,9 +180,9 @@ export default function EncryptionTab() {
   };
 
   const showSuccess = (actionId: string) => {
-    setSuccessActions(prev => new Set([...prev, actionId]));
+    setSuccessActions((prev) => new Set([...prev, actionId]));
     setTimeout(() => {
-      setSuccessActions(prev => {
+      setSuccessActions((prev) => {
         const newSet = new Set(prev);
         newSet.delete(actionId);
         return newSet;
@@ -200,7 +201,10 @@ export default function EncryptionTab() {
       showSuccess("alice-account");
     } catch (error: any) {
       console.error("Error creating Alice's account:", error);
-      const errorMessage = formatErrorMessage("Failed to create Alice's account: ", error);
+      const errorMessage = formatErrorMessage(
+        "Failed to create Alice's account: ",
+        error
+      );
       setStatus(errorMessage);
       showError?.(errorMessage);
     }
@@ -217,7 +221,10 @@ export default function EncryptionTab() {
       showSuccess("bob-account");
     } catch (error: any) {
       console.error("Error creating Bob's account:", error);
-      const errorMessage = formatErrorMessage("Failed to create Bob's account: ", error);
+      const errorMessage = formatErrorMessage(
+        "Failed to create Bob's account: ",
+        error
+      );
       setStatus(errorMessage);
       showError?.(errorMessage);
     }
@@ -233,56 +240,59 @@ export default function EncryptionTab() {
     setIsBuildingConditions(true);
     try {
       const builder = createAccBuilder();
-      
+
       let accs;
       switch (selectedTemplate) {
         case "wallet-owner":
           accs = builder
             .requireWalletOwnership(bobAccount.address)
-            .on('ethereum')
+            .on("ethereum")
             .build();
           break;
         case "eth-balance":
           accs = builder
             .requireWalletOwnership(bobAccount.address)
-            .on('ethereum')
-            .and()
-            .requireEthBalance('0', '=')
-            .on('yellowstone')
+            .on("ethereum")
+            // .and()
+            // .requireEthBalance("0", ">=")
+            // .on("yellowstone")
             .build();
           break;
         case "multi-chain":
           accs = builder
             .requireWalletOwnership(bobAccount.address)
-            .on('ethereum')
+            .on("ethereum")
             .and()
-            .requireEthBalance('1', '>=')
-            .on('polygon')
+            .requireEthBalance("1", ">=")
+            .on("polygon")
             .build();
           break;
         case "nft-owner":
           accs = builder
             .requireWalletOwnership(bobAccount.address)
-            .on('ethereum')
+            .on("ethereum")
             .and()
-            .requireNftOwnership('0x1234567890123456789012345678901234567890', '1')
-            .on('ethereum')
+            .requireNftOwnership(
+              "0x1234567890123456789012345678901234567890",
+              "1"
+            )
+            .on("ethereum")
             .build();
           break;
         case "time-locked":
           const futureTimestamp = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now
           accs = builder
             .requireWalletOwnership(bobAccount.address)
-            .on('ethereum')
+            .on("ethereum")
             .and()
-            .requireTimestamp(futureTimestamp.toString(), '>=')
-            .on('ethereum')
+            .requireTimestamp(futureTimestamp.toString(), ">=")
+            .on("ethereum")
             .build();
           break;
         default:
           accs = builder
             .requireWalletOwnership(bobAccount.address)
-            .on('ethereum')
+            .on("ethereum")
             .build();
       }
 
@@ -303,7 +313,10 @@ export default function EncryptionTab() {
       showSuccess("build-conditions");
     } catch (error: any) {
       console.error("Error building access control conditions:", error);
-      const errorMessage = formatErrorMessage("Failed to build conditions: ", error);
+      const errorMessage = formatErrorMessage(
+        "Failed to build conditions: ",
+        error
+      );
       setStatus(errorMessage);
       showError?.(errorMessage);
     } finally {
@@ -319,7 +332,9 @@ export default function EncryptionTab() {
     }
 
     if (!areDependenciesLoaded()) {
-      setStatus("Lit Protocol not initialised. Please check the Dependencies tab.");
+      setStatus(
+        "Lit Protocol not initialised. Please check the Dependencies tab."
+      );
       return;
     }
 
@@ -332,12 +347,12 @@ export default function EncryptionTab() {
           account: bobAccount,
         },
         authConfig: {
-          domain: 'localhost',
-          statement: 'Decrypt test data',
+          domain: "localhost",
+          statement: "Decrypt test data",
           expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
           resources: [
-            ['access-control-condition-decryption', '*'],
-            ['lit-action-execution', '*'],
+            ["access-control-condition-decryption", "*"],
+            ["lit-action-execution", "*"],
           ],
         },
         litClient,
@@ -348,7 +363,10 @@ export default function EncryptionTab() {
       showSuccess("bob-auth");
     } catch (error: any) {
       console.error("Error creating Bob's AuthContext:", error);
-      const errorMessage = formatErrorMessage("Failed to create Bob's AuthContext: ", error);
+      const errorMessage = formatErrorMessage(
+        "Failed to create Bob's AuthContext: ",
+        error
+      );
       setStatus(errorMessage);
       showError?.(errorMessage);
     } finally {
@@ -380,7 +398,9 @@ export default function EncryptionTab() {
           const reader = new FileReader();
           reader.onload = () => {
             const arrayBuffer = reader.result as ArrayBuffer;
-            console.log(`📁 File read for encryption: ${fileData.name}, size: ${arrayBuffer.byteLength} bytes`);
+            console.log(
+              `📁 File read for encryption: ${fileData.name}, size: ${arrayBuffer.byteLength} bytes`
+            );
             resolve(new Uint8Array(arrayBuffer));
           };
           reader.onerror = () => reject(new Error("Failed to read file"));
@@ -408,12 +428,16 @@ export default function EncryptionTab() {
   // Encrypt data using Alice's setup
   const encryptData = async () => {
     if (!aliceAccount || !unifiedAccessControlConditions) {
-      setStatus("Please create Alice's account and build access control conditions first");
+      setStatus(
+        "Please create Alice's account and build access control conditions first"
+      );
       return;
     }
 
     if (!areDependenciesLoaded()) {
-      setStatus("Lit Protocol not initialised. Please check the Dependencies tab.");
+      setStatus(
+        "Lit Protocol not initialised. Please check the Dependencies tab."
+      );
       return;
     }
 
@@ -426,9 +450,11 @@ export default function EncryptionTab() {
 
       console.log("🔐 Encrypting data:", {
         dataType,
-        dataSize: dataToEncrypt?.length || dataToEncrypt?.byteLength || 'unknown',
-        dataToEncrypt: dataType === 'string' ? dataToEncrypt : `[${typeof dataToEncrypt}]`,
-        metadata
+        dataSize:
+          dataToEncrypt?.length || dataToEncrypt?.byteLength || "unknown",
+        dataToEncrypt:
+          dataType === "string" ? dataToEncrypt : `[${typeof dataToEncrypt}]`,
+        metadata,
       });
 
       const encrypted = await litClient.encrypt({
@@ -445,7 +471,10 @@ export default function EncryptionTab() {
       showSuccess("encrypt-data");
     } catch (error: any) {
       console.error("Error encrypting data:", error);
-      const errorMessage = formatErrorMessage("Failed to encrypt data: ", error);
+      const errorMessage = formatErrorMessage(
+        "Failed to encrypt data: ",
+        error
+      );
       setStatus(errorMessage);
       showError?.(errorMessage);
     } finally {
@@ -456,12 +485,16 @@ export default function EncryptionTab() {
   // Decrypt data using Bob's auth context
   const decryptData = async () => {
     if (!bobAuthContext || !encryptedData || !unifiedAccessControlConditions) {
-      setStatus("Please create Bob's AuthContext, encrypt data, and build conditions first");
+      setStatus(
+        "Please create Bob's AuthContext, encrypt data, and build conditions first"
+      );
       return;
     }
 
     if (!areDependenciesLoaded()) {
-      setStatus("Lit Protocol not initialised. Please check the Dependencies tab.");
+      setStatus(
+        "Lit Protocol not initialised. Please check the Dependencies tab."
+      );
       return;
     }
 
@@ -475,7 +508,7 @@ export default function EncryptionTab() {
         hasConditions: !!unifiedAccessControlConditions,
         encryptedDataKeys: Object.keys(encryptedData),
         authContextKeys: Object.keys(bobAuthContext),
-        conditionsCount: unifiedAccessControlConditions?.length
+        conditionsCount: unifiedAccessControlConditions?.length,
       });
 
       const decrypted = await litClient.decrypt({
@@ -496,11 +529,11 @@ export default function EncryptionTab() {
         errorMessage: error?.message,
         errorCode: error?.code,
         errorInfo: error?.info,
-        errorCause: error?.cause
+        errorCause: error?.cause,
       });
-      
+
       let errorMessage = "Failed to decrypt data: ";
-      if (error?.code === 'network_error') {
+      if (error?.code === "network_error") {
         errorMessage += "Network connectivity issue with Lit Protocol nodes. ";
         if (error?.info?.fullPath) {
           errorMessage += `Failed endpoint: ${error.info.fullPath}. `;
@@ -509,7 +542,7 @@ export default function EncryptionTab() {
       } else {
         errorMessage += error?.message || String(error);
       }
-      
+
       setStatus(errorMessage);
       showError?.(errorMessage);
     } finally {
@@ -521,20 +554,22 @@ export default function EncryptionTab() {
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     setFileUploadError(""); // Clear any previous errors
-    
+
     if (file) {
       if (file.size > MAX_FILE_SIZE) {
-        const errorMessage = `File size too large: ${formatFileSize(file.size)}. Maximum allowed size is ${formatFileSize(MAX_FILE_SIZE)}.`;
+        const errorMessage = `File size too large: ${formatFileSize(
+          file.size
+        )}. Maximum allowed size is ${formatFileSize(MAX_FILE_SIZE)}.`;
         setFileUploadError(errorMessage);
         setStatus(errorMessage);
         showError?.(errorMessage);
-        
+
         // Clear the file input
-        event.target.value = '';
+        event.target.value = "";
         setFileData(null);
         return;
       }
-      
+
       setFileData(file);
       setStatus(`File selected: ${file.name} (${formatFileSize(file.size)})`);
     } else {
@@ -546,8 +581,9 @@ export default function EncryptionTab() {
     <div className="tab-content">
       <h2>{OPERATION_NAME}</h2>
       <p>
-        Demonstrates the complete encrypt/decrypt flow using official access control conditions builder.
-        Alice encrypts data, Bob decrypts it using properly configured access control conditions.
+        Demonstrates the complete encrypt/decrypt flow using official access
+        control conditions builder. Alice encrypts data, Bob decrypts it using
+        properly configured access control conditions.
       </p>
 
       <GreyBoarderWhiteBgContainer>
@@ -584,9 +620,7 @@ export default function EncryptionTab() {
             border: "1px solid #b3d9ff",
           }}
         >
-          <h4 style={{ margin: "0 0 10px 0" }}>
-            🔐 Encrypt & Decrypt Flow
-          </h4>
+          <h4 style={{ margin: "0 0 10px 0" }}>🔐 Encrypt & Decrypt Flow</h4>
           <p style={{ margin: "0 0 10px 0" }}>
             This demonstrates the asymmetric nature of Lit Protocol encryption:
             <strong> Alice</strong> can encrypt without authentication,
@@ -631,8 +665,8 @@ export default function EncryptionTab() {
           <GreyBoarderWhiteBgContainer>
             <h3 style={{ marginTop: 0 }}>Step 1: Create Alice's Account</h3>
             <p>
-              Generate Alice's account using a random private key. Alice only needs 
-              an account for encryption - no authentication required.
+              Generate Alice's account using a random private key. Alice only
+              needs an account for encryption - no authentication required.
             </p>
 
             <DisplayCode
@@ -651,10 +685,14 @@ export default function EncryptionTab() {
                     fontWeight: "500",
                   }}
                 >
-                  {successActions.has("alice-account") ? "✓ Alice's Account Created" : "Create Alice's Account"}
+                  {successActions.has("alice-account")
+                    ? "✓ Alice's Account Created"
+                    : "Create Alice's Account"}
                 </button>
               }
-              resultData={aliceAccount ? { address: aliceAccount.address } : null}
+              resultData={
+                aliceAccount ? { address: aliceAccount.address } : null
+              }
               resultLabel="Alice's Account Information"
               useSideBySide={true}
               theme="dracula"
@@ -692,7 +730,7 @@ export default function EncryptionTab() {
           <GreyBoarderWhiteBgContainer>
             <h3 style={{ marginTop: 0 }}>Step 2: Create Bob's Account</h3>
             <p>
-              Generate Bob's account using a random private key. Bob will need 
+              Generate Bob's account using a random private key. Bob will need
               this account for authentication to decrypt data.
             </p>
 
@@ -712,7 +750,9 @@ export default function EncryptionTab() {
                     fontWeight: "500",
                   }}
                 >
-                  {successActions.has("bob-account") ? "✓ Bob's Account Created" : "Create Bob's Account"}
+                  {successActions.has("bob-account")
+                    ? "✓ Bob's Account Created"
+                    : "Create Bob's Account"}
                 </button>
               }
               resultData={bobAccount ? { address: bobAccount.address } : null}
@@ -728,12 +768,16 @@ export default function EncryptionTab() {
             <h3 style={{ marginTop: 0 }}>
               Step 3: Build Access Control Conditions
               {!bobAccount && (
-                <span style={{ color: "orange" }}> (Create Bob's account first)</span>
+                <span style={{ color: "orange" }}>
+                  {" "}
+                  (Create Bob's account first)
+                </span>
               )}
             </h3>
             <p>
-              Define who can decrypt the encrypted data using official access control conditions builder.
-              These conditions are a prerequisite for encryption and will be checked during decryption.
+              Define who can decrypt the encrypted data using official access
+              control conditions builder. These conditions are a prerequisite
+              for encryption and will be checked during decryption.
             </p>
 
             <DisplayCode
@@ -772,7 +816,8 @@ export default function EncryptionTab() {
                       ))}
                     </select>
                     <small style={{ color: "#666", fontSize: "12px" }}>
-                      Select a template to generate different access control patterns
+                      Select a template to generate different access control
+                      patterns
                     </small>
                   </div>
 
@@ -781,15 +826,25 @@ export default function EncryptionTab() {
                     disabled={!bobAccount || isBuildingConditions}
                     style={{
                       padding: "10px 15px",
-                      backgroundColor: !bobAccount || isBuildingConditions ? "#cccccc" : "#6f42c1",
+                      backgroundColor:
+                        !bobAccount || isBuildingConditions
+                          ? "#cccccc"
+                          : "#6f42c1",
                       color: "white",
                       border: "none",
                       borderRadius: "4px",
-                      cursor: !bobAccount || isBuildingConditions ? "not-allowed" : "pointer",
+                      cursor:
+                        !bobAccount || isBuildingConditions
+                          ? "not-allowed"
+                          : "pointer",
                       fontWeight: "500",
                     }}
                   >
-                    {isBuildingConditions ? "Building..." : successActions.has("build-conditions") ? "✓ Conditions Built" : "Build Access Control Conditions"}
+                    {isBuildingConditions
+                      ? "Building..."
+                      : successActions.has("build-conditions")
+                      ? "✓ Conditions Built"
+                      : "Build Access Control Conditions"}
                   </button>
 
                   {humanizedConditions && (
@@ -804,7 +859,8 @@ export default function EncryptionTab() {
                     >
                       <strong>Conditions:</strong> {humanizedConditions}
                       <br />
-                      <strong>Valid:</strong> {conditionsValid ? "✅ Yes" : "❌ No"}
+                      <strong>Valid:</strong>{" "}
+                      {conditionsValid ? "✅ Yes" : "❌ No"}
                     </div>
                   )}
                 </div>
@@ -821,12 +877,16 @@ export default function EncryptionTab() {
             <h3 style={{ marginTop: 0 }}>
               Step 4: Create Bob's AuthContext
               {!bobAccount && (
-                <span style={{ color: "orange" }}> (Create Bob's account first)</span>
+                <span style={{ color: "orange" }}>
+                  {" "}
+                  (Create Bob's account first)
+                </span>
               )}
             </h3>
             <p>
-              Bob requires an AuthContext for decryption. This proves Bob's identity 
-              and authorizes him to decrypt data that meets the access control conditions.
+              Bob requires an AuthContext for decryption. This proves Bob's
+              identity and authorizes him to decrypt data that meets the access
+              control conditions.
             </p>
 
             <DisplayCode
@@ -838,15 +898,21 @@ export default function EncryptionTab() {
                   disabled={!bobAccount || isCreatingAuth}
                   style={{
                     padding: "10px 15px",
-                    backgroundColor: !bobAccount || isCreatingAuth ? "#cccccc" : "#28a745",
+                    backgroundColor:
+                      !bobAccount || isCreatingAuth ? "#cccccc" : "#28a745",
                     color: "white",
                     border: "none",
                     borderRadius: "4px",
-                    cursor: !bobAccount || isCreatingAuth ? "not-allowed" : "pointer",
+                    cursor:
+                      !bobAccount || isCreatingAuth ? "not-allowed" : "pointer",
                     fontWeight: "500",
                   }}
                 >
-                  {isCreatingAuth ? "Creating..." : successActions.has("bob-auth") ? "✓ Bob's AuthContext Created" : "Create Bob's AuthContext"}
+                  {isCreatingAuth
+                    ? "Creating..."
+                    : successActions.has("bob-auth")
+                    ? "✓ Bob's AuthContext Created"
+                    : "Create Bob's AuthContext"}
                 </button>
               }
               resultData={bobAuthContext}
@@ -863,8 +929,9 @@ export default function EncryptionTab() {
       <GreyBoarderWhiteBgContainer>
         <h3 style={{ marginTop: 0 }}>Step 5: Configure Data to Encrypt</h3>
         <p>
-          Choose the type of data to encrypt and configure it. The new encrypt API supports
-          multiple data types with automatic type inference and metadata.
+          Choose the type of data to encrypt and configure it. The new encrypt
+          API supports multiple data types with automatic type inference and
+          metadata.
         </p>
 
         <div style={{ marginBottom: "20px" }}>
@@ -955,7 +1022,9 @@ export default function EncryptionTab() {
             </div>
           )}
 
-          {(dataType === "image" || dataType === "video" || dataType === "file") && (
+          {(dataType === "image" ||
+            dataType === "video" ||
+            dataType === "file") && (
             <div style={{ marginBottom: "15px" }}>
               <label
                 style={{
@@ -970,10 +1039,10 @@ export default function EncryptionTab() {
                 type="file"
                 onChange={handleFileUpload}
                 accept={
-                  dataType === "image" 
-                    ? "image/*" 
-                    : dataType === "video" 
-                    ? "video/*" 
+                  dataType === "image"
+                    ? "image/*"
+                    : dataType === "video"
+                    ? "video/*"
                     : "*"
                 }
                 style={{
@@ -985,17 +1054,29 @@ export default function EncryptionTab() {
                 }}
               />
               {fileUploadError && (
-                <div style={{ 
-                  marginTop: "10px", 
-                  padding: "12px", 
-                  backgroundColor: "#ffe6e6", 
-                  borderRadius: "4px",
-                  border: "1px solid #ff9999",
-                  fontSize: "14px"
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <span style={{ color: "#cc0000", fontSize: "16px" }}>⚠️</span>
-                    <span style={{ color: "#cc0000", fontWeight: "500" }}>File Upload Error</span>
+                <div
+                  style={{
+                    marginTop: "10px",
+                    padding: "12px",
+                    backgroundColor: "#ffe6e6",
+                    borderRadius: "4px",
+                    border: "1px solid #ff9999",
+                    fontSize: "14px",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <span style={{ color: "#cc0000", fontSize: "16px" }}>
+                      ⚠️
+                    </span>
+                    <span style={{ color: "#cc0000", fontWeight: "500" }}>
+                      File Upload Error
+                    </span>
                   </div>
                   <div style={{ marginTop: "5px", color: "#cc0000" }}>
                     {fileUploadError}
@@ -1003,11 +1084,20 @@ export default function EncryptionTab() {
                 </div>
               )}
               {fileData && (
-                <div style={{ marginTop: "8px", fontSize: "12px", color: "#666" }}>
+                <div
+                  style={{ marginTop: "8px", fontSize: "12px", color: "#666" }}
+                >
                   Selected: {fileData.name} ({formatFileSize(fileData.size)})
                 </div>
               )}
-              <small style={{ color: "#666", fontSize: "12px", display: "block", marginTop: "5px" }}>
+              <small
+                style={{
+                  color: "#666",
+                  fontSize: "12px",
+                  display: "block",
+                  marginTop: "5px",
+                }}
+              >
                 Maximum file size: {formatFileSize(MAX_FILE_SIZE)}
               </small>
             </div>
@@ -1054,8 +1144,8 @@ export default function EncryptionTab() {
           )}
         </h3>
         <p>
-          Alice encrypts the configured data using the access control conditions.
-          No authentication required for encryption.
+          Alice encrypts the configured data using the access control
+          conditions. No authentication required for encryption.
         </p>
 
         <DisplayCode
@@ -1064,24 +1154,34 @@ export default function EncryptionTab() {
           renderComponent={
             <button
               onClick={encryptData}
-              disabled={!aliceAccount || !unifiedAccessControlConditions || isEncrypting}
+              disabled={
+                !aliceAccount || !unifiedAccessControlConditions || isEncrypting
+              }
               style={{
                 padding: "12px 20px",
-                backgroundColor: 
-                  !aliceAccount || !unifiedAccessControlConditions || isEncrypting 
-                    ? "#cccccc" 
+                backgroundColor:
+                  !aliceAccount ||
+                  !unifiedAccessControlConditions ||
+                  isEncrypting
+                    ? "#cccccc"
                     : "#007bff",
                 color: "white",
                 border: "none",
                 borderRadius: "4px",
-                cursor: 
-                  !aliceAccount || !unifiedAccessControlConditions || isEncrypting 
-                    ? "not-allowed" 
+                cursor:
+                  !aliceAccount ||
+                  !unifiedAccessControlConditions ||
+                  isEncrypting
+                    ? "not-allowed"
                     : "pointer",
                 fontWeight: "500",
               }}
             >
-              {isEncrypting ? "Encrypting..." : successActions.has("encrypt-data") ? "✓ Data Encrypted" : "🔐 Encrypt Data"}
+              {isEncrypting
+                ? "Encrypting..."
+                : successActions.has("encrypt-data")
+                ? "✓ Data Encrypted"
+                : "🔐 Encrypt Data"}
             </button>
           }
           resultData={encryptedData}
@@ -1097,12 +1197,15 @@ export default function EncryptionTab() {
         <h3 style={{ marginTop: 0 }}>
           Step 7: Decrypt Data (Bob)
           {(!bobAuthContext || !encryptedData) && (
-            <span style={{ color: "orange" }}> (Encrypt data and create Bob's AuthContext first)</span>
+            <span style={{ color: "orange" }}>
+              {" "}
+              (Encrypt data and create Bob's AuthContext first)
+            </span>
           )}
         </h3>
         <p>
-          Bob decrypts the data using his AuthContext. The access control conditions 
-          will be verified during decryption.
+          Bob decrypts the data using his AuthContext. The access control
+          conditions will be verified during decryption.
         </p>
 
         <DisplayCode
@@ -1111,24 +1214,39 @@ export default function EncryptionTab() {
           renderComponent={
             <button
               onClick={decryptData}
-              disabled={!bobAuthContext || !encryptedData || !unifiedAccessControlConditions || isDecrypting}
+              disabled={
+                !bobAuthContext ||
+                !encryptedData ||
+                !unifiedAccessControlConditions ||
+                isDecrypting
+              }
               style={{
                 padding: "12px 20px",
-                backgroundColor: 
-                  !bobAuthContext || !encryptedData || !unifiedAccessControlConditions || isDecrypting 
-                    ? "#cccccc" 
+                backgroundColor:
+                  !bobAuthContext ||
+                  !encryptedData ||
+                  !unifiedAccessControlConditions ||
+                  isDecrypting
+                    ? "#cccccc"
                     : "#28a745",
                 color: "white",
                 border: "none",
                 borderRadius: "4px",
-                cursor: 
-                  !bobAuthContext || !encryptedData || !unifiedAccessControlConditions || isDecrypting 
-                    ? "not-allowed" 
+                cursor:
+                  !bobAuthContext ||
+                  !encryptedData ||
+                  !unifiedAccessControlConditions ||
+                  isDecrypting
+                    ? "not-allowed"
                     : "pointer",
                 fontWeight: "500",
               }}
             >
-              {isDecrypting ? "Decrypting..." : successActions.has("decrypt-data") ? "✓ Data Decrypted" : "🔓 Decrypt Data"}
+              {isDecrypting
+                ? "Decrypting..."
+                : successActions.has("decrypt-data")
+                ? "✓ Data Decrypted"
+                : "🔓 Decrypt Data"}
             </button>
           }
           resultData={decryptedResponse}
@@ -1144,41 +1262,51 @@ export default function EncryptionTab() {
             <h4 style={{ marginBottom: "15px", color: "#28a745" }}>
               🔓 Decrypted Content
             </h4>
-            
+
             {/* Helper function to get actual decrypted data */}
             {(() => {
               // Try different possible property names for the decrypted data
-              const actualData = decryptedResponse.convertedData || 
-                               decryptedResponse.plaintext || 
-                               decryptedResponse.decryptedData || 
-                               decryptedResponse.data ||
-                               decryptedResponse;
+              const actualData =
+                decryptedResponse.convertedData ||
+                decryptedResponse.plaintext ||
+                decryptedResponse.decryptedData ||
+                decryptedResponse.data ||
+                decryptedResponse;
 
-              console.log('🔍 Decrypted Response Structure:', decryptedResponse);
-              console.log('🔍 Actual Data:', actualData);
-              console.log('🔍 Data Type:', dataType);
+              console.log(
+                "🔍 Decrypted Response Structure:",
+                decryptedResponse
+              );
+              console.log("🔍 Actual Data:", actualData);
+              console.log("🔍 Data Type:", dataType);
 
               // Debug info
               const debugInfo = (
-                <div style={{ 
-                  marginBottom: "15px", 
-                  padding: "10px", 
-                  backgroundColor: "#f0f8ff", 
-                  borderRadius: "4px",
-                  fontSize: "12px",
-                  border: "1px solid #b3d9ff"
-                }}>
-                  <strong>Debug Info:</strong><br/>
-                  Response keys: {Object.keys(decryptedResponse).join(', ')}<br/>
-                  Data type: {typeof actualData}<br/>
-                  Data: {String(actualData)?.substring(0, 100)}{String(actualData)?.length > 100 ? '...' : ''}
+                <div
+                  style={{
+                    marginBottom: "15px",
+                    padding: "10px",
+                    backgroundColor: "#f0f8ff",
+                    borderRadius: "4px",
+                    fontSize: "12px",
+                    border: "1px solid #b3d9ff",
+                  }}
+                >
+                  <strong>Debug Info:</strong>
+                  <br />
+                  Response keys: {Object.keys(decryptedResponse).join(", ")}
+                  <br />
+                  Data type: {typeof actualData}
+                  <br />
+                  Data: {String(actualData)?.substring(0, 100)}
+                  {String(actualData)?.length > 100 ? "..." : ""}
                 </div>
               );
 
               return (
                 <>
                   {debugInfo}
-                  
+
                   {/* Render content based on data type */}
                   {dataType === "image" && actualData && (
                     <div style={{ marginBottom: "15px" }}>
@@ -1186,47 +1314,60 @@ export default function EncryptionTab() {
                       {(() => {
                         console.log("🖼️ Image data debug:", {
                           dataType: typeof actualData,
-                          isString: typeof actualData === 'string',
+                          isString: typeof actualData === "string",
                           isUint8Array: actualData instanceof Uint8Array,
                           isArrayBuffer: actualData instanceof ArrayBuffer,
                           length: actualData?.length || actualData?.byteLength,
-                          first20Bytes: actualData instanceof Uint8Array ? Array.from(actualData.slice(0, 20)) : 'N/A',
+                          first20Bytes:
+                            actualData instanceof Uint8Array
+                              ? Array.from(actualData.slice(0, 20))
+                              : "N/A",
                           fileType: fileData?.type,
-                          fileName: fileData?.name
+                          fileName: fileData?.name,
                         });
 
-                        let imageSrc: string = '';
-                        let mimeType = fileData?.type || 'image/jpeg'; // fallback to jpeg
+                        let imageSrc: string = "";
+                        let mimeType = fileData?.type || "image/jpeg"; // fallback to jpeg
 
                         try {
-                          if (typeof actualData === 'string') {
+                          if (typeof actualData === "string") {
                             // If string, assume it's base64
                             imageSrc = `data:${mimeType};base64,${actualData}`;
                           } else if (actualData instanceof Blob) {
                             // If already a Blob (Lit Protocol returns this), use it directly
                             imageSrc = URL.createObjectURL(actualData);
                             mimeType = actualData.type || mimeType; // Use blob's type if available
-                            
+
                             console.log("🖼️ Using existing blob:", {
                               size: actualData.size,
                               type: actualData.type,
-                              url: imageSrc
+                              url: imageSrc,
                             });
-                          } else if (actualData instanceof Uint8Array || actualData instanceof ArrayBuffer) {
+                          } else if (
+                            actualData instanceof Uint8Array ||
+                            actualData instanceof ArrayBuffer
+                          ) {
                             // Create blob with proper MIME type
-                            const blobData = actualData instanceof Uint8Array ? actualData : new Uint8Array(actualData);
-                            const blob = new Blob([blobData], { type: mimeType });
+                            const blobData =
+                              actualData instanceof Uint8Array
+                                ? actualData
+                                : new Uint8Array(actualData);
+                            const blob = new Blob([blobData], {
+                              type: mimeType,
+                            });
                             imageSrc = URL.createObjectURL(blob);
-                            
+
                             console.log("🖼️ Created blob:", {
                               size: blob.size,
                               type: blob.type,
-                              url: imageSrc
+                              url: imageSrc,
                             });
                           } else {
                             // Fallback: try to convert to Uint8Array
                             const uint8Data = new Uint8Array(actualData);
-                            const blob = new Blob([uint8Data], { type: mimeType });
+                            const blob = new Blob([uint8Data], {
+                              type: mimeType,
+                            });
                             imageSrc = URL.createObjectURL(blob);
                           }
 
@@ -1246,41 +1387,68 @@ export default function EncryptionTab() {
                                 }}
                                 onError={(e) => {
                                   console.error("❌ Image load error:", e);
-                                  console.error("❌ Failed image src:", imageSrc);
+                                  console.error(
+                                    "❌ Failed image src:",
+                                    imageSrc
+                                  );
                                   console.error("❌ Image data details:", {
                                     dataType: typeof actualData,
-                                    length: actualData?.length || actualData?.byteLength,
+                                    length:
+                                      actualData?.length ||
+                                      actualData?.byteLength,
                                     mimeType,
-                                    fileName: fileData?.name
+                                    fileName: fileData?.name,
                                   });
                                 }}
                               />
-                              <div style={{ 
-                                marginTop: "10px", 
-                                fontSize: "12px", 
-                                color: "#666",
-                                fontFamily: "monospace"
-                              }}>
-                                <strong>Debug Info:</strong><br/>
-                                Type: {mimeType}<br/>
-                                Size: {actualData?.length || actualData?.byteLength} bytes<br/>
+                              <div
+                                style={{
+                                  marginTop: "10px",
+                                  fontSize: "12px",
+                                  color: "#666",
+                                  fontFamily: "monospace",
+                                }}
+                              >
+                                <strong>Debug Info:</strong>
+                                <br />
+                                Type: {mimeType}
+                                <br />
+                                Size:{" "}
+                                {actualData?.length ||
+                                  actualData?.byteLength}{" "}
+                                bytes
+                                <br />
                                 Source: {imageSrc.substring(0, 50)}...
                               </div>
                             </div>
                           );
                         } catch (error) {
-                          console.error("❌ Error creating image source:", error);
+                          console.error(
+                            "❌ Error creating image source:",
+                            error
+                          );
                           return (
-                            <div style={{ 
-                              padding: "15px", 
-                              backgroundColor: "#ffe6e6", 
-                              borderRadius: "4px",
-                              border: "1px solid #ff9999"
-                            }}>
-                              <h6 style={{ color: "#cc0000" }}>Image Rendering Error</h6>
-                              <p>Failed to create image source: {String(error)}</p>
+                            <div
+                              style={{
+                                padding: "15px",
+                                backgroundColor: "#ffe6e6",
+                                borderRadius: "4px",
+                                border: "1px solid #ff9999",
+                              }}
+                            >
+                              <h6 style={{ color: "#cc0000" }}>
+                                Image Rendering Error
+                              </h6>
+                              <p>
+                                Failed to create image source: {String(error)}
+                              </p>
                               <p>Data type: {typeof actualData}</p>
-                              <p>Data size: {actualData?.length || actualData?.byteLength || 'unknown'}</p>
+                              <p>
+                                Data size:{" "}
+                                {actualData?.length ||
+                                  actualData?.byteLength ||
+                                  "unknown"}
+                              </p>
                             </div>
                           );
                         }
@@ -1295,43 +1463,56 @@ export default function EncryptionTab() {
                         console.log("🎥 Video data debug:", {
                           dataType: typeof actualData,
                           isBlob: actualData instanceof Blob,
-                          size: actualData?.size || actualData?.length || actualData?.byteLength,
+                          size:
+                            actualData?.size ||
+                            actualData?.length ||
+                            actualData?.byteLength,
                           type: actualData?.type,
-                          fileName: fileData?.name
+                          fileName: fileData?.name,
                         });
 
-                        let videoSrc: string = '';
-                        let mimeType = fileData?.type || 'video/mp4'; // fallback to mp4
+                        let videoSrc: string = "";
+                        let mimeType = fileData?.type || "video/mp4"; // fallback to mp4
 
                         try {
-                          if (typeof actualData === 'string') {
+                          if (typeof actualData === "string") {
                             // If string, assume it's base64
                             videoSrc = `data:${mimeType};base64,${actualData}`;
                           } else if (actualData instanceof Blob) {
                             // If already a Blob (Lit Protocol returns this), use it directly
                             videoSrc = URL.createObjectURL(actualData);
                             mimeType = actualData.type || mimeType; // Use blob's type if available
-                            
+
                             console.log("🎥 Using existing blob:", {
                               size: actualData.size,
                               type: actualData.type,
-                              url: videoSrc
+                              url: videoSrc,
                             });
-                          } else if (actualData instanceof Uint8Array || actualData instanceof ArrayBuffer) {
+                          } else if (
+                            actualData instanceof Uint8Array ||
+                            actualData instanceof ArrayBuffer
+                          ) {
                             // Create blob with proper MIME type
-                            const blobData = actualData instanceof Uint8Array ? actualData : new Uint8Array(actualData);
-                            const blob = new Blob([blobData], { type: mimeType });
+                            const blobData =
+                              actualData instanceof Uint8Array
+                                ? actualData
+                                : new Uint8Array(actualData);
+                            const blob = new Blob([blobData], {
+                              type: mimeType,
+                            });
                             videoSrc = URL.createObjectURL(blob);
-                            
+
                             console.log("🎥 Created blob:", {
                               size: blob.size,
                               type: blob.type,
-                              url: videoSrc
+                              url: videoSrc,
                             });
                           } else {
                             // Fallback: try to convert to Uint8Array
                             const uint8Data = new Uint8Array(actualData);
-                            const blob = new Blob([uint8Data], { type: mimeType });
+                            const blob = new Blob([uint8Data], {
+                              type: mimeType,
+                            });
                             videoSrc = URL.createObjectURL(blob);
                           }
 
@@ -1350,44 +1531,74 @@ export default function EncryptionTab() {
                                 }}
                                 onError={(e) => {
                                   console.error("❌ Video load error:", e);
-                                  console.error("❌ Failed video src:", videoSrc);
+                                  console.error(
+                                    "❌ Failed video src:",
+                                    videoSrc
+                                  );
                                   console.error("❌ Video data details:", {
                                     dataType: typeof actualData,
-                                    size: actualData?.size || actualData?.length || actualData?.byteLength,
+                                    size:
+                                      actualData?.size ||
+                                      actualData?.length ||
+                                      actualData?.byteLength,
                                     mimeType,
-                                    fileName: fileData?.name
+                                    fileName: fileData?.name,
                                   });
                                 }}
                               >
                                 <source src={videoSrc} type={mimeType} />
                                 Your browser does not support the video tag.
                               </video>
-                              <div style={{ 
-                                marginTop: "10px", 
-                                fontSize: "12px", 
-                                color: "#666",
-                                fontFamily: "monospace"
-                              }}>
-                                <strong>Video Debug Info:</strong><br/>
-                                Type: {mimeType}<br/>
-                                Size: {actualData?.size || actualData?.length || actualData?.byteLength} bytes<br/>
+                              <div
+                                style={{
+                                  marginTop: "10px",
+                                  fontSize: "12px",
+                                  color: "#666",
+                                  fontFamily: "monospace",
+                                }}
+                              >
+                                <strong>Video Debug Info:</strong>
+                                <br />
+                                Type: {mimeType}
+                                <br />
+                                Size:{" "}
+                                {actualData?.size ||
+                                  actualData?.length ||
+                                  actualData?.byteLength}{" "}
+                                bytes
+                                <br />
                                 Source: {videoSrc.substring(0, 50)}...
                               </div>
                             </div>
                           );
                         } catch (error) {
-                          console.error("❌ Error creating video source:", error);
+                          console.error(
+                            "❌ Error creating video source:",
+                            error
+                          );
                           return (
-                            <div style={{ 
-                              padding: "15px", 
-                              backgroundColor: "#ffe6e6", 
-                              borderRadius: "4px",
-                              border: "1px solid #ff9999"
-                            }}>
-                              <h6 style={{ color: "#cc0000" }}>Video Rendering Error</h6>
-                              <p>Failed to create video source: {String(error)}</p>
+                            <div
+                              style={{
+                                padding: "15px",
+                                backgroundColor: "#ffe6e6",
+                                borderRadius: "4px",
+                                border: "1px solid #ff9999",
+                              }}
+                            >
+                              <h6 style={{ color: "#cc0000" }}>
+                                Video Rendering Error
+                              </h6>
+                              <p>
+                                Failed to create video source: {String(error)}
+                              </p>
                               <p>Data type: {typeof actualData}</p>
-                              <p>Data size: {actualData?.size || actualData?.length || actualData?.byteLength || 'unknown'}</p>
+                              <p>
+                                Data size:{" "}
+                                {actualData?.size ||
+                                  actualData?.length ||
+                                  actualData?.byteLength ||
+                                  "unknown"}
+                              </p>
                             </div>
                           );
                         }
@@ -1406,10 +1617,22 @@ export default function EncryptionTab() {
                           border: "1px solid #e9ecef",
                         }}
                       >
-                        <p><strong>File Type:</strong> {fileData?.type || 'Unknown'}</p>
-                        <p><strong>Original Name:</strong> {fileData?.name || 'Unknown'}</p>
-                        <p><strong>Size:</strong> {actualData?.byteLength || actualData?.length || 'Unknown'} bytes</p>
-                        {fileData?.type?.startsWith('text/') && actualData && (
+                        <p>
+                          <strong>File Type:</strong>{" "}
+                          {fileData?.type || "Unknown"}
+                        </p>
+                        <p>
+                          <strong>Original Name:</strong>{" "}
+                          {fileData?.name || "Unknown"}
+                        </p>
+                        <p>
+                          <strong>Size:</strong>{" "}
+                          {actualData?.byteLength ||
+                            actualData?.length ||
+                            "Unknown"}{" "}
+                          bytes
+                        </p>
+                        {fileData?.type?.startsWith("text/") && actualData && (
                           <div style={{ marginTop: "10px" }}>
                             <h6>Content Preview:</h6>
                             <pre
@@ -1422,11 +1645,12 @@ export default function EncryptionTab() {
                                 maxHeight: "200px",
                               }}
                             >
-                              {typeof actualData === 'string' 
+                              {typeof actualData === "string"
                                 ? actualData.substring(0, 500)
-                                : new TextDecoder().decode(new Uint8Array(actualData).slice(0, 500))
-                              }
-                              {(actualData?.length || 0) > 500 ? '...' : ''}
+                                : new TextDecoder().decode(
+                                    new Uint8Array(actualData).slice(0, 500)
+                                  )}
+                              {(actualData?.length || 0) > 500 ? "..." : ""}
                             </pre>
                           </div>
                         )}
@@ -1434,52 +1658,73 @@ export default function EncryptionTab() {
                     </div>
                   )}
 
-                  {(dataType === "string" || dataType === "json" || dataType === "uint8array") && actualData !== undefined && (
-                    <div style={{ marginBottom: "15px" }}>
-                      <h5 style={{ marginBottom: "10px" }}>Decrypted Content:</h5>
-                      <pre
-                        style={{
-                          backgroundColor: "#f1f3f4",
-                          padding: "15px",
-                          borderRadius: "4px",
-                          fontSize: "14px",
-                          lineHeight: "1.4",
-                          overflow: "auto",
-                          maxHeight: "300px",
-                          border: "1px solid #e9ecef",
-                        }}
-                      >
-                        {dataType === "json" 
-                          ? (typeof actualData === 'object' 
+                  {(dataType === "string" ||
+                    dataType === "json" ||
+                    dataType === "uint8array") &&
+                    actualData !== undefined && (
+                      <div style={{ marginBottom: "15px" }}>
+                        <h5 style={{ marginBottom: "10px" }}>
+                          Decrypted Content:
+                        </h5>
+                        <pre
+                          style={{
+                            backgroundColor: "#f1f3f4",
+                            padding: "15px",
+                            borderRadius: "4px",
+                            fontSize: "14px",
+                            lineHeight: "1.4",
+                            overflow: "auto",
+                            maxHeight: "300px",
+                            border: "1px solid #e9ecef",
+                          }}
+                        >
+                          {dataType === "json"
+                            ? typeof actualData === "object"
                               ? JSON.stringify(actualData, null, 2)
-                              : typeof actualData === 'string'
+                              : typeof actualData === "string"
                               ? actualData
                               : JSON.stringify(actualData, null, 2)
-                            )
-                          : dataType === "uint8array"
-                          ? (actualData?.length !== undefined
-                              ? `Uint8Array(${actualData.length}) [\n  ${Array.from(actualData).slice(0, 20).join(', ')}${actualData.length > 20 ? ',\n  ...' : ''}\n]`
+                            : dataType === "uint8array"
+                            ? actualData?.length !== undefined
+                              ? `Uint8Array(${
+                                  actualData.length
+                                }) [\n  ${Array.from(actualData)
+                                  .slice(0, 20)
+                                  .join(", ")}${
+                                  actualData.length > 20 ? ",\n  ..." : ""
+                                }\n]`
                               : String(actualData)
-                            )
-                          : String(actualData)
-                        }
-                      </pre>
-                    </div>
-                  )}
+                            : String(actualData)}
+                        </pre>
+                      </div>
+                    )}
 
                   {/* Show message if no data found */}
                   {actualData === undefined && (
-                    <div style={{ 
-                      marginBottom: "15px", 
-                      padding: "15px", 
-                      backgroundColor: "#ffe6e6", 
-                      borderRadius: "4px",
-                      border: "1px solid #ff9999"
-                    }}>
-                      <h5 style={{ marginBottom: "10px", color: "#cc0000" }}>⚠️ No Decrypted Data Found</h5>
-                      <p>The decryption response doesn't contain recognizable data properties.</p>
-                      <p>Expected properties: convertedData, plaintext, decryptedData, data</p>
-                      <p>Available properties: {Object.keys(decryptedResponse).join(', ')}</p>
+                    <div
+                      style={{
+                        marginBottom: "15px",
+                        padding: "15px",
+                        backgroundColor: "#ffe6e6",
+                        borderRadius: "4px",
+                        border: "1px solid #ff9999",
+                      }}
+                    >
+                      <h5 style={{ marginBottom: "10px", color: "#cc0000" }}>
+                        ⚠️ No Decrypted Data Found
+                      </h5>
+                      <p>
+                        The decryption response doesn't contain recognizable
+                        data properties.
+                      </p>
+                      <p>
+                        Expected properties: convertedData, plaintext,
+                        decryptedData, data
+                      </p>
+                      <p>
+                        Available properties:{" "}
+                        {Object.keys(decryptedResponse).join(", ")}
+                      </p>
                     </div>
                   )}
                 </>
@@ -1508,7 +1753,9 @@ export default function EncryptionTab() {
 
             {/* Raw response for debugging */}
             <details style={{ marginTop: "15px" }}>
-              <summary style={{ cursor: "pointer", fontWeight: "500", color: "#666" }}>
+              <summary
+                style={{ cursor: "pointer", fontWeight: "500", color: "#666" }}
+              >
                 🔍 Raw Decryption Response (for debugging)
               </summary>
               <pre

@@ -73,7 +73,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   // EOA specific state
   const [privateKey, setPrivateKey] = useState(DEFAULT_PRIVATE_KEY);
   const [accountMethod, setAccountMethod] = useState<"privateKey" | "wallet">(
-    "privateKey"
+    "wallet"
   );
 
   // Authentication methods configuration

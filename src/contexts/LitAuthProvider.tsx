@@ -27,6 +27,7 @@ import passkeyIcon from "../assets/passkey.svg";
 import phoneIcon from "../assets/phone.svg";
 import web3WalletIcon from "../assets/web3-wallet.svg";
 import whatsappIcon from "../assets/whatsapp.svg";
+import PkpSelectionForDemo from "../components/common/PkpSelectionForDemo";
 
 // Configuration constants
 const DEFAULT_PRIVATE_KEY =
@@ -50,6 +51,7 @@ interface AuthUser {
   pkpInfo: any;
   method: AuthMethod;
   timestamp: number;
+  authData?: any; // Optional for backward compatibility
 }
 
 interface LitAuthContextValue {
@@ -63,6 +65,8 @@ interface LitAuthContextValue {
   hideAuthModal: () => void;
   initiateAuthentication: () => void;
   isInitializingServices: boolean;
+  showPkpSelectionModal: () => void;
+  updateUserWithPkp: (pkpInfo: any, authContext?: any) => void;
 }
 
 const LitAuthContext = createContext<LitAuthContextValue | null>(null);
@@ -126,11 +130,12 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
   const [authStep, setAuthStep] = useState<"select" | "input" | "verify">(
     "select"
   );
+  const [modalMode, setModalMode] = useState<"signin" | "signup">("signin");
 
   // EOA specific state
   const [privateKey, setPrivateKey] = useState(DEFAULT_PRIVATE_KEY);
   const [accountMethod, setAccountMethod] = useState<"privateKey" | "wallet">(
-    "privateKey"
+    "wallet"
   );
 
   // Stytch specific state
@@ -165,6 +170,11 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
   const [customAuthMethodId, setCustomAuthMethodId] = useState(
     "0x22b562b86d5d467a9f06c3f20137b37ed13981f63bd5dbdf6fc1e0fb97015401"
   );
+
+  // PKP selection state for modal flow
+  const [tempAuthData, setTempAuthData] = useState<any>(null);
+  const [tempMethod, setTempMethod] = useState<AuthMethod | null>(null);
+  const [showPkpSelection, setShowPkpSelection] = useState(false);
 
   // Authentication methods configuration
   const authMethods: AuthMethodInfo[] = [
@@ -253,6 +263,65 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
     }
   }, [storageKey]);
 
+  // Auto-initialize services when user exists but services aren't ready
+  useEffect(() => {
+    if (user && !isServicesReady && !isInitializing) {
+      console.log("🔄 User exists but services not ready - initializing services...");
+      setupServices().catch((error) => {
+        console.error("Failed to auto-initialize services for existing user:", error);
+        // Don't logout the user automatically, but log the error
+        // The user can try to use functionality and it will show appropriate error messages
+      });
+    }
+  }, [user, isServicesReady, isInitializing, setupServices]);
+
+  // Recreate authContext when services become ready for existing user
+  useEffect(() => {
+    const recreateAuthContext = async () => {
+      if (user && user.authData && user.pkpInfo && isServicesReady && services) {
+        // Check if authContext is missing methods (indicates it was loaded from localStorage)
+        const needsRecreation = !user.authContext?.authNeededCallback || 
+                               typeof user.authContext?.authNeededCallback !== 'function';
+        
+        if (needsRecreation) {
+          console.log("🔧 Recreating authContext for user loaded from localStorage...");
+          try {
+            const newAuthContext = await services.authManager.createPkpAuthContext({
+              authData: user.authData,
+              pkpPublicKey: user.pkpInfo.pubkey || user.pkpInfo.publicKey,
+              authConfig: {
+                capabilityAuthSigs: [],
+                expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
+                statement: "",
+                domain: "",
+                resources: [
+                  ["pkp-signing", "*"],
+                  ["lit-action-execution", "*"],
+                  ["access-control-condition-decryption", "*"],
+                ],
+              },
+              litClient: services.litClient,
+            });
+
+            // Update user with new authContext
+            const updatedUser = {
+              ...user,
+              authContext: newAuthContext,
+            };
+            setUser(updatedUser);
+            localStorage.setItem(storageKey, JSON.stringify(updatedUser));
+            console.log("✅ AuthContext recreated successfully");
+          } catch (error) {
+            console.error("Failed to recreate authContext:", error);
+            // Don't logout user, but they may need to re-authenticate for some functions
+          }
+        }
+      }
+    };
+
+    recreateAuthContext();
+  }, [user, isServicesReady, services, storageKey]);
+
   // Check WebAuthn availability
   useEffect(() => {
     async function checkFido2Availability() {
@@ -303,6 +372,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
     setSelectedMethod(null);
     setShowMethodDetail(false);
     setAuthStep("select");
+    setModalMode("signin");
     setError(null);
     setEmail("");
     setPhoneNumber("");
@@ -312,6 +382,10 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
     setMethodId("");
     setWebAuthnUsername("");
     setWebAuthnMode("register");
+    // Reset PKP selection states
+    setShowPkpSelection(false);
+    setTempAuthData(null);
+    setTempMethod(null);
   };
 
   const saveUser = (userData: AuthUser) => {
@@ -324,7 +398,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
     setUser(null);
     localStorage.removeItem(storageKey);
     resetModalState();
-    setShowModal(true);
+    // Don't automatically show modal on logout - let user manually reconnect
   };
 
   const showAuthModal = () => setShowModal(true);
@@ -344,7 +418,121 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
     }
   };
 
+  const handlePkpSelectionInModal = async (pkpInfo: any) => {
+    if (!tempAuthData || !tempMethod || !services) {
+      console.error("Cannot complete PKP selection: missing data or services");
+      return;
+    }
+
+    try {
+      setIsAuthenticating(true);
+
+      // Create auth context for the selected PKP
+      const authContext = await services.authManager.createPkpAuthContext({
+        authData: tempAuthData,
+        pkpPublicKey: pkpInfo.pubkey || pkpInfo.publicKey,
+        authConfig: {
+          capabilityAuthSigs: [],
+          expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
+          statement: "",
+          domain: "",
+          resources: [
+            ["pkp-signing", "*"],
+            ["lit-action-execution", "*"],
+            ['access-control-condition-decryption', '*'],
+          ],
+        },
+        litClient: services.litClient,
+      });
+
+      // Create complete user object
+      const userData: AuthUser = {
+        authContext,
+        pkpInfo,
+        method: tempMethod,
+        timestamp: Date.now(),
+        authData: tempAuthData,
+      };
+
+      // Save user and provide success feedback before closing modal
+      setUser(userData);
+      localStorage.setItem(storageKey, JSON.stringify(userData));
+
+      // Brief success state before closing
+      setTimeout(() => {
+        resetModalState();
+      }, 800);
+    } catch (error) {
+      console.error("Failed to create auth context for selected PKP:", error);
+      handleError(error, "Failed to create auth context for selected PKP");
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
   // ========== AUTHENTICATION FLOWS ==========
+
+  const authenticateAndShowPkpSelection = async (
+    authData: any,
+    method: AuthMethod
+  ) => {
+    try {
+      // Store auth data temporarily and show PKP selection in modal
+      setTempAuthData(authData);
+      setTempMethod(method);
+      setSelectedMethod(null);
+      setShowMethodDetail(false);
+      setShowPkpSelection(true);
+      setAuthStep("select");
+      setError(null);
+
+      // Modal stays open for PKP selection
+    } catch (error) {
+      throw error;
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
+  const mintAndCreateContext = async (authData: any, method: AuthMethod) => {
+    try {
+      // Mint PKP
+      const result = await services!.litClient.authService.mintWithAuth({
+        authData,
+      });
+
+      // Create auth context
+      const authContext = await services!.authManager.createPkpAuthContext({
+        authData,
+        pkpPublicKey: result.data.pubkey,
+        authConfig: {
+          capabilityAuthSigs: [],
+          expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
+          statement: "",
+          domain: "",
+          resources: [
+            ["pkp-signing", "*"],
+            ["lit-action-execution", "*"],
+          ],
+        },
+        litClient: services!.litClient,
+      });
+
+      const userData: AuthUser = {
+        authContext,
+        pkpInfo: result.data,
+        method,
+        timestamp: Date.now(),
+        authData,
+      };
+
+      saveUser(userData);
+    } catch (error) {
+      throw error;
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
 
   const authenticateGoogle = async () => {
     try {
@@ -354,7 +542,12 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
       const authData = await GoogleAuthenticator.authenticate(
         "https://login.litgateway.com"
       );
-      await mintAndCreateContext(authData, "google");
+
+      if (modalMode === "signin") {
+        await authenticateAndShowPkpSelection(authData, "google");
+      } else {
+        await mintAndCreateContext(authData, "google");
+      }
     } catch (error) {
       handleError(error, "Google authentication failed");
     }
@@ -368,7 +561,12 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
       const authData = await DiscordAuthenticator.authenticate(
         "https://login.litgateway.com"
       );
-      await mintAndCreateContext(authData, "discord");
+
+      if (modalMode === "signin") {
+        await authenticateAndShowPkpSelection(authData, "discord");
+      } else {
+        await mintAndCreateContext(authData, "discord");
+      }
     } catch (error) {
       handleError(error, "Discord authentication failed");
     }
@@ -402,46 +600,53 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
         authData = await WalletClientAuthenticator.authenticate(walletClient);
       }
 
-      // Mint PKP and create context
-      let result;
-      if (accountMethod === "privateKey") {
-        result = await services!.litClient.mintWithAuth({
-          account,
-          authData,
-          scopes: ["sign-anything"],
-        });
+      if (modalMode === "signin") {
+        await authenticateAndShowPkpSelection(authData, "eoa");
       } else {
-        result = await services!.litClient.mintWithAuth({
-          account: walletClient,
+        // Mint PKP and create context for signup
+        let result;
+        if (accountMethod === "privateKey") {
+          result = await services!.litClient.mintWithAuth({
+            account,
+            authData,
+            scopes: ["sign-anything"],
+          });
+        } else {
+          result = await services!.litClient.mintWithAuth({
+            account: walletClient,
+            authData,
+            scopes: ["sign-anything"],
+          });
+        }
+
+        const authContext = await services!.authManager.createPkpAuthContext({
           authData,
-          scopes: ["sign-anything"],
+          pkpPublicKey: result.data.pubkey,
+          authConfig: {
+            capabilityAuthSigs: [],
+            expiration: new Date(
+              Date.now() + 1000 * 60 * 60 * 24
+            ).toISOString(),
+            statement: "",
+            domain: "",
+            resources: [
+              ["pkp-signing", "*"],
+              ["lit-action-execution", "*"],
+            ],
+          },
+          litClient: services!.litClient,
         });
+
+        const userData: AuthUser = {
+          authContext,
+          pkpInfo: result.data,
+          method: "eoa",
+          timestamp: Date.now(),
+          authData: authData,
+        };
+
+        saveUser(userData);
       }
-
-      const authContext = await services!.authManager.createPkpAuthContext({
-        authData,
-        pkpPublicKey: result.data.pubkey,
-        authConfig: {
-          capabilityAuthSigs: [],
-          expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
-          statement: "",
-          domain: "",
-          resources: [
-            ["pkp-signing", "*"],
-            ["lit-action-execution", "*"],
-          ],
-        },
-        litClient: services!.litClient,
-      });
-
-      const userData: AuthUser = {
-        authContext,
-        pkpInfo: result.data,
-        method: "eoa",
-        timestamp: Date.now(),
-      };
-
-      saveUser(userData);
     } catch (error) {
       handleError(error, "EOA authentication failed");
     } finally {
@@ -456,7 +661,8 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
 
       const { WebAuthnAuthenticator } = await import("@lit-protocol/auth");
 
-      if (webAuthnMode === "register") {
+      if (webAuthnMode === "register" || modalMode === "signup") {
+        // Register new credential and mint PKP
         const { pkpInfo } = await WebAuthnAuthenticator.registerAndMintPKP({
           authServiceBaseUrl: authServiceBaseUrl,
           username: webAuthnUsername || `user-${Date.now()}`,
@@ -488,12 +694,21 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
           pkpInfo,
           method: "webauthn",
           timestamp: Date.now(),
+          authData,
         };
 
         saveUser(userData);
       } else {
+        // Authenticate with existing credential
         const authData = await WebAuthnAuthenticator.authenticate();
-        await mintAndCreateContext(authData, "webauthn");
+
+        if (authData) {
+          if (modalMode === "signin") {
+            await authenticateAndShowPkpSelection(authData, "webauthn");
+          } else {
+            await mintAndCreateContext(authData, "webauthn");
+          }
+        }
       }
     } catch (error) {
       handleError(error, "WebAuthn authentication failed");
@@ -592,7 +807,14 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
       }
 
       if (authData) {
-        await mintAndCreateContext(authData, selectedMethod as AuthMethod);
+        if (modalMode === "signin") {
+          await authenticateAndShowPkpSelection(
+            authData,
+            selectedMethod as AuthMethod
+          );
+        } else {
+          await mintAndCreateContext(authData, selectedMethod as AuthMethod);
+        }
       }
     } catch (error) {
       handleError(error, "Failed to verify OTP");
@@ -617,7 +839,11 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
         authServiceBaseUrl,
       });
 
-      await mintAndCreateContext(authData, "stytch-totp");
+      if (modalMode === "signin") {
+        await authenticateAndShowPkpSelection(authData, "stytch-totp");
+      } else {
+        await mintAndCreateContext(authData, "stytch-totp");
+      }
     } catch (error) {
       handleError(error, "TOTP authentication failed");
     } finally {
@@ -673,50 +899,15 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
         pkpInfo: { pubkey: customPkpPublicKey, tokenId: "demo-token-id" },
         method: "custom",
         timestamp: Date.now(),
+        authData: {
+          authMethodType: 10, // Custom auth method type
+          authMethodId: customAuthMethodId,
+        },
       };
 
       saveUser(userData);
     } catch (error) {
       handleError(error, "Custom authentication failed");
-    } finally {
-      setIsAuthenticating(false);
-    }
-  };
-
-  const mintAndCreateContext = async (authData: any, method: AuthMethod) => {
-    try {
-      // Mint PKP
-      const result = await services!.litClient.authService.mintWithAuth({
-        authData,
-      });
-
-      // Create auth context
-      const authContext = await services!.authManager.createPkpAuthContext({
-        authData,
-        pkpPublicKey: result.data.pubkey,
-        authConfig: {
-          capabilityAuthSigs: [],
-          expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
-          statement: "",
-          domain: "",
-          resources: [
-            ["pkp-signing", "*"],
-            ["lit-action-execution", "*"],
-          ],
-        },
-        litClient: services!.litClient,
-      });
-
-      const userData: AuthUser = {
-        authContext,
-        pkpInfo: result.data,
-        method,
-        timestamp: Date.now(),
-      };
-
-      saveUser(userData);
-    } catch (error) {
-      throw error;
     } finally {
       setIsAuthenticating(false);
     }
@@ -782,7 +973,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
 
   const contextValue: LitAuthContextValue = {
     user,
-    isAuthenticated: !!user,
+    isAuthenticated: !!user && !!user.authContext && !!user.pkpInfo,
     logout,
     isAuthenticating,
     services,
@@ -791,6 +982,27 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
     hideAuthModal,
     initiateAuthentication,
     isInitializingServices: isInitializing,
+    showPkpSelectionModal: () => {
+      if (user && user.authData) {
+        setTempAuthData(user.authData);
+        setTempMethod(user.method);
+        setShowPkpSelection(true);
+        setShowModal(true);
+        setShowMethodDetail(false);
+        setSelectedMethod(null);
+      }
+    },
+    updateUserWithPkp: (pkpInfo: any, authContext?: any) => {
+      if (user) {
+        const updatedUser = {
+          ...user,
+          pkpInfo,
+          authContext: authContext || user.authContext,
+        };
+        setUser(updatedUser);
+        saveUser(updatedUser);
+      }
+    },
   };
 
   // Always render children with context
@@ -899,7 +1111,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
               backgroundColor: "white",
               borderRadius: "12px",
               padding: "28px",
-              maxWidth: "32rem",
+              maxWidth: showPkpSelection ? "48rem" : "32rem",
               width: "100%",
               maxHeight: "90vh",
               overflowY: "auto",
@@ -909,227 +1121,382 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
             }}
           >
             {!showMethodDetail ? (
-              // Main method selection
-              <div>
-                <div style={{ textAlign: "center", marginBottom: "20px" }}>
-                  <h2
-                    style={{
-                      fontSize: "22px",
-                      fontWeight: "700",
-                      marginBottom: "6px",
-                      color: "#111827",
-                      lineHeight: "1.2",
-                    }}
-                  >
-                    Connect to Lit Protocol
-                  </h2>
-                  <p
-                    style={{
-                      fontSize: "13px",
-                      color: "#6b7280",
-                      lineHeight: "1.4",
-                      margin: 0,
-                    }}
-                  >
-                    Create a wallet secured by accounts you already have
-                  </p>
-                </div>
-
-                {error && (
-                  <div
-                    style={{
-                      padding: "8px 12px",
-                      backgroundColor: "#fef2f2",
-                      border: "1px solid #fecaca",
-                      borderRadius: "6px",
-                      marginBottom: "16px",
-                      color: "#dc2626",
-                      fontSize: "12px",
-                    }}
-                  >
-                    {error}
-                  </div>
-                )}
-
-                <div
-                  style={{ display: "grid", gap: "8px", marginBottom: "16px" }}
-                >
-                  {authMethods.map((method) => (
+              // Main method selection or PKP selection
+              showPkpSelection ? (
+                // PKP Selection View
+                <div>
+                  <div style={{ marginBottom: "20px" }}>
                     <button
-                      key={method.id}
-                      onClick={() => handleMethodSelect(method.id)}
-                      disabled={
-                        !method.available ||
-                        isAuthenticating ||
-                        (method.id === "webauthn" && isFido2Available === false)
-                      }
+                      onClick={() => setShowPkpSelection(false)}
                       style={{
+                        background: "none",
+                        border: "none",
+                        color: "#6b7280",
+                        fontSize: "13px",
+                        cursor: "pointer",
+                        marginBottom: "12px",
                         display: "flex",
                         alignItems: "center",
-                        gap: "12px",
-                        padding: "8px 12px",
-                        backgroundColor:
-                          method.available &&
-                          !isAuthenticating &&
-                          !(
-                            method.id === "webauthn" &&
-                            isFido2Available === false
-                          )
-                            ? "white"
-                            : "#f9fafb",
-                        border: "1px solid #d1d5db",
-                        borderRadius: "8px",
-                        cursor:
-                          method.available &&
-                          !isAuthenticating &&
-                          !(
-                            method.id === "webauthn" &&
-                            isFido2Available === false
-                          )
-                            ? "pointer"
-                            : "not-allowed",
-                        opacity:
-                          method.available &&
-                          !isAuthenticating &&
-                          !(
-                            method.id === "webauthn" &&
-                            isFido2Available === false
-                          )
-                            ? 1
-                            : 0.6,
-                        fontSize: "14px",
-                        fontWeight: "500",
-                        color: "#374151",
+                        gap: "6px",
+                        padding: "4px 8px",
+                        borderRadius: "4px",
                         transition: "all 0.2s",
-                        textAlign: "left",
-                        minHeight: "44px",
                       }}
                       onMouseEnter={(e) => {
-                        if (
-                          method.available &&
-                          !isAuthenticating &&
-                          !(
-                            method.id === "webauthn" &&
-                            isFido2Available === false
-                          )
-                        ) {
-                          e.currentTarget.style.backgroundColor = "#f3f4f6";
-                          e.currentTarget.style.borderColor = "#9ca3af";
-                        }
+                        e.currentTarget.style.backgroundColor = "#f3f4f6";
+                        e.currentTarget.style.color = "#374151";
                       }}
                       onMouseLeave={(e) => {
-                        if (
-                          method.available &&
-                          !isAuthenticating &&
-                          !(
-                            method.id === "webauthn" &&
-                            isFido2Available === false
-                          )
-                        ) {
-                          e.currentTarget.style.backgroundColor = "white";
-                          e.currentTarget.style.borderColor = "#d1d5db";
-                        }
+                        e.currentTarget.style.backgroundColor = "transparent";
+                        e.currentTarget.style.color = "#6b7280";
                       }}
                     >
-                      <div
+                      ← Back to Authentication
+                    </button>
+
+                    <div
+                      style={{
+                        padding: "16px",
+                        backgroundColor: "#f0f9ff",
+                        borderRadius: "8px",
+                        border: "1px solid #bfdbfe",
+                        marginBottom: "16px",
+                      }}
+                    >
+                      <h3
                         style={{
-                          width: "40px",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
+                          fontSize: "18px",
+                          fontWeight: "600",
+                          color: "#1e40af",
+                          margin: "0 0 8px 0",
                         }}
                       >
-                        <img
-                          src={method.icon}
-                          alt={method.name}
-                          style={{
-                            width: "24px",
-                            height: "24px",
-                            objectFit: "contain",
-                          }}
-                        />
-                      </div>
-                      <div
+                        🎉 Authentication Successful!
+                      </h3>
+                      <p
                         style={{
-                          flex: 1,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
+                          fontSize: "14px",
+                          color: "#1e40af",
+                          margin: "0 0 8px 0",
+                          lineHeight: "1.4",
                         }}
                       >
-                        <span
+                        You've successfully authenticated with{" "}
+                        <strong>{tempMethod}</strong>.
+                      </p>
+                      <p
+                        style={{
+                          fontSize: "13px",
+                          color: "#3730a3",
+                          margin: "0",
+                          lineHeight: "1.4",
+                        }}
+                      >
+                        Select a PKP wallet below to complete the process and
+                        access your protected dashboard.
+                      </p>
+                    </div>
+                  </div>
+
+                  {tempAuthData && tempMethod && services && (
+                    <PkpSelectionForDemo
+                      authData={tempAuthData}
+                      onPkpSelected={handlePkpSelectionInModal}
+                      authMethodName={`${tempMethod} Auth`}
+                      services={services}
+                      disabled={isAuthenticating}
+                    />
+                  )}
+
+                  {/* Instructions for after PKP selection */}
+                  <div
+                    style={{
+                      marginTop: "20px",
+                      padding: "12px",
+                      backgroundColor: "#f8fafc",
+                      borderRadius: "6px",
+                      border: "1px solid #e5e7eb",
+                    }}
+                  >
+                    <p
+                      style={{
+                        fontSize: "13px",
+                        color: "#4b5563",
+                        margin: "0",
+                        lineHeight: "1.4",
+                        textAlign: "center",
+                      }}
+                    >
+                      💡 <strong>After selecting a PKP:</strong> This modal will
+                      close and you'll be taken to your protected dashboard
+                      where you can manage your PKP, view balances, and access
+                      all features.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                // Main method selection
+                <div>
+                  <div style={{ textAlign: "center", marginBottom: "20px" }}>
+                    <h2
+                      style={{
+                        fontSize: "22px",
+                        fontWeight: "700",
+                        marginBottom: "6px",
+                        color: "#111827",
+                        lineHeight: "1.2",
+                      }}
+                    >
+                      {modalMode === "signin"
+                        ? "Sign In to Lit Protocol"
+                        : "Sign Up with Lit Protocol"}
+                    </h2>
+                    <p
+                      style={{
+                        fontSize: "13px",
+                        color: "#6b7280",
+                        lineHeight: "1.4",
+                        margin: 0,
+                      }}
+                    >
+                      {modalMode === "signin"
+                        ? "Access your existing PKP wallet"
+                        : "Create a new wallet secured by accounts you already have"}
+                    </p>
+                  </div>
+
+                  {error && (
+                    <div
+                      style={{
+                        padding: "8px 12px",
+                        backgroundColor: "#fef2f2",
+                        border: "1px solid #fecaca",
+                        borderRadius: "6px",
+                        marginBottom: "16px",
+                        color: "#dc2626",
+                        fontSize: "12px",
+                      }}
+                    >
+                      {error}
+                    </div>
+                  )}
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gap: "8px",
+                      marginBottom: "16px",
+                    }}
+                  >
+                    {authMethods.map((method) => (
+                      <button
+                        key={method.id}
+                        onClick={() => handleMethodSelect(method.id)}
+                        disabled={
+                          !method.available ||
+                          isAuthenticating ||
+                          (method.id === "webauthn" &&
+                            isFido2Available === false)
+                        }
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "12px",
+                          padding: "8px 12px",
+                          backgroundColor:
+                            method.available &&
+                            !isAuthenticating &&
+                            !(
+                              method.id === "webauthn" &&
+                              isFido2Available === false
+                            )
+                              ? "white"
+                              : "#f9fafb",
+                          border: "1px solid #d1d5db",
+                          borderRadius: "8px",
+                          cursor:
+                            method.available &&
+                            !isAuthenticating &&
+                            !(
+                              method.id === "webauthn" &&
+                              isFido2Available === false
+                            )
+                              ? "pointer"
+                              : "not-allowed",
+                          opacity:
+                            method.available &&
+                            !isAuthenticating &&
+                            !(
+                              method.id === "webauthn" &&
+                              isFido2Available === false
+                            )
+                              ? 1
+                              : 0.6,
+                          fontSize: "14px",
+                          fontWeight: "500",
+                          color: "#374151",
+                          transition: "all 0.2s",
+                          textAlign: "left",
+                          minHeight: "44px",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (
+                            method.available &&
+                            !isAuthenticating &&
+                            !(
+                              method.id === "webauthn" &&
+                              isFido2Available === false
+                            )
+                          ) {
+                            e.currentTarget.style.backgroundColor = "#f3f4f6";
+                            e.currentTarget.style.borderColor = "#9ca3af";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (
+                            method.available &&
+                            !isAuthenticating &&
+                            !(
+                              method.id === "webauthn" &&
+                              isFido2Available === false
+                            )
+                          ) {
+                            e.currentTarget.style.backgroundColor = "white";
+                            e.currentTarget.style.borderColor = "#d1d5db";
+                          }
+                        }}
+                      >
+                        <div
                           style={{
-                            fontWeight: "600",
-                            lineHeight: "1.2",
-                            textAlign: "center",
+                            width: "40px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
                           }}
                         >
-                          {method.name}
-                          {method.comingSoon && (
-                            <span
-                              style={{
-                                fontSize: "12px",
-                                color: "#6b7280",
-                                fontWeight: "400",
-                                marginLeft: "4px",
-                              }}
-                            >
-                              (Soon)
-                            </span>
-                          )}
-                          {method.id === "webauthn" &&
-                            isFido2Available === false && (
+                          <img
+                            src={method.icon}
+                            alt={method.name}
+                            style={{
+                              width: "24px",
+                              height: "24px",
+                              objectFit: "contain",
+                            }}
+                          />
+                        </div>
+                        <div
+                          style={{
+                            flex: 1,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontWeight: "600",
+                              lineHeight: "1.2",
+                              textAlign: "center",
+                            }}
+                          >
+                            {method.name}
+                            {method.comingSoon && (
                               <span
                                 style={{
                                   fontSize: "12px",
-                                  color: "#dc2626",
+                                  color: "#6b7280",
                                   fontWeight: "400",
                                   marginLeft: "4px",
                                 }}
                               >
-                                (Not Available)
+                                (Soon)
                               </span>
                             )}
-                        </span>
-                      </div>
-                      <div
-                        style={{
-                          width: "40px",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        {isAuthenticating && selectedMethod === method.id && (
-                          <div
-                            style={{
-                              width: "16px",
-                              height: "16px",
-                              border: "2px solid #e5e7eb",
-                              borderTop: "2px solid #3b82f6",
-                              borderRadius: "50%",
-                              animation: "spin 1s linear infinite",
-                            }}
-                          />
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                </div>
+                            {method.id === "webauthn" &&
+                              isFido2Available === false && (
+                                <span
+                                  style={{
+                                    fontSize: "12px",
+                                    color: "#dc2626",
+                                    fontWeight: "400",
+                                    marginLeft: "4px",
+                                  }}
+                                >
+                                  (Not Available)
+                                </span>
+                              )}
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            width: "40px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          {isAuthenticating && selectedMethod === method.id && (
+                            <div
+                              style={{
+                                width: "16px",
+                                height: "16px",
+                                border: "2px solid #e5e7eb",
+                                borderTop: "2px solid #3b82f6",
+                                borderRadius: "50%",
+                                animation: "spin 1s linear infinite",
+                              }}
+                            />
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
 
-                <div
-                  style={{
-                    textAlign: "center",
-                    marginTop: "16px",
-                    fontSize: "11px",
-                    color: "#6b7280",
-                  }}
-                >
-                  Press ESC to close
+                  <div
+                    style={{
+                      textAlign: "center",
+                      marginTop: "16px",
+                      fontSize: "11px",
+                      color: "#6b7280",
+                    }}
+                  >
+                    Press ESC to close
+                  </div>
+
+                  {/* Mode Toggle */}
+                  <div
+                    style={{
+                      textAlign: "center",
+                      marginTop: "12px",
+                      paddingTop: "12px",
+                      borderTop: "1px solid #e5e7eb",
+                    }}
+                  >
+                    <button
+                      onClick={() =>
+                        setModalMode(
+                          modalMode === "signin" ? "signup" : "signin"
+                        )
+                      }
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#3b82f6",
+                        fontSize: "13px",
+                        cursor: "pointer",
+                        textDecoration: "underline",
+                        fontWeight: "500",
+                      }}
+                    >
+                      {modalMode === "signin"
+                        ? "Need an account? Sign up"
+                        : "Already have an account? Sign in"}
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )
             ) : (
-              // Method detail forms
+              // Method detail view
               <div>
                 <div style={{ marginBottom: "16px" }}>
                   <button
@@ -1161,21 +1528,6 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                       margin: 0,
                     }}
                   >
-                    <img
-                      src={
-                        authMethods.find((m) => m.id === selectedMethod)?.icon
-                      }
-                      alt={
-                        authMethods.find((m) => m.id === selectedMethod)?.name
-                      }
-                      style={{
-                        width: "20px",
-                        height: "20px",
-                        objectFit: "contain",
-                        marginRight: "8px",
-                        verticalAlign: "middle",
-                      }}
-                    />
                     {authMethods.find((m) => m.id === selectedMethod)?.name}
                   </h3>
                 </div>
@@ -1196,59 +1548,134 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                   </div>
                 )}
 
-                {/* Form content based on selected method and step */}
-                {selectedMethod === "eoa" && (
-                  <div>
-                    <div style={{ marginBottom: "16px" }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: "6px",
-                          marginBottom: "10px",
-                        }}
-                      >
-                        <button
-                          onClick={() => setAccountMethod("privateKey")}
+                {/* Method-specific form inputs */}
+                <div style={{ marginBottom: "16px" }}>
+                  {selectedMethod === "eoa" && (
+                    <div>
+                      <div style={{ marginBottom: "12px" }}>
+                        <label
                           style={{
-                            padding: "6px 12px",
-                            backgroundColor:
-                              accountMethod === "privateKey"
-                                ? "#3b82f6"
-                                : "#f3f4f6",
-                            color:
-                              accountMethod === "privateKey"
-                                ? "white"
-                                : "#374151",
-                            border: "1px solid #d1d5db",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                            fontSize: "12px",
+                            fontSize: "13px",
+                            fontWeight: "500",
+                            marginBottom: "6px",
+                            display: "block",
                           }}
                         >
-                          Private Key
-                        </button>
-                        <button
-                          onClick={() => setAccountMethod("wallet")}
-                          style={{
-                            padding: "6px 12px",
-                            backgroundColor:
-                              accountMethod === "wallet"
-                                ? "#3b82f6"
-                                : "#f3f4f6",
-                            color:
-                              accountMethod === "wallet" ? "white" : "#374151",
-                            border: "1px solid #d1d5db",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                            fontSize: "12px",
-                          }}
-                        >
-                          Wallet
-                        </button>
+                          Account Method:
+                        </label>
+                        <div style={{ display: "flex", gap: "8px" }}>
+                          <button
+                            onClick={() => setAccountMethod("wallet")}
+                            style={{
+                              padding: "8px 15px",
+                              backgroundColor:
+                                accountMethod === "wallet"
+                                  ? "#4285F4"
+                                  : "#f3f4f6",
+                              color:
+                                accountMethod === "wallet"
+                                  ? "white"
+                                  : "#374151",
+                              border: "1px solid #d1d5db",
+                              borderRadius: "4px",
+                              fontSize: "12px",
+                              cursor: "pointer",
+                              fontWeight: "500",
+                            }}
+                          >
+                            Connected Wallet
+                          </button>
+                          <button
+                            onClick={() => setAccountMethod("privateKey")}
+                            style={{
+                              padding: "8px 15px",
+                              backgroundColor:
+                                accountMethod === "privateKey"
+                                  ? "#4285F4"
+                                  : "#f3f4f6",
+                              color:
+                                accountMethod === "privateKey"
+                                  ? "white"
+                                  : "#374151",
+                              border: "1px solid #d1d5db",
+                              borderRadius: "4px",
+                              fontSize: "12px",
+                              cursor: "pointer",
+                              fontWeight: "500",
+                            }}
+                          >
+                            Private Key
+                          </button>
+                        </div>
                       </div>
-
-                      {accountMethod === "privateKey" ? (
-                        <div>
+                      {accountMethod === "wallet" && (
+                        <div
+                          style={{
+                            marginBottom: "12px",
+                            padding: "12px",
+                            backgroundColor: "#f8f9fa",
+                            borderRadius: "6px",
+                            border: "1px solid #e9ecef",
+                          }}
+                        >
+                          <p
+                            style={{
+                              margin: "0 0 8px 0",
+                              fontSize: "13px",
+                              fontWeight: "500",
+                            }}
+                          >
+                            <strong>Using Connected Wallet:</strong>
+                          </p>
+                          <p
+                            style={{
+                              margin: "0 0 10px 0",
+                              fontSize: "12px",
+                              color: "#666",
+                              lineHeight: "1.4",
+                            }}
+                          >
+                            This will use your currently connected wallet
+                            account (e.g., MetaMask). Make sure your wallet is
+                            connected and you have test tokens.
+                          </p>
+                          <p
+                            style={{
+                              margin: "0 0 10px 0",
+                              fontSize: "12px",
+                              color: "#666",
+                            }}
+                          >
+                            Need tokens? Visit the{" "}
+                            <a
+                              href={FAUCET_URL}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                color: "#4285F4",
+                                textDecoration: "underline",
+                              }}
+                            >
+                              Chronicle Yellowstone Faucet
+                            </a>
+                          </p>
+                          <div style={{ marginTop: "8px" }}>
+                            <ConnectButton showBalance={false} />
+                          </div>
+                        </div>
+                      )}
+                      {accountMethod === "privateKey" && (
+                        <div style={{ marginBottom: "12px" }}>
+                          <label
+                            style={{
+                              fontSize: "13px",
+                              fontWeight: "500",
+                              marginBottom: "6px",
+                              display: "block",
+                            }}
+                          >
+                            Private Key:
+                          </label>
                           <input
                             type="password"
                             value={privateKey}
@@ -1256,223 +1683,165 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                             placeholder="0x..."
                             style={{
                               width: "100%",
-                              padding: "8px",
+                              padding: "8px 12px",
                               border: "1px solid #d1d5db",
                               borderRadius: "4px",
                               fontSize: "12px",
                               fontFamily: "monospace",
                             }}
                           />
-                          <p
+                          <small
                             style={{
-                              fontSize: "10px",
-                              color: "#6b7280",
-                              margin: "4px 0 0 0",
+                              color: "#666",
+                              fontSize: "11px",
+                              display: "block",
+                              marginTop: "4px",
                             }}
                           >
-                            Test key provided. Get tokens from{" "}
-                            <a
-                              href={FAUCET_URL}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{ color: "#3b82f6" }}
-                            >
-                              faucet
-                            </a>
-                          </p>
-                        </div>
-                      ) : (
-                        <div>
-                          <ConnectButton />
-                          {!walletClient?.account && (
-                            <p
-                              style={{
-                                fontSize: "10px",
-                                color: "#6b7280",
-                                margin: "4px 0 0 0",
-                              }}
-                            >
-                              Please connect your wallet
-                            </p>
-                          )}
+                            Default test private key is provided. Replace with
+                            your own for production use.
+                          </small>
                         </div>
                       )}
                     </div>
+                  )}
 
-                    <button
-                      onClick={handleAuthAction}
-                      disabled={
-                        isAuthenticating ||
-                        (accountMethod === "wallet" && !walletClient?.account)
-                      }
-                      style={{
-                        width: "100%",
-                        padding: "10px",
-                        backgroundColor: isAuthenticating
-                          ? "#9ca3af"
-                          : "#3b82f6",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "6px",
-                        fontSize: "13px",
-                        fontWeight: "600",
-                        cursor: isAuthenticating ? "not-allowed" : "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "6px",
-                      }}
-                    >
-                      {isAuthenticating && (
-                        <div
+                  {selectedMethod === "webauthn" && (
+                    <div>
+                      <div style={{ marginBottom: "12px" }}>
+                        <label
                           style={{
-                            width: "12px",
-                            height: "12px",
-                            border: "2px solid #ffffff40",
-                            borderTop: "2px solid #ffffff",
-                            borderRadius: "50%",
-                            animation: "spin 1s linear infinite",
-                          }}
-                        />
-                      )}
-                      {isAuthenticating ? "Connecting..." : "Connect"}
-                    </button>
-                  </div>
-                )}
-
-                {selectedMethod === "webauthn" && (
-                  <div>
-                    <div style={{ marginBottom: "16px" }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: "6px",
-                          marginBottom: "10px",
-                        }}
-                      >
-                        <button
-                          onClick={() => setWebAuthnMode("register")}
-                          style={{
-                            padding: "6px 12px",
-                            backgroundColor:
-                              webAuthnMode === "register"
-                                ? "#3b82f6"
-                                : "#f3f4f6",
-                            color:
-                              webAuthnMode === "register" ? "white" : "#374151",
-                            border: "1px solid #d1d5db",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                            fontSize: "12px",
+                            fontSize: "13px",
+                            fontWeight: "500",
+                            marginBottom: "6px",
+                            display: "block",
                           }}
                         >
-                          Register New
-                        </button>
-                        <button
-                          onClick={() => setWebAuthnMode("authenticate")}
-                          style={{
-                            padding: "6px 12px",
-                            backgroundColor:
-                              webAuthnMode === "authenticate"
-                                ? "#3b82f6"
-                                : "#f3f4f6",
-                            color:
-                              webAuthnMode === "authenticate"
-                                ? "white"
-                                : "#374151",
-                            border: "1px solid #d1d5db",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                            fontSize: "12px",
-                          }}
-                        >
-                          Authenticate
-                        </button>
+                          Mode:
+                        </label>
+                        <div style={{ display: "flex", gap: "8px" }}>
+                          <button
+                            onClick={() => setWebAuthnMode("register")}
+                            style={{
+                              padding: "6px 12px",
+                              backgroundColor:
+                                webAuthnMode === "register"
+                                  ? "#3b82f6"
+                                  : "#f3f4f6",
+                              color:
+                                webAuthnMode === "register"
+                                  ? "white"
+                                  : "#374151",
+                              border: "1px solid #d1d5db",
+                              borderRadius: "4px",
+                              fontSize: "12px",
+                              cursor: "pointer",
+                            }}
+                          >
+                            Register New
+                          </button>
+                          <button
+                            onClick={() => setWebAuthnMode("authenticate")}
+                            style={{
+                              padding: "6px 12px",
+                              backgroundColor:
+                                webAuthnMode === "authenticate"
+                                  ? "#3b82f6"
+                                  : "#f3f4f6",
+                              color:
+                                webAuthnMode === "authenticate"
+                                  ? "white"
+                                  : "#374151",
+                              border: "1px solid #d1d5db",
+                              borderRadius: "4px",
+                              fontSize: "12px",
+                              cursor: "pointer",
+                            }}
+                          >
+                            Use Existing
+                          </button>
+                        </div>
                       </div>
 
                       {webAuthnMode === "register" && (
-                        <div>
+                        <div style={{ marginBottom: "12px" }}>
+                          <label
+                            style={{
+                              fontSize: "13px",
+                              fontWeight: "500",
+                              marginBottom: "6px",
+                              display: "block",
+                            }}
+                          >
+                            Username (optional):
+                          </label>
                           <input
                             type="text"
                             value={webAuthnUsername}
                             onChange={(e) =>
                               setWebAuthnUsername(e.target.value)
                             }
-                            placeholder="Username (optional)"
+                            placeholder="user@example.com"
                             style={{
                               width: "100%",
-                              padding: "8px",
+                              padding: "8px 10px",
                               border: "1px solid #d1d5db",
                               borderRadius: "4px",
                               fontSize: "12px",
                             }}
                           />
-                          <p
-                            style={{
-                              fontSize: "10px",
-                              color: "#6b7280",
-                              margin: "4px 0 0 0",
-                            }}
-                          >
-                            Username for your WebAuthn credential
-                          </p>
                         </div>
                       )}
                     </div>
+                  )}
 
-                    <button
-                      onClick={handleAuthAction}
-                      disabled={isAuthenticating || isFido2Available === false}
-                      style={{
-                        width: "100%",
-                        padding: "10px",
-                        backgroundColor:
-                          isAuthenticating || isFido2Available === false
-                            ? "#9ca3af"
-                            : "#3b82f6",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "6px",
-                        fontSize: "13px",
-                        fontWeight: "600",
-                        cursor:
-                          isAuthenticating || isFido2Available === false
-                            ? "not-allowed"
-                            : "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "6px",
-                      }}
-                    >
-                      {isAuthenticating && (
-                        <div
+                  {(selectedMethod === "stytch-email" ||
+                    selectedMethod === "stytch-sms" ||
+                    selectedMethod === "stytch-whatsapp") && (
+                    <div>
+                      <div style={{ marginBottom: "12px" }}>
+                        <label
                           style={{
-                            width: "12px",
-                            height: "12px",
-                            border: "2px solid #ffffff40",
-                            borderTop: "2px solid #ffffff",
-                            borderRadius: "50%",
-                            animation: "spin 1s linear infinite",
+                            fontSize: "13px",
+                            fontWeight: "500",
+                            marginBottom: "6px",
+                            display: "block",
+                          }}
+                        >
+                          Auth Service URL:
+                        </label>
+                        <input
+                          type="url"
+                          value={authServiceBaseUrl}
+                          onChange={(e) =>
+                            setAuthServiceBaseUrl(e.target.value)
+                          }
+                          placeholder="http://localhost:3301"
+                          style={{
+                            width: "100%",
+                            padding: "8px 10px",
+                            border: "1px solid #d1d5db",
+                            borderRadius: "4px",
+                            fontSize: "12px",
+                            fontFamily: "monospace",
                           }}
                         />
-                      )}
-                      {isAuthenticating
-                        ? "Processing..."
-                        : webAuthnMode === "register"
-                        ? "Register & Mint PKP"
-                        : "Authenticate"}
-                    </button>
-                  </div>
-                )}
+                      </div>
 
-                {(selectedMethod === "stytch-email" ||
-                  selectedMethod === "stytch-sms" ||
-                  selectedMethod === "stytch-whatsapp") && (
-                  <div>
-                    {authStep === "input" && (
-                      <div>
+                      {authStep === "input" && (
                         <div style={{ marginBottom: "12px" }}>
+                          <label
+                            style={{
+                              fontSize: "13px",
+                              fontWeight: "500",
+                              marginBottom: "6px",
+                              display: "block",
+                            }}
+                          >
+                            {selectedMethod === "stytch-email"
+                              ? "Email Address:"
+                              : "Phone Number:"}
+                          </label>
                           <input
                             type={
                               selectedMethod === "stytch-email"
@@ -1491,50 +1860,32 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                             }
                             placeholder={
                               selectedMethod === "stytch-email"
-                                ? "your@email.com"
+                                ? "user@example.com"
                                 : "+1234567890"
                             }
                             style={{
                               width: "100%",
-                              padding: "8px",
+                              padding: "8px 10px",
                               border: "1px solid #d1d5db",
                               borderRadius: "4px",
                               fontSize: "12px",
                             }}
                           />
                         </div>
+                      )}
+
+                      {authStep === "verify" && (
                         <div style={{ marginBottom: "12px" }}>
-                          <input
-                            type="url"
-                            value={authServiceBaseUrl}
-                            onChange={(e) =>
-                              setAuthServiceBaseUrl(e.target.value)
-                            }
-                            placeholder="http://localhost:3301"
+                          <label
                             style={{
-                              width: "100%",
-                              padding: "8px",
-                              border: "1px solid #d1d5db",
-                              borderRadius: "4px",
-                              fontSize: "12px",
-                            }}
-                          />
-                          <p
-                            style={{
-                              fontSize: "10px",
-                              color: "#6b7280",
-                              margin: "4px 0 0 0",
+                              fontSize: "13px",
+                              fontWeight: "500",
+                              marginBottom: "6px",
+                              display: "block",
                             }}
                           >
-                            Auth service URL
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {authStep === "verify" && (
-                      <div>
-                        <div style={{ marginBottom: "12px" }}>
+                            Verification Code:
+                          </label>
                           <input
                             type="text"
                             value={otpCode}
@@ -1543,7 +1894,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                             maxLength={6}
                             style={{
                               width: "100%",
-                              padding: "8px",
+                              padding: "8px 10px",
                               border: "1px solid #d1d5db",
                               borderRadius: "4px",
                               fontSize: "14px",
@@ -1552,413 +1903,290 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                               textAlign: "center",
                             }}
                           />
-                          <p
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {selectedMethod === "stytch-totp" && (
+                    <div>
+                      <div style={{ marginBottom: "12px" }}>
+                        <label
+                          style={{
+                            fontSize: "13px",
+                            fontWeight: "500",
+                            marginBottom: "6px",
+                            display: "block",
+                          }}
+                        >
+                          Auth Service URL:
+                        </label>
+                        <input
+                          type="url"
+                          value={authServiceBaseUrl}
+                          onChange={(e) =>
+                            setAuthServiceBaseUrl(e.target.value)
+                          }
+                          placeholder="http://localhost:3301"
+                          style={{
+                            width: "100%",
+                            padding: "8px 10px",
+                            border: "1px solid #d1d5db",
+                            borderRadius: "4px",
+                            fontSize: "12px",
+                            fontFamily: "monospace",
+                          }}
+                        />
+                      </div>
+
+                      <div style={{ marginBottom: "12px" }}>
+                        <label
+                          style={{
+                            fontSize: "13px",
+                            fontWeight: "500",
+                            marginBottom: "6px",
+                            display: "block",
+                          }}
+                        >
+                          Stytch User ID:
+                        </label>
+                        <input
+                          type="text"
+                          value={userId}
+                          onChange={(e) => setUserId(e.target.value)}
+                          placeholder="user-test-uuid-1234"
+                          style={{
+                            width: "100%",
+                            padding: "8px 10px",
+                            border: "1px solid #d1d5db",
+                            borderRadius: "4px",
+                            fontSize: "12px",
+                            fontFamily: "monospace",
+                          }}
+                        />
+                      </div>
+
+                      <div style={{ marginBottom: "12px" }}>
+                        <label
+                          style={{
+                            fontSize: "13px",
+                            fontWeight: "500",
+                            marginBottom: "6px",
+                            display: "block",
+                          }}
+                        >
+                          TOTP Code:
+                        </label>
+                        <input
+                          type="text"
+                          value={totpCode}
+                          onChange={(e) => setTotpCode(e.target.value)}
+                          placeholder="123456"
+                          maxLength={6}
+                          style={{
+                            width: "100%",
+                            padding: "8px 10px",
+                            border: "1px solid #d1d5db",
+                            borderRadius: "4px",
+                            fontSize: "14px",
+                            fontFamily: "monospace",
+                            letterSpacing: "2px",
+                            textAlign: "center",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedMethod === "custom" && (
+                    <div>
+                      <div style={{ marginBottom: "12px" }}>
+                        <label
+                          style={{
+                            fontSize: "13px",
+                            fontWeight: "500",
+                            marginBottom: "6px",
+                            display: "block",
+                          }}
+                        >
+                          PKP Public Key:
+                        </label>
+                        <input
+                          type="text"
+                          value={customPkpPublicKey}
+                          onChange={(e) =>
+                            setCustomPkpPublicKey(e.target.value)
+                          }
+                          style={{
+                            width: "100%",
+                            padding: "8px 10px",
+                            border: "1px solid #d1d5db",
+                            borderRadius: "4px",
+                            fontSize: "11px",
+                            fontFamily: "monospace",
+                          }}
+                        />
+                      </div>
+
+                      <div style={{ marginBottom: "12px" }}>
+                        <label
+                          style={{
+                            fontSize: "13px",
+                            fontWeight: "500",
+                            marginBottom: "6px",
+                            display: "block",
+                          }}
+                        >
+                          Validation CID:
+                        </label>
+                        <input
+                          type="text"
+                          value={customValidationCid}
+                          onChange={(e) =>
+                            setCustomValidationCid(e.target.value)
+                          }
+                          style={{
+                            width: "100%",
+                            padding: "8px 10px",
+                            border: "1px solid #d1d5db",
+                            borderRadius: "4px",
+                            fontSize: "12px",
+                            fontFamily: "monospace",
+                          }}
+                        />
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "8px",
+                          marginBottom: "12px",
+                        }}
+                      >
+                        <div style={{ flex: 1 }}>
+                          <label
                             style={{
-                              fontSize: "10px",
-                              color: "#6b7280",
-                              margin: "4px 0 0 0",
+                              fontSize: "13px",
+                              fontWeight: "500",
+                              marginBottom: "6px",
+                              display: "block",
                             }}
                           >
-                            Enter the verification code
-                          </p>
+                            Username:
+                          </label>
+                          <input
+                            type="text"
+                            value={customUsername}
+                            onChange={(e) => setCustomUsername(e.target.value)}
+                            style={{
+                              width: "100%",
+                              padding: "8px 10px",
+                              border: "1px solid #d1d5db",
+                              borderRadius: "4px",
+                              fontSize: "12px",
+                            }}
+                          />
+                        </div>
+
+                        <div style={{ flex: 1 }}>
+                          <label
+                            style={{
+                              fontSize: "13px",
+                              fontWeight: "500",
+                              marginBottom: "6px",
+                              display: "block",
+                            }}
+                          >
+                            Password:
+                          </label>
+                          <input
+                            type="password"
+                            value={customPassword}
+                            onChange={(e) => setCustomPassword(e.target.value)}
+                            style={{
+                              width: "100%",
+                              padding: "8px 10px",
+                              border: "1px solid #d1d5db",
+                              borderRadius: "4px",
+                              fontSize: "12px",
+                            }}
+                          />
                         </div>
                       </div>
-                    )}
 
-                    <button
-                      onClick={handleAuthAction}
-                      disabled={
-                        isAuthenticating ||
-                        (authStep === "input" &&
-                          (selectedMethod === "stytch-email"
-                            ? !email
-                            : !phoneNumber)) ||
-                        (authStep === "verify" && !otpCode)
-                      }
-                      style={{
-                        width: "100%",
-                        padding: "10px",
-                        backgroundColor: isAuthenticating
-                          ? "#9ca3af"
-                          : "#3b82f6",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "6px",
-                        fontSize: "13px",
-                        fontWeight: "600",
-                        cursor: isAuthenticating ? "not-allowed" : "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "6px",
-                      }}
-                    >
-                      {isAuthenticating && (
-                        <div
-                          style={{
-                            width: "12px",
-                            height: "12px",
-                            border: "2px solid #ffffff40",
-                            borderTop: "2px solid #ffffff",
-                            borderRadius: "50%",
-                            animation: "spin 1s linear infinite",
-                          }}
-                        />
-                      )}
-                      {isAuthenticating
-                        ? authStep === "input"
-                          ? "Sending..."
-                          : "Verifying..."
-                        : authStep === "input"
-                        ? "Send Code"
-                        : "Verify & Create PKP"}
-                    </button>
-                  </div>
-                )}
-
-                {selectedMethod === "stytch-totp" && (
-                  <div>
-                    <div style={{ marginBottom: "12px" }}>
-                      <input
-                        type="text"
-                        value={userId}
-                        onChange={(e) => setUserId(e.target.value)}
-                        placeholder="Stytch User ID"
-                        style={{
-                          width: "100%",
-                          padding: "8px",
-                          border: "1px solid #d1d5db",
-                          borderRadius: "4px",
-                          fontSize: "12px",
-                        }}
-                      />
-                    </div>
-                    <div style={{ marginBottom: "12px" }}>
-                      <input
-                        type="text"
-                        value={totpCode}
-                        onChange={(e) => setTotpCode(e.target.value)}
-                        placeholder="123456"
-                        maxLength={6}
-                        style={{
-                          width: "100%",
-                          padding: "8px",
-                          border: "1px solid #d1d5db",
-                          borderRadius: "4px",
-                          fontSize: "14px",
-                          fontFamily: "monospace",
-                          letterSpacing: "2px",
-                          textAlign: "center",
-                        }}
-                      />
-                      <p
-                        style={{
-                          fontSize: "10px",
-                          color: "#6b7280",
-                          margin: "4px 0 0 0",
-                        }}
-                      >
-                        TOTP code from authenticator app
-                      </p>
-                    </div>
-                    <div style={{ marginBottom: "12px" }}>
-                      <input
-                        type="url"
-                        value={authServiceBaseUrl}
-                        onChange={(e) => setAuthServiceBaseUrl(e.target.value)}
-                        placeholder="http://localhost:3301"
-                        style={{
-                          width: "100%",
-                          padding: "8px",
-                          border: "1px solid #d1d5db",
-                          borderRadius: "4px",
-                          fontSize: "12px",
-                        }}
-                      />
-                    </div>
-
-                    <button
-                      onClick={handleAuthAction}
-                      disabled={isAuthenticating || !userId || !totpCode}
-                      style={{
-                        width: "100%",
-                        padding: "10px",
-                        backgroundColor:
-                          isAuthenticating || !userId || !totpCode
-                            ? "#9ca3af"
-                            : "#3b82f6",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "6px",
-                        fontSize: "13px",
-                        fontWeight: "600",
-                        cursor:
-                          isAuthenticating || !userId || !totpCode
-                            ? "not-allowed"
-                            : "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "6px",
-                      }}
-                    >
-                      {isAuthenticating && (
-                        <div
-                          style={{
-                            width: "12px",
-                            height: "12px",
-                            border: "2px solid #ffffff40",
-                            borderTop: "2px solid #ffffff",
-                            borderRadius: "50%",
-                            animation: "spin 1s linear infinite",
-                          }}
-                        />
-                      )}
-                      {isAuthenticating
-                        ? "Authenticating..."
-                        : "Authenticate with TOTP"}
-                    </button>
-                  </div>
-                )}
-
-                {selectedMethod === "custom" && (
-                  <div>
-                    {/* Info about custom auth */}
-                    <div
-                      style={{
-                        padding: "12px",
-                        backgroundColor: "#fef3c7",
-                        border: "1px solid #f59e0b",
-                        borderRadius: "6px",
-                        marginBottom: "16px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: "12px",
-                          fontWeight: "600",
-                          marginBottom: "4px",
-                        }}
-                      >
-                        ⚙️ Custom Auth - Example Interface
-                      </div>
-                      <div
-                        style={{
-                          fontSize: "11px",
-                          color: "#92400e",
-                          lineHeight: "1.4",
-                        }}
-                      >
-                        This is just an example interface for testing custom
-                        authentication concepts. For real implementation, dApp
-                        owners must follow the complete setup process in the{" "}
-                        <strong>Custom Authentication Tab</strong> including PKP
-                        minting and validation logic creation.
-                      </div>
-                    </div>
-
-                    {/* Custom auth parameters form */}
-                    <div style={{ marginBottom: "12px" }}>
-                      <label
-                        style={{
-                          fontSize: "11px",
-                          fontWeight: "500",
-                          marginBottom: "4px",
-                          display: "block",
-                        }}
-                      >
-                        PKP Public Key:
-                      </label>
-                      <input
-                        type="text"
-                        value={customPkpPublicKey}
-                        onChange={(e) => setCustomPkpPublicKey(e.target.value)}
-                        placeholder="0x04..."
-                        style={{
-                          width: "100%",
-                          padding: "6px 8px",
-                          border: "1px solid #d1d5db",
-                          borderRadius: "4px",
-                          fontSize: "10px",
-                          fontFamily: "monospace",
-                        }}
-                      />
-                    </div>
-
-                    <div style={{ marginBottom: "12px" }}>
-                      <label
-                        style={{
-                          fontSize: "11px",
-                          fontWeight: "500",
-                          marginBottom: "4px",
-                          display: "block",
-                        }}
-                      >
-                        Validation IPFS CID:
-                      </label>
-                      <input
-                        type="text"
-                        value={customValidationCid}
-                        onChange={(e) => setCustomValidationCid(e.target.value)}
-                        placeholder="QmYour..."
-                        style={{
-                          width: "100%",
-                          padding: "6px 8px",
-                          border: "1px solid #d1d5db",
-                          borderRadius: "4px",
-                          fontSize: "10px",
-                          fontFamily: "monospace",
-                        }}
-                      />
-                    </div>
-
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "1fr 1fr",
-                        gap: "8px",
-                        marginBottom: "12px",
-                      }}
-                    >
-                      <div>
+                      <div style={{ marginBottom: "12px" }}>
                         <label
                           style={{
-                            fontSize: "11px",
+                            fontSize: "13px",
                             fontWeight: "500",
-                            marginBottom: "4px",
+                            marginBottom: "6px",
                             display: "block",
                           }}
                         >
-                          Username:
+                          Auth Method ID:
                         </label>
                         <input
                           type="text"
-                          value={customUsername}
-                          onChange={(e) => setCustomUsername(e.target.value)}
-                          placeholder="alice"
+                          value={customAuthMethodId}
+                          onChange={(e) =>
+                            setCustomAuthMethodId(e.target.value)
+                          }
                           style={{
                             width: "100%",
-                            padding: "6px 8px",
+                            padding: "8px 10px",
                             border: "1px solid #d1d5db",
                             borderRadius: "4px",
-                            fontSize: "12px",
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <label
-                          style={{
                             fontSize: "11px",
-                            fontWeight: "500",
-                            marginBottom: "4px",
-                            display: "block",
-                          }}
-                        >
-                          Password:
-                        </label>
-                        <input
-                          type="text"
-                          value={customPassword}
-                          onChange={(e) => setCustomPassword(e.target.value)}
-                          placeholder="lit"
-                          style={{
-                            width: "100%",
-                            padding: "6px 8px",
-                            border: "1px solid #d1d5db",
-                            borderRadius: "4px",
-                            fontSize: "12px",
+                            fontFamily: "monospace",
                           }}
                         />
                       </div>
                     </div>
+                  )}
+                </div>
 
-                    <div style={{ marginBottom: "16px" }}>
-                      <label
-                        style={{
-                          fontSize: "11px",
-                          fontWeight: "500",
-                          marginBottom: "4px",
-                          display: "block",
-                        }}
-                      >
-                        Auth Method ID:
-                      </label>
-                      <input
-                        type="text"
-                        value={customAuthMethodId}
-                        onChange={(e) => setCustomAuthMethodId(e.target.value)}
-                        placeholder="0x..."
-                        style={{
-                          width: "100%",
-                          padding: "6px 8px",
-                          border: "1px solid #d1d5db",
-                          borderRadius: "4px",
-                          fontSize: "10px",
-                          fontFamily: "monospace",
-                        }}
-                      />
-                    </div>
-
-                    <button
-                      onClick={handleAuthAction}
-                      disabled={
-                        isAuthenticating ||
-                        !customPkpPublicKey ||
-                        !customValidationCid ||
-                        !customUsername ||
-                        !customPassword ||
-                        !customAuthMethodId
-                      }
+                <button
+                  onClick={handleAuthAction}
+                  disabled={isAuthenticating}
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    backgroundColor: isAuthenticating ? "#9ca3af" : "#3b82f6",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    cursor: isAuthenticating ? "not-allowed" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "6px",
+                  }}
+                >
+                  {isAuthenticating && (
+                    <div
                       style={{
-                        width: "100%",
-                        padding: "10px",
-                        backgroundColor:
-                          isAuthenticating ||
-                          !customPkpPublicKey ||
-                          !customValidationCid ||
-                          !customUsername ||
-                          !customPassword ||
-                          !customAuthMethodId
-                            ? "#9ca3af"
-                            : "#3b82f6",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "6px",
-                        fontSize: "13px",
-                        fontWeight: "600",
-                        cursor:
-                          isAuthenticating ||
-                          !customPkpPublicKey ||
-                          !customValidationCid ||
-                          !customUsername ||
-                          !customPassword ||
-                          !customAuthMethodId
-                            ? "not-allowed"
-                            : "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "6px",
+                        width: "12px",
+                        height: "12px",
+                        border: "2px solid #ffffff40",
+                        borderTop: "2px solid #ffffff",
+                        borderRadius: "50%",
+                        animation: "spin 1s linear infinite",
                       }}
-                    >
-                      {isAuthenticating && (
-                        <div
-                          style={{
-                            width: "12px",
-                            height: "12px",
-                            border: "2px solid #ffffff40",
-                            borderTop: "2px solid #ffffff",
-                            borderRadius: "50%",
-                            animation: "spin 1s linear infinite",
-                          }}
-                        />
-                      )}
-                      {isAuthenticating
-                        ? "Authenticating..."
-                        : "Test Custom Auth"}
-                    </button>
-                  </div>
-                )}
+                    />
+                  )}
+                  {isAuthenticating
+                    ? "Connecting..."
+                    : authStep === "verify"
+                    ? "Verify Code"
+                    : authStep === "input" &&
+                      (selectedMethod === "stytch-email" ||
+                        selectedMethod === "stytch-sms" ||
+                        selectedMethod === "stytch-whatsapp")
+                    ? "Send Code"
+                    : "Connect"}
+                </button>
               </div>
             )}
           </div>

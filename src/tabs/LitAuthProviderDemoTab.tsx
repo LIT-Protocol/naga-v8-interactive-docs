@@ -7,7 +7,7 @@
 
 import React from "react";
 import { LitAuthProvider } from "../contexts/LitAuthProvider";
-import { ProtectedApp } from "../components/ProtectedApp";
+import ProtectedApp from "../components/ProtectedApp";
 import { DisplayCode } from "../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgContainer";
 
@@ -75,19 +75,18 @@ const authMethods = [
 // - Bottom 4 in a 4x1 grid (smaller buttons)`;
 
   return (
-    <div className="tab-content">
-      <GreyBoarderWhiteBgContainer>
+    <div className="tab-content" style={{ marginTop: "-20px" }}>
+      {/* <GreyBoarderWhiteBgContainer style={{ marginTop: "0px" }}>
         <h2>
-          ❗️ This is just a demo. If you would like us to create a modal for this,
-          we will do it 💪!
+          ❗️ This is just a demo. If you would like us to create a modal for
+          this, we will do it 💪!
         </h2>
-        <p>
-          LMK at anson[@]litprotocol.com
-        </p>
-      </GreyBoarderWhiteBgContainer>
+        <p>LMK at anson[@]litprotocol.com</p>
+      </GreyBoarderWhiteBgContainer> */}
 
       <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "20px" }}>
-        <h1>🚀 Lit Auth Provider - Modal Demo</h1>
+        {/* <h1>🚀 Lit Auth Provider - Modal Demo</h1> */}
+
         <GreyBoarderWhiteBgContainer>
           <div
             style={{
@@ -107,7 +106,7 @@ const authMethods = [
                 color: "#374151",
               }}
             >
-              🖼️ Live Modal Authentication Demo
+              🖼️ The Amazing App You Are Building
             </div>
 
             <div style={{ minHeight: "600px" }}>
@@ -122,24 +121,6 @@ const authMethods = [
             </div>
           </div>
         </GreyBoarderWhiteBgContainer>
-
-        {/* <GreyBoarderWhiteBgContainer>
-          <h2>Usage Example</h2>
-          <DisplayCode code={usageCode} language="typescript" theme="dracula" />
-        </GreyBoarderWhiteBgContainer> */}
-
-        {/* <GreyBoarderWhiteBgContainer>
-          <h2>🔧 All Authentication Methods</h2>
-          <p style={{ marginBottom: "20px", color: "#666" }}>
-            The compact modal now supports all major authentication methods with
-            adaptive layouts and multi-step flows:
-          </p>
-          <DisplayCode
-            code={authMethodsCode}
-            language="typescript"
-            theme="dracula"
-          />
-        </GreyBoarderWhiteBgContainer> */}
       </div>
     </div>
   );
