@@ -23,14 +23,12 @@ const { keccak256, arrayify } = ethers.utils;
   });  
 })();`;
 const DEFAULT_LIT_ACTION2 = `(async () => {
-  const message = "Hello from Lit Action!";
-  const signature = await Lit.Actions.signAndCombineEcdsa({
-    toSign: ethers.utils.arrayify(ethers.utils.keccak256(ethers.utils.toUtf8Bytes(message))),
-    publicKey,
-    sigName: "sig1",
+  const latestBlockhash = await Lit.Actions.getLatestBlockhash({
+    chain: "ethereum",
   });
-  
-  Lit.Actions.setResponse({ response: JSON.stringify({ message, signature }) });
+  Lit.Actions.setResponse({
+    response: JSON.stringify({ latestBlockhash }),
+  });
 })();`;
 
 // Authentication method type mapping
@@ -78,6 +76,14 @@ interface TransactionResult {
   chainId?: number;
   chainName?: string;
   explorerUrl?: string;
+}
+
+interface TransactionToast {
+  id: string;
+  message: string;
+  txHash: string;
+  type: 'success' | 'error';
+  timestamp: number;
 }
 
 // Supported chains configuration based on Lit Protocol documentation
@@ -163,6 +169,278 @@ const hexToIpfsCid = (hex: string): string => {
   }
 };
 
+export const SCOPE_VALUES = [
+  "no-permissions",
+  "sign-anything",
+  "personal-sign",
+] as const;
+
+// Utility functions
+const formatTxHash = (hash: string) => {
+  if (!hash) return "";
+  return `${hash.slice(0, 8)}...${hash.slice(-8)}`;
+};
+
+const formatAddress = (address: string) => {
+  if (!address) return "N/A";
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+};
+
+const formatPublicKey = (pubKey: string) => {
+  if (!pubKey) return "N/A";
+  return `${pubKey.slice(0, 30)}...${pubKey.slice(-30)}`;
+};
+
+const decodeScopeValues = (scopes: any) => {
+  if (!scopes || typeof scopes !== "object") return scopes;
+
+  if (Array.isArray(scopes)) {
+    return scopes.map((scope: any) => {
+      if (
+        typeof scope === "number" &&
+        scope >= 0 &&
+        scope < SCOPE_VALUES.length
+      ) {
+        return `${scope} (${SCOPE_VALUES[scope]})`;
+      }
+      return scope;
+    });
+  }
+
+  const decoded = { ...scopes };
+  for (const [key, value] of Object.entries(decoded)) {
+    if (Array.isArray(value)) {
+      decoded[key] = value.map((item: any) => {
+        if (
+          typeof item === "number" &&
+          item >= 0 &&
+          item < SCOPE_VALUES.length
+        ) {
+          return `${item} (${SCOPE_VALUES[item]})`;
+        }
+        return item;
+      });
+    }
+  }
+
+  return decoded;
+};
+
+// Available scopes configuration
+const AVAILABLE_SCOPES = [
+  {
+    id: "sign-anything",
+    label: "Sign Anything",
+    description: "Allow signing any message or transaction",
+  },
+  {
+    id: "personal-sign",
+    label: "Personal Sign",
+    description: "Allow personal message signing only",
+  },
+];
+
+// Reusable Components
+const LoadingSpinner = ({ size = 16 }: { size?: number }) => (
+  <div
+    style={{
+      width: `${size}px`,
+      height: `${size}px`,
+      border: "2px solid #ffffff",
+      borderTop: "2px solid transparent",
+      borderRadius: "50%",
+      animation: "spin 1s linear infinite",
+    }}
+  />
+);
+
+const RemoveButton = ({
+  onRemove,
+  isRemoving,
+  itemId,
+}: {
+  onRemove: () => void;
+  isRemoving: boolean;
+  itemId: string;
+}) => (
+  <button
+    onClick={onRemove}
+    disabled={isRemoving}
+    style={{
+      padding: "4px 8px",
+      backgroundColor: isRemoving ? "#9ca3af" : "#ef4444",
+      color: "white",
+      border: "none",
+      borderRadius: "4px",
+      fontSize: "11px",
+      cursor: isRemoving ? "not-allowed" : "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "4px",
+      minWidth: "70px",
+    }}
+  >
+    {isRemoving ? (
+      <>
+        <LoadingSpinner size={10} />
+        Removing...
+      </>
+    ) : (
+      "Remove"
+    )}
+  </button>
+);
+
+const ScopeCheckboxes = ({
+  availableScopes,
+  selectedScopes,
+  onScopeChange,
+}: {
+  availableScopes: typeof AVAILABLE_SCOPES;
+  selectedScopes: string[];
+  onScopeChange: (scopes: string[]) => void;
+}) => (
+  <div style={{ marginBottom: "16px" }}>
+    <label
+      style={{
+        display: "block",
+        marginBottom: "8px",
+        fontSize: "14px",
+        fontWeight: "500",
+        color: "#374151",
+      }}
+    >
+      🎯 Scopes (select permissions):
+    </label>
+    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      {availableScopes.map((scope) => (
+        <label
+          key={scope.id}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            padding: "8px 12px",
+            border: "1px solid #e5e7eb",
+            borderRadius: "6px",
+            backgroundColor: selectedScopes.includes(scope.id)
+              ? "#eff6ff"
+              : "#ffffff",
+            cursor: "pointer",
+            transition: "all 0.2s",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={selectedScopes.includes(scope.id)}
+            onChange={(e) => {
+              if (e.target.checked) {
+                onScopeChange([...selectedScopes, scope.id]);
+              } else {
+                onScopeChange(selectedScopes.filter((s) => s !== scope.id));
+              }
+            }}
+            style={{
+              width: "16px",
+              height: "16px",
+              cursor: "pointer",
+            }}
+          />
+          <div style={{ flex: 1 }}>
+            <div
+              style={{
+                fontSize: "13px",
+                fontWeight: "500",
+                color: "#374151",
+              }}
+            >
+              {scope.label}
+            </div>
+            <div style={{ fontSize: "11px", color: "#6b7280" }}>
+              {scope.description}
+            </div>
+          </div>
+        </label>
+      ))}
+    </div>
+  </div>
+);
+
+// Transaction Toast Component
+const TransactionToastContainer = ({ toasts, onRemoveToast }: {
+  toasts: TransactionToast[];
+  onRemoveToast: (id: string) => void;
+}) => (
+  <div
+    style={{
+      position: "fixed",
+      top: "20px",
+      right: "20px",
+      zIndex: 10000,
+      display: "flex",
+      flexDirection: "column",
+      gap: "12px",
+      maxWidth: "400px",
+    }}
+  >
+    {toasts.map((toast) => (
+      <div
+        key={toast.id}
+        style={{
+          background: toast.type === 'success' ? "#10b981" : "#ef4444",
+          color: "white",
+          padding: "12px 16px",
+          borderRadius: "8px",
+          fontSize: "14px",
+          fontWeight: "500",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+          animation: "slideIn 0.3s ease-out",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "12px",
+        }}
+      >
+        <div style={{ flex: 1 }}>
+          <div style={{ marginBottom: "4px" }}>
+            {toast.type === 'success' ? '✅' : '❌'} {toast.message}
+          </div>
+          <div style={{ fontSize: "11px", opacity: 0.9, fontFamily: "monospace" }}>
+            <a
+              href={`https://yellowstone-explorer.litprotocol.com/tx/${toast.txHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                color: "white",
+                textDecoration: "underline",
+                opacity: 0.9,
+              }}
+            >
+              Tx: {formatTxHash(toast.txHash)}
+            </a>
+          </div>
+        </div>
+        <button
+          onClick={() => onRemoveToast(toast.id)}
+          style={{
+            background: "none",
+            border: "none",
+            color: "white",
+            fontSize: "16px",
+            cursor: "pointer",
+            padding: "4px",
+            borderRadius: "4px",
+            opacity: 0.8,
+          }}
+        >
+          ✕
+        </button>
+      </div>
+    ))}
+  </div>
+);
+
 export default function ProtectedApp() {
   const {
     user,
@@ -218,10 +496,6 @@ export default function ProtectedApp() {
   // General status
   const [status, setStatus] = useState<string>("");
 
-  // Separate status for actions and addresses to avoid conflicts
-  const [actionStatus, setActionStatus] = useState<string>("");
-  const [addressStatus, setAddressStatus] = useState<string>("");
-
   // Copy functionality
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
@@ -249,14 +523,11 @@ export default function ProtectedApp() {
   const [isAddingAction, setIsAddingAction] = useState(false);
   const [isAddingAddress, setIsAddingAddress] = useState(false);
 
-  // Remove Permission states
+  // Unified remove state
   const [removingItems, setRemovingItems] = useState<Set<string>>(new Set());
   const [isRevokingAll, setIsRevokingAll] = useState(false);
-  const [actionToRemove, setActionToRemove] = useState<string | null>(null);
-  const [removeActionIpfsId, setRemoveActionIpfsId] = useState("");
 
   // Additional missing state variables
-  const [isRemovingAction, setIsRemovingAction] = useState(false);
   const [checkActionIpfsId, setCheckActionIpfsId] = useState(
     "QmPK1s3pNYLi9ERiq3BDxKa4XosgWwFRQUydHUtz4YgpqB"
   );
@@ -267,24 +538,49 @@ export default function ProtectedApp() {
     useState<any>(null);
   const [isCheckingPermissions, setIsCheckingPermissions] = useState(false);
 
-  // Available scopes
-  const AVAILABLE_SCOPES = [
-    {
-      id: "sign-anything",
-      label: "Sign Anything",
-      description: "Allow signing any message or transaction",
-    },
-    {
-      id: "personal-sign",
-      label: "Personal Sign",
-      description: "Allow personal message signing only",
-    },
-  ];
-
   // Tab navigation state
   const [activeTab, setActiveTab] = useState<"overview" | "permissions">(
     "overview"
   );
+
+  // Auth Method Scope states
+  const [authMethodType, setAuthMethodType] = useState<string>("1"); // Default to ETH_WALLET
+  const [authMethodId, setAuthMethodId] = useState<string>("");
+  const [scopeId, setScopeId] = useState<string>("1"); // Default to sign-anything
+  const [isAddingAuthMethodScope, setIsAddingAuthMethodScope] = useState(false);
+  const [authMethodScopeStatus, setAuthMethodScopeStatus] =
+    useState<string>("");
+
+  // Check Auth Method Scopes states
+  const [checkAuthMethodType, setCheckAuthMethodType] = useState<string>("1");
+  const [checkAuthMethodId, setCheckAuthMethodId] = useState<string>("");
+  const [authMethodScopes, setAuthMethodScopes] = useState<any>(null);
+  const [isCheckingAuthMethodScopes, setIsCheckingAuthMethodScopes] =
+    useState(false);
+
+  // Transaction Toast state
+  const [transactionToasts, setTransactionToasts] = useState<TransactionToast[]>([]);
+
+  // Toast management functions
+  const addTransactionToast = (message: string, txHash: string, type: 'success' | 'error' = 'success') => {
+    const toast: TransactionToast = {
+      id: Math.random().toString(36).substr(2, 9),
+      message,
+      txHash,
+      type,
+      timestamp: Date.now(),
+    };
+    setTransactionToasts(prev => [...prev, toast]);
+    
+    // Auto-remove after 8 seconds
+    setTimeout(() => {
+      setTransactionToasts(prev => prev.filter(t => t.id !== toast.id));
+    }, 8000);
+  };
+
+  const removeTransactionToast = (id: string) => {
+    setTransactionToasts(prev => prev.filter(t => t.id !== id));
+  };
 
   // Load balance when PKP changes or chain changes
   useEffect(() => {
@@ -381,17 +677,6 @@ export default function ProtectedApp() {
   const handlePkpSelected = (pkpInfo: PkpInfo) => {
     setSelectedPkp(pkpInfo);
     setShowPkpModal(false);
-  };
-
-  const formatAddress = (address: string) => {
-    if (!address) return "N/A";
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
-  };
-
-  const formatPublicKey = (pubKey: string) => {
-    if (!pubKey) return "N/A";
-    // return pubKey;
-    return `${pubKey.slice(0, 30)}...${pubKey.slice(-30)}`;
   };
 
   const copyToClipboard = async (text: string, fieldName: string) => {
@@ -878,7 +1163,7 @@ export default function ProtectedApp() {
       if (txHash) {
         const explorerUrl = `https://yellowstone-explorer.litprotocol.com/tx/${txHash}`;
         console.log("🌐 Explorer URL:", explorerUrl);
-        setActionStatus(
+        setStatus(
           `✅ Action permission added successfully! Transaction: ${txHash}`
         );
         console.log(
@@ -887,7 +1172,7 @@ export default function ProtectedApp() {
         );
       } else {
         console.log("⚠️ No transaction hash found in result");
-        setActionStatus("✅ Action permission added successfully!");
+        setStatus("✅ Action permission added successfully!");
         console.log(
           "📝 Action status set to:",
           "✅ Action permission added successfully!"
@@ -993,7 +1278,7 @@ export default function ProtectedApp() {
       if (txHash) {
         const explorerUrl = `https://yellowstone-explorer.litprotocol.com/tx/${txHash}`;
         console.log("🌐 Explorer URL:", explorerUrl);
-        setAddressStatus(
+        setStatus(
           `✅ Permitted address added successfully! Transaction: ${txHash}`
         );
         console.log(
@@ -1002,7 +1287,7 @@ export default function ProtectedApp() {
         );
       } else {
         console.log("⚠️ No transaction hash found in result");
-        setAddressStatus("✅ Permitted address added successfully!");
+        setStatus("✅ Permitted address added successfully!");
         console.log(
           "📝 Address status set to:",
           "✅ Permitted address added successfully!"
@@ -1021,49 +1306,23 @@ export default function ProtectedApp() {
       }, 5000);
     } catch (error: any) {
       console.error("❌ Failed to add permitted address:", error);
-      console.log("📋 Error details:", {
-        message: error.message,
-        stack: error.stack,
-        name: error.name,
-        cause: error.cause,
-      });
-      if (error.message?.includes("Not PKP NFT owner")) {
-        setPermissionsError(
-          "❌ You don't own this PKP. Only PKP owners can modify permissions."
-        );
-      } else {
-        setPermissionsError(
-          `❌ Failed to add permitted address: ${error.message || error}`
-        );
-      }
+      const errorMessage = (error as any)?.message || String(error);
+      setPermissionsError(`Failed to add permitted address: ${errorMessage}`);
     } finally {
       setIsAddingAddress(false);
     }
   };
 
   const removePermittedAction = async (actionIpfsCid: string) => {
-    setActionToRemove(actionIpfsCid);
-    setRemoveActionIpfsId(actionIpfsCid); // Pre-fill with the IPFS CID we already have
-  };
-
-  const confirmRemoveAction = async () => {
-    if (!removeActionIpfsId.trim()) {
-      setPermissionsError("❌ IPFS CID is required to remove an action");
-      return;
-    }
-
-    if (
-      !user?.authContext ||
-      !selectedPkp ||
-      !services?.litClient ||
-      !actionToRemove
-    ) {
+    if (!user?.authContext || !selectedPkp || !services?.litClient) {
       setPermissionsError("Missing required data");
       return;
     }
 
-    setRemovingItems((prev) => new Set([...prev, actionToRemove]));
+    const actionKey = `action:${actionIpfsCid}`;
+    setRemovingItems((prev) => new Set([...prev, actionKey]));
     setPermissionsError("");
+
     try {
       const chainConfig = services.litClient.getChainConfig().viemConfig;
       const pkpViemAccount = await services.litClient.getPkpViemAccount({
@@ -1081,22 +1340,17 @@ export default function ProtectedApp() {
         });
 
       const result = await pkpPermissionsManager.removePermittedAction({
-        ipfsId: removeActionIpfsId.trim(),
+        ipfsId: actionIpfsCid,
       });
 
       // Show success with transaction hash
       const txHash = result?.hash || result?.transactionHash || result;
       if (txHash) {
-        setStatus(
-          `✅ Permitted action removed successfully! Transaction: ${txHash}`
-        );
+        addTransactionToast("Permitted action removed successfully!", txHash);
       } else {
         setStatus("✅ Permitted action removed successfully!");
       }
 
-      // Reset the removal state
-      setActionToRemove(null);
-      setRemoveActionIpfsId("");
       await loadPermissionsContext(); // Reload permissions
     } catch (error: any) {
       console.error("Failed to remove permitted action:", error);
@@ -1109,7 +1363,7 @@ export default function ProtectedApp() {
         error.message?.includes("does not exist")
       ) {
         setPermissionsError(
-          `❌ Action not found. Please check the IPFS CID: ${removeActionIpfsId}`
+          `❌ Action not found. Please check the IPFS CID: ${actionIpfsCid}`
         );
       } else {
         setPermissionsError(
@@ -1119,7 +1373,7 @@ export default function ProtectedApp() {
     } finally {
       setRemovingItems((prev) => {
         const next = new Set(prev);
-        next.delete(actionToRemove!);
+        next.delete(actionKey);
         return next;
       });
     }
@@ -1131,10 +1385,10 @@ export default function ProtectedApp() {
       return;
     }
 
-    // Add address to removing set
-    setRemovingItems((prev) => new Set([...prev, address]));
+    const key = `address:${address}`;
+    setRemovingItems((prev) => new Set(prev).add(key));
     setPermissionsError("");
-    
+
     try {
       const chainConfig = services.litClient.getChainConfig().viemConfig;
       const pkpViemAccount = await services.litClient.getPkpViemAccount({
@@ -1155,39 +1409,33 @@ export default function ProtectedApp() {
         address: address,
       });
 
-      // Show success with transaction hash
-      const txHash = result?.hash || result?.transactionHash || result;
-      if (txHash) {
-        setStatus(
-          `✅ Permitted address removed successfully! Transaction: ${txHash}`
-        );
+      console.log("Remove permitted address result:", result);
+
+      const txHash = result?.transactionHash || result?.hash || "Unknown";
+      if (txHash && txHash !== "Unknown") {
+        addTransactionToast("Address removed successfully!", txHash);
       } else {
-        setStatus("✅ Permitted address removed successfully!");
+        setStatus("✅ Address removed successfully!");
       }
 
-      await loadPermissionsContext(); // Reload permissions
-    } catch (error: any) {
+      await loadPermissionsContext();
+    } catch (error) {
       console.error("Failed to remove permitted address:", error);
-      if (error.message?.includes("Not PKP NFT owner")) {
-        setPermissionsError(
-          "❌ You don't own this PKP. Only PKP owners can modify permissions."
-        );
-      } else {
-        setPermissionsError(
-          `❌ Failed to remove permitted address: ${error.message || error}`
-        );
-      }
+      const errorMessage = (error as any)?.message || String(error);
+      setPermissionsError(`Failed to remove address: ${errorMessage}`);
     } finally {
-      // Remove address from removing set
       setRemovingItems((prev) => {
         const newSet = new Set(prev);
-        newSet.delete(address);
+        newSet.delete(key);
         return newSet;
       });
     }
   };
 
-  const removePermittedAuthMethod = async (authMethodType: number, authMethodId: string) => {
+  const removePermittedAuthMethod = async (
+    authMethodType: number,
+    authMethodId: string
+  ) => {
     if (!user?.authContext || !selectedPkp || !services?.litClient) {
       setPermissionsError("Missing required data");
       return;
@@ -1195,11 +1443,11 @@ export default function ProtectedApp() {
 
     // Create unique key for tracking removal state
     const authMethodKey = `${authMethodType}:${authMethodId}`;
-    
+
     // Add auth method to removing set
     setRemovingItems((prev) => new Set([...prev, authMethodKey]));
     setPermissionsError("");
-    
+
     try {
       const chainConfig = services.litClient.getChainConfig().viemConfig;
       const pkpViemAccount = await services.litClient.getPkpViemAccount({
@@ -1250,6 +1498,120 @@ export default function ProtectedApp() {
         newSet.delete(authMethodKey);
         return newSet;
       });
+    }
+  };
+
+  const addPermittedAuthMethodScope = async () => {
+    if (!user?.authContext || !selectedPkp || !services?.litClient) {
+      setAuthMethodScopeStatus("❌ Missing required data");
+      return;
+    }
+
+    if (!authMethodId.trim()) {
+      setAuthMethodScopeStatus("❌ Please enter an auth method ID");
+      return;
+    }
+
+    setIsAddingAuthMethodScope(true);
+    setAuthMethodScopeStatus("Adding auth method scope...");
+
+    try {
+      const chainConfig = services.litClient.getChainConfig().viemConfig;
+      const pkpViemAccount = await services.litClient.getPkpViemAccount({
+        pkpPublicKey: selectedPkp.publicKey || user?.pkpInfo?.pubkey,
+        authContext: user.authContext,
+        chainConfig: chainConfig,
+      });
+
+      const pkpPermissionsManager =
+        await services.litClient.getPKPPermissionsManager({
+          pkpIdentifier: {
+            tokenId: selectedPkp.tokenId,
+          },
+          account: pkpViemAccount,
+        });
+
+      const result = await pkpPermissionsManager.addPermittedAuthMethodScope({
+        authMethodType: parseInt(authMethodType),
+        authMethodId: authMethodId,
+        scopeId: parseInt(scopeId),
+      });
+
+      // Show success with transaction hash
+      const txHash = result?.hash || result?.transactionHash || result;
+      if (txHash) {
+        setAuthMethodScopeStatus(
+          `✅ Auth method scope added successfully! Transaction: ${txHash}`
+        );
+      } else {
+        setAuthMethodScopeStatus("✅ Auth method scope added successfully!");
+      }
+
+      // Reset form
+      setAuthMethodId("");
+      setAuthMethodType("1");
+      setScopeId("1");
+
+      await loadPermissionsContext(); // Reload permissions
+    } catch (error: any) {
+      console.error("Failed to add auth method scope:", error);
+      if (error.message?.includes("Not PKP NFT owner")) {
+        setAuthMethodScopeStatus(
+          "❌ You don't own this PKP. Only PKP owners can modify permissions."
+        );
+      } else {
+        setAuthMethodScopeStatus(
+          `❌ Failed to add auth method scope: ${error.message || error}`
+        );
+      }
+    } finally {
+      setIsAddingAuthMethodScope(false);
+    }
+  };
+
+  const getPermittedAuthMethodScopes = async () => {
+    if (!user?.authContext || !selectedPkp || !services?.litClient) {
+      setAuthMethodScopes({ error: "Missing required data" });
+      return;
+    }
+
+    if (!checkAuthMethodId.trim()) {
+      setAuthMethodScopes({ error: "Please enter an auth method ID" });
+      return;
+    }
+
+    setIsCheckingAuthMethodScopes(true);
+    setAuthMethodScopes(null);
+
+    try {
+      const chainConfig = services.litClient.getChainConfig().viemConfig;
+      const pkpViemAccount = await services.litClient.getPkpViemAccount({
+        pkpPublicKey: selectedPkp.publicKey || user?.pkpInfo?.pubkey,
+        authContext: user.authContext,
+        chainConfig: chainConfig,
+      });
+
+      const pkpPermissionsManager =
+        await services.litClient.getPKPPermissionsManager({
+          pkpIdentifier: {
+            tokenId: selectedPkp.tokenId,
+          },
+          account: pkpViemAccount,
+        });
+
+      const scopes = await pkpPermissionsManager.getPermittedAuthMethodScopes({
+        authMethodType: parseInt(checkAuthMethodType),
+        authMethodId: checkAuthMethodId,
+      });
+
+      setAuthMethodScopes(scopes);
+    } catch (error: any) {
+      console.error("Failed to get auth method scopes:", error);
+      setAuthMethodScopes({
+        error: `Failed to get auth method scopes: ${error.message || error}`,
+      });
+    } finally {
+      setIsCheckingAuthMethodScopes(false);
     }
   };
 
@@ -1372,7 +1734,45 @@ export default function ProtectedApp() {
   // Helper function to format transaction hash for display
   const formatTxHash = (hash: string) => {
     if (!hash) return "";
-    return `${hash.slice(0, 10)}...${hash.slice(-8)}`;
+    return `${hash.slice(0, 8)}...${hash.slice(-8)}`;
+  };
+
+  // Function to decode scope values for better readability
+  const decodeScopeValues = (scopes: any) => {
+    if (!scopes || typeof scopes !== "object") return scopes;
+
+    // If it's an array of numbers, decode them
+    if (Array.isArray(scopes)) {
+      return scopes.map((scope: any) => {
+        if (
+          typeof scope === "number" &&
+          scope >= 0 &&
+          scope < SCOPE_VALUES.length
+        ) {
+          return `${scope} (${SCOPE_VALUES[scope]})`;
+        }
+        return scope;
+      });
+    }
+
+    // If it's an object, recursively decode any arrays within it
+    const decoded = { ...scopes };
+    for (const [key, value] of Object.entries(decoded)) {
+      if (Array.isArray(value)) {
+        decoded[key] = value.map((item: any) => {
+          if (
+            typeof item === "number" &&
+            item >= 0 &&
+            item < SCOPE_VALUES.length
+          ) {
+            return `${item} (${SCOPE_VALUES[item]})`;
+          }
+          return item;
+        });
+      }
+    }
+
+    return decoded;
   };
 
   if (!user) {
@@ -3090,18 +3490,43 @@ export default function ProtectedApp() {
                               </div>
                               <button
                                 onClick={() => removePermittedAction(action)}
-                                disabled={removingItems.has(action)}
+                                disabled={removingItems.has(`action:${action}`)}
                                 style={{
                                   padding: "4px 8px",
-                                  backgroundColor: "#ef4444",
+                                  backgroundColor: removingItems.has(`action:${action}`)
+                                    ? "#9ca3af"
+                                    : "#ef4444",
                                   color: "white",
                                   border: "none",
                                   borderRadius: "4px",
                                   fontSize: "11px",
-                                  cursor: "pointer",
+                                  cursor: removingItems.has(`action:${action}`)
+                                    ? "not-allowed"
+                                    : "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  gap: "4px",
+                                  minWidth: "60px",
                                 }}
                               >
-                                {removingItems.has(action) ? "..." : "Remove"}
+                                {removingItems.has(`action:${action}`) ? (
+                                  <>
+                                    <div
+                                      style={{
+                                        width: "10px",
+                                        height: "10px",
+                                        border: "1px solid #ffffff",
+                                        borderTop: "1px solid transparent",
+                                        borderRadius: "50%",
+                                        animation: "spin 1s linear infinite",
+                                      }}
+                                    />
+                                    Removing...
+                                  </>
+                                ) : (
+                                  "Remove"
+                                )}
                               </button>
                             </div>
                           )
@@ -3158,17 +3583,17 @@ export default function ProtectedApp() {
                               </div>
                               <button
                                 onClick={() => removePermittedAddress(address)}
-                                disabled={removingItems.has(address)}
+                                disabled={removingItems.has(`address:${address}`)}
                                 style={{
                                   padding: "4px 8px",
-                                  backgroundColor: removingItems.has(address)
+                                  backgroundColor: removingItems.has(`address:${address}`)
                                     ? "#9ca3af"
                                     : "#ef4444",
                                   color: "white",
                                   border: "none",
                                   borderRadius: "4px",
                                   fontSize: "11px",
-                                  cursor: removingItems.has(address)
+                                  cursor: removingItems.has(`address:${address}`)
                                     ? "not-allowed"
                                     : "pointer",
                                   display: "flex",
@@ -3178,7 +3603,7 @@ export default function ProtectedApp() {
                                   minWidth: "60px",
                                 }}
                               >
-                                {removingItems.has(address) ? (
+                                {removingItems.has(`address:${address}`) ? (
                                   <>
                                     <div
                                       style={{
@@ -3261,10 +3686,12 @@ export default function ProtectedApp() {
                                           cursor: "pointer",
                                         }}
                                         onMouseEnter={(e) => {
-                                          e.currentTarget.style.color = "#5b21b6";
+                                          e.currentTarget.style.color =
+                                            "#5b21b6";
                                         }}
                                         onMouseLeave={(e) => {
-                                          e.currentTarget.style.color = "#7c3aed";
+                                          e.currentTarget.style.color =
+                                            "#7c3aed";
                                         }}
                                       >
                                         {displayId}
@@ -3321,18 +3748,29 @@ export default function ProtectedApp() {
                                     )}
                                 </div>
                                 <button
-                                  onClick={() => removePermittedAuthMethod(authType, authMethod.id)}
-                                  disabled={removingItems.has(`${authType}:${authMethod.id}`)}
+                                  onClick={() =>
+                                    removePermittedAuthMethod(
+                                      authType,
+                                      authMethod.id
+                                    )
+                                  }
+                                  disabled={removingItems.has(
+                                    `${authType}:${authMethod.id}`
+                                  )}
                                   style={{
                                     padding: "4px 8px",
-                                    backgroundColor: removingItems.has(`${authType}:${authMethod.id}`)
+                                    backgroundColor: removingItems.has(
+                                      `${authType}:${authMethod.id}`
+                                    )
                                       ? "#9ca3af"
                                       : "#ef4444",
                                     color: "white",
                                     border: "none",
                                     borderRadius: "4px",
                                     fontSize: "11px",
-                                    cursor: removingItems.has(`${authType}:${authMethod.id}`)
+                                    cursor: removingItems.has(
+                                      `${authType}:${authMethod.id}`
+                                    )
                                       ? "not-allowed"
                                       : "pointer",
                                     display: "flex",
@@ -3342,7 +3780,9 @@ export default function ProtectedApp() {
                                     minWidth: "60px",
                                   }}
                                 >
-                                  {removingItems.has(`${authType}:${authMethod.id}`) ? (
+                                  {removingItems.has(
+                                    `${authType}:${authMethod.id}`
+                                  ) ? (
                                     <>
                                       <div
                                         style={{
@@ -3532,105 +3972,13 @@ export default function ProtectedApp() {
                 {isAddingAction ? "Adding..." : "Add Action Permission"}
               </button>
 
-              {/* Action Status Display */}
-              {actionStatus && (
-                <div
-                  style={{
-                    marginTop: "16px",
-                    padding: "12px 16px",
-                    backgroundColor: actionStatus.includes("✅")
-                      ? "#f0fdf4"
-                      : "#fef2f2",
-                    border: `1px solid ${
-                      actionStatus.includes("✅") ? "#bbf7d0" : "#fecaca"
-                    }`,
-                    borderRadius: "8px",
-                    color: actionStatus.includes("✅") ? "#15803d" : "#dc2626",
-                    fontSize: "14px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <div style={{ flex: 1 }}>
-                    {actionStatus.includes("Transaction:") ? (
-                      <div>
-                        <div style={{ marginBottom: "8px" }}>
-                          {actionStatus.split("Transaction:")[0].trim()}
-                        </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                          }}
-                        >
-                          <span style={{ fontSize: "12px", fontWeight: "500" }}>
-                            Transaction Hash:
-                          </span>
-                          <a
-                            href={`https://yellowstone-explorer.litprotocol.com/tx/${actionStatus
-                              .split("Transaction:")[1]
-                              .trim()}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{
-                              color: "#1d4ed8",
-                              textDecoration: "underline",
-                              fontFamily: "monospace",
-                              fontSize: "11px",
-                              fontWeight: "500",
-                              cursor: "pointer",
-                            }}
-                          >
-                            {formatTxHash(
-                              actionStatus.split("Transaction:")[1].trim()
-                            )}
-                          </a>
-                          <button
-                            onClick={() =>
-                              copyToClipboard(
-                                actionStatus.split("Transaction:")[1].trim(),
-                                "Transaction Hash"
-                              )
-                            }
-                            style={{
-                              background: "none",
-                              border: "1px solid #e5e7eb",
-                              borderRadius: "4px",
-                              padding: "2px 6px",
-                              fontSize: "10px",
-                              cursor: "pointer",
-                              color: "#6b7280",
-                            }}
-                            title="Copy full hash"
-                          >
-                            📋
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      actionStatus
-                    )}
-                  </div>
-                  <button
-                    onClick={() => setActionStatus("")}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      color: "inherit",
-                      fontSize: "16px",
-                      cursor: "pointer",
-                      padding: "4px",
-                      borderRadius: "4px",
-                      opacity: 0.7,
-                    }}
-                    title="Dismiss"
-                  >
-                    ✕
-                  </button>
-                </div>
-              )}
+              {/* Scope Checkboxes for Action */}
+              <ScopeCheckboxes
+                availableScopes={AVAILABLE_SCOPES}
+                selectedScopes={newActionSelectedScopes}
+                onScopeChange={setNewActionSelectedScopes}
+              />
+
             </div>
 
             {/* Add Address Permission */}
@@ -3785,150 +4133,6 @@ export default function ProtectedApp() {
                 {isAddingAddress ? "Adding..." : "Add Address Permission"}
               </button>
 
-              {/* Address Status Display */}
-              {addressStatus && (
-                <div
-                  style={{
-                    marginTop: "16px",
-                    padding: "12px 16px",
-                    backgroundColor: addressStatus.includes("✅")
-                      ? "#f0fdf4"
-                      : "#fef2f2",
-                    border: `1px solid ${
-                      addressStatus.includes("✅") ? "#bbf7d0" : "#fecaca"
-                    }`,
-                    borderRadius: "8px",
-                    color: addressStatus.includes("✅") ? "#15803d" : "#dc2626",
-                    fontSize: "14px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <div style={{ flex: 1 }}>
-                    {addressStatus.includes("Transaction:") ? (
-                      <div>
-                        <div style={{ marginBottom: "8px" }}>
-                          {addressStatus.split("Transaction:")[0].trim()}
-                        </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                          }}
-                        >
-                          <span style={{ fontSize: "12px", fontWeight: "500" }}>
-                            Transaction Hash:
-                          </span>
-                          <a
-                            href={`https://yellowstone-explorer.litprotocol.com/tx/${addressStatus
-                              .split("Transaction:")[1]
-                              .trim()}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{
-                              color: "#1d4ed8",
-                              textDecoration: "underline",
-                              fontFamily: "monospace",
-                              fontSize: "11px",
-                              fontWeight: "500",
-                              cursor: "pointer",
-                            }}
-                          >
-                            {formatTxHash(
-                              addressStatus.split("Transaction:")[1].trim()
-                            )}
-                          </a>
-                          <button
-                            onClick={() =>
-                              copyToClipboard(
-                                addressStatus.split("Transaction:")[1].trim(),
-                                "Transaction Hash"
-                              )
-                            }
-                            style={{
-                              background: "none",
-                              border: "1px solid #e5e7eb",
-                              borderRadius: "4px",
-                              padding: "2px 6px",
-                              fontSize: "10px",
-                              cursor: "pointer",
-                              color: "#6b7280",
-                            }}
-                            title="Copy full hash"
-                          >
-                            📋
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      addressStatus
-                    )}
-                  </div>
-                  <button
-                    onClick={() => setAddressStatus("")}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      color: "inherit",
-                      fontSize: "16px",
-                      cursor: "pointer",
-                      padding: "4px",
-                      borderRadius: "4px",
-                      opacity: 0.7,
-                    }}
-                    title="Dismiss"
-                  >
-                    ✕
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Danger Zone */}
-            <div
-              style={{
-                padding: "20px",
-                backgroundColor: "#fef2f2",
-                borderRadius: "12px",
-                border: "1px solid #fecaca",
-                boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
-              }}
-            >
-              <h3 style={{ margin: "0 0 16px 0", color: "#dc2626" }}>
-                ⚠️ Danger Zone
-              </h3>
-              <p
-                style={{
-                  margin: "0 0 16px 0",
-                  color: "#6b7280",
-                  fontSize: "14px",
-                }}
-              >
-                <strong>Warning:</strong> This will remove ALL permissions from
-                your PKP. This action cannot be undone.
-              </p>
-
-              <button
-                onClick={revokeAllPermissions}
-                disabled={isRevokingAll}
-                style={{
-                  width: "100%",
-                  padding: "12px",
-                  backgroundColor: isRevokingAll ? "#9ca3af" : "#dc2626",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  cursor: isRevokingAll ? "not-allowed" : "pointer",
-                }}
-              >
-                {isRevokingAll
-                  ? "Revoking All..."
-                  : "🚨 Revoke All Permissions"}
-              </button>
             </div>
           </div>
 
@@ -3984,182 +4188,476 @@ export default function ProtectedApp() {
               </div>
             )}
 
-          {/* Action Removal Confirmation Form */}
-          {actionToRemove && (
+
+          {/* Auth Method Scope Management - Side by Side */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "20px",
+              marginBottom: "20px",
+            }}
+          >
+            {/* Add Auth Method Scope */}
             <div
               style={{
-                position: "fixed",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: "rgba(0, 0, 0, 0.5)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                zIndex: 1000,
                 padding: "20px",
-              }}
-              onClick={(e) => {
-                if (e.target === e.currentTarget) {
-                  setActionToRemove(null);
-                  setRemoveActionIpfsId("");
-                  setPermissionsError("");
-                }
+                backgroundColor: "#ffffff",
+                borderRadius: "12px",
+                border: "1px solid #e5e7eb",
+                boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
               }}
             >
-              <div
+              <h3 style={{ margin: "0 0 16px 0", color: "#1f2937" }}>
+                🔐 Add Auth Method Scope
+              </h3>
+              <p
                 style={{
-                  backgroundColor: "white",
-                  borderRadius: "12px",
-                  padding: "24px",
-                  maxWidth: "500px",
-                  width: "100%",
-                  maxHeight: "80vh",
-                  overflowY: "auto",
-                  boxShadow:
-                    "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-                  border: "2px solid #fed7aa",
+                  margin: "0 0 16px 0",
+                  color: "#6b7280",
+                  fontSize: "14px",
                 }}
               >
-                <h3 style={{ margin: "0 0 16px 0", color: "#ea580c" }}>
-                  🗑️ Remove Action Permission
-                </h3>
+                Add specific scopes/permissions to an existing auth method.
+              </p>
 
-                <div style={{ marginBottom: "16px" }}>
-                  <div
-                    style={{
-                      fontSize: "12px",
-                      color: "#6b7280",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    <strong>IPFS CID to Remove:</strong>
-                  </div>
-                  <div
-                    style={{
-                      padding: "8px 12px",
-                      backgroundColor: "#f3f4f6",
-                      border: "1px solid #d1d5db",
-                      borderRadius: "6px",
-                      fontFamily: "monospace",
-                      fontSize: "11px",
-                      color: "#374151",
-                      wordBreak: "break-all",
-                    }}
-                  >
-                    {actionToRemove}
-                  </div>
-                </div>
+              <div style={{ marginBottom: "16px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontSize: "13px",
+                    fontWeight: "500",
+                    color: "#374151",
+                  }}
+                >
+                  Auth Method Type:
+                </label>
+                <select
+                  value={authMethodType}
+                  onChange={(e) => setAuthMethodType(e.target.value)}
+                  style={{
+                    color: "black",
+                    width: "100%",
+                    padding: "10px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "6px",
+                    fontSize: "13px",
+                    backgroundColor: "#ffffff",
+                  }}
+                >
+                  <option value="1">ETH Wallet (1)</option>
+                  <option value="2">Lit Action (2)</option>
+                  <option value="3">WebAuthn (3)</option>
+                  <option value="4">Discord (4)</option>
+                  <option value="5">Google (5)</option>
+                  <option value="6">Google JWT (6)</option>
+                </select>
+              </div>
 
-                <div style={{ marginBottom: "16px" }}>
-                  <label
-                    style={{
-                      display: "block",
-                      marginBottom: "8px",
-                      fontSize: "14px",
-                      fontWeight: "500",
-                      color: "#374151",
-                    }}
-                  >
-                    📎 Confirm IPFS CID:
-                  </label>
-                  <input
-                    type="text"
-                    value={removeActionIpfsId}
-                    onChange={(e) => setRemoveActionIpfsId(e.target.value)}
-                    placeholder="Verify the IPFS CID above"
-                    style={{
-                      color: "black",
-                      width: "100%",
-                      padding: "12px",
-                      border: "1px solid #d1d5db",
-                      borderRadius: "8px",
-                      fontSize: "13px",
-                      fontFamily: "monospace",
-                      backgroundColor: "#ffffff",
-                    }}
-                    readOnly
-                  />
-                  <div
-                    style={{
-                      fontSize: "11px",
-                      color: "#6b7280",
-                      marginTop: "4px",
-                    }}
-                  >
-                    ✅ IPFS CID confirmed. Click "Confirm Remove" to proceed.
-                  </div>
-                </div>
+              <div style={{ marginBottom: "16px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontSize: "13px",
+                    fontWeight: "500",
+                    color: "#374151",
+                  }}
+                >
+                  Auth Method ID:
+                </label>
+                <input
+                  type="text"
+                  value={authMethodId}
+                  onChange={(e) => setAuthMethodId(e.target.value)}
+                  placeholder="e.g., 0x... for address, or IPFS hash for Lit Action"
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "6px",
+                    fontSize: "13px",
+                    fontFamily: "monospace",
+                  }}
+                />
+              </div>
 
-                <div style={{ display: "flex", gap: "12px" }}>
-                  <button
-                    onClick={confirmRemoveAction}
-                    disabled={removingItems.has(actionToRemove)}
-                    style={{
-                      flex: 1,
-                      padding: "12px",
-                      backgroundColor: removingItems.has(actionToRemove)
-                        ? "#9ca3af"
-                        : "#dc2626",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "8px",
-                      fontSize: "14px",
-                      fontWeight: "500",
-                      cursor: removingItems.has(actionToRemove)
-                        ? "not-allowed"
-                        : "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "8px",
-                    }}
-                  >
-                    {removingItems.has(actionToRemove) ? (
-                      <>
+              <div style={{ marginBottom: "16px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontSize: "13px",
+                    fontWeight: "500",
+                    color: "#374151",
+                  }}
+                >
+                  Scope ID:
+                </label>
+                <select
+                  value={scopeId}
+                  onChange={(e) => setScopeId(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "6px",
+                    fontSize: "13px",
+                    backgroundColor: "#ffffff",
+                  }}
+                >
+                  <option value="1">Sign Anything (1)</option>
+                  <option value="2">Personal Sign (2)</option>
+                </select>
+              </div>
+
+              <button
+                onClick={addPermittedAuthMethodScope}
+                disabled={isAddingAuthMethodScope || !authMethodId.trim()}
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  backgroundColor:
+                    isAddingAuthMethodScope || !authMethodId.trim()
+                      ? "#9ca3af"
+                      : "#8b5cf6",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                  cursor:
+                    isAddingAuthMethodScope || !authMethodId.trim()
+                      ? "not-allowed"
+                      : "pointer",
+                }}
+              >
+                {isAddingAuthMethodScope
+                  ? "Adding Scope..."
+                  : "Add Auth Method Scope"}
+              </button>
+
+              {/* Auth Method Scope Status Display */}
+              {authMethodScopeStatus && (
+                <div
+                  style={{
+                    marginTop: "16px",
+                    padding: "12px 16px",
+                    backgroundColor: authMethodScopeStatus.includes("✅")
+                      ? "#f0fdf4"
+                      : "#fef2f2",
+                    border: `1px solid ${
+                      authMethodScopeStatus.includes("✅")
+                        ? "#bbf7d0"
+                        : "#fecaca"
+                    }`,
+                    borderRadius: "8px",
+                    color: authMethodScopeStatus.includes("✅")
+                      ? "#15803d"
+                      : "#dc2626",
+                    fontSize: "14px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    {authMethodScopeStatus.includes("Transaction:") ? (
+                      <div>
+                        <div style={{ marginBottom: "8px" }}>
+                          {authMethodScopeStatus.split("Transaction:")[0]}
+                        </div>
                         <div
                           style={{
-                            width: "16px",
-                            height: "16px",
-                            border: "2px solid #ffffff",
-                            borderTop: "2px solid transparent",
-                            borderRadius: "50%",
-                            animation: "spin 1s linear infinite",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
                           }}
-                        />
-                        Removing...
-                      </>
+                        >
+                          <span style={{ fontSize: "11px", color: "#6b7280" }}>
+                            Tx:
+                          </span>
+                          <a
+                            href={`https://yellowstone-explorer.litprotocol.com/tx/${authMethodScopeStatus
+                              .split("Transaction:")[1]
+                              .trim()}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              color: "#1d4ed8",
+                              textDecoration: "underline",
+                              fontFamily: "monospace",
+                              fontSize: "11px",
+                              fontWeight: "500",
+                              cursor: "pointer",
+                            }}
+                          >
+                            {formatTxHash(
+                              authMethodScopeStatus
+                                .split("Transaction:")[1]
+                                .trim()
+                            )}
+                          </a>
+                          <button
+                            onClick={() =>
+                              copyToClipboard(
+                                authMethodScopeStatus
+                                  .split("Transaction:")[1]
+                                  .trim(),
+                                "Transaction Hash"
+                              )
+                            }
+                            style={{
+                              background: "none",
+                              border: "1px solid #e5e7eb",
+                              borderRadius: "4px",
+                              padding: "2px 6px",
+                              fontSize: "10px",
+                              cursor: "pointer",
+                              color: "#6b7280",
+                            }}
+                            title="Copy full hash"
+                          >
+                            📋
+                          </button>
+                        </div>
+                      </div>
                     ) : (
-                      <>🗑️ Confirm Remove</>
+                      authMethodScopeStatus
                     )}
-                  </button>
+                  </div>
                   <button
-                    onClick={() => {
-                      setActionToRemove(null);
-                      setRemoveActionIpfsId("");
-                      setPermissionsError("");
-                    }}
-                    disabled={removingItems.has(actionToRemove)}
+                    onClick={() => setAuthMethodScopeStatus("")}
                     style={{
-                      padding: "12px 20px",
-                      backgroundColor: "#6b7280",
-                      color: "white",
+                      background: "none",
                       border: "none",
-                      borderRadius: "8px",
-                      fontSize: "14px",
-                      fontWeight: "500",
-                      cursor: removingItems.has(actionToRemove)
-                        ? "not-allowed"
-                        : "pointer",
+                      color: "inherit",
+                      fontSize: "16px",
+                      cursor: "pointer",
+                      padding: "4px",
+                      borderRadius: "4px",
+                      opacity: 0.7,
                     }}
+                    title="Dismiss"
                   >
-                    Cancel
+                    ✕
                   </button>
                 </div>
-              </div>
+              )}
             </div>
-          )}
+
+            {/* Check Auth Method Scopes */}
+            <div
+              style={{
+                padding: "20px",
+                backgroundColor: "#ffffff",
+                borderRadius: "12px",
+                border: "1px solid #e5e7eb",
+                boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+              }}
+            >
+              <h3 style={{ margin: "0 0 16px 0", color: "#1f2937" }}>
+                🔍 Check Auth Method Scopes
+              </h3>
+              <p
+                style={{
+                  margin: "0 0 16px 0",
+                  color: "#6b7280",
+                  fontSize: "14px",
+                }}
+              >
+                View the current scopes/permissions for an auth method.
+              </p>
+
+              <div style={{ marginBottom: "16px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontSize: "13px",
+                    fontWeight: "500",
+                    color: "#374151",
+                  }}
+                >
+                  Auth Method Type:
+                </label>
+                <select
+                  value={checkAuthMethodType}
+                  onChange={(e) => setCheckAuthMethodType(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "6px",
+                    fontSize: "13px",
+                    backgroundColor: "#ffffff",
+                  }}
+                >
+                  <option value="1">ETH Wallet (1)</option>
+                  <option value="2">Lit Action (2)</option>
+                  <option value="3">WebAuthn (3)</option>
+                  <option value="4">Discord (4)</option>
+                  <option value="5">Google (5)</option>
+                  <option value="6">Google JWT (6)</option>
+                </select>
+              </div>
+
+              <div style={{ marginBottom: "16px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontSize: "13px",
+                    fontWeight: "500",
+                    color: "#374151",
+                  }}
+                >
+                  Auth Method ID:
+                </label>
+                <input
+                  type="text"
+                  value={checkAuthMethodId}
+                  onChange={(e) => setCheckAuthMethodId(e.target.value)}
+                  placeholder="e.g., 0x... for address, or IPFS hash for Lit Action"
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "6px",
+                    fontSize: "13px",
+                    fontFamily: "monospace",
+                  }}
+                />
+              </div>
+
+              <button
+                onClick={getPermittedAuthMethodScopes}
+                disabled={
+                  isCheckingAuthMethodScopes || !checkAuthMethodId.trim()
+                }
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  backgroundColor:
+                    isCheckingAuthMethodScopes || !checkAuthMethodId.trim()
+                      ? "#9ca3af"
+                      : "#0891b2",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                  cursor:
+                    isCheckingAuthMethodScopes || !checkAuthMethodId.trim()
+                      ? "not-allowed"
+                      : "pointer",
+                }}
+              >
+                {isCheckingAuthMethodScopes
+                  ? "Checking..."
+                  : "Check Auth Method Scopes"}
+              </button>
+
+              {/* Auth Method Scopes Results */}
+              {authMethodScopes && (
+                <div
+                  style={{
+                    marginTop: "16px",
+                    padding: "12px",
+                    backgroundColor: "#f8fafc",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "6px",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: "500",
+                      marginBottom: "8px",
+                      color: "#374151",
+                    }}
+                  >
+                    🔍 Scope Results:
+                  </div>
+                  {authMethodScopes.error ? (
+                    <div style={{ color: "#dc2626", fontSize: "12px" }}>
+                      ❌ {authMethodScopes.error}
+                    </div>
+                  ) : (
+                    <pre
+                      style={{
+                        fontFamily: "monospace",
+                        fontSize: "11px",
+                        backgroundColor: "#ffffff",
+                        padding: "8px",
+                        borderRadius: "4px",
+                        border: "1px solid #e5e7eb",
+                        whiteSpace: "pre-wrap",
+                        margin: 0,
+                        color: "#374151",
+                        maxHeight: "200px",
+                        overflowY: "auto",
+                      }}
+                    >
+                      {JSON.stringify(
+                        decodeScopeValues(authMethodScopes),
+                        null,
+                        2
+                      )}
+                    </pre>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div style={{ marginTop: "16px" }}>
+            {/* Danger Zone */}
+            <div
+              style={{
+                padding: "20px",
+                backgroundColor: "#fef2f2",
+                borderRadius: "12px",
+                border: "1px solid #fecaca",
+                boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+              }}
+            >
+              <h3 style={{ margin: "0 0 16px 0", color: "#dc2626" }}>
+                ⚠️ Danger Zone
+              </h3>
+              <p
+                style={{
+                  margin: "0 0 16px 0",
+                  color: "#6b7280",
+                  fontSize: "14px",
+                }}
+              >
+                <strong>Warning:</strong> This will remove ALL permissions from
+                your PKP. This action cannot be undone.
+              </p>
+
+              <button
+                onClick={revokeAllPermissions}
+                disabled={isRevokingAll}
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  backgroundColor: isRevokingAll ? "#9ca3af" : "#dc2626",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                  cursor: isRevokingAll ? "not-allowed" : "pointer",
+                }}
+              >
+                {isRevokingAll
+                  ? "Revoking All..."
+                  : "🚨 Revoke All Permissions"}
+              </button>
+            </div>
+          </div>
         </>
       )}
 
@@ -4169,7 +4667,17 @@ export default function ProtectedApp() {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
+        @keyframes slideIn {
+          0% { transform: translateX(100%); opacity: 0; }
+          100% { transform: translateX(0); opacity: 1; }
+        }
       `}</style>
+
+      {/* Transaction Toast Notifications */}
+      <TransactionToastContainer 
+        toasts={transactionToasts} 
+        onRemoveToast={removeTransactionToast} 
+      />
 
       {/* PKP Selection Modal */}
       {showPkpModal && (
