@@ -1,4 +1,5 @@
 import Editor from "@monaco-editor/react";
+import bs58 from "bs58";
 import { useEffect, useState } from "react";
 import { useLitAuth } from "../contexts/LitAuthProvider";
 import PkpSelectionForDemo from "./common/PkpSelectionForDemo";
@@ -31,6 +32,30 @@ const DEFAULT_LIT_ACTION2 = `(async () => {
   
   Lit.Actions.setResponse({ response: JSON.stringify({ message, signature }) });
 })();`;
+
+// Authentication method type mapping
+const AUTH_METHOD_TYPE = {
+  EthWallet: 1,
+  LitAction: 2,
+  WebAuthn: 3,
+  Discord: 4,
+  Google: 5,
+  GoogleJwt: 6,
+  AppleJwt: 8,
+  StytchOtp: 9,
+  StytchEmailFactorOtp: 10,
+  StytchSmsFactorOtp: 11,
+  StytchWhatsAppFactorOtp: 12,
+  StytchTotpFactorOtp: 13,
+} as const;
+
+// Create reverse mapping for display
+const getAuthMethodTypeName = (typeNumber: number): string => {
+  const entry = Object.entries(AUTH_METHOD_TYPE).find(
+    ([, value]) => value === typeNumber
+  );
+  return entry ? entry[0] : `Unknown (${typeNumber})`;
+};
 
 interface BalanceInfo {
   balance: string;
@@ -122,6 +147,22 @@ const SUPPORTED_CHAINS = {
   },
 } as const;
 
+// Helper function to convert hex to IPFS CID (for LitAction auth methods)
+const hexToIpfsCid = (hex: string): string => {
+  try {
+    // Remove 0x prefix if present
+    const cleanHex = hex.startsWith("0x") ? hex.slice(2) : hex;
+    // Convert hex string to bytes array
+    const bytes = new Uint8Array(
+      cleanHex.match(/.{1,2}/g)?.map((byte) => parseInt(byte, 16)) || []
+    );
+    return bs58.encode(bytes);
+  } catch (error) {
+    console.error("Error converting hex to IPFS CID:", error);
+    return hex; // Return original if conversion fails
+  }
+};
+
 export default function ProtectedApp() {
   const {
     user,
@@ -177,11 +218,73 @@ export default function ProtectedApp() {
   // General status
   const [status, setStatus] = useState<string>("");
 
+  // Separate status for actions and addresses to avoid conflicts
+  const [actionStatus, setActionStatus] = useState<string>("");
+  const [addressStatus, setAddressStatus] = useState<string>("");
+
   // Copy functionality
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   // Chain selection state
   const [selectedChain, setSelectedChain] = useState<string>("yellowstone");
+
+  // Better PKP Permissions state management
+  const [permissionsContext, setPermissionsContext] = useState<any>(null);
+  const [isLoadingPermissions, setIsLoadingPermissions] = useState(false);
+  const [permissionsError, setPermissionsError] = useState<string>("");
+
+  // Add Permission states
+  const [newActionIpfsId, setNewActionIpfsId] = useState(
+    "QmPK1s3pNYLi9ERiq3BDxKa4XosgWwFRQUydHUtz4YgpqB"
+  );
+  const [newActionSelectedScopes, setNewActionSelectedScopes] = useState<
+    string[]
+  >(["sign-anything"]);
+  const [newPermittedAddress, setNewPermittedAddress] = useState(
+    "0xef3eE1bD838aF5B36482FAe8a6Fc394C68d5Fa9F"
+  );
+  const [newAddressSelectedScopes, setNewAddressSelectedScopes] = useState<
+    string[]
+  >(["sign-anything"]);
+  const [isAddingAction, setIsAddingAction] = useState(false);
+  const [isAddingAddress, setIsAddingAddress] = useState(false);
+
+  // Remove Permission states
+  const [removingItems, setRemovingItems] = useState<Set<string>>(new Set());
+  const [isRevokingAll, setIsRevokingAll] = useState(false);
+  const [actionToRemove, setActionToRemove] = useState<string | null>(null);
+  const [removeActionIpfsId, setRemoveActionIpfsId] = useState("");
+
+  // Additional missing state variables
+  const [isRemovingAction, setIsRemovingAction] = useState(false);
+  const [checkActionIpfsId, setCheckActionIpfsId] = useState(
+    "QmPK1s3pNYLi9ERiq3BDxKa4XosgWwFRQUydHUtz4YgpqB"
+  );
+  const [checkPermittedAddress, setCheckPermittedAddress] = useState(
+    "0xef3eE1bD838aF5B36482FAe8a6Fc394C68d5Fa9F"
+  );
+  const [permissionCheckResults, setPermissionCheckResults] =
+    useState<any>(null);
+  const [isCheckingPermissions, setIsCheckingPermissions] = useState(false);
+
+  // Available scopes
+  const AVAILABLE_SCOPES = [
+    {
+      id: "sign-anything",
+      label: "Sign Anything",
+      description: "Allow signing any message or transaction",
+    },
+    {
+      id: "personal-sign",
+      label: "Personal Sign",
+      description: "Allow personal message signing only",
+    },
+  ];
+
+  // Tab navigation state
+  const [activeTab, setActiveTab] = useState<"overview" | "permissions">(
+    "overview"
+  );
 
   // Load balance when PKP changes or chain changes
   useEffect(() => {
@@ -656,6 +759,556 @@ export default function ProtectedApp() {
     }
   };
 
+  // PKP Permissions helper functions
+  const loadPermissionsContext = async () => {
+    if (!user?.authContext || !selectedPkp || !services?.litClient) {
+      setPermissionsError("No auth context, selected PKP, or Lit client");
+      return;
+    }
+
+    setIsLoadingPermissions(true);
+    setPermissionsError("");
+    try {
+      // Get PKP as a viem account
+      const chainConfig = services.litClient.getChainConfig().viemConfig;
+      const pkpViemAccount = await services.litClient.getPkpViemAccount({
+        pkpPublicKey: selectedPkp.publicKey || user?.pkpInfo?.pubkey,
+        authContext: user.authContext,
+        chainConfig: chainConfig,
+      });
+
+      // Get PKP permissions manager
+      const pkpPermissionsManager =
+        await services.litClient.getPKPPermissionsManager({
+          pkpIdentifier: {
+            tokenId: selectedPkp.tokenId,
+          },
+          account: pkpViemAccount,
+        });
+
+      // Load permissions context
+      const context = await pkpPermissionsManager.getPermissionsContext();
+      // console.log("Permissions context:", JSON.stringify(context, replacer, 2));
+      setPermissionsContext(context);
+
+      // Only set success status if there's no current transaction status
+      if (
+        !status ||
+        (!status.includes("Transaction:") && !status.includes("successfully!"))
+      ) {
+        setStatus("Permissions context loaded successfully!");
+      } else {
+        console.log(
+          "🔒 Keeping existing transaction status, not overwriting with permissions load message"
+        );
+      }
+    } catch (error: any) {
+      console.error("Failed to load permissions context:", error);
+      setPermissionsError(
+        `Failed to load permissions: ${error.message || error}`
+      );
+    } finally {
+      setIsLoadingPermissions(false);
+    }
+  };
+
+  const addPermittedAction = async () => {
+    if (
+      !user?.authContext ||
+      !selectedPkp ||
+      !services?.litClient ||
+      !newActionIpfsId.trim()
+    ) {
+      setPermissionsError("Missing required data or IPFS ID");
+      return;
+    }
+
+    setIsAddingAction(true);
+    setPermissionsError("");
+    console.log("🔄 Starting to add permitted action...", {
+      pkpTokenId: selectedPkp.tokenId,
+      ipfsId: newActionIpfsId,
+      scopes: newActionSelectedScopes,
+    });
+
+    try {
+      const chainConfig = services.litClient.getChainConfig().viemConfig;
+      const pkpViemAccount = await services.litClient.getPkpViemAccount({
+        pkpPublicKey: selectedPkp.publicKey || user?.pkpInfo?.pubkey,
+        authContext: user.authContext,
+        chainConfig: chainConfig,
+      });
+
+      const pkpPermissionsManager =
+        await services.litClient.getPKPPermissionsManager({
+          pkpIdentifier: {
+            tokenId: selectedPkp.tokenId,
+          },
+          account: pkpViemAccount,
+        });
+
+      const result = await pkpPermissionsManager.addPermittedAction({
+        ipfsId: newActionIpfsId,
+        scopes: newActionSelectedScopes,
+      });
+
+      console.log("✅ Action permission added - Full result:", result);
+      console.log("📋 Result structure:", {
+        hash: result?.hash,
+        transactionHash: result?.transactionHash,
+        tx: result?.tx,
+        transaction: result?.transaction,
+        receipt: result?.receipt,
+        txHash: result?.txHash,
+        keys: Object.keys(result || {}),
+      });
+
+      // Try multiple ways to extract transaction hash
+      const txHash =
+        result?.hash ||
+        result?.transactionHash ||
+        result?.tx?.hash ||
+        result?.transaction?.hash ||
+        result?.receipt?.transactionHash ||
+        result?.txHash ||
+        (typeof result === "string" ? result : null);
+
+      console.log("🔗 Extracted transaction hash:", txHash);
+
+      if (txHash) {
+        const explorerUrl = `https://yellowstone-explorer.litprotocol.com/tx/${txHash}`;
+        console.log("🌐 Explorer URL:", explorerUrl);
+        setActionStatus(
+          `✅ Action permission added successfully! Transaction: ${txHash}`
+        );
+        console.log(
+          "📝 Action status set to:",
+          `✅ Action permission added successfully! Transaction: ${txHash}`
+        );
+      } else {
+        console.log("⚠️ No transaction hash found in result");
+        setActionStatus("✅ Action permission added successfully!");
+        console.log(
+          "📝 Action status set to:",
+          "✅ Action permission added successfully!"
+        );
+      }
+      setPermissionsError("");
+
+      // Clear form
+      setNewActionIpfsId("");
+      setNewActionSelectedScopes([]);
+
+      // Reload permissions after delay (no auto-clear of status)
+      console.log("⏰ Setting timeout to reload permissions in 5 seconds...");
+      setTimeout(() => {
+        console.log("🔄 Reloading permissions context...");
+        loadPermissionsContext();
+      }, 5000);
+    } catch (error: any) {
+      console.error("❌ Failed to add permitted action:", error);
+      console.log("📋 Error details:", {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        cause: error.cause,
+      });
+      if (error.message?.includes("Not PKP NFT owner")) {
+        setPermissionsError(
+          "❌ You don't own this PKP. Only PKP owners can modify permissions."
+        );
+      } else {
+        setPermissionsError(
+          `❌ Failed to add permitted action: ${error.message || error}`
+        );
+      }
+    } finally {
+      setIsAddingAction(false);
+    }
+  };
+
+  const addPermittedAddress = async () => {
+    if (
+      !user?.authContext ||
+      !selectedPkp ||
+      !services?.litClient ||
+      !newPermittedAddress.trim()
+    ) {
+      setPermissionsError("Missing required data or address");
+      return;
+    }
+
+    setIsAddingAddress(true);
+    setPermissionsError("");
+    console.log("🔄 Starting to add permitted address...", {
+      pkpTokenId: selectedPkp.tokenId,
+      address: newPermittedAddress,
+      scopes: newAddressSelectedScopes,
+    });
+
+    try {
+      const chainConfig = services.litClient.getChainConfig().viemConfig;
+      const pkpViemAccount = await services.litClient.getPkpViemAccount({
+        pkpPublicKey: selectedPkp.publicKey || user?.pkpInfo?.pubkey,
+        authContext: user.authContext,
+        chainConfig: chainConfig,
+      });
+
+      const pkpPermissionsManager =
+        await services.litClient.getPKPPermissionsManager({
+          pkpIdentifier: {
+            tokenId: selectedPkp.tokenId,
+          },
+          account: pkpViemAccount,
+        });
+
+      const result = await pkpPermissionsManager.addPermittedAddress({
+        address: newPermittedAddress,
+        scopes: newAddressSelectedScopes,
+      });
+
+      console.log("✅ Permitted address added - Full result:", result);
+      console.log("📋 Result structure:", {
+        hash: result?.hash,
+        transactionHash: result?.transactionHash,
+        tx: result?.tx,
+        transaction: result?.transaction,
+        receipt: result?.receipt,
+        txHash: result?.txHash,
+        keys: Object.keys(result || {}),
+      });
+
+      // Try multiple ways to extract transaction hash
+      const txHash =
+        result?.hash ||
+        result?.transactionHash ||
+        result?.tx?.hash ||
+        result?.transaction?.hash ||
+        result?.receipt?.transactionHash ||
+        result?.txHash ||
+        (typeof result === "string" ? result : null);
+
+      console.log("🔗 Extracted transaction hash:", txHash);
+
+      if (txHash) {
+        const explorerUrl = `https://yellowstone-explorer.litprotocol.com/tx/${txHash}`;
+        console.log("🌐 Explorer URL:", explorerUrl);
+        setAddressStatus(
+          `✅ Permitted address added successfully! Transaction: ${txHash}`
+        );
+        console.log(
+          "📝 Address status set to:",
+          `✅ Permitted address added successfully! Transaction: ${txHash}`
+        );
+      } else {
+        console.log("⚠️ No transaction hash found in result");
+        setAddressStatus("✅ Permitted address added successfully!");
+        console.log(
+          "📝 Address status set to:",
+          "✅ Permitted address added successfully!"
+        );
+      }
+
+      // Clear form
+      setNewPermittedAddress("");
+      setNewAddressSelectedScopes([]);
+
+      // Reload permissions after delay (no auto-clear of status)
+      console.log("⏰ Setting timeout to reload permissions in 5 seconds...");
+      setTimeout(() => {
+        console.log("🔄 Reloading permissions context...");
+        loadPermissionsContext();
+      }, 5000);
+    } catch (error: any) {
+      console.error("❌ Failed to add permitted address:", error);
+      console.log("📋 Error details:", {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        cause: error.cause,
+      });
+      if (error.message?.includes("Not PKP NFT owner")) {
+        setPermissionsError(
+          "❌ You don't own this PKP. Only PKP owners can modify permissions."
+        );
+      } else {
+        setPermissionsError(
+          `❌ Failed to add permitted address: ${error.message || error}`
+        );
+      }
+    } finally {
+      setIsAddingAddress(false);
+    }
+  };
+
+  const removePermittedAction = async (actionIpfsCid: string) => {
+    setActionToRemove(actionIpfsCid);
+    setRemoveActionIpfsId(actionIpfsCid); // Pre-fill with the IPFS CID we already have
+  };
+
+  const confirmRemoveAction = async () => {
+    if (!removeActionIpfsId.trim()) {
+      setPermissionsError("❌ IPFS CID is required to remove an action");
+      return;
+    }
+
+    if (
+      !user?.authContext ||
+      !selectedPkp ||
+      !services?.litClient ||
+      !actionToRemove
+    ) {
+      setPermissionsError("Missing required data");
+      return;
+    }
+
+    setRemovingItems((prev) => new Set([...prev, actionToRemove]));
+    setPermissionsError("");
+    try {
+      const chainConfig = services.litClient.getChainConfig().viemConfig;
+      const pkpViemAccount = await services.litClient.getPkpViemAccount({
+        pkpPublicKey: selectedPkp.publicKey || user?.pkpInfo?.pubkey,
+        authContext: user.authContext,
+        chainConfig: chainConfig,
+      });
+
+      const pkpPermissionsManager =
+        await services.litClient.getPKPPermissionsManager({
+          pkpIdentifier: {
+            tokenId: selectedPkp.tokenId,
+          },
+          account: pkpViemAccount,
+        });
+
+      const result = await pkpPermissionsManager.removePermittedAction({
+        ipfsId: removeActionIpfsId.trim(),
+      });
+
+      // Show success with transaction hash
+      const txHash = result?.hash || result?.transactionHash || result;
+      if (txHash) {
+        setStatus(
+          `✅ Permitted action removed successfully! Transaction: ${txHash}`
+        );
+      } else {
+        setStatus("✅ Permitted action removed successfully!");
+      }
+
+      // Reset the removal state
+      setActionToRemove(null);
+      setRemoveActionIpfsId("");
+      await loadPermissionsContext(); // Reload permissions
+    } catch (error: any) {
+      console.error("Failed to remove permitted action:", error);
+      if (error.message?.includes("Not PKP NFT owner")) {
+        setPermissionsError(
+          "❌ You don't own this PKP. Only PKP owners can modify permissions."
+        );
+      } else if (
+        error.message?.includes("not found") ||
+        error.message?.includes("does not exist")
+      ) {
+        setPermissionsError(
+          `❌ Action not found. Please check the IPFS CID: ${removeActionIpfsId}`
+        );
+      } else {
+        setPermissionsError(
+          `❌ Failed to remove permitted action: ${error.message || error}`
+        );
+      }
+    } finally {
+      setRemovingItems((prev) => {
+        const next = new Set(prev);
+        next.delete(actionToRemove!);
+        return next;
+      });
+    }
+  };
+
+  const removePermittedAddress = async (address: string) => {
+    if (!user?.authContext || !selectedPkp || !services?.litClient) {
+      setPermissionsError("Missing required data");
+      return;
+    }
+
+    // Add address to removing set
+    setRemovingItems((prev) => new Set([...prev, address]));
+    setPermissionsError("");
+
+    try {
+      const chainConfig = services.litClient.getChainConfig().viemConfig;
+      const pkpViemAccount = await services.litClient.getPkpViemAccount({
+        pkpPublicKey: selectedPkp.publicKey || user?.pkpInfo?.pubkey,
+        authContext: user.authContext,
+        chainConfig: chainConfig,
+      });
+
+      const pkpPermissionsManager =
+        await services.litClient.getPKPPermissionsManager({
+          pkpIdentifier: {
+            tokenId: selectedPkp.tokenId,
+          },
+          account: pkpViemAccount,
+        });
+
+      const result = await pkpPermissionsManager.removePermittedAddress({
+        address: address,
+      });
+
+      // Show success with transaction hash
+      const txHash = result?.hash || result?.transactionHash || result;
+      if (txHash) {
+        setStatus(
+          `✅ Permitted address removed successfully! Transaction: ${txHash}`
+        );
+      } else {
+        setStatus("✅ Permitted address removed successfully!");
+      }
+
+      await loadPermissionsContext(); // Reload permissions
+    } catch (error: any) {
+      console.error("Failed to remove permitted address:", error);
+      if (error.message?.includes("Not PKP NFT owner")) {
+        setPermissionsError(
+          "❌ You don't own this PKP. Only PKP owners can modify permissions."
+        );
+      } else {
+        setPermissionsError(
+          `❌ Failed to remove permitted address: ${error.message || error}`
+        );
+      }
+    } finally {
+      // Remove address from removing set
+      setRemovingItems((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(address);
+        return newSet;
+      });
+    }
+  };
+
+  const checkPermissions = async () => {
+    if (!user?.authContext || !selectedPkp || !services?.litClient) {
+      setPermissionsError("Missing required data");
+      return;
+    }
+
+    setIsCheckingPermissions(true);
+    setPermissionsError("");
+    try {
+      const chainConfig = services.litClient.getChainConfig().viemConfig;
+      const pkpViemAccount = await services.litClient.getPkpViemAccount({
+        pkpPublicKey: selectedPkp.publicKey || user?.pkpInfo?.pubkey,
+        authContext: user.authContext,
+        chainConfig: chainConfig,
+      });
+
+      const pkpPermissionsManager =
+        await services.litClient.getPKPPermissionsManager({
+          pkpIdentifier: {
+            tokenId: selectedPkp.tokenId,
+          },
+          account: pkpViemAccount,
+        });
+
+      const actionPermitted = checkActionIpfsId.trim()
+        ? await pkpPermissionsManager.isPermittedAction({
+            ipfsId: checkActionIpfsId,
+          })
+        : null;
+
+      const addressPermitted = checkPermittedAddress.trim()
+        ? await pkpPermissionsManager.isPermittedAddress({
+            address: checkPermittedAddress,
+          })
+        : null;
+
+      setPermissionCheckResults({
+        actionPermitted,
+        addressPermitted,
+        actionIpfsId: checkActionIpfsId,
+        address: checkPermittedAddress,
+        timestamp: new Date().toISOString(),
+      });
+
+      setStatus("✅ Permission check completed!");
+    } catch (error: any) {
+      console.error("Failed to check permissions:", error);
+      setPermissionsError(
+        `❌ Failed to check permissions: ${error.message || error}`
+      );
+    } finally {
+      setIsCheckingPermissions(false);
+    }
+  };
+
+  const revokeAllPermissions = async () => {
+    if (!user?.authContext || !selectedPkp || !services?.litClient) {
+      setPermissionsError("Missing required data");
+      return;
+    }
+
+    if (
+      !confirm(
+        "Are you sure you want to revoke ALL permissions? This action cannot be undone."
+      )
+    ) {
+      return;
+    }
+
+    setIsRevokingAll(true);
+    setPermissionsError("");
+    try {
+      const chainConfig = services.litClient.getChainConfig().viemConfig;
+      const pkpViemAccount = await services.litClient.getPkpViemAccount({
+        pkpPublicKey: selectedPkp.publicKey || user?.pkpInfo?.pubkey,
+        authContext: user.authContext,
+        chainConfig: chainConfig,
+      });
+
+      const pkpPermissionsManager =
+        await services.litClient.getPKPPermissionsManager({
+          pkpIdentifier: {
+            tokenId: selectedPkp.tokenId,
+          },
+          account: pkpViemAccount,
+        });
+
+      const result = await pkpPermissionsManager.revokeAllPermissions();
+
+      // Show success with transaction hash
+      const txHash = result?.hash || result?.transactionHash || result;
+      if (txHash) {
+        setStatus(
+          `✅ All permissions revoked successfully! Transaction: ${txHash}`
+        );
+      } else {
+        setStatus("✅ All permissions revoked successfully!");
+      }
+
+      await loadPermissionsContext(); // Reload permissions
+    } catch (error: any) {
+      console.error("Failed to revoke all permissions:", error);
+      if (error.message?.includes("Not PKP NFT owner")) {
+        setPermissionsError(
+          "❌ You don't own this PKP. Only PKP owners can modify permissions."
+        );
+      } else {
+        setPermissionsError(
+          `❌ Failed to revoke all permissions: ${error.message || error}`
+        );
+      }
+    } finally {
+      setIsRevokingAll(false);
+    }
+  };
+
+  // Helper function to format transaction hash for display
+  const formatTxHash = (hash: string) => {
+    if (!hash) return "";
+    return `${hash.slice(0, 10)}...${hash.slice(-8)}`;
+  };
+
   if (!user) {
     return (
       <div style={{ padding: "20px", textAlign: "center" }}>
@@ -1108,437 +1761,167 @@ export default function ProtectedApp() {
         )}
       </div>
 
-      {/* Status Bar */}
+      {/* Copy Status */}
+      {copiedField && (
+        <div
+          style={{
+            marginTop: "16px",
+            padding: "8px 16px",
+            backgroundColor: "#10b981",
+            color: "white",
+            borderRadius: "6px",
+            fontSize: "12px",
+            textAlign: "center",
+          }}
+        >
+          ✅ {copiedField} copied to clipboard!
+        </div>
+      )}
+
+      {/* Tab Navigation */}
+      <div style={{ marginBottom: "30px" }}>
+        <div
+          style={{
+            display: "flex",
+            borderBottom: "2px solid #e5e7eb",
+            marginBottom: "20px",
+          }}
+        >
+          <button
+            onClick={() => setActiveTab("overview")}
+            style={{
+              padding: "12px 24px",
+              border: "none",
+              backgroundColor: "transparent",
+              fontSize: "16px",
+              fontWeight: "600",
+              cursor: "pointer",
+              borderBottom:
+                activeTab === "overview"
+                  ? "2px solid #3b82f6"
+                  : "2px solid transparent",
+              color: activeTab === "overview" ? "#3b82f6" : "#6b7280",
+              transition: "all 0.2s",
+            }}
+          >
+            📊 Overview
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab("permissions");
+              // Auto-load permissions when switching to permissions tab
+              if (!permissionsContext && !isLoadingPermissions) {
+                loadPermissionsContext();
+              }
+            }}
+            style={{
+              padding: "12px 24px",
+              border: "none",
+              backgroundColor: "transparent",
+              fontSize: "16px",
+              fontWeight: "600",
+              cursor: "pointer",
+              borderBottom:
+                activeTab === "permissions"
+                  ? "2px solid #3b82f6"
+                  : "2px solid transparent",
+              color: activeTab === "permissions" ? "#3b82f6" : "#6b7280",
+              transition: "all 0.2s",
+            }}
+          >
+            🔐 PKP Permissions
+          </button>
+        </div>
+      </div>
+
+      {/* Status Messages with Transaction Links */}
       {status && (
         <div
           style={{
             marginBottom: "20px",
             padding: "12px 16px",
-            backgroundColor: "#f8f9fa",
-            border: "1px solid #dee2e6",
+            backgroundColor: status.includes("✅") ? "#f0fdf4" : "#eff6ff",
+            border: `1px solid ${
+              status.includes("✅") ? "#bbf7d0" : "#bfdbfe"
+            }`,
             borderRadius: "8px",
+            color: status.includes("✅") ? "#15803d" : "#1e40af",
             fontSize: "14px",
-            fontFamily: "monospace",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
           }}
         >
-          {status}
+          <div style={{ flex: 1 }}>
+            {status.includes("Transaction:") ? (
+              <div>
+                <div style={{ marginBottom: "8px" }}>
+                  {status.split("Transaction:")[0].trim()}
+                </div>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                >
+                  <span style={{ fontSize: "12px", fontWeight: "500" }}>
+                    Transaction Hash:
+                  </span>
+                  <a
+                    href={`https://yellowstone-explorer.litprotocol.com/tx/${status
+                      .split("Transaction:")[1]
+                      .trim()}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      color: "#1d4ed8",
+                      textDecoration: "underline",
+                      fontFamily: "monospace",
+                      fontSize: "11px",
+                      fontWeight: "500",
+                      cursor: "pointer",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = "#2563eb";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = "#1d4ed8";
+                    }}
+                  >
+                    {status.split("Transaction:")[1].trim()}
+                  </a>
+                </div>
+              </div>
+            ) : (
+              status
+            )}
+          </div>
+          <button
+            onClick={() => setStatus("")}
+            style={{
+              background: "none",
+              border: "none",
+              color: "inherit",
+              fontSize: "16px",
+              cursor: "pointer",
+              padding: "4px",
+              borderRadius: "4px",
+              opacity: 0.7,
+              transition: "opacity 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = "1";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = "0.7";
+            }}
+            title="Dismiss"
+          >
+            ✕
+          </button>
         </div>
       )}
 
-      {/* Main content - Demo Functions */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
-          gap: "20px",
-          marginBottom: "30px",
-        }}
-      >
-        {/* Sign Message */}
-        <div
-          style={{
-            padding: "20px",
-            backgroundColor: "#ffffff",
-            borderRadius: "12px",
-            border: "1px solid #e5e7eb",
-            boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
-          }}
-        >
-          <h3 style={{ margin: "0 0 16px 0", color: "#1f2937" }}>
-            ✍️ Sign Message
-          </h3>
-          <p
-            style={{ margin: "0 0 16px 0", color: "#6b7280", fontSize: "14px" }}
-          >
-            Sign a message using your PKP wallet.
-          </p>
-
-          <textarea
-            value={messageToSign}
-            onChange={(e) => setMessageToSign(e.target.value)}
-            placeholder="Enter message to sign..."
-            style={{
-              width: "100%",
-              height: "80px",
-              padding: "12px",
-              border: "1px solid #d1d5db",
-              borderRadius: "8px",
-              fontSize: "14px",
-              marginBottom: "12px",
-              resize: "vertical",
-              color: "#374151",
-              backgroundColor: "#ffffff",
-            }}
-          />
-
-          <button
-            onClick={signMessage}
-            disabled={isSigningMessage || !messageToSign.trim()}
-            style={{
-              width: "100%",
-              padding: "12px",
-              backgroundColor: isSigningMessage ? "#9ca3af" : "#3b82f6",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              fontSize: "14px",
-              fontWeight: "500",
-              cursor: isSigningMessage ? "not-allowed" : "pointer",
-            }}
-          >
-            {isSigningMessage ? "Signing..." : "Sign Message"}
-          </button>
-
-          {signedMessage && (
-            <div
-              style={{
-                marginTop: "16px",
-                padding: "12px",
-                backgroundColor: "#f0fdf4",
-                border: "1px solid #bbf7d0",
-                borderRadius: "8px",
-              }}
-            >
-              <h4
-                style={{
-                  margin: "0 0 8px 0",
-                  color: "#15803d",
-                  fontSize: "14px",
-                }}
-              >
-                ✅ Message Signed
-              </h4>
-              <div
-                style={{
-                  fontSize: "12px",
-                  fontFamily: "monospace",
-                  wordBreak: "break-all",
-                }}
-              >
-                <strong>Signature:</strong>{" "}
-                {signedMessage.signature?.slice(0, 40)}...
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Encrypt/Decrypt */}
-        <div
-          style={{
-            padding: "20px",
-            backgroundColor: "#ffffff",
-            borderRadius: "12px",
-            border: "1px solid #e5e7eb",
-            boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
-          }}
-        >
-          <h3 style={{ margin: "0 0 16px 0", color: "#1f2937" }}>
-            🔐 Encrypt & Decrypt
-          </h3>
-          <p
-            style={{ margin: "0 0 16px 0", color: "#6b7280", fontSize: "14px" }}
-          >
-            Encrypt data that only your PKP can decrypt.
-          </p>
-
-          <textarea
-            value={messageToEncrypt}
-            onChange={(e) => setMessageToEncrypt(e.target.value)}
-            placeholder="Enter message to encrypt..."
-            style={{
-              width: "100%",
-              height: "80px",
-              padding: "12px",
-              border: "1px solid #d1d5db",
-              borderRadius: "8px",
-              fontSize: "14px",
-              marginBottom: "12px",
-              resize: "vertical",
-              color: "#374151",
-              backgroundColor: "#ffffff",
-            }}
-          />
-
-          <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
-            <button
-              onClick={encryptData}
-              disabled={isEncrypting || !messageToEncrypt.trim()}
-              style={{
-                flex: 1,
-                padding: "12px",
-                backgroundColor: isEncrypting ? "#9ca3af" : "#7c3aed",
-                color: "white",
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "14px",
-                fontWeight: "500",
-                cursor: isEncrypting ? "not-allowed" : "pointer",
-              }}
-            >
-              {isEncrypting ? "Encrypting..." : "Encrypt"}
-            </button>
-
-            <button
-              onClick={decryptData}
-              disabled={isDecrypting || !encryptedData}
-              style={{
-                flex: 1,
-                padding: "12px",
-                backgroundColor: isDecrypting ? "#9ca3af" : "#059669",
-                color: "white",
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "14px",
-                fontWeight: "500",
-                cursor:
-                  isDecrypting || !encryptedData ? "not-allowed" : "pointer",
-              }}
-            >
-              {isDecrypting ? "Decrypting..." : "Decrypt"}
-            </button>
-          </div>
-
-          {encryptedData && (
-            <div
-              style={{
-                marginBottom: "12px",
-                padding: "12px",
-                backgroundColor: "#fef3c7",
-                border: "1px solid #fbbf24",
-                borderRadius: "8px",
-              }}
-            >
-              <h4
-                style={{
-                  margin: "0 0 8px 0",
-                  color: "#92400e",
-                  fontSize: "14px",
-                }}
-              >
-                🔒 Data Encrypted
-              </h4>
-              <div
-                style={{
-                  fontSize: "12px",
-                  color: "#92400e",
-                  marginBottom: "8px",
-                }}
-              >
-                Encrypted at:{" "}
-                {new Date(encryptedData.timestamp).toLocaleString()}
-              </div>
-              <div
-                style={{
-                  fontSize: "11px",
-                  fontFamily: "monospace",
-                  color: "#92400e",
-                  backgroundColor: "#fef8e1",
-                  padding: "8px",
-                  borderRadius: "4px",
-                  border: "1px solid #f59e0b",
-                  wordBreak: "break-all",
-                  maxHeight: "120px",
-                  overflow: "auto",
-                }}
-              >
-                <div style={{ marginBottom: "6px" }}>
-                  <strong>Ciphertext:</strong>{" "}
-                  {encryptedData.ciphertext || "N/A"}
-                </div>
-                <div style={{ marginBottom: "6px" }}>
-                  <strong>Data Hash:</strong>{" "}
-                  {encryptedData.dataToEncryptHash || "N/A"}
-                </div>
-                {encryptedData.originalMessage && (
-                  <div style={{ marginBottom: "6px" }}>
-                    <strong>Original:</strong> "{encryptedData.originalMessage}"
-                  </div>
-                )}
-                {encryptedData.pkpAddress && (
-                  <div>
-                    <strong>PKP Address:</strong> {encryptedData.pkpAddress}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {decryptedMessage && (
-            <div
-              style={{
-                padding: "12px",
-                backgroundColor: "#f0fdf4",
-                border: "1px solid #bbf7d0",
-                borderRadius: "8px",
-              }}
-            >
-              <h4
-                style={{
-                  margin: "0 0 8px 0",
-                  color: "#15803d",
-                  fontSize: "14px",
-                }}
-              >
-                🔓 Decrypted Message
-              </h4>
-              <div
-                style={{
-                  fontSize: "14px",
-                  color: "#15803d",
-                  fontStyle: "italic",
-                }}
-              >
-                "{decryptedMessage}"
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Execute Lit Action */}
-        <div
-          style={{
-            padding: "20px",
-            backgroundColor: "#ffffff",
-            borderRadius: "12px",
-            border: "1px solid #e5e7eb",
-            boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
-          }}
-        >
-          <h3 style={{ margin: "0 0 16px 0", color: "#1f2937" }}>
-            ⚡ Execute Lit Action
-          </h3>
-          <p
-            style={{ margin: "0 0 16px 0", color: "#6b7280", fontSize: "14px" }}
-          >
-            Run custom JavaScript code with your PKP.
-          </p>
-
-          <div
-            style={{
-              border: "1px solid #d1d5db",
-              borderRadius: "8px",
-              overflow: "hidden",
-              marginBottom: "12px",
-            }}
-          >
-            <Editor
-              value={litActionCode}
-              onChange={(value) => setLitActionCode(value || "")}
-              language="javascript"
-              theme="vs-dark"
-              options={{
-                minimap: { enabled: false },
-                wordWrap: "on",
-                fontSize: 10,
-                padding: { top: 12, bottom: 12 },
-                scrollBeyondLastLine: false,
-                automaticLayout: true,
-                lineNumbers: "on",
-                folding: false,
-                lineDecorationsWidth: 0,
-                lineNumbersMinChars: 3,
-              }}
-              height="200px"
-              width="100%"
-            />
-          </div>
-
-          <button
-            onClick={executeLitAction}
-            disabled={isExecutingAction || !litActionCode.trim()}
-            style={{
-              width: "100%",
-              padding: "12px",
-              backgroundColor: isExecutingAction ? "#9ca3af" : "#dc2626",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              fontSize: "14px",
-              fontWeight: "500",
-              cursor: isExecutingAction ? "not-allowed" : "pointer",
-            }}
-          >
-            {isExecutingAction ? "Executing..." : "Execute Lit Action"}
-          </button>
-
-          {litActionResult && (
-            <div
-              style={{
-                marginTop: "16px",
-                padding: "12px",
-                backgroundColor: "#f0fdf4",
-                border: "1px solid #bbf7d0",
-                borderRadius: "8px",
-              }}
-            >
-              <h4
-                style={{
-                  margin: "0 0 8px 0",
-                  color: "#15803d",
-                  fontSize: "14px",
-                }}
-              >
-                ✅ Execution Result
-              </h4>
-              <pre
-                style={{
-                  fontSize: "11px",
-                  fontFamily: "monospace",
-                  color: "#15803d",
-                  overflow: "auto",
-                  maxHeight: "100px",
-                  margin: 0,
-                }}
-              >
-                {JSON.stringify(litActionResult.result, null, 2)}
-              </pre>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* PKP Integrations Section */}
-      <div style={{ marginBottom: "30px" }}>
-        <div
-          style={{
-            marginBottom: "20px",
-            padding: "16px 20px",
-            background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-            borderRadius: "12px",
-            color: "white",
-            textAlign: "center",
-          }}
-        >
-          <h2
-            style={{
-              margin: "0 0 8px 0",
-              fontSize: "20px",
-              fontWeight: "700",
-            }}
-          >
-            🔧 PKP Viem Integrations
-          </h2>
-          <p
-            style={{
-              margin: "0",
-              fontSize: "14px",
-              opacity: 0.9,
-              lineHeight: "1.4",
-            }}
-          >
-            Explore how PKPs integrate with popular web3 libraries like Viem for
-            enhanced functionality.
-          </p>
-        </div>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
-            gap: "20px",
-          }}
-        >
-          {/* PKP Viem Account Signing */}
+      {activeTab === "overview" && (
+        <>
+          {/* Sign Message */}
           <div
             style={{
               padding: "20px",
@@ -1546,27 +1929,11 @@ export default function ProtectedApp() {
               borderRadius: "12px",
               border: "1px solid #e5e7eb",
               boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
-              position: "relative",
+              marginBottom: "20px",
             }}
           >
-            <div
-              style={{
-                position: "absolute",
-                top: "12px",
-                right: "12px",
-                padding: "4px 8px",
-                backgroundColor: "#f59e0b",
-                color: "white",
-                borderRadius: "12px",
-                fontSize: "10px",
-                fontWeight: "600",
-                textTransform: "uppercase",
-              }}
-            >
-              Viem Integration
-            </div>
             <h3 style={{ margin: "0 0 16px 0", color: "#1f2937" }}>
-              🔑 PKP Viem Account
+              ✍️ Sign Message
             </h3>
             <p
               style={{
@@ -1575,45 +1942,46 @@ export default function ProtectedApp() {
                 fontSize: "14px",
               }}
             >
-              Sign messages using PKP as a viem account (replaces PKPEthers).
+              Sign a message using your PKP wallet.
             </p>
 
-            <input
-              type="text"
-              value={viemAccountMessage}
-              onChange={(e) => setViemAccountMessage(e.target.value)}
+            <textarea
+              value={messageToSign}
+              onChange={(e) => setMessageToSign(e.target.value)}
               placeholder="Enter message to sign..."
               style={{
                 width: "100%",
+                height: "80px",
                 padding: "12px",
                 border: "1px solid #d1d5db",
                 borderRadius: "8px",
                 fontSize: "14px",
                 marginBottom: "12px",
+                resize: "vertical",
                 color: "#374151",
                 backgroundColor: "#ffffff",
               }}
             />
 
             <button
-              onClick={signWithViemAccount}
-              disabled={isSigningViem || !viemAccountMessage.trim()}
+              onClick={signMessage}
+              disabled={isSigningMessage || !messageToSign.trim()}
               style={{
                 width: "100%",
                 padding: "12px",
-                backgroundColor: isSigningViem ? "#9ca3af" : "#7c3aed",
+                backgroundColor: isSigningMessage ? "#9ca3af" : "#3b82f6",
                 color: "white",
                 border: "none",
                 borderRadius: "8px",
                 fontSize: "14px",
                 fontWeight: "500",
-                cursor: isSigningViem ? "not-allowed" : "pointer",
+                cursor: isSigningMessage ? "not-allowed" : "pointer",
               }}
             >
-              {isSigningViem ? "Signing..." : "Sign with Viem Account"}
+              {isSigningMessage ? "Signing..." : "Sign Message"}
             </button>
 
-            {viemSignature && (
+            {signedMessage && (
               <div
                 style={{
                   marginTop: "16px",
@@ -1630,7 +1998,7 @@ export default function ProtectedApp() {
                     fontSize: "14px",
                   }}
                 >
-                  ✅ Viem Signature
+                  ✅ Message Signed
                 </h4>
                 <div
                   style={{
@@ -1639,16 +2007,14 @@ export default function ProtectedApp() {
                     wordBreak: "break-all",
                   }}
                 >
-                  <strong>Address:</strong> {viemSignature.address}
-                  <br />
                   <strong>Signature:</strong>{" "}
-                  {viemSignature.signature?.slice(0, 40)}...
+                  {signedMessage.signature?.slice(0, 40)}...
                 </div>
               </div>
             )}
           </div>
 
-          {/* Send Transaction */}
+          {/* Encrypt/Decrypt */}
           <div
             style={{
               padding: "20px",
@@ -1656,27 +2022,11 @@ export default function ProtectedApp() {
               borderRadius: "12px",
               border: "1px solid #e5e7eb",
               boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
-              position: "relative",
+              marginBottom: "20px",
             }}
           >
-            <div
-              style={{
-                position: "absolute",
-                top: "12px",
-                right: "12px",
-                padding: "4px 8px",
-                backgroundColor: "#f59e0b",
-                color: "white",
-                borderRadius: "12px",
-                fontSize: "10px",
-                fontWeight: "600",
-                textTransform: "uppercase",
-              }}
-            >
-              Viem Integration
-            </div>
             <h3 style={{ margin: "0 0 16px 0", color: "#1f2937" }}>
-              💸 Send Transaction
+              🔐 Encrypt & Decrypt
             </h3>
             <p
               style={{
@@ -1685,70 +2035,236 @@ export default function ProtectedApp() {
                 fontSize: "14px",
               }}
             >
-              Send ETH using your PKP wallet via Viem (replaces PKPEthers).
+              Encrypt data that only your PKP can decrypt.
             </p>
 
-            <input
-              type="text"
-              value={recipientAddress}
-              onChange={(e) => setRecipientAddress(e.target.value)}
-              placeholder="Recipient address (0x...)"
+            <textarea
+              value={messageToEncrypt}
+              onChange={(e) => setMessageToEncrypt(e.target.value)}
+              placeholder="Enter message to encrypt..."
               style={{
                 width: "100%",
+                height: "80px",
                 padding: "12px",
                 border: "1px solid #d1d5db",
                 borderRadius: "8px",
                 fontSize: "14px",
-                fontFamily: "monospace",
                 marginBottom: "12px",
+                resize: "vertical",
                 color: "#374151",
                 backgroundColor: "#ffffff",
               }}
             />
 
-            <input
-              type="number"
-              value={sendAmount}
-              onChange={(e) => setSendAmount(e.target.value)}
-              placeholder="Amount in ETH"
-              step="0.001"
-              min="0"
+            <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+              <button
+                onClick={encryptData}
+                disabled={isEncrypting || !messageToEncrypt.trim()}
+                style={{
+                  flex: 1,
+                  padding: "12px",
+                  backgroundColor: isEncrypting ? "#9ca3af" : "#7c3aed",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                  cursor: isEncrypting ? "not-allowed" : "pointer",
+                }}
+              >
+                {isEncrypting ? "Encrypting..." : "Encrypt"}
+              </button>
+
+              <button
+                onClick={decryptData}
+                disabled={isDecrypting || !encryptedData}
+                style={{
+                  flex: 1,
+                  padding: "12px",
+                  backgroundColor: isDecrypting ? "#9ca3af" : "#059669",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                  cursor:
+                    isDecrypting || !encryptedData ? "not-allowed" : "pointer",
+                }}
+              >
+                {isDecrypting ? "Decrypting..." : "Decrypt"}
+              </button>
+            </div>
+
+            {encryptedData && (
+              <div
+                style={{
+                  marginBottom: "12px",
+                  padding: "12px",
+                  backgroundColor: "#fef3c7",
+                  border: "1px solid #fbbf24",
+                  borderRadius: "8px",
+                }}
+              >
+                <h4
+                  style={{
+                    margin: "0 0 8px 0",
+                    color: "#92400e",
+                    fontSize: "14px",
+                  }}
+                >
+                  🔒 Data Encrypted
+                </h4>
+                <div
+                  style={{
+                    fontSize: "12px",
+                    color: "#92400e",
+                    marginBottom: "8px",
+                  }}
+                >
+                  Encrypted at:{" "}
+                  {new Date(encryptedData.timestamp).toLocaleString()}
+                </div>
+                <div
+                  style={{
+                    fontSize: "11px",
+                    fontFamily: "monospace",
+                    color: "#92400e",
+                    backgroundColor: "#fef8e1",
+                    padding: "8px",
+                    borderRadius: "4px",
+                    border: "1px solid #f59e0b",
+                    wordBreak: "break-all",
+                    maxHeight: "120px",
+                    overflow: "auto",
+                  }}
+                >
+                  <div style={{ marginBottom: "6px" }}>
+                    <strong>Ciphertext:</strong>{" "}
+                    {encryptedData.ciphertext || "N/A"}
+                  </div>
+                  <div style={{ marginBottom: "6px" }}>
+                    <strong>Data Hash:</strong>{" "}
+                    {encryptedData.dataToEncryptHash || "N/A"}
+                  </div>
+                  {encryptedData.originalMessage && (
+                    <div style={{ marginBottom: "6px" }}>
+                      <strong>Original:</strong> "
+                      {encryptedData.originalMessage}"
+                    </div>
+                  )}
+                  {encryptedData.pkpAddress && (
+                    <div>
+                      <strong>PKP Address:</strong> {encryptedData.pkpAddress}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {decryptedMessage && (
+              <div
+                style={{
+                  padding: "12px",
+                  backgroundColor: "#f0fdf4",
+                  border: "1px solid #bbf7d0",
+                  borderRadius: "8px",
+                }}
+              >
+                <h4
+                  style={{
+                    margin: "0 0 8px 0",
+                    color: "#15803d",
+                    fontSize: "14px",
+                  }}
+                >
+                  🔓 Decrypted Message
+                </h4>
+                <div
+                  style={{
+                    fontSize: "14px",
+                    color: "#15803d",
+                    fontStyle: "italic",
+                  }}
+                >
+                  "{decryptedMessage}"
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Execute Lit Action */}
+          <div
+            style={{
+              padding: "20px",
+              backgroundColor: "#ffffff",
+              borderRadius: "12px",
+              border: "1px solid #e5e7eb",
+              boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+              marginBottom: "20px",
+            }}
+          >
+            <h3 style={{ margin: "0 0 16px 0", color: "#1f2937" }}>
+              ⚡ Execute Lit Action
+            </h3>
+            <p
               style={{
-                width: "100%",
-                padding: "12px",
+                margin: "0 0 16px 0",
+                color: "#6b7280",
+                fontSize: "14px",
+              }}
+            >
+              Run custom JavaScript code with your PKP.
+            </p>
+
+            <div
+              style={{
                 border: "1px solid #d1d5db",
                 borderRadius: "8px",
-                fontSize: "14px",
+                overflow: "hidden",
                 marginBottom: "12px",
-                color: "#374151",
-                backgroundColor: "#ffffff",
               }}
-            />
+            >
+              <Editor
+                value={litActionCode}
+                onChange={(value) => setLitActionCode(value || "")}
+                language="javascript"
+                theme="vs-dark"
+                options={{
+                  minimap: { enabled: false },
+                  wordWrap: "on",
+                  fontSize: 10,
+                  padding: { top: 12, bottom: 12 },
+                  scrollBeyondLastLine: false,
+                  automaticLayout: true,
+                  lineNumbers: "on",
+                  folding: false,
+                  lineDecorationsWidth: 0,
+                  lineNumbersMinChars: 3,
+                }}
+                height="200px"
+                width="100%"
+              />
+            </div>
 
             <button
-              onClick={sendTransaction}
-              disabled={
-                isSendingTransaction || !recipientAddress || !sendAmount
-              }
+              onClick={executeLitAction}
+              disabled={isExecutingAction || !litActionCode.trim()}
               style={{
                 width: "100%",
                 padding: "12px",
-                backgroundColor: isSendingTransaction ? "#9ca3af" : "#dc2626",
+                backgroundColor: isExecutingAction ? "#9ca3af" : "#dc2626",
                 color: "white",
                 border: "none",
                 borderRadius: "8px",
                 fontSize: "14px",
                 fontWeight: "500",
-                cursor:
-                  isSendingTransaction || !recipientAddress || !sendAmount
-                    ? "not-allowed"
-                    : "pointer",
+                cursor: isExecutingAction ? "not-allowed" : "pointer",
               }}
             >
-              {isSendingTransaction ? "Sending..." : "Send Transaction"}
+              {isExecutingAction ? "Executing..." : "Execute Lit Action"}
             </button>
 
-            {transactionResult && (
+            {litActionResult && (
               <div
                 style={{
                   marginTop: "16px",
@@ -1765,61 +2281,1784 @@ export default function ProtectedApp() {
                     fontSize: "14px",
                   }}
                 >
-                  ✅ Transaction Sent
+                  ✅ Execution Result
                 </h4>
-                <div
+                <pre
                   style={{
                     fontSize: "11px",
                     fontFamily: "monospace",
-                    wordBreak: "break-all",
                     color: "#15803d",
+                    overflow: "auto",
+                    maxHeight: "100px",
+                    margin: 0,
                   }}
                 >
-                  <div style={{ marginBottom: "4px" }}>
-                    <strong>Hash:</strong>{" "}
-                    <a
-                      href={`${
-                        transactionResult.explorerUrl ||
-                        "https://yellowstone-explorer.litprotocol.com"
-                      }/tx/${transactionResult.hash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        color: "#1d4ed8",
-                        textDecoration: "underline",
-                        cursor: "pointer",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.color = "#2563eb";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.color = "#1d4ed8";
-                      }}
-                    >
-                      {transactionResult.hash}
-                    </a>
-                  </div>
-                  <div style={{ marginBottom: "4px" }}>
-                    <strong>Network:</strong>{" "}
-                    {transactionResult.chainName || "Unknown"}
-                    {transactionResult.chainId &&
-                      ` (ID: ${transactionResult.chainId})`}
-                  </div>
-                  <div style={{ marginBottom: "4px" }}>
-                    <strong>To:</strong> {transactionResult.to}
-                  </div>
-                  <div>
-                    <strong>Value:</strong> {transactionResult.value}{" "}
-                    {SUPPORTED_CHAINS[
-                      selectedChain as keyof typeof SUPPORTED_CHAINS
-                    ]?.symbol || "ETH"}
-                  </div>
-                </div>
+                  {JSON.stringify(litActionResult.result, null, 2)}
+                </pre>
               </div>
             )}
           </div>
-        </div>
-      </div>
+
+          {/* Chain Selection */}
+          <div style={{ marginBottom: "30px" }}>
+            <div
+              style={{
+                marginBottom: "20px",
+                padding: "16px 20px",
+                background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                borderRadius: "12px",
+                color: "white",
+                textAlign: "center",
+              }}
+            >
+              <h2
+                style={{
+                  margin: "0 0 8px 0",
+                  fontSize: "20px",
+                  fontWeight: "700",
+                }}
+              >
+                🔧 PKP Viem Integrations
+              </h2>
+              <p
+                style={{
+                  margin: "0",
+                  fontSize: "14px",
+                  opacity: 0.9,
+                  lineHeight: "1.4",
+                }}
+              >
+                Explore how PKPs integrate with popular web3 libraries like Viem
+                for enhanced functionality.
+              </p>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
+                gap: "20px",
+              }}
+            >
+              {/* PKP Viem Account Signing */}
+              <div
+                style={{
+                  padding: "20px",
+                  backgroundColor: "#ffffff",
+                  borderRadius: "12px",
+                  border: "1px solid #e5e7eb",
+                  boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+                  position: "relative",
+                }}
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "12px",
+                    right: "12px",
+                    padding: "4px 8px",
+                    backgroundColor: "#f59e0b",
+                    color: "white",
+                    borderRadius: "12px",
+                    fontSize: "10px",
+                    fontWeight: "600",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Viem Integration
+                </div>
+                <h3 style={{ margin: "0 0 16px 0", color: "#1f2937" }}>
+                  🔑 PKP Viem Account
+                </h3>
+                <p
+                  style={{
+                    margin: "0 0 16px 0",
+                    color: "#6b7280",
+                    fontSize: "14px",
+                  }}
+                >
+                  Sign messages using PKP as a viem account (replaces
+                  PKPEthers).
+                </p>
+
+                <input
+                  type="text"
+                  value={viemAccountMessage}
+                  onChange={(e) => setViemAccountMessage(e.target.value)}
+                  placeholder="Enter message to sign..."
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    marginBottom: "12px",
+                    color: "#374151",
+                    backgroundColor: "#ffffff",
+                  }}
+                />
+
+                <button
+                  onClick={signWithViemAccount}
+                  disabled={isSigningViem || !viemAccountMessage.trim()}
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    backgroundColor: isSigningViem ? "#9ca3af" : "#7c3aed",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    cursor: isSigningViem ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {isSigningViem ? "Signing..." : "Sign with Viem Account"}
+                </button>
+
+                {viemSignature && (
+                  <div
+                    style={{
+                      marginTop: "16px",
+                      padding: "12px",
+                      backgroundColor: "#f0fdf4",
+                      border: "1px solid #bbf7d0",
+                      borderRadius: "8px",
+                    }}
+                  >
+                    <h4
+                      style={{
+                        margin: "0 0 8px 0",
+                        color: "#15803d",
+                        fontSize: "14px",
+                      }}
+                    >
+                      ✅ Viem Signature
+                    </h4>
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        fontFamily: "monospace",
+                        wordBreak: "break-all",
+                      }}
+                    >
+                      <strong>Address:</strong> {viemSignature.address}
+                      <br />
+                      <strong>Signature:</strong>{" "}
+                      {viemSignature.signature?.slice(0, 40)}...
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Send Transaction */}
+              <div
+                style={{
+                  padding: "20px",
+                  backgroundColor: "#ffffff",
+                  borderRadius: "12px",
+                  border: "1px solid #e5e7eb",
+                  boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+                  position: "relative",
+                }}
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "12px",
+                    right: "12px",
+                    padding: "4px 8px",
+                    backgroundColor: "#f59e0b",
+                    color: "white",
+                    borderRadius: "12px",
+                    fontSize: "10px",
+                    fontWeight: "600",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Viem Integration
+                </div>
+                <h3 style={{ margin: "0 0 16px 0", color: "#1f2937" }}>
+                  💸 Send Transaction
+                </h3>
+                <p
+                  style={{
+                    margin: "0 0 16px 0",
+                    color: "#6b7280",
+                    fontSize: "14px",
+                  }}
+                >
+                  Send ETH using your PKP wallet via Viem (replaces PKPEthers).
+                </p>
+
+                <input
+                  type="text"
+                  value={recipientAddress}
+                  onChange={(e) => setRecipientAddress(e.target.value)}
+                  placeholder="Recipient address (0x...)"
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    fontFamily: "monospace",
+                    marginBottom: "12px",
+                    color: "#374151",
+                    backgroundColor: "#ffffff",
+                  }}
+                />
+
+                <input
+                  type="number"
+                  value={sendAmount}
+                  onChange={(e) => setSendAmount(e.target.value)}
+                  placeholder="Amount in ETH"
+                  step="0.001"
+                  min="0"
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    marginBottom: "12px",
+                    color: "#374151",
+                    backgroundColor: "#ffffff",
+                  }}
+                />
+
+                <button
+                  onClick={sendTransaction}
+                  disabled={
+                    isSendingTransaction || !recipientAddress || !sendAmount
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    backgroundColor: isSendingTransaction
+                      ? "#9ca3af"
+                      : "#dc2626",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    cursor:
+                      isSendingTransaction || !recipientAddress || !sendAmount
+                        ? "not-allowed"
+                        : "pointer",
+                  }}
+                >
+                  {isSendingTransaction ? "Sending..." : "Send Transaction"}
+                </button>
+
+                {transactionResult && (
+                  <div
+                    style={{
+                      marginTop: "16px",
+                      padding: "12px",
+                      backgroundColor: "#f0fdf4",
+                      border: "1px solid #bbf7d0",
+                      borderRadius: "8px",
+                    }}
+                  >
+                    <h4
+                      style={{
+                        margin: "0 0 8px 0",
+                        color: "#15803d",
+                        fontSize: "14px",
+                      }}
+                    >
+                      ✅ Transaction Sent
+                    </h4>
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        fontFamily: "monospace",
+                        wordBreak: "break-all",
+                        color: "#15803d",
+                      }}
+                    >
+                      <div style={{ marginBottom: "4px" }}>
+                        <strong>Hash:</strong>{" "}
+                        <a
+                          href={`${
+                            transactionResult.explorerUrl ||
+                            "https://yellowstone-explorer.litprotocol.com"
+                          }/tx/${transactionResult.hash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            color: "#1d4ed8",
+                            textDecoration: "underline",
+                            cursor: "pointer",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.color = "#2563eb";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.color = "#1d4ed8";
+                          }}
+                        >
+                          {transactionResult.hash}
+                        </a>
+                      </div>
+                      <div style={{ marginBottom: "4px" }}>
+                        <strong>Network:</strong>{" "}
+                        {transactionResult.chainName || "Unknown"}
+                        {transactionResult.chainId &&
+                          ` (ID: ${transactionResult.chainId})`}
+                      </div>
+                      <div style={{ marginBottom: "4px" }}>
+                        <strong>To:</strong> {transactionResult.to}
+                      </div>
+                      <div>
+                        <strong>Value:</strong> {transactionResult.value}{" "}
+                        {SUPPORTED_CHAINS[
+                          selectedChain as keyof typeof SUPPORTED_CHAINS
+                        ]?.symbol || "ETH"}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {activeTab === "permissions" && (
+        <>
+          {/* PKP Permissions Dashboard Header */}
+          <div
+            style={{
+              marginBottom: "20px",
+              padding: "16px 20px",
+              background: "linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)",
+              borderRadius: "12px",
+              color: "white",
+              textAlign: "center",
+            }}
+          >
+            <h2
+              style={{
+                margin: "0 0 8px 0",
+                fontSize: "20px",
+                fontWeight: "700",
+              }}
+            >
+              🔐 PKP Permissions Dashboard
+            </h2>
+            <p
+              style={{
+                margin: "0",
+                fontSize: "14px",
+                opacity: 0.9,
+                lineHeight: "1.4",
+              }}
+            >
+              Manage what your PKP wallet can do. Add actions, addresses, and
+              control permissions.
+            </p>
+          </div>
+
+          {/* Status Messages for Permissions Operations */}
+          {status && (
+            <div
+              style={{
+                marginBottom: "20px",
+                padding: "12px 16px",
+                backgroundColor: status.includes("✅") ? "#f0fdf4" : "#eff6ff",
+                border: `1px solid ${
+                  status.includes("✅") ? "#bbf7d0" : "#bfdbfe"
+                }`,
+                borderRadius: "8px",
+                color: status.includes("✅") ? "#15803d" : "#1e40af",
+                fontSize: "14px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <div style={{ flex: 1 }}>
+                {status.includes("Transaction:") ? (
+                  <div>
+                    <div style={{ marginBottom: "8px" }}>
+                      {status.split("Transaction:")[0].trim()}
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                      }}
+                    >
+                      <span style={{ fontSize: "12px", fontWeight: "500" }}>
+                        Transaction Hash:
+                      </span>
+                      <a
+                        href={`https://yellowstone-explorer.litprotocol.com/tx/${status
+                          .split("Transaction:")[1]
+                          .trim()}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          color: "#1d4ed8",
+                          textDecoration: "underline",
+                          fontFamily: "monospace",
+                          fontSize: "11px",
+                          fontWeight: "500",
+                          cursor: "pointer",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = "#2563eb";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = "#1d4ed8";
+                        }}
+                      >
+                        {status.split("Transaction:")[1].trim()}
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  status
+                )}
+              </div>
+              <button
+                onClick={() => setStatus("")}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "inherit",
+                  fontSize: "16px",
+                  cursor: "pointer",
+                  padding: "4px",
+                  borderRadius: "4px",
+                  opacity: 0.7,
+                  transition: "opacity 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.opacity = "1";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.opacity = "0.7";
+                }}
+                title="Dismiss"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          {/* Google-style Dashboard Summary Cards */}
+          {permissionsContext && (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gap: "16px",
+                marginBottom: "30px",
+              }}
+            >
+              {/* Actions Summary Card */}
+              <div
+                style={{
+                  padding: "20px",
+                  backgroundColor: "#ffffff",
+                  borderRadius: "12px",
+                  border: "1px solid #e5e7eb",
+                  boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+                  textAlign: "center",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "36px",
+                    fontWeight: "bold",
+                    color: "#3b82f6",
+                    marginBottom: "8px",
+                  }}
+                >
+                  {permissionsContext?.actions?.length || 0}
+                </div>
+                <div
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    color: "#374151",
+                    marginBottom: "4px",
+                  }}
+                >
+                  ⚡ Permitted Actions
+                </div>
+                <div
+                  style={{
+                    fontSize: "12px",
+                    color: "#6b7280",
+                  }}
+                >
+                  Lit Actions this PKP can execute
+                </div>
+              </div>
+
+              {/* Addresses Summary Card */}
+              <div
+                style={{
+                  padding: "20px",
+                  backgroundColor: "#ffffff",
+                  borderRadius: "12px",
+                  border: "1px solid #e5e7eb",
+                  boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+                  textAlign: "center",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "36px",
+                    fontWeight: "bold",
+                    color: "#059669",
+                    marginBottom: "8px",
+                  }}
+                >
+                  {permissionsContext?.addresses?.length || 0}
+                </div>
+                <div
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    color: "#374151",
+                    marginBottom: "4px",
+                  }}
+                >
+                  🏠 Permitted Addresses
+                </div>
+                <div
+                  style={{
+                    fontSize: "12px",
+                    color: "#6b7280",
+                  }}
+                >
+                  Addresses that can use this PKP
+                </div>
+              </div>
+
+              {/* Auth Methods Summary Card */}
+              <div
+                style={{
+                  padding: "20px",
+                  backgroundColor: "#ffffff",
+                  borderRadius: "12px",
+                  border: "1px solid #e5e7eb",
+                  boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+                  textAlign: "center",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "36px",
+                    fontWeight: "bold",
+                    color: "#7c3aed",
+                    marginBottom: "8px",
+                  }}
+                >
+                  {permissionsContext?.authMethods?.length || 0}
+                </div>
+                <div
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    color: "#374151",
+                    marginBottom: "4px",
+                  }}
+                >
+                  🔑 Auth Methods
+                </div>
+                <div
+                  style={{
+                    fontSize: "12px",
+                    color: "#6b7280",
+                  }}
+                >
+                  Authentication methods linked
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Current Permissions Detail View */}
+          <div
+            style={{
+              marginBottom: "30px",
+              padding: "20px",
+              backgroundColor: "#ffffff",
+              borderRadius: "12px",
+              border: "1px solid #e5e7eb",
+              boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "16px",
+              }}
+            >
+              <h3 style={{ margin: 0, color: "#1f2937" }}>
+                📋 Current Permissions
+              </h3>
+              <button
+                onClick={loadPermissionsContext}
+                disabled={isLoadingPermissions}
+                style={{
+                  padding: "8px 16px",
+                  backgroundColor: isLoadingPermissions ? "#9ca3af" : "#3b82f6",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "6px",
+                  fontSize: "12px",
+                  fontWeight: "500",
+                  cursor: isLoadingPermissions ? "not-allowed" : "pointer",
+                }}
+              >
+                {isLoadingPermissions ? "Loading..." : "🔄 Refresh"}
+              </button>
+            </div>
+
+            {!permissionsContext && !isLoadingPermissions && (
+              <div
+                style={{
+                  padding: "16px",
+                  backgroundColor: "#f3f4f6",
+                  borderRadius: "8px",
+                  textAlign: "center",
+                  color: "#6b7280",
+                }}
+              >
+                No permissions loaded. Click "Refresh" to load current
+                permissions.
+              </div>
+            )}
+
+            {isLoadingPermissions && (
+              <div
+                style={{
+                  padding: "16px",
+                  backgroundColor: "#f3f4f6",
+                  borderRadius: "8px",
+                  textAlign: "center",
+                  color: "#6b7280",
+                }}
+              >
+                Loading permissions...
+              </div>
+            )}
+
+            {permissionsContext && (
+              <div style={{ display: "grid", gap: "16px" }}>
+                {/* Permitted Actions */}
+                {permissionsContext.actions &&
+                  permissionsContext.actions.length > 0 && (
+                    <div>
+                      <h4
+                        style={{
+                          margin: "0 0 12px 0",
+                          color: "#374151",
+                          fontSize: "16px",
+                        }}
+                      >
+                        ⚡ Permitted Actions (
+                        {permissionsContext.actions.length})
+                      </h4>
+                      <div style={{ display: "grid", gap: "8px" }}>
+                        {permissionsContext.actions.map(
+                          (action: string, index: number) => (
+                            <div
+                              key={index}
+                              style={{
+                                padding: "12px",
+                                backgroundColor: "#f0f9ff",
+                                border: "1px solid #bfdbfe",
+                                borderRadius: "6px",
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                              }}
+                            >
+                              <div style={{ flex: 1 }}>
+                                <div
+                                  style={{
+                                    fontSize: "13px",
+                                    fontFamily: "monospace",
+                                    color: "#1e40af",
+                                    marginBottom: "4px",
+                                  }}
+                                >
+                                  <a
+                                    href={`https://explorer.litprotocol.com/ipfs/${action}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                      color: "#1e40af",
+                                      textDecoration: "underline",
+                                      cursor: "pointer",
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.color = "#1d4ed8";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.color = "#1e40af";
+                                    }}
+                                  >
+                                    {action}
+                                  </a>
+                                </div>
+                                <div
+                                  style={{ fontSize: "11px", color: "#6b7280" }}
+                                >
+                                  📎 IPFS CID (Lit Action Identifier) - Click to
+                                  view
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => removePermittedAction(action)}
+                                disabled={removingItems.has(action)}
+                                style={{
+                                  padding: "4px 8px",
+                                  backgroundColor: "#ef4444",
+                                  color: "white",
+                                  border: "none",
+                                  borderRadius: "4px",
+                                  fontSize: "11px",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                {removingItems.has(action) ? "..." : "Remove"}
+                              </button>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                {/* Permitted Addresses */}
+                {permissionsContext.addresses &&
+                  permissionsContext.addresses.length > 0 && (
+                    <div>
+                      <h4
+                        style={{
+                          margin: "0 0 12px 0",
+                          color: "#374151",
+                          fontSize: "16px",
+                        }}
+                      >
+                        🏠 Permitted Addresses (
+                        {permissionsContext.addresses.length})
+                      </h4>
+                      <div style={{ display: "grid", gap: "8px" }}>
+                        {permissionsContext.addresses.map(
+                          (address: string, index: number) => (
+                            <div
+                              key={index}
+                              style={{
+                                padding: "12px",
+                                backgroundColor: "#f0fdf4",
+                                border: "1px solid #bbf7d0",
+                                borderRadius: "6px",
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                              }}
+                            >
+                              <div style={{ flex: 1 }}>
+                                <div
+                                  style={{
+                                    fontSize: "13px",
+                                    fontFamily: "monospace",
+                                    color: "#15803d",
+                                    marginBottom: "4px",
+                                  }}
+                                >
+                                  {address}
+                                </div>
+                                <div
+                                  style={{ fontSize: "11px", color: "#6b7280" }}
+                                >
+                                  Ethereum Address
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => removePermittedAddress(address)}
+                                disabled={removingItems.has(address)}
+                                style={{
+                                  padding: "4px 8px",
+                                  backgroundColor: removingItems.has(address)
+                                    ? "#9ca3af"
+                                    : "#ef4444",
+                                  color: "white",
+                                  border: "none",
+                                  borderRadius: "4px",
+                                  fontSize: "11px",
+                                  cursor: removingItems.has(address)
+                                    ? "not-allowed"
+                                    : "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  gap: "4px",
+                                  minWidth: "60px",
+                                }}
+                              >
+                                {removingItems.has(address) ? (
+                                  <>
+                                    <div
+                                      style={{
+                                        width: "10px",
+                                        height: "10px",
+                                        border: "1px solid #ffffff",
+                                        borderTop: "1px solid transparent",
+                                        borderRadius: "50%",
+                                        animation: "spin 1s linear infinite",
+                                      }}
+                                    />
+                                    Removing...
+                                  </>
+                                ) : (
+                                  "Remove"
+                                )}
+                              </button>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                {/* Auth Methods */}
+                {permissionsContext.authMethods &&
+                  permissionsContext.authMethods.length > 0 && (
+                    <div>
+                      <h4
+                        style={{
+                          margin: "0 0 12px 0",
+                          color: "#374151",
+                          fontSize: "16px",
+                        }}
+                      >
+                        🔑 Auth Methods ({permissionsContext.authMethods.length}
+                        )
+                      </h4>
+                      <div style={{ display: "grid", gap: "8px" }}>
+                        {permissionsContext.authMethods.map(
+                          (authMethod: any, index: number) => {
+                            const authType = Number(authMethod.authMethodType);
+                            const isLitAction =
+                              authType === AUTH_METHOD_TYPE.LitAction;
+                            const displayId =
+                              isLitAction && authMethod.id
+                                ? hexToIpfsCid(authMethod.id)
+                                : authMethod.id || "";
+
+                            return (
+                              <div
+                                key={index}
+                                style={{
+                                  padding: "12px",
+                                  backgroundColor: "#faf5ff",
+                                  border: "1px solid #ddd6fe",
+                                  borderRadius: "6px",
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    fontSize: "13px",
+                                    fontFamily: "monospace",
+                                    color: "#7c3aed",
+                                    marginBottom: "4px",
+                                  }}
+                                >
+                                  {isLitAction ? (
+                                    <a
+                                      href={`https://explorer.litprotocol.com/ipfs/${displayId}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      style={{
+                                        color: "#7c3aed",
+                                        textDecoration: "underline",
+                                        cursor: "pointer",
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.style.color = "#5b21b6";
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.color = "#7c3aed";
+                                      }}
+                                    >
+                                      {displayId}
+                                    </a>
+                                  ) : (
+                                    displayId
+                                  )}
+                                </div>
+                                <div
+                                  style={{
+                                    fontSize: "11px",
+                                    color: "#6b7280",
+                                    marginBottom: "4px",
+                                  }}
+                                >
+                                  <strong>Type:</strong>{" "}
+                                  {getAuthMethodTypeName(authType)}
+                                  {isLitAction && (
+                                    <span
+                                      style={{
+                                        color: "#059669",
+                                        marginLeft: "8px",
+                                      }}
+                                    >
+                                      📎 (IPFS Link)
+                                    </span>
+                                  )}
+                                </div>
+                                {authMethod.scopes &&
+                                  authMethod.scopes.length > 0 && (
+                                    <div
+                                      style={{
+                                        fontSize: "11px",
+                                        color: "#6b7280",
+                                      }}
+                                    >
+                                      <strong>Scopes:</strong>{" "}
+                                      {Array.isArray(authMethod.scopes)
+                                        ? authMethod.scopes.join(", ")
+                                        : authMethod.scopes}
+                                    </div>
+                                  )}
+                                {authMethod.scopes &&
+                                  authMethod.scopes.length === 0 && (
+                                    <div
+                                      style={{
+                                        fontSize: "11px",
+                                        color: "#ef4444",
+                                      }}
+                                    >
+                                      <strong>Scopes:</strong> None (no
+                                      permissions)
+                                    </div>
+                                  )}
+                              </div>
+                            );
+                          }
+                        )}
+                      </div>
+                    </div>
+                  )}
+              </div>
+            )}
+          </div>
+
+          {/* Permission Management Cards */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))",
+              gap: "20px",
+              marginBottom: "20px",
+            }}
+          >
+            {/* Add Action Permission */}
+            <div
+              style={{
+                padding: "20px",
+                backgroundColor: "#ffffff",
+                borderRadius: "12px",
+                border: "1px solid #e5e7eb",
+                boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+              }}
+            >
+              <h3 style={{ margin: "0 0 16px 0", color: "#1f2937" }}>
+                ➕ Add Action Permission
+              </h3>
+              <p
+                style={{
+                  margin: "0 0 16px 0",
+                  color: "#6b7280",
+                  fontSize: "14px",
+                }}
+              >
+                Allow your PKP to execute a specific Lit Action.
+              </p>
+
+              <input
+                type="text"
+                value={newActionIpfsId}
+                onChange={(e) => setNewActionIpfsId(e.target.value)}
+                placeholder="IPFS ID (e.g., QmPK1s3pNYLi9ERiq3BDxKa4XosgWwFRQUydHUtz4YgpqB)"
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  marginBottom: "16px",
+                  fontFamily: "monospace",
+                }}
+              />
+
+              {/* Scope Checkboxes */}
+              <div style={{ marginBottom: "16px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    color: "#374151",
+                  }}
+                >
+                  🎯 Scopes (select permissions):
+                </label>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                  }}
+                >
+                  {AVAILABLE_SCOPES.map((scope) => (
+                    <label
+                      key={scope.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "8px 12px",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: "6px",
+                        backgroundColor: newActionSelectedScopes.includes(
+                          scope.id
+                        )
+                          ? "#eff6ff"
+                          : "#ffffff",
+                        cursor: "pointer",
+                        transition: "all 0.2s",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={newActionSelectedScopes.includes(scope.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setNewActionSelectedScopes([
+                              ...newActionSelectedScopes,
+                              scope.id,
+                            ]);
+                          } else {
+                            setNewActionSelectedScopes(
+                              newActionSelectedScopes.filter(
+                                (s) => s !== scope.id
+                              )
+                            );
+                          }
+                        }}
+                        style={{
+                          width: "16px",
+                          height: "16px",
+                          cursor: "pointer",
+                        }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div
+                          style={{
+                            fontSize: "13px",
+                            fontWeight: "500",
+                            color: "#374151",
+                          }}
+                        >
+                          {scope.label}
+                        </div>
+                        <div style={{ fontSize: "11px", color: "#6b7280" }}>
+                          {scope.description}
+                        </div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                onClick={addPermittedAction}
+                disabled={
+                  isAddingAction ||
+                  !newActionIpfsId.trim() ||
+                  newActionSelectedScopes.length === 0
+                }
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  backgroundColor:
+                    isAddingAction ||
+                    !newActionIpfsId.trim() ||
+                    newActionSelectedScopes.length === 0
+                      ? "#9ca3af"
+                      : "#059669",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                  cursor:
+                    isAddingAction ||
+                    !newActionIpfsId.trim() ||
+                    newActionSelectedScopes.length === 0
+                      ? "not-allowed"
+                      : "pointer",
+                }}
+              >
+                {isAddingAction ? "Adding..." : "Add Action Permission"}
+              </button>
+
+              {/* Action Status Display */}
+              {actionStatus && (
+                <div
+                  style={{
+                    marginTop: "16px",
+                    padding: "12px 16px",
+                    backgroundColor: actionStatus.includes("✅")
+                      ? "#f0fdf4"
+                      : "#fef2f2",
+                    border: `1px solid ${
+                      actionStatus.includes("✅") ? "#bbf7d0" : "#fecaca"
+                    }`,
+                    borderRadius: "8px",
+                    color: actionStatus.includes("✅") ? "#15803d" : "#dc2626",
+                    fontSize: "14px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    {actionStatus.includes("Transaction:") ? (
+                      <div>
+                        <div style={{ marginBottom: "8px" }}>
+                          {actionStatus.split("Transaction:")[0].trim()}
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                          }}
+                        >
+                          <span style={{ fontSize: "12px", fontWeight: "500" }}>
+                            Transaction Hash:
+                          </span>
+                          <a
+                            href={`https://yellowstone-explorer.litprotocol.com/tx/${actionStatus
+                              .split("Transaction:")[1]
+                              .trim()}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              color: "#1d4ed8",
+                              textDecoration: "underline",
+                              fontFamily: "monospace",
+                              fontSize: "11px",
+                              fontWeight: "500",
+                              cursor: "pointer",
+                            }}
+                          >
+                            {formatTxHash(
+                              actionStatus.split("Transaction:")[1].trim()
+                            )}
+                          </a>
+                          <button
+                            onClick={() =>
+                              copyToClipboard(
+                                actionStatus.split("Transaction:")[1].trim(),
+                                "Transaction Hash"
+                              )
+                            }
+                            style={{
+                              background: "none",
+                              border: "1px solid #e5e7eb",
+                              borderRadius: "4px",
+                              padding: "2px 6px",
+                              fontSize: "10px",
+                              cursor: "pointer",
+                              color: "#6b7280",
+                            }}
+                            title="Copy full hash"
+                          >
+                            📋
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      actionStatus
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setActionStatus("")}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "inherit",
+                      fontSize: "16px",
+                      cursor: "pointer",
+                      padding: "4px",
+                      borderRadius: "4px",
+                      opacity: 0.7,
+                    }}
+                    title="Dismiss"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Add Address Permission */}
+            <div
+              style={{
+                padding: "20px",
+                backgroundColor: "#ffffff",
+                borderRadius: "12px",
+                border: "1px solid #e5e7eb",
+                boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+              }}
+            >
+              <h3 style={{ margin: "0 0 16px 0", color: "#1f2937" }}>
+                🏠 Add Address Permission
+              </h3>
+              <p
+                style={{
+                  margin: "0 0 16px 0",
+                  color: "#6b7280",
+                  fontSize: "14px",
+                }}
+              >
+                Allow a specific address to use your PKP.
+              </p>
+
+              <input
+                type="text"
+                value={newPermittedAddress}
+                onChange={(e) => setNewPermittedAddress(e.target.value)}
+                placeholder="Ethereum Address (0x...)"
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  marginBottom: "16px",
+                  fontFamily: "monospace",
+                }}
+              />
+
+              {/* Scope Checkboxes for Address */}
+              <div style={{ marginBottom: "16px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    color: "#374151",
+                  }}
+                >
+                  🎯 Scopes (select permissions):
+                </label>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                  }}
+                >
+                  {AVAILABLE_SCOPES.map((scope) => (
+                    <label
+                      key={scope.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "8px 12px",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: "6px",
+                        backgroundColor: newAddressSelectedScopes.includes(
+                          scope.id
+                        )
+                          ? "#eff6ff"
+                          : "#ffffff",
+                        cursor: "pointer",
+                        transition: "all 0.2s",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={newAddressSelectedScopes.includes(scope.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setNewAddressSelectedScopes([
+                              ...newAddressSelectedScopes,
+                              scope.id,
+                            ]);
+                          } else {
+                            setNewAddressSelectedScopes(
+                              newAddressSelectedScopes.filter(
+                                (s) => s !== scope.id
+                              )
+                            );
+                          }
+                        }}
+                        style={{
+                          width: "16px",
+                          height: "16px",
+                          cursor: "pointer",
+                        }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div
+                          style={{
+                            fontSize: "13px",
+                            fontWeight: "500",
+                            color: "#374151",
+                          }}
+                        >
+                          {scope.label}
+                        </div>
+                        <div style={{ fontSize: "11px", color: "#6b7280" }}>
+                          {scope.description}
+                        </div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                onClick={addPermittedAddress}
+                disabled={
+                  isAddingAddress ||
+                  !newPermittedAddress.trim() ||
+                  newAddressSelectedScopes.length === 0
+                }
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  backgroundColor:
+                    isAddingAddress ||
+                    !newPermittedAddress.trim() ||
+                    newAddressSelectedScopes.length === 0
+                      ? "#9ca3af"
+                      : "#3b82f6",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                  cursor:
+                    isAddingAddress ||
+                    !newPermittedAddress.trim() ||
+                    newAddressSelectedScopes.length === 0
+                      ? "not-allowed"
+                      : "pointer",
+                }}
+              >
+                {isAddingAddress ? "Adding..." : "Add Address Permission"}
+              </button>
+
+              {/* Address Status Display */}
+              {addressStatus && (
+                <div
+                  style={{
+                    marginTop: "16px",
+                    padding: "12px 16px",
+                    backgroundColor: addressStatus.includes("✅")
+                      ? "#f0fdf4"
+                      : "#fef2f2",
+                    border: `1px solid ${
+                      addressStatus.includes("✅") ? "#bbf7d0" : "#fecaca"
+                    }`,
+                    borderRadius: "8px",
+                    color: addressStatus.includes("✅") ? "#15803d" : "#dc2626",
+                    fontSize: "14px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    {addressStatus.includes("Transaction:") ? (
+                      <div>
+                        <div style={{ marginBottom: "8px" }}>
+                          {addressStatus.split("Transaction:")[0].trim()}
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                          }}
+                        >
+                          <span style={{ fontSize: "12px", fontWeight: "500" }}>
+                            Transaction Hash:
+                          </span>
+                          <a
+                            href={`https://yellowstone-explorer.litprotocol.com/tx/${addressStatus
+                              .split("Transaction:")[1]
+                              .trim()}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              color: "#1d4ed8",
+                              textDecoration: "underline",
+                              fontFamily: "monospace",
+                              fontSize: "11px",
+                              fontWeight: "500",
+                              cursor: "pointer",
+                            }}
+                          >
+                            {formatTxHash(
+                              addressStatus.split("Transaction:")[1].trim()
+                            )}
+                          </a>
+                          <button
+                            onClick={() =>
+                              copyToClipboard(
+                                addressStatus.split("Transaction:")[1].trim(),
+                                "Transaction Hash"
+                              )
+                            }
+                            style={{
+                              background: "none",
+                              border: "1px solid #e5e7eb",
+                              borderRadius: "4px",
+                              padding: "2px 6px",
+                              fontSize: "10px",
+                              cursor: "pointer",
+                              color: "#6b7280",
+                            }}
+                            title="Copy full hash"
+                          >
+                            📋
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      addressStatus
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setAddressStatus("")}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "inherit",
+                      fontSize: "16px",
+                      cursor: "pointer",
+                      padding: "4px",
+                      borderRadius: "4px",
+                      opacity: 0.7,
+                    }}
+                    title="Dismiss"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Danger Zone */}
+            <div
+              style={{
+                padding: "20px",
+                backgroundColor: "#fef2f2",
+                borderRadius: "12px",
+                border: "1px solid #fecaca",
+                boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+              }}
+            >
+              <h3 style={{ margin: "0 0 16px 0", color: "#dc2626" }}>
+                ⚠️ Danger Zone
+              </h3>
+              <p
+                style={{
+                  margin: "0 0 16px 0",
+                  color: "#6b7280",
+                  fontSize: "14px",
+                }}
+              >
+                <strong>Warning:</strong> This will remove ALL permissions from
+                your PKP. This action cannot be undone.
+              </p>
+
+              <button
+                onClick={revokeAllPermissions}
+                disabled={isRevokingAll}
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  backgroundColor: isRevokingAll ? "#9ca3af" : "#dc2626",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                  cursor: isRevokingAll ? "not-allowed" : "pointer",
+                }}
+              >
+                {isRevokingAll
+                  ? "Revoking All..."
+                  : "🚨 Revoke All Permissions"}
+              </button>
+            </div>
+          </div>
+
+          {/* Permissions Error Display */}
+          {permissionsError && (
+            <div
+              style={{
+                marginTop: "20px",
+                padding: "16px",
+                backgroundColor: "#fef2f2",
+                border: "1px solid #fecaca",
+                borderRadius: "8px",
+                color: "#dc2626",
+                fontSize: "14px",
+              }}
+            >
+              <strong>⚠️ Error:</strong> {permissionsError}
+            </div>
+          )}
+
+          {/* Empty State */}
+          {permissionsContext &&
+            (!permissionsContext.actions ||
+              permissionsContext.actions.length === 0) &&
+            (!permissionsContext.addresses ||
+              permissionsContext.addresses.length === 0) &&
+            (!permissionsContext.authMethods ||
+              permissionsContext.authMethods.length === 0) && (
+              <div
+                style={{
+                  padding: "20px",
+                  textAlign: "center",
+                  color: "#6b7280",
+                  backgroundColor: "#f9fafb",
+                  borderRadius: "8px",
+                  border: "1px dashed #d1d5db",
+                }}
+              >
+                <div style={{ fontSize: "48px", marginBottom: "12px" }}>🔓</div>
+                <div
+                  style={{
+                    fontSize: "16px",
+                    fontWeight: "500",
+                    marginBottom: "8px",
+                  }}
+                >
+                  No Permissions Set
+                </div>
+                <div style={{ fontSize: "14px" }}>
+                  This PKP has no specific permissions configured. Use the forms
+                  below to add permissions.
+                </div>
+              </div>
+            )}
+
+          {/* Action Removal Confirmation Form */}
+          {actionToRemove && (
+            <div
+              style={{
+                position: "fixed",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: "rgba(0, 0, 0, 0.5)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 1000,
+                padding: "20px",
+              }}
+              onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                  setActionToRemove(null);
+                  setRemoveActionIpfsId("");
+                  setPermissionsError("");
+                }
+              }}
+            >
+              <div
+                style={{
+                  backgroundColor: "white",
+                  borderRadius: "12px",
+                  padding: "24px",
+                  maxWidth: "500px",
+                  width: "100%",
+                  maxHeight: "80vh",
+                  overflowY: "auto",
+                  boxShadow:
+                    "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                  border: "2px solid #fed7aa",
+                }}
+              >
+                <h3 style={{ margin: "0 0 16px 0", color: "#ea580c" }}>
+                  🗑️ Remove Action Permission
+                </h3>
+
+                <div style={{ marginBottom: "16px" }}>
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      color: "#6b7280",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    <strong>IPFS CID to Remove:</strong>
+                  </div>
+                  <div
+                    style={{
+                      padding: "8px 12px",
+                      backgroundColor: "#f3f4f6",
+                      border: "1px solid #d1d5db",
+                      borderRadius: "6px",
+                      fontFamily: "monospace",
+                      fontSize: "11px",
+                      color: "#374151",
+                      wordBreak: "break-all",
+                    }}
+                  >
+                    {actionToRemove}
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: "16px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "8px",
+                      fontSize: "14px",
+                      fontWeight: "500",
+                      color: "#374151",
+                    }}
+                  >
+                    📎 Confirm IPFS CID:
+                  </label>
+                  <input
+                    type="text"
+                    value={removeActionIpfsId}
+                    onChange={(e) => setRemoveActionIpfsId(e.target.value)}
+                    placeholder="Verify the IPFS CID above"
+                    style={{
+                      color: "black",
+                      width: "100%",
+                      padding: "12px",
+                      border: "1px solid #d1d5db",
+                      borderRadius: "8px",
+                      fontSize: "13px",
+                      fontFamily: "monospace",
+                      backgroundColor: "#ffffff",
+                    }}
+                    readOnly
+                  />
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      color: "#6b7280",
+                      marginTop: "4px",
+                    }}
+                  >
+                    ✅ IPFS CID confirmed. Click "Confirm Remove" to proceed.
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: "12px" }}>
+                  <button
+                    onClick={confirmRemoveAction}
+                    disabled={removingItems.has(actionToRemove)}
+                    style={{
+                      flex: 1,
+                      padding: "12px",
+                      backgroundColor: removingItems.has(actionToRemove)
+                        ? "#9ca3af"
+                        : "#dc2626",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "8px",
+                      fontSize: "14px",
+                      fontWeight: "500",
+                      cursor: removingItems.has(actionToRemove)
+                        ? "not-allowed"
+                        : "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    {removingItems.has(actionToRemove) ? (
+                      <>
+                        <div
+                          style={{
+                            width: "16px",
+                            height: "16px",
+                            border: "2px solid #ffffff",
+                            borderTop: "2px solid transparent",
+                            borderRadius: "50%",
+                            animation: "spin 1s linear infinite",
+                          }}
+                        />
+                        Removing...
+                      </>
+                    ) : (
+                      <>🗑️ Confirm Remove</>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActionToRemove(null);
+                      setRemoveActionIpfsId("");
+                      setPermissionsError("");
+                    }}
+                    disabled={removingItems.has(actionToRemove)}
+                    style={{
+                      padding: "12px 20px",
+                      backgroundColor: "#6b7280",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "8px",
+                      fontSize: "14px",
+                      fontWeight: "500",
+                      cursor: removingItems.has(actionToRemove)
+                        ? "not-allowed"
+                        : "pointer",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* CSS Animation for Loading Spinner */}
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
 
       {/* PKP Selection Modal */}
       {showPkpModal && (
@@ -1846,6 +4085,7 @@ export default function ProtectedApp() {
           <div
             style={{
               backgroundColor: "white",
+              color: "black",
               borderRadius: "12px",
               padding: "28px",
               maxWidth: "48rem",
