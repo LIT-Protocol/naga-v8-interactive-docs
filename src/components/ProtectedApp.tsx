@@ -1134,7 +1134,7 @@ export default function ProtectedApp() {
     // Add address to removing set
     setRemovingItems((prev) => new Set([...prev, address]));
     setPermissionsError("");
-
+    
     try {
       const chainConfig = services.litClient.getChainConfig().viemConfig;
       const pkpViemAccount = await services.litClient.getPkpViemAccount({
@@ -1182,6 +1182,72 @@ export default function ProtectedApp() {
       setRemovingItems((prev) => {
         const newSet = new Set(prev);
         newSet.delete(address);
+        return newSet;
+      });
+    }
+  };
+
+  const removePermittedAuthMethod = async (authMethodType: number, authMethodId: string) => {
+    if (!user?.authContext || !selectedPkp || !services?.litClient) {
+      setPermissionsError("Missing required data");
+      return;
+    }
+
+    // Create unique key for tracking removal state
+    const authMethodKey = `${authMethodType}:${authMethodId}`;
+    
+    // Add auth method to removing set
+    setRemovingItems((prev) => new Set([...prev, authMethodKey]));
+    setPermissionsError("");
+    
+    try {
+      const chainConfig = services.litClient.getChainConfig().viemConfig;
+      const pkpViemAccount = await services.litClient.getPkpViemAccount({
+        pkpPublicKey: selectedPkp.publicKey || user?.pkpInfo?.pubkey,
+        authContext: user.authContext,
+        chainConfig: chainConfig,
+      });
+
+      const pkpPermissionsManager =
+        await services.litClient.getPKPPermissionsManager({
+          pkpIdentifier: {
+            tokenId: selectedPkp.tokenId,
+          },
+          account: pkpViemAccount,
+        });
+
+      const result = await pkpPermissionsManager.removePermittedAuthMethod({
+        authMethodType: authMethodType,
+        authMethodId: authMethodId,
+      });
+
+      // Show success with transaction hash
+      const txHash = result?.hash || result?.transactionHash || result;
+      if (txHash) {
+        setStatus(
+          `✅ Auth method removed successfully! Transaction: ${txHash}`
+        );
+      } else {
+        setStatus("✅ Auth method removed successfully!");
+      }
+
+      await loadPermissionsContext(); // Reload permissions
+    } catch (error: any) {
+      console.error("Failed to remove auth method:", error);
+      if (error.message?.includes("Not PKP NFT owner")) {
+        setPermissionsError(
+          "❌ You don't own this PKP. Only PKP owners can modify permissions."
+        );
+      } else {
+        setPermissionsError(
+          `❌ Failed to remove auth method: ${error.message || error}`
+        );
+      }
+    } finally {
+      // Remove auth method from removing set
+      setRemovingItems((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(authMethodKey);
         return newSet;
       });
     }
@@ -3170,85 +3236,130 @@ export default function ProtectedApp() {
                                   backgroundColor: "#faf5ff",
                                   border: "1px solid #ddd6fe",
                                   borderRadius: "6px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "12px",
                                 }}
                               >
-                                <div
-                                  style={{
-                                    fontSize: "13px",
-                                    fontFamily: "monospace",
-                                    color: "#7c3aed",
-                                    marginBottom: "4px",
-                                  }}
-                                >
-                                  {isLitAction ? (
-                                    <a
-                                      href={`https://explorer.litprotocol.com/ipfs/${displayId}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      style={{
-                                        color: "#7c3aed",
-                                        textDecoration: "underline",
-                                        cursor: "pointer",
-                                      }}
-                                      onMouseEnter={(e) => {
-                                        e.currentTarget.style.color = "#5b21b6";
-                                      }}
-                                      onMouseLeave={(e) => {
-                                        e.currentTarget.style.color = "#7c3aed";
-                                      }}
-                                    >
-                                      {displayId}
-                                    </a>
-                                  ) : (
-                                    displayId
-                                  )}
+                                <div style={{ flex: 1 }}>
+                                  <div
+                                    style={{
+                                      fontSize: "13px",
+                                      fontFamily: "monospace",
+                                      color: "#7c3aed",
+                                      marginBottom: "4px",
+                                    }}
+                                  >
+                                    {isLitAction ? (
+                                      <a
+                                        href={`https://explorer.litprotocol.com/ipfs/${displayId}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{
+                                          color: "#7c3aed",
+                                          textDecoration: "underline",
+                                          cursor: "pointer",
+                                        }}
+                                        onMouseEnter={(e) => {
+                                          e.currentTarget.style.color = "#5b21b6";
+                                        }}
+                                        onMouseLeave={(e) => {
+                                          e.currentTarget.style.color = "#7c3aed";
+                                        }}
+                                      >
+                                        {displayId}
+                                      </a>
+                                    ) : (
+                                      displayId
+                                    )}
+                                  </div>
+                                  <div
+                                    style={{
+                                      fontSize: "11px",
+                                      color: "#6b7280",
+                                      marginBottom: "4px",
+                                    }}
+                                  >
+                                    <strong>Type:</strong>{" "}
+                                    {getAuthMethodTypeName(authType)}
+                                    {isLitAction && (
+                                      <span
+                                        style={{
+                                          color: "#059669",
+                                          marginLeft: "8px",
+                                        }}
+                                      >
+                                        📎 (IPFS Link)
+                                      </span>
+                                    )}
+                                  </div>
+                                  {authMethod.scopes &&
+                                    authMethod.scopes.length > 0 && (
+                                      <div
+                                        style={{
+                                          fontSize: "11px",
+                                          color: "#6b7280",
+                                        }}
+                                      >
+                                        <strong>Scopes:</strong>{" "}
+                                        {Array.isArray(authMethod.scopes)
+                                          ? authMethod.scopes.join(", ")
+                                          : authMethod.scopes}
+                                      </div>
+                                    )}
+                                  {authMethod.scopes &&
+                                    authMethod.scopes.length === 0 && (
+                                      <div
+                                        style={{
+                                          fontSize: "11px",
+                                          color: "#ef4444",
+                                        }}
+                                      >
+                                        <strong>Scopes:</strong> None (no
+                                        permissions)
+                                      </div>
+                                    )}
                                 </div>
-                                <div
+                                <button
+                                  onClick={() => removePermittedAuthMethod(authType, authMethod.id)}
+                                  disabled={removingItems.has(`${authType}:${authMethod.id}`)}
                                   style={{
+                                    padding: "4px 8px",
+                                    backgroundColor: removingItems.has(`${authType}:${authMethod.id}`)
+                                      ? "#9ca3af"
+                                      : "#ef4444",
+                                    color: "white",
+                                    border: "none",
+                                    borderRadius: "4px",
                                     fontSize: "11px",
-                                    color: "#6b7280",
-                                    marginBottom: "4px",
+                                    cursor: removingItems.has(`${authType}:${authMethod.id}`)
+                                      ? "not-allowed"
+                                      : "pointer",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    gap: "4px",
+                                    minWidth: "60px",
                                   }}
                                 >
-                                  <strong>Type:</strong>{" "}
-                                  {getAuthMethodTypeName(authType)}
-                                  {isLitAction && (
-                                    <span
-                                      style={{
-                                        color: "#059669",
-                                        marginLeft: "8px",
-                                      }}
-                                    >
-                                      📎 (IPFS Link)
-                                    </span>
+                                  {removingItems.has(`${authType}:${authMethod.id}`) ? (
+                                    <>
+                                      <div
+                                        style={{
+                                          width: "10px",
+                                          height: "10px",
+                                          border: "1px solid #ffffff",
+                                          borderTop: "1px solid transparent",
+                                          borderRadius: "50%",
+                                          animation: "spin 1s linear infinite",
+                                        }}
+                                      />
+                                      Removing...
+                                    </>
+                                  ) : (
+                                    "Remove"
                                   )}
-                                </div>
-                                {authMethod.scopes &&
-                                  authMethod.scopes.length > 0 && (
-                                    <div
-                                      style={{
-                                        fontSize: "11px",
-                                        color: "#6b7280",
-                                      }}
-                                    >
-                                      <strong>Scopes:</strong>{" "}
-                                      {Array.isArray(authMethod.scopes)
-                                        ? authMethod.scopes.join(", ")
-                                        : authMethod.scopes}
-                                    </div>
-                                  )}
-                                {authMethod.scopes &&
-                                  authMethod.scopes.length === 0 && (
-                                    <div
-                                      style={{
-                                        fontSize: "11px",
-                                        color: "#ef4444",
-                                      }}
-                                    >
-                                      <strong>Scopes:</strong> None (no
-                                      permissions)
-                                    </div>
-                                  )}
+                                </button>
                               </div>
                             );
                           }
