@@ -7,7 +7,7 @@
 
 import React, { useState } from "react";
 import { useOutletContext } from "react-router-dom";
-import { DisplayCode } from "../components/DisplayCode";
+import { DisplayCode } from "../../components/DisplayCode";
 
 interface TabContext {
   areDependenciesLoaded: () => boolean;
@@ -142,48 +142,6 @@ const customStorage = {
       setIsTesting(false);
     }
   };
-
-  const completeIntegrationCode = `import { createAuthManager } from "@lit-protocol/auth";
-import { localStorage } from "@lit-protocol/auth/storage";
-import { createLitClient } from "@lit-protocol/lit-client";
-import { nagaDev } from "@lit-protocol/networks";
-
-// Complete setup with browser storage
-const setupLitProtocol = async () => {
-  // 1. Create Lit Client
-  const litClient = await createLitClient({ 
-    network: nagaDev 
-  });
-
-  // 2. Create Auth Manager with localStorage
-  const authManager = createAuthManager({
-    storage: localStorage({
-      appName: "my-app",
-      networkName: "naga-dev",
-    }),
-  });
-
-  return { litClient, authManager };
-};
-
-// For Node.js environments
-import { localStorageNode } from "@lit-protocol/auth/storage";
-
-const setupLitProtocolNode = async () => {
-  const litClient = await createLitClient({ 
-    network: nagaDev 
-  });
-
-  const authManager = createAuthManager({
-    storage: localStorageNode({
-      appName: "my-node-app", 
-      networkName: "naga-dev",
-      storagePath: "./lit-auth-storage"
-    }),
-  });
-
-  return { litClient, authManager };
-};`;
 
   return (
     <div style={{ maxWidth: "90%" }}>
@@ -341,12 +299,6 @@ const setupLitProtocolNode = async () => {
         />
       </div>
 
-      {/* Complete Integration Example */}
-      <div style={{ marginBottom: "30px" }}>
-        <h2>Complete Integration Example</h2>
-        <DisplayCode code={completeIntegrationCode} language="typescript" />
-      </div>
-
       {/* Storage Comparison */}
       <div style={{ marginBottom: "30px" }}>
         <h2>Storage Options Comparison</h2>
@@ -457,92 +409,19 @@ const setupLitProtocolNode = async () => {
         </div>
       </div>
 
-      {/* Security Considerations */}
-      <div style={{ marginBottom: "30px" }}>
-        <h2>Security Considerations</h2>
-        <div
-          style={{
-            backgroundColor: "#fff3cd",
-            border: "1px solid #ffeaa7",
-            borderRadius: "6px",
-            padding: "20px",
-          }}
-        >
-          <h3 style={{ margin: "0 0 15px 0", color: "#856404" }}>
-            Important Security Notes
-          </h3>
-          <ul
-            style={{
-              marginBottom: "20px",
-              paddingLeft: "20px",
-              color: "#856404",
-            }}
-          >
-            <li>
-              <strong>localStorage:</strong> Data is stored unencrypted in the
-              browser. Never store sensitive information without encryption.
-            </li>
-            <li>
-              <strong>localStorageNode:</strong> Files are stored unencrypted on
-              the server. Ensure proper file permissions and consider encryption
-              for sensitive data.
-            </li>
-            <li>
-              <strong>Network separation:</strong> Always use different
-              networkName values for different environments (dev, staging,
-              prod).
-            </li>
-            <li>
-              <strong>App isolation:</strong> Use unique appName values to
-              prevent conflicts between applications.
-            </li>
-            <li>
-              <strong>Data cleanup:</strong> Implement proper logout flows that
-              clear stored authentication data.
-            </li>
-          </ul>
-
-          <h4 style={{ margin: "15px 0 10px 0", color: "#856404" }}>
-            Best Practices:
-          </h4>
-          <ul style={{ paddingLeft: "20px", margin: "0", color: "#856404" }}>
-            <li>
-              Use environment variables for appName and networkName
-              configuration
-            </li>
-            <li>Implement error handling for storage operations</li>
-            <li>
-              Consider implementing data encryption for sensitive information
-            </li>
-            <li>
-              Test storage functionality across different browsers and
-              environments
-            </li>
-            <li>
-              For Node.js: Set appropriate file permissions for the storage
-              directory
-            </li>
-          </ul>
-        </div>
-      </div>
-
       {/* Next Steps */}
       <div
         style={{
-          backgroundColor: "#d4edda",
-          border: "1px solid #c3e6cb",
+          backgroundColor: "#fff3cd",
+          border: "1px solid #ffeaa7",
           borderRadius: "6px",
           padding: "20px",
         }}
       >
-        <h3 style={{ margin: "0 0 10px 0", color: "#155724" }}>
-          🎉 Foundation Complete!
-        </h3>
-        <p style={{ margin: "0", color: "#155724" }}>
-          You've now configured all the foundational components: Lit Client,
-          Auth Manager, Network Configuration, and Storage Plugins. You're ready
-          to explore authentication methods like Google, Discord, WebAuthn, and
-          more!
+        <h3 style={{ margin: "0 0 10px 0", color: "#856404" }}>Next Steps</h3>
+        <p style={{ margin: "0", color: "#856404" }}>
+          With storage configured, proceed to setup the Auth Manager to handle
+          authentication flows with your chosen storage solution.
         </p>
       </div>
     </div>

@@ -11,6 +11,7 @@ import ProtectedApp from "../components/ProtectedApp";
 import { DisplayCode } from "../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgContainer";
 import ProtectedAppRefactored from "../components/protectedApp/examples/ProtectedAppRefactored";
+import ProtectedAppComplete from "../components/protectedApp/examples/ProtectedAppComplete";
 
 const LitAuthProviderDemoTab: React.FC = () => {
   const usageCode = `import { LitAuthProvider, useLitAuth } from './contexts/LitAuthProvider';
@@ -117,7 +118,8 @@ const authMethods = [
                 autoSetup={false}
                 storageKey="lit-auth-modal-demo"
               >
-                <ProtectedAppRefactored />
+                {/* <ProtectedAppRefactored /> */}
+                <ProtectedAppComplete />
               </LitAuthProvider>
             </div>
           </div>

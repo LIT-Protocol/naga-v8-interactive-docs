@@ -16,7 +16,7 @@ interface AddActionFormProps {
 export const AddActionForm: React.FC<AddActionFormProps> = ({ disabled = false }) => {
   const { addPermittedAction } = usePKPPermissions();
   const [newActionIpfsId, setNewActionIpfsId] = useState(
-    "QmPK1s3pNYLi9ERiq3BDxKa4XosgWwFRQUydHUtz4YgpqB"
+    "QmSQDKRWEXZ9CGoucSTR11Mv6fhGqaytZ1MqrfHdkuS1Vg"
   );
   const [newActionSelectedScopes, setNewActionSelectedScopes] = useState<string[]>(["sign-anything"]);
   const [isAdding, setIsAdding] = useState(false);
@@ -67,7 +67,7 @@ export const AddActionForm: React.FC<AddActionFormProps> = ({ disabled = false }
         type="text"
         value={newActionIpfsId}
         onChange={(e) => setNewActionIpfsId(e.target.value)}
-        placeholder="IPFS ID (e.g., QmPK1s3pNYLi9ERiq3BDxKa4XosgWwFRQUydHUtz4YgpqB)"
+        placeholder="IPFS ID (e.g., QmSQDKRWEXZ9CGoucSTR11Mv6fhGqaytZ1MqrfHdkuS1Vg)"
         disabled={disabled || isAdding}
         style={{
           width: "100%",

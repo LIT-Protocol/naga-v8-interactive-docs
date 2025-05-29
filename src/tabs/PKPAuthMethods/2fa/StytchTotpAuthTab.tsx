@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { DisplayCode } from "../components/DisplayCode";
-import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgContainer";
-import EoaAuthSection from "../components/common/EoaAuthSection";
-import PkpSelectionComponent from "../components/common/PkpSelectionComponent";
-import { useAppContext } from "../router";
-import PkpSigningComponent from "../components/common/PkpSigningComponent";
-import ExecuteJsComponent from "../components/common/ExecuteJsComponent";
+import { DisplayCode } from "../../../components/DisplayCode";
+import GreyBoarderWhiteBgContainer from "../../../components/layout/GreyboardWhiteBgContainer";
+import EoaAuthSection from "../../../components/common/EoaAuthSection";
+import PkpSelectionComponent from "../../../components/common/PkpSelectionComponent";
+import { useAppContext } from "../../../router";
+import PkpSigningComponent from "../../../components/common/PkpSigningComponent";
+import ExecuteJsComponent from "../../../components/common/ExecuteJsComponent";
 
 const AUTH_NAME = "Stytch TOTP 2FA Authentication";
 

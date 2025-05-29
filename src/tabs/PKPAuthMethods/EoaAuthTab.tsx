@@ -1,17 +1,17 @@
 import { useState } from "react";
 import { useWalletClient } from "wagmi";
-import PkpSigningComponent from "../components/common/PkpSigningComponent";
-import PkpSelectionComponent from "../components/common/PkpSelectionComponent";
+import PkpSigningComponent from "../../components/common/PkpSigningComponent";
+import PkpSelectionComponent from "../../components/common/PkpSelectionComponent";
 import AccountMethodSelector, {
   AccountMethod,
   CREATE_ACCOUNT_PRIVATE_KEY_CODE,
   CREATE_ACCOUNT_WALLET_CLIENT_CODE,
-} from "../components/common/AccountMethodSelector";
-import { DisplayCode } from "../components/DisplayCode";
-import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgContainer";
-import { useAppContext } from "../router";
-import EoaAuthSection from "../components/common/EoaAuthSection";
-import ExecuteJsComponent from "../components/common/ExecuteJsComponent";
+} from "../../components/common/AccountMethodSelector";
+import { DisplayCode } from "../../components/DisplayCode";
+import GreyBoarderWhiteBgContainer from "../../components/layout/GreyboardWhiteBgContainer";
+import { useAppContext } from "../../router";
+import EoaAuthSection from "../../components/common/EoaAuthSection";
+import ExecuteJsComponent from "../../components/common/ExecuteJsComponent";
 
 const AUTH_NAME = "EOA Authentication";
 

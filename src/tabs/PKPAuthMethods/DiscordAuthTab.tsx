@@ -1,21 +1,19 @@
-import { createAuthManager, GoogleAuthenticator } from "@lit-protocol/auth";
-import { createLitClient } from "@lit-protocol/lit-client";
+import { DiscordAuthenticator } from "@lit-protocol/auth";
 import { useState } from "react";
-import { DisplayCode } from "../components/DisplayCode";
-import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgContainer";
-import EoaAuthSection from "../components/common/EoaAuthSection";
-import { useAppContext } from "../router";
-import PkpSigningComponent from "../components/common/PkpSigningComponent";
-import PkpSelectionComponent from "../components/common/PkpSelectionComponent";
-import ExecuteJsComponent from "../components/common/ExecuteJsComponent";
+import PkpSigningComponent from "../../components/common/PkpSigningComponent";
+import PkpSelectionComponent from "../../components/common/PkpSelectionComponent";
+import { DisplayCode } from "../../components/DisplayCode";
+import GreyBoarderWhiteBgContainer from "../../components/layout/GreyboardWhiteBgContainer";
+import { useAppContext } from "../../router";
+import ExecuteJsComponent from "../../components/common/ExecuteJsComponent";
 
-const AUTH_NAME = "Google Authentication";
+const AUTH_NAME = "Discord Authentication";
 
 // Code snippets for each functionality
 const SIGN_IN_CODE = `
-import { GoogleAuthenticator } from "@lit-protocol/auth";
+import { DiscordAuthenticator } from "@lit-protocol/auth";
 
-const authData = await GoogleAuthenticator.authenticate(
+const authData = await DiscordAuthenticator.authenticate(
   "https://login.litgateway.com"
 );`;
 
@@ -41,7 +39,9 @@ const authContext = await authManager.createPkpAuthContext({
   litClient: litClient,
 });`;
 
-export default function GoogleAuthTab() {
+// SIGN_MESSAGE_CODE, SupportedChain, SupportedScheme, SIGNING_SCHEMES, AVAILABLE_CHAINS are removed
+
+export default function DiscordAuthTab() {
   const {
     getDependencyStatus,
     areDependenciesLoaded,
@@ -93,19 +93,19 @@ export default function GoogleAuthTab() {
   const signIn = async () => {
     try {
       setIsSigningIn(true);
-      setStatus("Signing in with Google...");
+      setStatus("Signing in with Discord...");
 
-      const authData = await GoogleAuthenticator.authenticate(
+      const authData = await DiscordAuthenticator.authenticate(
         "https://login.litgateway.com"
       );
 
       setAuthData(authData);
-      setStatus("Successfully signed in with Google");
-      showSuccess("google-signin");
+      setStatus("Successfully signed in with Discord");
+      showSuccess("discord-signin");
     } catch (error: any) {
-      console.error("Error signing in with Google:", error);
+      console.error("Error signing in with Discord:", error);
       const errorMessage = formatErrorMessage(
-        "Failed to sign in with Google: ",
+        "Failed to sign in with Discord: ",
         error
       );
       setStatus(errorMessage);
@@ -146,7 +146,7 @@ export default function GoogleAuthTab() {
       console.log("authContext:", authContext);
       setAuthContext(authContext);
       setStatus("Auth context created successfully");
-      showSuccess("google-create-auth-context");
+      showSuccess("discord-create-auth-context");
     } catch (error: any) {
       console.error("Error creating auth context:", error);
       const errorMessage = formatErrorMessage(
@@ -160,8 +160,8 @@ export default function GoogleAuthTab() {
     }
   };
 
-  // Component to render Google Sign-In button
-  const GoogleSignInButton = () => (
+  // Component to render Discord Sign-In button
+  const DiscordSignInButton = () => (
     <button
       onClick={signIn}
       disabled={isSigningIn}
@@ -175,7 +175,7 @@ export default function GoogleAuthTab() {
         fontWeight: "500",
       }}
     >
-      {isSigningIn ? "Signing in..." : "Sign in with Google"}
+      {isSigningIn ? "Signing in..." : "Sign in with Discord"}
     </button>
   );
 
@@ -197,7 +197,7 @@ export default function GoogleAuthTab() {
     >
       {isCreatingAuthContext
         ? "Creating..."
-        : "Create AuthContext with Google PKP"}
+        : "Create AuthContext with Discord PKP"}
     </button>
   );
 
@@ -205,7 +205,7 @@ export default function GoogleAuthTab() {
     <div className="tab-content">
       <h2>{AUTH_NAME}</h2>
       <p>
-        {AUTH_NAME} uses your Google account to authenticate via the Lit Login
+        {AUTH_NAME} uses your Discord account to authenticate via the Lit Login
         Server or your own Login Server. This can be used to mint a PKP and then
         sign messages.
       </p>
@@ -253,29 +253,29 @@ export default function GoogleAuthTab() {
 
       <GreyBoarderWhiteBgContainer>
         {/* ================================================ */}
-        {/*               Sign in with Google                */}
+        {/*               Sign in with Discord                */}
         {/* ================================================ */}
-        <h3 style={{ marginTop: "20px" }}>Step 1: Sign in with Google</h3>
+        <h3 style={{ marginTop: "20px" }}>Step 1: Sign in with Discord</h3>
         <p>
-          To sign in with Google, you can use the `authenticate` function
-          provided by the GoogleAuthenticator.
+          To sign in with Discord, you can use the `authenticate` function
+          provided by the DiscordAuthenticator.
         </p>
 
         <DisplayCode
           code={SIGN_IN_CODE}
           language="typescript"
-          renderComponent={<GoogleSignInButton />}
+          renderComponent={<DiscordSignInButton />}
           resultData={authData}
           resultLabel="Auth Data"
           useSideBySide={true}
           theme="dracula"
-          isSuccess={successActions.has("google-signin")}
+          isSuccess={successActions.has("discord-signin")}
         />
       </GreyBoarderWhiteBgContainer>
 
       <GreyBoarderWhiteBgContainer>
         {/* ================================================ */}
-        {/*               Get or Mint PKP via Google         */}
+        {/*               Get or Mint PKP via Discord        */}
         {/* ================================================ */}
         <PkpSelectionComponent
           authData={authData}
@@ -283,7 +283,7 @@ export default function GoogleAuthTab() {
           setStatus={setStatus}
           assertDependenciesLoaded={assertDependenciesLoaded}
           showError={showError}
-          authMethodName="Google Auth"
+          authMethodName="Discord Auth"
           mintCodeSnippet={MINT_PKP_CODE}
           disabled={!authData}
         />
@@ -328,7 +328,7 @@ export default function GoogleAuthTab() {
           resultLabel="AuthContext Information"
           useSideBySide={true}
           theme="dracula"
-          isSuccess={successActions.has("google-create-auth-context")}
+          isSuccess={successActions.has("discord-create-auth-context")}
         />
       </GreyBoarderWhiteBgContainer>
 
@@ -342,7 +342,7 @@ export default function GoogleAuthTab() {
           pkpInfo={pkpInfo}
           setStatus={setStatus}
           assertDependenciesLoaded={assertDependenciesLoaded}
-          defaultMessage="Hello from Google PKP!"
+          defaultMessage="Hello from Discord PKP!"
           componentTitle={`Step 4: Sign Message with PKP (${AUTH_NAME})`}
         />
       </GreyBoarderWhiteBgContainer>
@@ -357,7 +357,7 @@ export default function GoogleAuthTab() {
           pkpInfo={pkpInfo}
           setStatus={setStatus}
           assertDependenciesLoaded={assertDependenciesLoaded}
-          defaultMessage="Hello from Google Lit Action!"
+          defaultMessage="Hello from Discord Lit Action!"
           componentTitle={`Step 5: Execute Lit Action (${AUTH_NAME})`}
           showError={showError}
         />

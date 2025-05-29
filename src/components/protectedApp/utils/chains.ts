@@ -1,15 +1,24 @@
 /**
  * Supported Chains Configuration
  * 
- * Configuration for all supported blockchain networks
+ * Configuration for all supported blockchain networks including local development
  */
 
 import { ChainConfig } from '../types';
 
 // Configuration constants
-export const SUPPORTED_CHAIN_ID = 2888; // Naga chain ID
+export const SUPPORTED_CHAIN_ID = 2888; // Naga chain ID (legacy reference)
 
 export const SUPPORTED_CHAINS: Record<string, ChainConfig> = {
+  local: {
+    id: 31337,
+    name: "Local Development Chain",
+    symbol: "ETH",
+    rpcUrl: "http://127.0.0.1:8545",
+    explorerUrl: "#", // No explorer for local chain
+    litIdentifier: "local",
+    testnet: true,
+  },
   yellowstone: {
     id: 175188,
     name: "Chronicle Yellowstone",

@@ -31,7 +31,7 @@ export const DEFAULT_LIT_ACTION_CODE = `
 const getDefaultJsParams = (authContext?: any, pkpInfo?: any) => {
   const baseParams: any = {
     sigName: "sig-identifier",
-    toSign: "Just getting started baby!"
+    toSign: "Just getting started baby!",
   };
 
   // Add PKP public key if available - use same logic as PkpSigningComponent
@@ -57,18 +57,14 @@ const EXECUTE_JS_CODE_SNIPPET = `
 const result = await litClient.executeJs({
   code: litActionCode,        // Custom Lit Action code
   authContext: authContext,   // Auth context from previous steps
-  jsParams: {
-    jsParams: parsedJsParams  // Parameters to pass to the Lit Action
-  },
+  jsParams: parsedJsParams,
 });
 
 // Or execute with IPFS CID
 const result = await litClient.executeJs({
   ipfsId: ipfsCid,           // IPFS CID of stored Lit Action
   authContext: authContext,   // Auth context from previous steps  
-  jsParams: {
-    jsParams: parsedJsParams  // Parameters to pass to the Lit Action
-  },
+  jsParams: parsedJsParams,
 });`;
 
 interface ExecuteJsComponentProps {
@@ -191,9 +187,7 @@ export default function ExecuteJsComponent({
       // Build the execution parameters
       const executeParams: any = {
         authContext: authContext,
-        jsParams: {
-          jsParams: parsedJsParams,
-        },
+        jsParams: parsedJsParams,
       };
 
       // Add either code or ipfsId based on execution mode
@@ -242,7 +236,7 @@ export default function ExecuteJsComponent({
       if (e.key === "Escape" && isEditorExpanded) {
         setIsEditorExpanded(false);
       }
-      
+
       // Handle Cmd+Enter (Mac) or Ctrl+Enter (Windows/Linux) to execute Lit Action
       if (isEditorExpanded && e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault(); // Prevent default behavior
@@ -440,7 +434,14 @@ export default function ExecuteJsComponent({
             {/* Conditional Input Based on Execution Mode */}
             {executionMode === "code" ? (
               <div style={{ marginBottom: "15px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "8px",
+                  }}
+                >
                   <label
                     style={{
                       fontWeight: "500",
@@ -457,7 +458,8 @@ export default function ExecuteJsComponent({
                       color: "white",
                       border: "none",
                       borderRadius: "3px",
-                      cursor: !authContext || isExecuting ? "not-allowed" : "pointer",
+                      cursor:
+                        !authContext || isExecuting ? "not-allowed" : "pointer",
                       fontSize: "12px",
                       fontWeight: "500",
                       opacity: !authContext || isExecuting ? 0.6 : 1,
@@ -640,25 +642,39 @@ export default function ExecuteJsComponent({
               <h2 style={{ margin: 0, fontSize: "24px", fontWeight: "600" }}>
                 🖥️ Fullscreen Lit Action Editor
               </h2>
-              <p style={{ 
-                margin: "4px 0 0 0", 
-                fontSize: "14px", 
-                color: "#ccc",
-                fontStyle: "italic" 
-              }}>
-                Press <kbd style={{ 
-                  backgroundColor: "#444", 
-                  padding: "2px 6px", 
-                  borderRadius: "3px", 
-                  fontSize: "12px",
-                  border: "1px solid #666"
-                }}>⌘+Enter</kbd> or <kbd style={{ 
-                  backgroundColor: "#444", 
-                  padding: "2px 6px", 
-                  borderRadius: "3px", 
-                  fontSize: "12px",
-                  border: "1px solid #666"
-                }}>Ctrl+Enter</kbd> to execute
+              <p
+                style={{
+                  margin: "4px 0 0 0",
+                  fontSize: "14px",
+                  color: "#ccc",
+                  fontStyle: "italic",
+                }}
+              >
+                Press{" "}
+                <kbd
+                  style={{
+                    backgroundColor: "#444",
+                    padding: "2px 6px",
+                    borderRadius: "3px",
+                    fontSize: "12px",
+                    border: "1px solid #666",
+                  }}
+                >
+                  ⌘+Enter
+                </kbd>{" "}
+                or{" "}
+                <kbd
+                  style={{
+                    backgroundColor: "#444",
+                    padding: "2px 6px",
+                    borderRadius: "3px",
+                    fontSize: "12px",
+                    border: "1px solid #666",
+                  }}
+                >
+                  Ctrl+Enter
+                </kbd>{" "}
+                to execute
               </p>
             </div>
             <button
@@ -749,7 +765,14 @@ export default function ExecuteJsComponent({
                 <div
                   style={{ flex: 1, display: "flex", flexDirection: "column" }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "8px",
+                    }}
+                  >
                     <label
                       style={{
                         fontWeight: "500",
@@ -767,7 +790,10 @@ export default function ExecuteJsComponent({
                         color: "white",
                         border: "none",
                         borderRadius: "3px",
-                        cursor: !authContext || isExecuting ? "not-allowed" : "pointer",
+                        cursor:
+                          !authContext || isExecuting
+                            ? "not-allowed"
+                            : "pointer",
                         fontSize: "12px",
                         fontWeight: "500",
                         opacity: !authContext || isExecuting ? 0.6 : 1,
@@ -904,10 +930,10 @@ export default function ExecuteJsComponent({
 
               {/* Results Panel */}
               <div
-                style={{ 
+                style={{
                   height: "300px",
-                  display: "flex", 
-                  flexDirection: "column" 
+                  display: "flex",
+                  flexDirection: "column",
                 }}
               >
                 <h4
@@ -971,10 +997,23 @@ export default function ExecuteJsComponent({
                   marginTop: "10px",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "flex-start", gap: "6px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "6px",
+                  }}
+                >
                   <span style={{ fontSize: "14px", flexShrink: 0 }}>ℹ️</span>
-                  <div style={{ fontSize: "12px", lineHeight: "1.4", color: "#e2e8f0" }}>
-                    <strong>SDK Parameter Structure:</strong> All your parameters are wrapped within a{" "}
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      lineHeight: "1.4",
+                      color: "#e2e8f0",
+                    }}
+                  >
+                    <strong>SDK Parameter Structure:</strong> All your
+                    parameters are wrapped within a{" "}
                     <code
                       style={{
                         backgroundColor: "#1a202c",

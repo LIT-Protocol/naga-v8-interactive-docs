@@ -243,7 +243,7 @@ export const ViemAccountForm: React.FC<ViemAccountFormProps> = ({
           color: "#1e40af",
         }}
       >
-        💡 <strong>Viem Integration:</strong> This component demonstrates how PKPs integrate seamlessly with popular web3 libraries like Viem, replacing the need for PKPEthers.
+        💡 <strong>Viem Integration:</strong> This component demonstrates how PKPs integrate seamlessly with popular web3 libraries like Viem.
       </div>
     </div>
   );
