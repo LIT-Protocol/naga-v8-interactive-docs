@@ -33,7 +33,7 @@ import PkpSelectionForDemo from "../components/common/PkpSelectionForDemo";
 const DEFAULT_PRIVATE_KEY =
   "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
 const FAUCET_URL = "https://chronicle-yellowstone-faucet.getlit.dev/";
-const DEFAULT_AUTH_SERVICE_BASE_URL = "http://localhost:3301";
+const DEFAULT_AUTH_SERVICE_BASE_URL = "https://naga-auth-service.onrender.com";
 
 type AuthMethod =
   | "google"
@@ -1816,7 +1816,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                           onChange={(e) =>
                             setAuthServiceBaseUrl(e.target.value)
                           }
-                          placeholder="http://localhost:3301"
+                          placeholder="https://naga-auth-service.onrender.com"
                           style={{
                             width: "100%",
                             padding: "8px 10px",
@@ -1927,7 +1927,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                           onChange={(e) =>
                             setAuthServiceBaseUrl(e.target.value)
                           }
-                          placeholder="http://localhost:3301"
+                          placeholder="https://naga-auth-service.onrender.com"
                           style={{
                             width: "100%",
                             padding: "8px 10px",

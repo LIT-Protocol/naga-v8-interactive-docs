@@ -10,7 +10,7 @@ import ExecuteJsComponent from "../../components/common/ExecuteJsComponent";
 const AUTH_NAME = "Stytch WhatsApp OTP Authentication";
 
 // Configuration constants
-const DEFAULT_AUTH_SERVICE_BASE_URL = "http://localhost:3301";
+const DEFAULT_AUTH_SERVICE_BASE_URL = "https://naga-auth-service.onrender.com";
 
 // Code snippets for each functionality
 const SEND_OTP_CODE = `
@@ -18,7 +18,7 @@ import { StytchWhatsAppOtpAuthenticator } from "@lit-protocol/auth";
 
 const { methodId } = await StytchWhatsAppOtpAuthenticator.sendOtp({
   phoneNumber: "+1234567890",
-  authServiceBaseUrl: "http://localhost:3301"
+  authServiceBaseUrl: "https://naga-auth-service.onrender.com"
 });`;
 
 const VERIFY_OTP_CODE = `
@@ -27,7 +27,7 @@ import { StytchWhatsAppOtpAuthenticator } from "@lit-protocol/auth";
 const authData = await StytchWhatsAppOtpAuthenticator.authenticate({
   methodId: methodId, // from sendOtp step
   code: "123456", // user-entered OTP code
-  authServiceBaseUrl: "http://localhost:3301"
+  authServiceBaseUrl: "https://naga-auth-service.onrender.com"
 });`;
 
 const MINT_PKP_CODE = `
@@ -41,7 +41,7 @@ import { StytchTotp2FAAuthenticator } from "@lit-protocol/auth";
 // Step 1: Create TOTP registration
 const registrationData = await StytchTotp2FAAuthenticator.initiateTotpRegistration({
   userId:authData?.metadata?.userId // from your WhatsApp auth
-  authServiceBaseUrl: "http://localhost:3301"
+  authServiceBaseUrl: "https://naga-auth-service.onrender.com"
 });
 
 // Step 2: Verify TOTP setup with code from authenticator app
@@ -49,7 +49,7 @@ const verifyResult = await StytchTotp2FAAuthenticator.verifyTotpRegistration({
   userId:authData?.metadata?.userId
   totpRegistrationId: registrationData.totpRegistrationId,
   totpCode: "123456", // from authenticator app
-  authServiceBaseUrl: "http://localhost:3301"
+  authServiceBaseUrl: "https://naga-auth-service.onrender.com"
 });`;
 
 const CREATE_AUTH_CONTEXT_CODE = `
@@ -414,7 +414,7 @@ export default function StytchWhatsAppOtpAuthTab() {
                   type="url"
                   value={authServiceBaseUrl}
                   onChange={(e) => setAuthServiceBaseUrl(e.target.value)}
-                  placeholder="http://localhost:3301"
+                  placeholder="https://naga-auth-service.onrender.com"
                   style={{
                     width: "100%",
                     padding: "8px 12px",

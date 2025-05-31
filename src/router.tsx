@@ -8,23 +8,23 @@ import {
 } from "react-router-dom";
 import { MainLayout } from "./layouts/MainLayout";
 import { HomePage } from "./pages";
-import DiscordAuthTab from "./tabs/DiscordAuthTab";
-import GoogleAuthTab from "./tabs/GoogleAuthTab";
-import WebAuthnTab from "./tabs/WebAuthnTab";
-import EoaAuthTab from "./tabs/EoaAuthTab";
-import EoaNativeTab from "./tabs/EoaNativeTab";
-import StytchEmailOtpAuthTab from "./tabs/StytchEmailOtpAuthTab";
-import StytchSmsOtpAuthTab from "./tabs/StytchSmsOtpAuthTab";
-import StytchWhatsAppOtpAuthTab from "./tabs/StytchWhatsAppOtpAuthTab";
-import StytchTotpAuthTab from "./tabs/StytchTotpAuthTab";
+import DiscordAuthTab from "./tabs/PKPAuthMethods/DiscordAuthTab";
+import GoogleAuthTab from "./tabs/PKPAuthMethods/GoogleAuthTab";
+import WebAuthnTab from "./tabs/PKPAuthMethods/WebAuthnTab";
+import EoaAuthTab from "./tabs/PKPAuthMethods/EoaAuthTab";
+import StytchEmailOtpAuthTab from "./tabs/PKPAuthMethods/StytchEmailOtpAuthTab";
+import StytchSmsOtpAuthTab from "./tabs/PKPAuthMethods/StytchSmsOtpAuthTab";
+import StytchWhatsAppOtpAuthTab from "./tabs/PKPAuthMethods/StytchWhatsAppOtpAuthTab";
 import CustomAuthTab from "./tabs/CustomAuthTab";
-import SetupLitClientTab from "./tabs/SetupLitClientTab";
-import SetupAuthManagerTab from "./tabs/SetupAuthManagerTab";
-import NetworkConfigurationTab from "./tabs/NetworkConfigurationTab";
-import StoragePluginsTab from "./tabs/StoragePluginsTab";
+
 import LitAuthProviderDemoTab from "./tabs/LitAuthProviderDemoTab";
 import EncryptionTab from "./tabs/EncryptionTab";
-import SetupAuthServicesTab from "./tabs/SetupAuthServicesTab";
+import SetupLitClientTab from "./tabs/GettingStarted/SetupLitClientTab";
+import SetupAuthManagerTab from "./tabs/GettingStarted/SetupAuthManagerTab";
+import SetupAuthServicesTab from "./tabs/GettingStarted/SetupAuthServicesTab";
+import EoaNativeTab from "./tabs/EoaNativeTab";
+import StoragePluginsTab from "./tabs/GettingStarted/StoragePluginsTab";
+import StytchTotpAuthTab from "./tabs/PKPAuthMethods/2fa/StytchTotpAuthTab";
 
 // Create a type for the context
 type ContextType = {
@@ -104,10 +104,6 @@ export const router = createBrowserRouter([
       {
         path: "setup-auth-services",
         element: <SetupAuthServicesTab />,
-      },
-      {
-        path: "network-configuration",
-        element: <NetworkConfigurationTab />,
       },
       {
         path: "storage-plugins",

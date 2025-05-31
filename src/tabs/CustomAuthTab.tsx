@@ -9,7 +9,7 @@ import { utils as litUtils } from '@lit-protocol/lit-client';
 const AUTH_NAME = "Custom Authentication (dApp-Centric)";
 
 // Configuration constants
-const DEFAULT_AUTH_SERVICE_BASE_URL = "http://localhost:3301";
+const DEFAULT_AUTH_SERVICE_BASE_URL = "https://naga-auth-service.onrender.com";
 const DEFAULT_DEMO_USERNAME = "alice";
 const DEFAULT_DEMO_PASSWORD = "lit";
 

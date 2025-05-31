@@ -10,7 +10,7 @@ import ExecuteJsComponent from "../../../components/common/ExecuteJsComponent";
 const AUTH_NAME = "Stytch TOTP 2FA Authentication";
 
 // Configuration constants
-const DEFAULT_AUTH_SERVICE_BASE_URL = "http://localhost:3301";
+const DEFAULT_AUTH_SERVICE_BASE_URL = "https://naga-auth-service.onrender.com";
 
 // Code snippets for each functionality
 const AUTHENTICATE_TOTP_CODE = `
@@ -19,7 +19,7 @@ import { StytchTotp2FAAuthenticator } from "@lit-protocol/auth";
 const authData = await StytchTotp2FAAuthenticator.authenticate({
   userId: "user-test-uuid-1234", // Stytch user ID from primary auth
   totpCode: "123456", // 6-digit code from authenticator app
-  authServiceBaseUrl: "http://localhost:3301"
+  authServiceBaseUrl: "https://naga-auth-service.onrender.com"
 });`;
 
 const MINT_PKP_CODE = `
@@ -246,7 +246,7 @@ export default function StytchTotpAuthTab() {
             type="url"
             value={authServiceBaseUrl}
             onChange={(e) => setAuthServiceBaseUrl(e.target.value)}
-            placeholder="http://localhost:3301"
+            placeholder="https://naga-auth-service.onrender.com"
             style={{
               width: "100%",
               padding: "8px 12px",
