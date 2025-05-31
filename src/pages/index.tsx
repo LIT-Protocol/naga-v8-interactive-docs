@@ -275,22 +275,22 @@ const ACTIONS = [
     category: "Getting Started",
     type: "primary",
   },
-  {
-    id: "network-configuration",
-    path: "/network-configuration",
-    name: "Network Configuration",
-    description: "Configure Lit Protocol network settings (nagaDev)",
-    category: "Getting Started",
-    type: "primary",
-  },
-  {
-    id: "storage-plugins",
-    path: "/storage-plugins",
-    name: "Storage Plugins",
-    description: "Configure localStorage and other storage options",
-    category: "Getting Started",
-    type: "primary",
-  },
+  // {
+  //   id: "network-configuration",
+  //   path: "/network-configuration",
+  //   name: "Network Configuration",
+  //   description: "Configure Lit Protocol network settings (nagaDev)",
+  //   category: "Getting Started",
+  //   type: "primary",
+  // },
+  // {
+  //   id: "storage-plugins",
+  //   path: "/storage-plugins",
+  //   name: "Storage Plugins",
+  //   description: "Configure localStorage and other storage options",
+  //   category: "Getting Started",
+  //   type: "primary",
+  // },
 
   // EOA Authentication
   {

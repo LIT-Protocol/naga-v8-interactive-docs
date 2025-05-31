@@ -8,6 +8,8 @@
 import React, { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { DisplayCode } from "../../components/DisplayCode";
+import { exploreObjectStructure } from "../../utils/explore-structure";
+import { localStorageNode } from "@lit-protocol/auth/src/lib/storage/localStorageNode";
 
 interface TabContext {
   areDependenciesLoaded: () => boolean;
@@ -95,35 +97,19 @@ const customStorage = {
       if (selectedStorage === "localStorage") {
         // Show localStorage configuration
         setStorageStatus("✅ localStorage configuration shown!");
-        setTestResult({
-          success: true,
-          storage: "localStorage",
-          operation: "configuration example",
-          config:
-            "localStorage({ appName: 'my-app', networkName: 'naga-dev' })",
-          note: "Persistent browser storage across sessions",
-          timestamp: new Date().toISOString(),
-        });
+        setTestResult(exploreObjectStructure(localStorage));
       } else if (selectedStorage === "localStorageNode") {
         setStorageStatus("✅ Node.js storage configuration shown!");
-        setTestResult({
-          success: true,
-          storage: "localStorageNode",
-          operation: "configuration example",
-          config:
-            "localStorageNode({ appName: 'my-node-app', networkName: 'naga-dev', storagePath: './lit-auth-storage' })",
-          note: "File-based storage for Node.js environments",
-          timestamp: new Date().toISOString(),
-        });
+        setTestResult(exploreObjectStructure(localStorageNode));
       } else {
-        setStorageStatus("✅ Custom storage pattern shown!");
-        setTestResult({
-          success: true,
-          storage: "custom",
-          operation: "code example provided",
-          note: "Implement your own storage logic with the provided interface",
-          timestamp: new Date().toISOString(),
-        });
+        // setStorageStatus("✅ Custom storage pattern shown!");
+        // setTestResult({
+        //   success: true,
+        //   storage: "custom",
+        //   operation: "code example provided",
+        //   note: "Implement your own storage logic with the provided interface",
+        //   timestamp: new Date().toISOString(),
+        // });
       }
 
       setStatus("Storage configuration completed!");
