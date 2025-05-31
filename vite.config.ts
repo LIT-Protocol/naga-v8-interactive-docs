@@ -5,9 +5,27 @@ import react from "@vitejs/plugin-react-swc";
 export default defineConfig({
   plugins: [react()],
   define: {
-    global: "globalThis",
+    global: 'globalThis',
+  },
+  resolve: {
+    alias: {
+      buffer: 'buffer',
+    },
   },
   optimizeDeps: {
-    include: ["buffer"],
+    include: ['buffer'],
+  },
+  build: {
+    commonjsOptions: {
+      transformMixedEsModules: true,
+    },
+    rollupOptions: {
+      external: [],
+      output: {
+        globals: {
+          buffer: 'Buffer',
+        },
+      },
+    },
   },
 });

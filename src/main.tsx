@@ -1,3 +1,10 @@
+// Buffer polyfill - must be imported before other modules
+import { Buffer } from 'buffer';
+if (typeof window !== 'undefined') {
+  window.Buffer = Buffer;
+  (globalThis as any).Buffer = Buffer;
+}
+
 import React from "react";
 import ReactDOM from "react-dom/client";
 import "./index.css";
