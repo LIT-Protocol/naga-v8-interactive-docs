@@ -762,8 +762,34 @@ export default function EncryptionTab() {
               isSuccess={successActions.has("bob-account")}
             />
           </GreyBoarderWhiteBgContainer>
+        </div>
+      </div>
 
-          {/* Access Control Conditions - Moved up as prerequisite */}
+      {/* Alice's Access Control Conditions - Separate section with Alice's styling */}
+      <div
+        style={{
+          border: "2px solid #007bff",
+          borderRadius: "8px",
+          marginBottom: "30px",
+          backgroundColor: "#f8fbff",
+        }}
+      >
+        <div
+          style={{
+            backgroundColor: "#007bff",
+            color: "white",
+            padding: "15px",
+            borderRadius: "6px 6px 0 0",
+            marginBottom: "20px",
+          }}
+        >
+          <h2 style={{ margin: 0 }}>🔐 Alice Defines Access Rules</h2>
+          <p style={{ margin: "5px 0 0 0", fontSize: "14px" }}>
+            Alice decides who can decrypt her encrypted data
+          </p>
+        </div>
+
+        <div style={{ padding: "0 20px 20px 20px" }}>
           <GreyBoarderWhiteBgContainer>
             <h3 style={{ marginTop: 0 }}>
               Step 3: Build Access Control Conditions
@@ -775,9 +801,9 @@ export default function EncryptionTab() {
               )}
             </h3>
             <p>
-              Define who can decrypt the encrypted data using official access
-              control conditions builder. These conditions are a prerequisite
-              for encryption and will be checked during decryption.
+              Alice defines who can decrypt the encrypted data using official access
+              control conditions builder. These conditions reference Bob's wallet address
+              and will be checked during decryption.
             </p>
 
             <DisplayCode
@@ -829,7 +855,7 @@ export default function EncryptionTab() {
                       backgroundColor:
                         !bobAccount || isBuildingConditions
                           ? "#cccccc"
-                          : "#6f42c1",
+                          : "#007bff",
                       color: "white",
                       border: "none",
                       borderRadius: "4px",
@@ -872,7 +898,34 @@ export default function EncryptionTab() {
               isSuccess={successActions.has("build-conditions")}
             />
           </GreyBoarderWhiteBgContainer>
+        </div>
+      </div>
 
+      {/* Bob's AuthContext Section */}
+      <div
+        style={{
+          border: "2px solid #28a745",
+          borderRadius: "8px",
+          marginBottom: "30px",
+          backgroundColor: "#f8fff9",
+        }}
+      >
+        <div
+          style={{
+            backgroundColor: "#28a745",
+            color: "white",
+            padding: "15px",
+            borderRadius: "6px 6px 0 0",
+            marginBottom: "20px",
+          }}
+        >
+          <h2 style={{ margin: 0 }}>🔑 Bob Prepares for Decryption</h2>
+          <p style={{ margin: "5px 0 0 0", fontSize: "14px" }}>
+            Bob creates authentication context to prove he meets access conditions
+          </p>
+        </div>
+
+        <div style={{ padding: "0 20px 20px 20px" }}>
           <GreyBoarderWhiteBgContainer>
             <h3 style={{ marginTop: 0 }}>
               Step 4: Create Bob's AuthContext
@@ -926,856 +979,908 @@ export default function EncryptionTab() {
       </div>
 
       {/* Data Configuration */}
-      <GreyBoarderWhiteBgContainer>
-        <h3 style={{ marginTop: 0 }}>Step 5: Configure Data to Encrypt</h3>
-        <p>
-          Choose the type of data to encrypt and configure it. The new encrypt
-          API supports multiple data types with automatic type inference and
-          metadata.
-        </p>
+      <div
+        style={{
+          border: "2px solid #007bff",
+          borderRadius: "8px",
+          marginBottom: "30px",
+          backgroundColor: "#f8fbff",
+        }}
+      >
+        <div
+          style={{
+            backgroundColor: "#007bff",
+            color: "white",
+            padding: "15px",
+            borderRadius: "6px 6px 0 0",
+            marginBottom: "20px",
+          }}
+        >
+          <h2 style={{ margin: 0 }}>📝 Alice Prepares Data</h2>
+          <p style={{ margin: "5px 0 0 0", fontSize: "14px" }}>
+            Alice configures and encrypts the data with access control conditions
+          </p>
+        </div>
 
-        <div style={{ marginBottom: "20px" }}>
-          <div style={{ marginBottom: "15px" }}>
-            <label
-              style={{
-                display: "block",
-                marginBottom: "5px",
-                fontWeight: "500",
-              }}
-            >
-              Data Type:
-            </label>
-            <select
-              value={dataType}
-              onChange={(e) => setDataType(e.target.value as DataType)}
-              style={{
-                width: "100%",
-                padding: "8px 12px",
-                border: "1px solid #ddd",
-                borderRadius: "4px",
-                fontSize: "14px",
-              }}
-            >
-              <option value="string">String</option>
-              <option value="json">JSON Object</option>
-              <option value="uint8array">Uint8Array</option>
-              <option value="image">Image File</option>
-              <option value="video">Video File</option>
-              <option value="file">Any File</option>
-            </select>
-          </div>
+        <div style={{ padding: "0 20px 20px 20px" }}>
+          <GreyBoarderWhiteBgContainer>
+            <h3 style={{ marginTop: 0 }}>Step 5: Configure Data to Encrypt</h3>
+            <p>
+              Choose the type of data to encrypt and configure it. The new encrypt
+              API supports multiple data types with automatic type inference and
+              metadata.
+            </p>
 
-          {dataType === "string" && (
-            <div style={{ marginBottom: "15px" }}>
-              <label
-                style={{
-                  display: "block",
-                  marginBottom: "5px",
-                  fontWeight: "500",
-                }}
-              >
-                String Data:
-              </label>
-              <input
-                type="text"
-                value={stringData}
-                onChange={(e) => setStringData(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "8px 12px",
-                  border: "1px solid #ddd",
-                  borderRadius: "4px",
-                  fontSize: "14px",
-                  color: "#495057",
-                  backgroundColor: "white",
-                }}
-              />
-            </div>
-          )}
-
-          {dataType === "json" && (
-            <div style={{ marginBottom: "15px" }}>
-              <label
-                style={{
-                  display: "block",
-                  marginBottom: "5px",
-                  fontWeight: "500",
-                }}
-              >
-                JSON Data:
-              </label>
-              <textarea
-                value={jsonData}
-                onChange={(e) => setJsonData(e.target.value)}
-                rows={4}
-                style={{
-                  width: "100%",
-                  padding: "8px 12px",
-                  border: "1px solid #ddd",
-                  borderRadius: "4px",
-                  fontSize: "14px",
-                  fontFamily: "monospace",
-                  color: "#495057",
-                  backgroundColor: "white",
-                }}
-              />
-            </div>
-          )}
-
-          {(dataType === "image" ||
-            dataType === "video" ||
-            dataType === "file") && (
-            <div style={{ marginBottom: "15px" }}>
-              <label
-                style={{
-                  display: "block",
-                  marginBottom: "5px",
-                  fontWeight: "500",
-                }}
-              >
-                Upload {dataType}:
-              </label>
-              <input
-                type="file"
-                onChange={handleFileUpload}
-                accept={
-                  dataType === "image"
-                    ? "image/*"
-                    : dataType === "video"
-                    ? "video/*"
-                    : "*"
-                }
-                style={{
-                  width: "100%",
-                  padding: "8px 12px",
-                  border: "1px solid #ddd",
-                  borderRadius: "4px",
-                  fontSize: "14px",
-                }}
-              />
-              {fileUploadError && (
-                <div
+            <div style={{ marginBottom: "20px" }}>
+              <div style={{ marginBottom: "15px" }}>
+                <label
                   style={{
-                    marginTop: "10px",
-                    padding: "12px",
-                    backgroundColor: "#ffe6e6",
+                    display: "block",
+                    marginBottom: "5px",
+                    fontWeight: "500",
+                  }}
+                >
+                  Data Type:
+                </label>
+                <select
+                  value={dataType}
+                  onChange={(e) => setDataType(e.target.value as DataType)}
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    border: "1px solid #ddd",
                     borderRadius: "4px",
-                    border: "1px solid #ff9999",
                     fontSize: "14px",
                   }}
                 >
-                  <div
+                  <option value="string">String</option>
+                  <option value="json">JSON Object</option>
+                  <option value="uint8array">Uint8Array</option>
+                  <option value="image">Image File</option>
+                  <option value="video">Video File</option>
+                  <option value="file">Any File</option>
+                </select>
+              </div>
+
+              {dataType === "string" && (
+                <div style={{ marginBottom: "15px" }}>
+                  <label
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
+                      display: "block",
+                      marginBottom: "5px",
+                      fontWeight: "500",
                     }}
                   >
-                    <span style={{ color: "#cc0000", fontSize: "16px" }}>
-                      ⚠️
-                    </span>
-                    <span style={{ color: "#cc0000", fontWeight: "500" }}>
-                      File Upload Error
-                    </span>
-                  </div>
-                  <div style={{ marginTop: "5px", color: "#cc0000" }}>
-                    {fileUploadError}
-                  </div>
+                    String Data:
+                  </label>
+                  <input
+                    type="text"
+                    value={stringData}
+                    onChange={(e) => setStringData(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "8px 12px",
+                      border: "1px solid #ddd",
+                      borderRadius: "4px",
+                      fontSize: "14px",
+                      color: "#495057",
+                      backgroundColor: "white",
+                    }}
+                  />
                 </div>
               )}
-              {fileData && (
-                <div
-                  style={{ marginTop: "8px", fontSize: "12px", color: "#666" }}
-                >
-                  Selected: {fileData.name} ({formatFileSize(fileData.size)})
+
+              {dataType === "json" && (
+                <div style={{ marginBottom: "15px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "5px",
+                      fontWeight: "500",
+                    }}
+                  >
+                    JSON Data:
+                  </label>
+                  <textarea
+                    value={jsonData}
+                    onChange={(e) => setJsonData(e.target.value)}
+                    rows={4}
+                    style={{
+                      width: "100%",
+                      padding: "8px 12px",
+                      border: "1px solid #ddd",
+                      borderRadius: "4px",
+                      fontSize: "14px",
+                      fontFamily: "monospace",
+                      color: "#495057",
+                      backgroundColor: "white",
+                    }}
+                  />
                 </div>
               )}
-              <small
-                style={{
-                  color: "#666",
-                  fontSize: "12px",
-                  display: "block",
-                  marginTop: "5px",
-                }}
-              >
-                Maximum file size: {formatFileSize(MAX_FILE_SIZE)}
-              </small>
-            </div>
-          )}
 
-          <div style={{ marginBottom: "15px" }}>
-            <label
-              style={{
-                display: "block",
-                marginBottom: "5px",
-                fontWeight: "500",
-              }}
-            >
-              Custom Metadata (JSON):
-            </label>
-            <textarea
-              value={customMetadata}
-              onChange={(e) => setCustomMetadata(e.target.value)}
-              rows={3}
-              style={{
-                width: "100%",
-                padding: "8px 12px",
-                border: "1px solid #ddd",
-                borderRadius: "4px",
-                fontSize: "14px",
-                fontFamily: "monospace",
-                color: "#495057",
-                backgroundColor: "white",
-              }}
-            />
-            <small style={{ color: "#666", fontSize: "12px" }}>
-              Additional metadata to include with the encrypted data
-            </small>
-          </div>
-        </div>
-      </GreyBoarderWhiteBgContainer>
-
-      {/* Encryption */}
-      <GreyBoarderWhiteBgContainer>
-        <h3 style={{ marginTop: 0 }}>
-          Step 6: Encrypt Data (Alice)
-          {(!aliceAccount || !unifiedAccessControlConditions) && (
-            <span style={{ color: "orange" }}> (Complete previous steps)</span>
-          )}
-        </h3>
-        <p>
-          Alice encrypts the configured data using the access control
-          conditions. No authentication required for encryption.
-        </p>
-
-        <DisplayCode
-          code={ENCRYPT_CODE}
-          language="typescript"
-          renderComponent={
-            <button
-              onClick={encryptData}
-              disabled={
-                !aliceAccount || !unifiedAccessControlConditions || isEncrypting
-              }
-              style={{
-                padding: "12px 20px",
-                backgroundColor:
-                  !aliceAccount ||
-                  !unifiedAccessControlConditions ||
-                  isEncrypting
-                    ? "#cccccc"
-                    : "#007bff",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor:
-                  !aliceAccount ||
-                  !unifiedAccessControlConditions ||
-                  isEncrypting
-                    ? "not-allowed"
-                    : "pointer",
-                fontWeight: "500",
-              }}
-            >
-              {isEncrypting
-                ? "Encrypting..."
-                : successActions.has("encrypt-data")
-                ? "✓ Data Encrypted"
-                : "🔐 Encrypt Data"}
-            </button>
-          }
-          resultData={encryptedData}
-          resultLabel="Encrypted Data"
-          useSideBySide={true}
-          theme="dracula"
-          isSuccess={successActions.has("encrypt-data")}
-        />
-      </GreyBoarderWhiteBgContainer>
-
-      {/* Decryption */}
-      <GreyBoarderWhiteBgContainer>
-        <h3 style={{ marginTop: 0 }}>
-          Step 7: Decrypt Data (Bob)
-          {(!bobAuthContext || !encryptedData) && (
-            <span style={{ color: "orange" }}>
-              {" "}
-              (Encrypt data and create Bob's AuthContext first)
-            </span>
-          )}
-        </h3>
-        <p>
-          Bob decrypts the data using his AuthContext. The access control
-          conditions will be verified during decryption.
-        </p>
-
-        <DisplayCode
-          code={DECRYPT_CODE}
-          language="typescript"
-          renderComponent={
-            <button
-              onClick={decryptData}
-              disabled={
-                !bobAuthContext ||
-                !encryptedData ||
-                !unifiedAccessControlConditions ||
-                isDecrypting
-              }
-              style={{
-                padding: "12px 20px",
-                backgroundColor:
-                  !bobAuthContext ||
-                  !encryptedData ||
-                  !unifiedAccessControlConditions ||
-                  isDecrypting
-                    ? "#cccccc"
-                    : "#28a745",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor:
-                  !bobAuthContext ||
-                  !encryptedData ||
-                  !unifiedAccessControlConditions ||
-                  isDecrypting
-                    ? "not-allowed"
-                    : "pointer",
-                fontWeight: "500",
-              }}
-            >
-              {isDecrypting
-                ? "Decrypting..."
-                : successActions.has("decrypt-data")
-                ? "✓ Data Decrypted"
-                : "🔓 Decrypt Data"}
-            </button>
-          }
-          resultData={decryptedResponse}
-          resultLabel="Decrypted Data"
-          useSideBySide={true}
-          theme="dracula"
-          isSuccess={successActions.has("decrypt-data")}
-        />
-
-        {/* Custom Decrypted Content Display */}
-        {decryptedResponse && (
-          <div style={{ marginTop: "20px" }}>
-            <h4 style={{ marginBottom: "15px", color: "#28a745" }}>
-              🔓 Decrypted Content
-            </h4>
-
-            {/* Helper function to get actual decrypted data */}
-            {(() => {
-              // Try different possible property names for the decrypted data
-              const actualData =
-                decryptedResponse.convertedData ||
-                decryptedResponse.plaintext ||
-                decryptedResponse.decryptedData ||
-                decryptedResponse.data ||
-                decryptedResponse;
-
-              console.log(
-                "🔍 Decrypted Response Structure:",
-                decryptedResponse
-              );
-              console.log("🔍 Actual Data:", actualData);
-              console.log("🔍 Data Type:", dataType);
-
-              // Debug info
-              const debugInfo = (
-                <div
-                  style={{
-                    marginBottom: "15px",
-                    padding: "10px",
-                    backgroundColor: "#f0f8ff",
-                    borderRadius: "4px",
-                    fontSize: "12px",
-                    border: "1px solid #b3d9ff",
-                  }}
-                >
-                  <strong>Debug Info:</strong>
-                  <br />
-                  Response keys: {Object.keys(decryptedResponse).join(", ")}
-                  <br />
-                  Data type: {typeof actualData}
-                  <br />
-                  Data: {String(actualData)?.substring(0, 100)}
-                  {String(actualData)?.length > 100 ? "..." : ""}
-                </div>
-              );
-
-              return (
-                <>
-                  {debugInfo}
-
-                  {/* Render content based on data type */}
-                  {dataType === "image" && actualData && (
-                    <div style={{ marginBottom: "15px" }}>
-                      <h5 style={{ marginBottom: "10px" }}>Decrypted Image:</h5>
-                      {(() => {
-                        console.log("🖼️ Image data debug:", {
-                          dataType: typeof actualData,
-                          isString: typeof actualData === "string",
-                          isUint8Array: actualData instanceof Uint8Array,
-                          isArrayBuffer: actualData instanceof ArrayBuffer,
-                          length: actualData?.length || actualData?.byteLength,
-                          first20Bytes:
-                            actualData instanceof Uint8Array
-                              ? Array.from(actualData.slice(0, 20))
-                              : "N/A",
-                          fileType: fileData?.type,
-                          fileName: fileData?.name,
-                        });
-
-                        let imageSrc: string = "";
-                        let mimeType = fileData?.type || "image/jpeg"; // fallback to jpeg
-
-                        try {
-                          if (typeof actualData === "string") {
-                            // If string, assume it's base64
-                            imageSrc = `data:${mimeType};base64,${actualData}`;
-                          } else if (actualData instanceof Blob) {
-                            // If already a Blob (Lit Protocol returns this), use it directly
-                            imageSrc = URL.createObjectURL(actualData);
-                            mimeType = actualData.type || mimeType; // Use blob's type if available
-
-                            console.log("🖼️ Using existing blob:", {
-                              size: actualData.size,
-                              type: actualData.type,
-                              url: imageSrc,
-                            });
-                          } else if (
-                            actualData instanceof Uint8Array ||
-                            actualData instanceof ArrayBuffer
-                          ) {
-                            // Create blob with proper MIME type
-                            const blobData =
-                              actualData instanceof Uint8Array
-                                ? actualData
-                                : new Uint8Array(actualData);
-                            const blob = new Blob([blobData], {
-                              type: mimeType,
-                            });
-                            imageSrc = URL.createObjectURL(blob);
-
-                            console.log("🖼️ Created blob:", {
-                              size: blob.size,
-                              type: blob.type,
-                              url: imageSrc,
-                            });
-                          } else {
-                            // Fallback: try to convert to Uint8Array
-                            const uint8Data = new Uint8Array(actualData);
-                            const blob = new Blob([uint8Data], {
-                              type: mimeType,
-                            });
-                            imageSrc = URL.createObjectURL(blob);
-                          }
-
-                          return (
-                            <div>
-                              <img
-                                src={imageSrc}
-                                alt="Decrypted content"
-                                style={{
-                                  maxWidth: "100%",
-                                  maxHeight: "400px",
-                                  border: "1px solid #ddd",
-                                  borderRadius: "4px",
-                                }}
-                                onLoad={() => {
-                                  console.log("✅ Image loaded successfully");
-                                }}
-                                onError={(e) => {
-                                  console.error("❌ Image load error:", e);
-                                  console.error(
-                                    "❌ Failed image src:",
-                                    imageSrc
-                                  );
-                                  console.error("❌ Image data details:", {
-                                    dataType: typeof actualData,
-                                    length:
-                                      actualData?.length ||
-                                      actualData?.byteLength,
-                                    mimeType,
-                                    fileName: fileData?.name,
-                                  });
-                                }}
-                              />
-                              <div
-                                style={{
-                                  marginTop: "10px",
-                                  fontSize: "12px",
-                                  color: "#666",
-                                  fontFamily: "monospace",
-                                }}
-                              >
-                                <strong>Debug Info:</strong>
-                                <br />
-                                Type: {mimeType}
-                                <br />
-                                Size:{" "}
-                                {actualData?.length ||
-                                  actualData?.byteLength}{" "}
-                                bytes
-                                <br />
-                                Source: {imageSrc.substring(0, 50)}...
-                              </div>
-                            </div>
-                          );
-                        } catch (error) {
-                          console.error(
-                            "❌ Error creating image source:",
-                            error
-                          );
-                          return (
-                            <div
-                              style={{
-                                padding: "15px",
-                                backgroundColor: "#ffe6e6",
-                                borderRadius: "4px",
-                                border: "1px solid #ff9999",
-                              }}
-                            >
-                              <h6 style={{ color: "#cc0000" }}>
-                                Image Rendering Error
-                              </h6>
-                              <p>
-                                Failed to create image source: {String(error)}
-                              </p>
-                              <p>Data type: {typeof actualData}</p>
-                              <p>
-                                Data size:{" "}
-                                {actualData?.length ||
-                                  actualData?.byteLength ||
-                                  "unknown"}
-                              </p>
-                            </div>
-                          );
-                        }
-                      })()}
-                    </div>
-                  )}
-
-                  {dataType === "video" && actualData && (
-                    <div style={{ marginBottom: "15px" }}>
-                      <h5 style={{ marginBottom: "10px" }}>Decrypted Video:</h5>
-                      {(() => {
-                        console.log("🎥 Video data debug:", {
-                          dataType: typeof actualData,
-                          isBlob: actualData instanceof Blob,
-                          size:
-                            actualData?.size ||
-                            actualData?.length ||
-                            actualData?.byteLength,
-                          type: actualData?.type,
-                          fileName: fileData?.name,
-                        });
-
-                        let videoSrc: string = "";
-                        let mimeType = fileData?.type || "video/mp4"; // fallback to mp4
-
-                        try {
-                          if (typeof actualData === "string") {
-                            // If string, assume it's base64
-                            videoSrc = `data:${mimeType};base64,${actualData}`;
-                          } else if (actualData instanceof Blob) {
-                            // If already a Blob (Lit Protocol returns this), use it directly
-                            videoSrc = URL.createObjectURL(actualData);
-                            mimeType = actualData.type || mimeType; // Use blob's type if available
-
-                            console.log("🎥 Using existing blob:", {
-                              size: actualData.size,
-                              type: actualData.type,
-                              url: videoSrc,
-                            });
-                          } else if (
-                            actualData instanceof Uint8Array ||
-                            actualData instanceof ArrayBuffer
-                          ) {
-                            // Create blob with proper MIME type
-                            const blobData =
-                              actualData instanceof Uint8Array
-                                ? actualData
-                                : new Uint8Array(actualData);
-                            const blob = new Blob([blobData], {
-                              type: mimeType,
-                            });
-                            videoSrc = URL.createObjectURL(blob);
-
-                            console.log("🎥 Created blob:", {
-                              size: blob.size,
-                              type: blob.type,
-                              url: videoSrc,
-                            });
-                          } else {
-                            // Fallback: try to convert to Uint8Array
-                            const uint8Data = new Uint8Array(actualData);
-                            const blob = new Blob([uint8Data], {
-                              type: mimeType,
-                            });
-                            videoSrc = URL.createObjectURL(blob);
-                          }
-
-                          return (
-                            <div>
-                              <video
-                                controls
-                                style={{
-                                  maxWidth: "100%",
-                                  maxHeight: "400px",
-                                  border: "1px solid #ddd",
-                                  borderRadius: "4px",
-                                }}
-                                onLoadedData={() => {
-                                  console.log("✅ Video loaded successfully");
-                                }}
-                                onError={(e) => {
-                                  console.error("❌ Video load error:", e);
-                                  console.error(
-                                    "❌ Failed video src:",
-                                    videoSrc
-                                  );
-                                  console.error("❌ Video data details:", {
-                                    dataType: typeof actualData,
-                                    size:
-                                      actualData?.size ||
-                                      actualData?.length ||
-                                      actualData?.byteLength,
-                                    mimeType,
-                                    fileName: fileData?.name,
-                                  });
-                                }}
-                              >
-                                <source src={videoSrc} type={mimeType} />
-                                Your browser does not support the video tag.
-                              </video>
-                              <div
-                                style={{
-                                  marginTop: "10px",
-                                  fontSize: "12px",
-                                  color: "#666",
-                                  fontFamily: "monospace",
-                                }}
-                              >
-                                <strong>Video Debug Info:</strong>
-                                <br />
-                                Type: {mimeType}
-                                <br />
-                                Size:{" "}
-                                {actualData?.size ||
-                                  actualData?.length ||
-                                  actualData?.byteLength}{" "}
-                                bytes
-                                <br />
-                                Source: {videoSrc.substring(0, 50)}...
-                              </div>
-                            </div>
-                          );
-                        } catch (error) {
-                          console.error(
-                            "❌ Error creating video source:",
-                            error
-                          );
-                          return (
-                            <div
-                              style={{
-                                padding: "15px",
-                                backgroundColor: "#ffe6e6",
-                                borderRadius: "4px",
-                                border: "1px solid #ff9999",
-                              }}
-                            >
-                              <h6 style={{ color: "#cc0000" }}>
-                                Video Rendering Error
-                              </h6>
-                              <p>
-                                Failed to create video source: {String(error)}
-                              </p>
-                              <p>Data type: {typeof actualData}</p>
-                              <p>
-                                Data size:{" "}
-                                {actualData?.size ||
-                                  actualData?.length ||
-                                  actualData?.byteLength ||
-                                  "unknown"}
-                              </p>
-                            </div>
-                          );
-                        }
-                      })()}
-                    </div>
-                  )}
-
-                  {dataType === "file" && actualData && (
-                    <div style={{ marginBottom: "15px" }}>
-                      <h5 style={{ marginBottom: "10px" }}>Decrypted File:</h5>
-                      <div
-                        style={{
-                          padding: "10px",
-                          backgroundColor: "#f8f9fa",
-                          borderRadius: "4px",
-                          border: "1px solid #e9ecef",
-                        }}
-                      >
-                        <p>
-                          <strong>File Type:</strong>{" "}
-                          {fileData?.type || "Unknown"}
-                        </p>
-                        <p>
-                          <strong>Original Name:</strong>{" "}
-                          {fileData?.name || "Unknown"}
-                        </p>
-                        <p>
-                          <strong>Size:</strong>{" "}
-                          {actualData?.byteLength ||
-                            actualData?.length ||
-                            "Unknown"}{" "}
-                          bytes
-                        </p>
-                        {fileData?.type?.startsWith("text/") && actualData && (
-                          <div style={{ marginTop: "10px" }}>
-                            <h6>Content Preview:</h6>
-                            <pre
-                              style={{
-                                backgroundColor: "#f1f3f4",
-                                padding: "10px",
-                                borderRadius: "4px",
-                                fontSize: "12px",
-                                overflow: "auto",
-                                maxHeight: "200px",
-                              }}
-                            >
-                              {typeof actualData === "string"
-                                ? actualData.substring(0, 500)
-                                : new TextDecoder().decode(
-                                    new Uint8Array(actualData).slice(0, 500)
-                                  )}
-                              {(actualData?.length || 0) > 500 ? "..." : ""}
-                            </pre>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {(dataType === "string" ||
-                    dataType === "json" ||
-                    dataType === "uint8array") &&
-                    actualData !== undefined && (
-                      <div style={{ marginBottom: "15px" }}>
-                        <h5 style={{ marginBottom: "10px" }}>
-                          Decrypted Content:
-                        </h5>
-                        <pre
-                          style={{
-                            backgroundColor: "#f1f3f4",
-                            padding: "15px",
-                            borderRadius: "4px",
-                            fontSize: "14px",
-                            lineHeight: "1.4",
-                            overflow: "auto",
-                            maxHeight: "300px",
-                            border: "1px solid #e9ecef",
-                          }}
-                        >
-                          {dataType === "json"
-                            ? typeof actualData === "object"
-                              ? JSON.stringify(actualData, null, 2)
-                              : typeof actualData === "string"
-                              ? actualData
-                              : JSON.stringify(actualData, null, 2)
-                            : dataType === "uint8array"
-                            ? actualData?.length !== undefined
-                              ? `Uint8Array(${
-                                  actualData.length
-                                }) [\n  ${Array.from(actualData)
-                                  .slice(0, 20)
-                                  .join(", ")}${
-                                  actualData.length > 20 ? ",\n  ..." : ""
-                                }\n]`
-                              : String(actualData)
-                            : String(actualData)}
-                        </pre>
-                      </div>
-                    )}
-
-                  {/* Show message if no data found */}
-                  {actualData === undefined && (
+              {(dataType === "image" ||
+                dataType === "video" ||
+                dataType === "file") && (
+                <div style={{ marginBottom: "15px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "5px",
+                      fontWeight: "500",
+                    }}
+                  >
+                    Upload {dataType}:
+                  </label>
+                  <input
+                    type="file"
+                    onChange={handleFileUpload}
+                    accept={
+                      dataType === "image"
+                        ? "image/*"
+                        : dataType === "video"
+                        ? "video/*"
+                        : "*"
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "8px 12px",
+                      border: "1px solid #ddd",
+                      borderRadius: "4px",
+                      fontSize: "14px",
+                    }}
+                  />
+                  {fileUploadError && (
                     <div
                       style={{
-                        marginBottom: "15px",
-                        padding: "15px",
+                        marginTop: "10px",
+                        padding: "12px",
                         backgroundColor: "#ffe6e6",
                         borderRadius: "4px",
                         border: "1px solid #ff9999",
+                        fontSize: "14px",
                       }}
                     >
-                      <h5 style={{ marginBottom: "10px", color: "#cc0000" }}>
-                        ⚠️ No Decrypted Data Found
-                      </h5>
-                      <p>
-                        The decryption response doesn't contain recognizable
-                        data properties.
-                      </p>
-                      <p>
-                        Expected properties: convertedData, plaintext,
-                        decryptedData, data
-                      </p>
-                      <p>
-                        Available properties:{" "}
-                        {Object.keys(decryptedResponse).join(", ")}
-                      </p>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                        }}
+                      >
+                        <span style={{ color: "#cc0000", fontSize: "16px" }}>
+                          ⚠️
+                        </span>
+                        <span style={{ color: "#cc0000", fontWeight: "500" }}>
+                          File Upload Error
+                        </span>
+                      </div>
+                      <div style={{ marginTop: "5px", color: "#cc0000" }}>
+                        {fileUploadError}
+                      </div>
                     </div>
                   )}
-                </>
-              );
-            })()}
+                  {fileData && (
+                    <div
+                      style={{ marginTop: "8px", fontSize: "12px", color: "#666" }}
+                    >
+                      Selected: {fileData.name} ({formatFileSize(fileData.size)})
+                    </div>
+                  )}
+                  <small
+                    style={{
+                      color: "#666",
+                      fontSize: "12px",
+                      display: "block",
+                      marginTop: "5px",
+                    }}
+                  >
+                    Maximum file size: {formatFileSize(MAX_FILE_SIZE)}
+                  </small>
+                </div>
+              )}
 
-            {/* Metadata display */}
-            {decryptedResponse.metadata && (
               <div style={{ marginBottom: "15px" }}>
-                <h5 style={{ marginBottom: "10px" }}>Metadata:</h5>
-                <pre
+                <label
                   style={{
-                    backgroundColor: "#fff3cd",
-                    padding: "10px",
-                    borderRadius: "4px",
-                    fontSize: "12px",
-                    border: "1px solid #ffeaa7",
-                    overflow: "auto",
-                    maxHeight: "150px",
+                    display: "block",
+                    marginBottom: "5px",
+                    fontWeight: "500",
                   }}
                 >
-                  {JSON.stringify(decryptedResponse.metadata, null, 2)}
-                </pre>
+                  Custom Metadata (JSON):
+                </label>
+                <textarea
+                  value={customMetadata}
+                  onChange={(e) => setCustomMetadata(e.target.value)}
+                  rows={3}
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    border: "1px solid #ddd",
+                    borderRadius: "4px",
+                    fontSize: "14px",
+                    fontFamily: "monospace",
+                    color: "#495057",
+                    backgroundColor: "white",
+                  }}
+                />
+                <small style={{ color: "#666", fontSize: "12px" }}>
+                  Additional metadata to include with the encrypted data
+                </small>
+              </div>
+            </div>
+          </GreyBoarderWhiteBgContainer>
+
+          {/* Encryption */}
+          <GreyBoarderWhiteBgContainer>
+            <h3 style={{ marginTop: 0 }}>
+              Step 6: Encrypt Data (Alice)
+              {(!aliceAccount || !unifiedAccessControlConditions) && (
+                <span style={{ color: "orange" }}> (Complete previous steps)</span>
+              )}
+            </h3>
+            <p>
+              Alice encrypts the configured data using the access control
+              conditions. No authentication required for encryption.
+            </p>
+
+            <DisplayCode
+              code={ENCRYPT_CODE}
+              language="typescript"
+              renderComponent={
+                <button
+                  onClick={encryptData}
+                  disabled={
+                    !aliceAccount || !unifiedAccessControlConditions || isEncrypting
+                  }
+                  style={{
+                    padding: "12px 20px",
+                    backgroundColor:
+                      !aliceAccount ||
+                      !unifiedAccessControlConditions ||
+                      isEncrypting
+                        ? "#cccccc"
+                        : "#007bff",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "4px",
+                    cursor:
+                      !aliceAccount ||
+                      !unifiedAccessControlConditions ||
+                      isEncrypting
+                        ? "not-allowed"
+                        : "pointer",
+                    fontWeight: "500",
+                  }}
+                >
+                  {isEncrypting
+                    ? "Encrypting..."
+                    : successActions.has("encrypt-data")
+                    ? "✓ Data Encrypted"
+                    : "🔐 Encrypt Data"}
+                </button>
+              }
+              resultData={encryptedData}
+              resultLabel="Encrypted Data"
+              useSideBySide={true}
+              theme="dracula"
+              isSuccess={successActions.has("encrypt-data")}
+            />
+          </GreyBoarderWhiteBgContainer>
+        </div>
+      </div>
+
+      {/* Decryption */}
+      <div
+        style={{
+          border: "2px solid #28a745",
+          borderRadius: "8px",
+          marginBottom: "30px",
+          backgroundColor: "#f8fff9",
+        }}
+      >
+        <div
+          style={{
+            backgroundColor: "#28a745",
+            color: "white",
+            padding: "15px",
+            borderRadius: "6px 6px 0 0",
+            marginBottom: "20px",
+          }}
+        >
+          <h2 style={{ margin: 0 }}>🔓 Bob Decrypts Data</h2>
+          <p style={{ margin: "5px 0 0 0", fontSize: "14px" }}>
+            Bob uses his authentication context to decrypt Alice's data
+          </p>
+        </div>
+
+        <div style={{ padding: "0 20px 20px 20px" }}>
+          <GreyBoarderWhiteBgContainer>
+            <h3 style={{ marginTop: 0 }}>
+              Step 7: Decrypt Data (Bob)
+              {(!bobAuthContext || !encryptedData) && (
+                <span style={{ color: "orange" }}>
+                  {" "}
+                  (Encrypt data and create Bob's AuthContext first)
+                </span>
+              )}
+            </h3>
+            <p>
+              Bob decrypts the data using his AuthContext. The access control
+              conditions will be verified during decryption.
+            </p>
+
+            <DisplayCode
+              code={DECRYPT_CODE}
+              language="typescript"
+              renderComponent={
+                <button
+                  onClick={decryptData}
+                  disabled={
+                    !bobAuthContext ||
+                    !encryptedData ||
+                    !unifiedAccessControlConditions ||
+                    isDecrypting
+                  }
+                  style={{
+                    padding: "12px 20px",
+                    backgroundColor:
+                      !bobAuthContext ||
+                      !encryptedData ||
+                      !unifiedAccessControlConditions ||
+                      isDecrypting
+                        ? "#cccccc"
+                        : "#28a745",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "4px",
+                    cursor:
+                      !bobAuthContext ||
+                      !encryptedData ||
+                      !unifiedAccessControlConditions ||
+                      isDecrypting
+                        ? "not-allowed"
+                        : "pointer",
+                    fontWeight: "500",
+                  }}
+                >
+                  {isDecrypting
+                    ? "Decrypting..."
+                    : successActions.has("decrypt-data")
+                    ? "✓ Data Decrypted"
+                    : "🔓 Decrypt Data"}
+                </button>
+              }
+              resultData={decryptedResponse}
+              resultLabel="Decrypted Data"
+              useSideBySide={true}
+              theme="dracula"
+              isSuccess={successActions.has("decrypt-data")}
+            />
+
+            {/* Custom Decrypted Content Display */}
+            {decryptedResponse && (
+              <div style={{ marginTop: "20px" }}>
+                <h4 style={{ marginBottom: "15px", color: "#28a745" }}>
+                  🔓 Decrypted Content
+                </h4>
+
+                {/* Helper function to get actual decrypted data */}
+                {(() => {
+                  // Try different possible property names for the decrypted data
+                  const actualData =
+                    decryptedResponse.convertedData ||
+                    decryptedResponse.plaintext ||
+                    decryptedResponse.decryptedData ||
+                    decryptedResponse.data ||
+                    decryptedResponse;
+
+                  console.log(
+                    "🔍 Decrypted Response Structure:",
+                    decryptedResponse
+                  );
+                  console.log("🔍 Actual Data:", actualData);
+                  console.log("🔍 Data Type:", dataType);
+
+                  // Debug info
+                  const debugInfo = (
+                    <div
+                      style={{
+                        marginBottom: "15px",
+                        padding: "10px",
+                        backgroundColor: "#f0f8ff",
+                        borderRadius: "4px",
+                        fontSize: "12px",
+                        border: "1px solid #b3d9ff",
+                      }}
+                    >
+                      <strong>Debug Info:</strong>
+                      <br />
+                      Response keys: {Object.keys(decryptedResponse).join(", ")}
+                      <br />
+                      Data type: {typeof actualData}
+                      <br />
+                      Data: {String(actualData)?.substring(0, 100)}
+                      {String(actualData)?.length > 100 ? "..." : ""}
+                    </div>
+                  );
+
+                  return (
+                    <>
+                      {debugInfo}
+
+                      {/* Render content based on data type */}
+                      {dataType === "image" && actualData && (
+                        <div style={{ marginBottom: "15px" }}>
+                          <h5 style={{ marginBottom: "10px" }}>Decrypted Image:</h5>
+                          {(() => {
+                            console.log("🖼️ Image data debug:", {
+                              dataType: typeof actualData,
+                              isString: typeof actualData === "string",
+                              isUint8Array: actualData instanceof Uint8Array,
+                              isArrayBuffer: actualData instanceof ArrayBuffer,
+                              length: actualData?.length || actualData?.byteLength,
+                              first20Bytes:
+                                actualData instanceof Uint8Array
+                                  ? Array.from(actualData.slice(0, 20))
+                                  : "N/A",
+                              fileType: fileData?.type,
+                              fileName: fileData?.name,
+                            });
+
+                            let imageSrc: string = "";
+                            let mimeType = fileData?.type || "image/jpeg"; // fallback to jpeg
+
+                            try {
+                              if (typeof actualData === "string") {
+                                // If string, assume it's base64
+                                imageSrc = `data:${mimeType};base64,${actualData}`;
+                              } else if (actualData instanceof Blob) {
+                                // If already a Blob (Lit Protocol returns this), use it directly
+                                imageSrc = URL.createObjectURL(actualData);
+                                mimeType = actualData.type || mimeType; // Use blob's type if available
+
+                                console.log("🖼️ Using existing blob:", {
+                                  size: actualData.size,
+                                  type: actualData.type,
+                                  url: imageSrc,
+                                });
+                              } else if (
+                                actualData instanceof Uint8Array ||
+                                actualData instanceof ArrayBuffer
+                              ) {
+                                // Create blob with proper MIME type
+                                const blobData =
+                                  actualData instanceof Uint8Array
+                                    ? actualData
+                                    : new Uint8Array(actualData);
+                                const blob = new Blob([blobData], {
+                                  type: mimeType,
+                                });
+                                imageSrc = URL.createObjectURL(blob);
+
+                                console.log("🖼️ Created blob:", {
+                                  size: blob.size,
+                                  type: blob.type,
+                                  url: imageSrc,
+                                });
+                              } else {
+                                // Fallback: try to convert to Uint8Array
+                                const uint8Data = new Uint8Array(actualData);
+                                const blob = new Blob([uint8Data], {
+                                  type: mimeType,
+                                });
+                                imageSrc = URL.createObjectURL(blob);
+                              }
+
+                              return (
+                                <div>
+                                  <img
+                                    src={imageSrc}
+                                    alt="Decrypted content"
+                                    style={{
+                                      maxWidth: "100%",
+                                      maxHeight: "400px",
+                                      border: "1px solid #ddd",
+                                      borderRadius: "4px",
+                                    }}
+                                    onLoad={() => {
+                                      console.log("✅ Image loaded successfully");
+                                    }}
+                                    onError={(e) => {
+                                      console.error("❌ Image load error:", e);
+                                      console.error(
+                                        "❌ Failed image src:",
+                                        imageSrc
+                                      );
+                                      console.error("❌ Image data details:", {
+                                        dataType: typeof actualData,
+                                        length:
+                                          actualData?.length ||
+                                          actualData?.byteLength,
+                                        mimeType,
+                                        fileName: fileData?.name,
+                                      });
+                                    }}
+                                  />
+                                  <div
+                                    style={{
+                                      marginTop: "10px",
+                                      fontSize: "12px",
+                                      color: "#666",
+                                      fontFamily: "monospace",
+                                    }}
+                                  >
+                                    <strong>Debug Info:</strong>
+                                    <br />
+                                    Type: {mimeType}
+                                    <br />
+                                    Size:{" "}
+                                    {actualData?.length ||
+                                      actualData?.byteLength}{" "}
+                                    bytes
+                                    <br />
+                                    Source: {imageSrc.substring(0, 50)}...
+                                  </div>
+                                </div>
+                              );
+                            } catch (error) {
+                              console.error(
+                                "❌ Error creating image source:",
+                                error
+                              );
+                              return (
+                                <div
+                                  style={{
+                                    padding: "15px",
+                                    backgroundColor: "#ffe6e6",
+                                    borderRadius: "4px",
+                                    border: "1px solid #ff9999",
+                                  }}
+                                >
+                                  <h6 style={{ color: "#cc0000" }}>
+                                    Image Rendering Error
+                                  </h6>
+                                  <p>
+                                    Failed to create image source: {String(error)}
+                                  </p>
+                                  <p>Data type: {typeof actualData}</p>
+                                  <p>
+                                    Data size:{" "}
+                                    {actualData?.length ||
+                                      actualData?.byteLength ||
+                                      "unknown"}
+                                  </p>
+                                </div>
+                              );
+                            }
+                          })()}
+                        </div>
+                      )}
+
+                      {dataType === "video" && actualData && (
+                        <div style={{ marginBottom: "15px" }}>
+                          <h5 style={{ marginBottom: "10px" }}>Decrypted Video:</h5>
+                          {(() => {
+                            console.log("🎥 Video data debug:", {
+                              dataType: typeof actualData,
+                              isBlob: actualData instanceof Blob,
+                              size:
+                                actualData?.size ||
+                                actualData?.length ||
+                                actualData?.byteLength,
+                              type: actualData?.type,
+                              fileName: fileData?.name,
+                            });
+
+                            let videoSrc: string = "";
+                            let mimeType = fileData?.type || "video/mp4"; // fallback to mp4
+
+                            try {
+                              if (typeof actualData === "string") {
+                                // If string, assume it's base64
+                                videoSrc = `data:${mimeType};base64,${actualData}`;
+                              } else if (actualData instanceof Blob) {
+                                // If already a Blob (Lit Protocol returns this), use it directly
+                                videoSrc = URL.createObjectURL(actualData);
+                                mimeType = actualData.type || mimeType; // Use blob's type if available
+
+                                console.log("🎥 Using existing blob:", {
+                                  size: actualData.size,
+                                  type: actualData.type,
+                                  url: videoSrc,
+                                });
+                              } else if (
+                                actualData instanceof Uint8Array ||
+                                actualData instanceof ArrayBuffer
+                              ) {
+                                // Create blob with proper MIME type
+                                const blobData =
+                                  actualData instanceof Uint8Array
+                                    ? actualData
+                                    : new Uint8Array(actualData);
+                                const blob = new Blob([blobData], {
+                                  type: mimeType,
+                                });
+                                videoSrc = URL.createObjectURL(blob);
+
+                                console.log("🎥 Created blob:", {
+                                  size: blob.size,
+                                  type: blob.type,
+                                  url: videoSrc,
+                                });
+                              } else {
+                                // Fallback: try to convert to Uint8Array
+                                const uint8Data = new Uint8Array(actualData);
+                                const blob = new Blob([uint8Data], {
+                                  type: mimeType,
+                                });
+                                videoSrc = URL.createObjectURL(blob);
+                              }
+
+                              return (
+                                <div>
+                                  <video
+                                    controls
+                                    style={{
+                                      maxWidth: "100%",
+                                      maxHeight: "400px",
+                                      border: "1px solid #ddd",
+                                      borderRadius: "4px",
+                                    }}
+                                    onLoadedData={() => {
+                                      console.log("✅ Video loaded successfully");
+                                    }}
+                                    onError={(e) => {
+                                      console.error("❌ Video load error:", e);
+                                      console.error(
+                                        "❌ Failed video src:",
+                                        videoSrc
+                                      );
+                                      console.error("❌ Video data details:", {
+                                        dataType: typeof actualData,
+                                        size:
+                                          actualData?.size ||
+                                          actualData?.length ||
+                                          actualData?.byteLength,
+                                        mimeType,
+                                        fileName: fileData?.name,
+                                      });
+                                    }}
+                                  >
+                                    <source src={videoSrc} type={mimeType} />
+                                    Your browser does not support the video tag.
+                                  </video>
+                                  <div
+                                    style={{
+                                      marginTop: "10px",
+                                      fontSize: "12px",
+                                      color: "#666",
+                                      fontFamily: "monospace",
+                                    }}
+                                  >
+                                    <strong>Video Debug Info:</strong>
+                                    <br />
+                                    Type: {mimeType}
+                                    <br />
+                                    Size:{" "}
+                                    {actualData?.size ||
+                                      actualData?.length ||
+                                      actualData?.byteLength}{" "}
+                                    bytes
+                                    <br />
+                                    Source: {videoSrc.substring(0, 50)}...
+                                  </div>
+                                </div>
+                              );
+                            } catch (error) {
+                              console.error(
+                                "❌ Error creating video source:",
+                                error
+                              );
+                              return (
+                                <div
+                                  style={{
+                                    padding: "15px",
+                                    backgroundColor: "#ffe6e6",
+                                    borderRadius: "4px",
+                                    border: "1px solid #ff9999",
+                                  }}
+                                >
+                                  <h6 style={{ color: "#cc0000" }}>
+                                    Video Rendering Error
+                                  </h6>
+                                  <p>
+                                    Failed to create video source: {String(error)}
+                                  </p>
+                                  <p>Data type: {typeof actualData}</p>
+                                  <p>
+                                    Data size:{" "}
+                                    {actualData?.size ||
+                                      actualData?.length ||
+                                      actualData?.byteLength ||
+                                      "unknown"}
+                                  </p>
+                                </div>
+                              );
+                            }
+                          })()}
+                        </div>
+                      )}
+
+                      {dataType === "file" && actualData && (
+                        <div style={{ marginBottom: "15px" }}>
+                          <h5 style={{ marginBottom: "10px" }}>Decrypted File:</h5>
+                          <div
+                            style={{
+                              padding: "10px",
+                              backgroundColor: "#f8f9fa",
+                              borderRadius: "4px",
+                              border: "1px solid #e9ecef",
+                            }}
+                          >
+                            <p>
+                              <strong>File Type:</strong>{" "}
+                              {fileData?.type || "Unknown"}
+                            </p>
+                            <p>
+                              <strong>Original Name:</strong>{" "}
+                              {fileData?.name || "Unknown"}
+                            </p>
+                            <p>
+                              <strong>Size:</strong>{" "}
+                              {actualData?.byteLength ||
+                                actualData?.length ||
+                                "Unknown"}{" "}
+                              bytes
+                            </p>
+                            {fileData?.type?.startsWith("text/") && actualData && (
+                              <div style={{ marginTop: "10px" }}>
+                                <h6>Content Preview:</h6>
+                                <pre
+                                  style={{
+                                    backgroundColor: "#f1f3f4",
+                                    padding: "10px",
+                                    borderRadius: "4px",
+                                    fontSize: "12px",
+                                    overflow: "auto",
+                                    maxHeight: "200px",
+                                  }}
+                                >
+                                  {typeof actualData === "string"
+                                    ? actualData.substring(0, 500)
+                                    : new TextDecoder().decode(
+                                        new Uint8Array(actualData).slice(0, 500)
+                                      )}
+                                  {(actualData?.length || 0) > 500 ? "..." : ""}
+                                </pre>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {(dataType === "string" ||
+                        dataType === "json" ||
+                        dataType === "uint8array") &&
+                        actualData !== undefined && (
+                          <div style={{ marginBottom: "15px" }}>
+                            <h5 style={{ marginBottom: "10px" }}>
+                              Decrypted Content:
+                            </h5>
+                            <pre
+                              style={{
+                                backgroundColor: "#f1f3f4",
+                                padding: "15px",
+                                borderRadius: "4px",
+                                fontSize: "14px",
+                                lineHeight: "1.4",
+                                overflow: "auto",
+                                maxHeight: "300px",
+                                border: "1px solid #e9ecef",
+                              }}
+                            >
+                              {dataType === "json"
+                                ? typeof actualData === "object"
+                                  ? JSON.stringify(actualData, null, 2)
+                                  : typeof actualData === "string"
+                                  ? actualData
+                                  : JSON.stringify(actualData, null, 2)
+                                : dataType === "uint8array"
+                                ? actualData?.length !== undefined
+                                  ? `Uint8Array(${
+                                      actualData.length
+                                    }) [\n  ${Array.from(actualData)
+                                      .slice(0, 20)
+                                      .join(", ")}${
+                                      actualData.length > 20 ? ",\n  ..." : ""
+                                    }\n]`
+                                  : String(actualData)
+                                : String(actualData)}
+                            </pre>
+                          </div>
+                        )}
+
+                      {/* Show message if no data found */}
+                      {actualData === undefined && (
+                        <div
+                          style={{
+                            marginBottom: "15px",
+                            padding: "15px",
+                            backgroundColor: "#ffe6e6",
+                            borderRadius: "4px",
+                            border: "1px solid #ff9999",
+                          }}
+                        >
+                          <h5 style={{ marginBottom: "10px", color: "#cc0000" }}>
+                            ⚠️ No Decrypted Data Found
+                          </h5>
+                          <p>
+                            The decryption response doesn't contain recognizable
+                            data properties.
+                          </p>
+                          <p>
+                            Expected properties: convertedData, plaintext,
+                            decryptedData, data
+                          </p>
+                          <p>
+                            Available properties:{" "}
+                            {Object.keys(decryptedResponse).join(", ")}
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+
+                {/* Metadata display */}
+                {decryptedResponse.metadata && (
+                  <div style={{ marginBottom: "15px" }}>
+                    <h5 style={{ marginBottom: "10px" }}>Metadata:</h5>
+                    <pre
+                      style={{
+                        backgroundColor: "#fff3cd",
+                        padding: "10px",
+                        borderRadius: "4px",
+                        fontSize: "12px",
+                        border: "1px solid #ffeaa7",
+                        overflow: "auto",
+                        maxHeight: "150px",
+                      }}
+                    >
+                      {JSON.stringify(decryptedResponse.metadata, null, 2)}
+                    </pre>
+                  </div>
+                )}
+
+                {/* Raw response for debugging */}
+                <details style={{ marginTop: "15px" }}>
+                  <summary
+                    style={{ cursor: "pointer", fontWeight: "500", color: "#666" }}
+                  >
+                    🔍 Raw Decryption Response (for debugging)
+                  </summary>
+                  <pre
+                    style={{
+                      backgroundColor: "#f8f9fa",
+                      padding: "10px",
+                      borderRadius: "4px",
+                      fontSize: "11px",
+                      marginTop: "10px",
+                      overflow: "auto",
+                      maxHeight: "200px",
+                      border: "1px solid #e9ecef",
+                    }}
+                  >
+                    {JSON.stringify(decryptedResponse, null, 2)}
+                  </pre>
+                </details>
               </div>
             )}
-
-            {/* Raw response for debugging */}
-            <details style={{ marginTop: "15px" }}>
-              <summary
-                style={{ cursor: "pointer", fontWeight: "500", color: "#666" }}
-              >
-                🔍 Raw Decryption Response (for debugging)
-              </summary>
-              <pre
-                style={{
-                  backgroundColor: "#f8f9fa",
-                  padding: "10px",
-                  borderRadius: "4px",
-                  fontSize: "11px",
-                  marginTop: "10px",
-                  overflow: "auto",
-                  maxHeight: "200px",
-                  border: "1px solid #e9ecef",
-                }}
-              >
-                {JSON.stringify(decryptedResponse, null, 2)}
-              </pre>
-            </details>
-          </div>
-        )}
-      </GreyBoarderWhiteBgContainer>
+          </GreyBoarderWhiteBgContainer>
+        </div>
+      </div>
     </div>
   );
 }
