@@ -25,6 +25,8 @@ import {
   type Tab
 } from '../index';
 
+import PkpSelectionForDemo from '../../common/PkpSelectionForDemo';
+
 export default function ProtectedAppComplete() {
   const {
     user,
@@ -36,6 +38,7 @@ export default function ProtectedAppComplete() {
   } = useLitAuth();
 
   // Core state
+  const [showPkpModal, setShowPkpModal] = useState(false);
   const [selectedPkp, setSelectedPkp] = useState<PkpInfo | null>(user?.pkpInfo || null);
   const [balance, setBalance] = useState<BalanceInfo | null>(null);
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
@@ -148,6 +151,13 @@ export default function ProtectedAppComplete() {
     }
   }, [user?.pkpInfo]);
 
+  // PKP selection handler
+  const handlePkpSelected = (pkpInfo: PkpInfo) => {
+    console.log("PKP selected:", pkpInfo);
+    setSelectedPkp(pkpInfo);
+    setStatus(`Selected PKP: ${pkpInfo.ethAddress}`);
+  };
+
   // Authentication and loading states
   if (!user) {
     return (
@@ -219,7 +229,7 @@ export default function ProtectedAppComplete() {
         balance={balance}
         isLoadingBalance={isLoadingBalance}
         selectedChain={selectedChain}
-        onShowPkpModal={() => console.log("Show PKP modal")}
+        onShowPkpModal={() => setShowPkpModal(true)}
         onChainChange={setSelectedChain}
         onLogout={logout}
         userMethod={user.method}
@@ -230,7 +240,7 @@ export default function ProtectedAppComplete() {
           balance={balance}
           isLoadingBalance={isLoadingBalance}
           selectedChain={selectedChain}
-          onShowPkpModal={() => console.log("Show PKP modal")}
+          onShowPkpModal={() => setShowPkpModal(true)}
           onChainChange={setSelectedChain}
         />
       </DashboardLayout>
@@ -267,6 +277,120 @@ export default function ProtectedAppComplete() {
         onRemoveToast={removeTransactionToast} 
       />
 
+      {/* PKP Selection Modal */}
+      {showPkpModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: "20px",
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowPkpModal(false);
+            }
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "white",
+              color: "black",
+              borderRadius: "12px",
+              padding: "28px",
+              maxWidth: "48rem",
+              width: "100%",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              boxShadow:
+                "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+              border: "1px solid #e5e7eb",
+            }}
+          >
+            {/* Modal Header */}
+            <div style={{ marginBottom: "20px" }}>
+              <button
+                onClick={() => setShowPkpModal(false)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#6b7280",
+                  fontSize: "13px",
+                  cursor: "pointer",
+                  marginBottom: "12px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "4px 8px",
+                  borderRadius: "4px",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "#f3f4f6";
+                  e.currentTarget.style.color = "#374151";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "transparent";
+                  e.currentTarget.style.color = "#6b7280";
+                }}
+              >
+                ← Close
+              </button>
+
+              <div
+                style={{
+                  padding: "16px",
+                  backgroundColor: "#f0f9ff",
+                  borderRadius: "8px",
+                  border: "1px solid #bfdbfe",
+                  marginBottom: "16px",
+                }}
+              >
+                <h3
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: "600",
+                    color: "#1e40af",
+                    margin: "0 0 8px 0",
+                  }}
+                >
+                  🔄 Switch PKP Wallet
+                </h3>
+                <p
+                  style={{
+                    fontSize: "14px",
+                    color: "#1e40af",
+                    margin: "0",
+                    lineHeight: "1.4",
+                  }}
+                >
+                  Select a different PKP wallet from your available options.
+                </p>
+              </div>
+            </div>
+
+            {/* PKP Selection Component */}
+            <PkpSelectionForDemo
+              authData={user.authData}
+              onPkpSelected={(pkpInfo) => {
+                handlePkpSelected(pkpInfo);
+                setShowPkpModal(false);
+              }}
+              authMethodName={user.method}
+              services={services}
+              disabled={false}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Global CSS */}
       <style>{`
         @keyframes spin {
@@ -280,4 +404,4 @@ export default function ProtectedAppComplete() {
       `}</style>
     </PKPPermissionsProvider>
   );
-} 
+}
