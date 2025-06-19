@@ -385,6 +385,16 @@ const ACTIONS = [
     type: "primary",
   },
 
+  // Payment Management
+  {
+    id: "payment-manager",
+    path: "/payment-manager",
+    name: "Payment Manager",
+    description: "Manage deposits, withdrawals, and balance queries on the Ledger Contract",
+    category: "Payment Management",
+    type: "primary",
+  },
+
   // More authentication methods will be added here
 ];
 

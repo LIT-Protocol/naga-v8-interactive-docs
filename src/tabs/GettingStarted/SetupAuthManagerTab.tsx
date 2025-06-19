@@ -489,7 +489,7 @@ const authManager = createAuthManager({
                 <td
                   style={{ padding: "12px", borderBottom: "1px solid #dee2e6" }}
                 >
-                  ❌ Browser only
+                  ❌ Node.js only
                 </td>
               </tr>
               <tr>

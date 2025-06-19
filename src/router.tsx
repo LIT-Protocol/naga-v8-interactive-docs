@@ -25,6 +25,7 @@ import SetupAuthServicesTab from "./tabs/GettingStarted/SetupAuthServicesTab";
 import EoaNativeTab from "./tabs/EoaNativeTab";
 import StoragePluginsTab from "./tabs/GettingStarted/StoragePluginsTab";
 import StytchTotpAuthTab from "./tabs/PKPAuthMethods/2fa/StytchTotpAuthTab";
+import PaymentManagerTab from "./tabs/PaymentManagerTab";
 
 // Create a type for the context
 type ContextType = {
@@ -59,7 +60,7 @@ type ContextType = {
 };
 
 // Create a layout component that provides context to the routes
-export const AppLayout = ({ children }: { children?: React.ReactNode }) => {
+export const AppLayout = () => {
   return (
     <MainLayout>
       <div
@@ -153,6 +154,10 @@ export const router = createBrowserRouter([
       {
         path: "encryption",
         element: <EncryptionTab />,
+      },
+      {
+        path: "payment-manager",
+        element: <PaymentManagerTab />,
       },
     ],
   },
