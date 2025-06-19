@@ -15,6 +15,8 @@ interface SendTransactionFormProps {
   selectedChain: string;
   disabled?: boolean;
   onTransactionComplete?: (result: TransactionResult) => void;
+  initialRecipient?: string;
+  initialAmount?: string;
 }
 
 export const SendTransactionForm: React.FC<SendTransactionFormProps> = ({ 
@@ -22,20 +24,35 @@ export const SendTransactionForm: React.FC<SendTransactionFormProps> = ({
   selectedChain,
   disabled = false,
   onTransactionComplete,
+  initialRecipient = "",
+  initialAmount = "0.001",
 }) => {
   const { user, services } = useLitAuth();
-  const [recipientAddress, setRecipientAddress] = useState("");
-  const [sendAmount, setSendAmount] = useState("0.001");
+  const [recipientAddress, setRecipientAddress] = useState(initialRecipient);
+  const [sendAmount, setSendAmount] = useState(initialAmount);
   const [transactionResult, setTransactionResult] = useState<TransactionResult | null>(null);
   const [isSendingTransaction, setIsSendingTransaction] = useState(false);
   const [status, setStatus] = useState<string>("");
 
   // Set default recipient address to PKP's own address
   useEffect(() => {
-    if (selectedPkp?.ethAddress && selectedPkp.ethAddress !== "N/A") {
+    if (selectedPkp?.ethAddress && selectedPkp.ethAddress !== "N/A" && !initialRecipient) {
       setRecipientAddress(selectedPkp.ethAddress);
     }
-  }, [selectedPkp?.ethAddress]);
+  }, [selectedPkp?.ethAddress, initialRecipient]);
+
+  // Update form when initial values change
+  useEffect(() => {
+    if (initialRecipient) {
+      setRecipientAddress(initialRecipient);
+    }
+  }, [initialRecipient]);
+
+  useEffect(() => {
+    if (initialAmount) {
+      setSendAmount(initialAmount);
+    }
+  }, [initialAmount]);
 
   const sendTransaction = async () => {
     if (

@@ -1,23 +1,21 @@
 /**
- * ProtectedAppComplete Example
+ * PaymentAppComplete Example
  * 
- * This demonstrates the complete power of our modular architecture,
- * showing how a 4,700+ line component is now reduced to ~200 lines
- * while maintaining all functionality and improving maintainability.
+ * A specialized payment-focused application built on the modular architecture.
+ * This demonstrates how to create targeted apps by composing existing components
+ * while maintaining all the power and reliability of the full ProtectedApp.
  */
 
 import React, { useState, useEffect } from 'react';
 import { useLitAuth } from '../../../contexts/LitAuthProvider';
 import {
   PKPPermissionsProvider,
-  PermissionsDashboard,
-  WalletOperationsDashboard,
-  PaymentManagerOperationsDashboard,
   TransactionToastContainer,
   DashboardLayout,
   DashboardHeader,
   TabNavigation,
   StatusDisplay,
+  PaymentOperationsDashboard,
   PkpInfo,
   BalanceInfo,
   TransactionToast,
@@ -28,7 +26,7 @@ import {
 
 import PkpSelectionForDemo from '../../common/PkpSelectionForDemo';
 
-export default function ProtectedAppComplete() {
+export default function PaymentAppComplete() {
   const {
     user,
     logout,
@@ -45,16 +43,16 @@ export default function ProtectedAppComplete() {
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
   const [selectedChain, setSelectedChain] = useState<string>("yellowstone");
   const [status, setStatus] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<string>("overview");
+  const [activeTab, setActiveTab] = useState<string>("send");
   
   // Transaction toast state
   const [transactionToasts, setTransactionToasts] = useState<TransactionToast[]>([]);
 
-  // Tab configuration
+  // Payment-specific tab configuration
   const tabs: Tab[] = [
-    { id: "overview", label: "Overview", icon: "📊" },
-    { id: "permissions", label: "PKP Permissions", icon: "🔐" },
-    { id: "payment", label: "Payment Manager", icon: "💰" },
+    { id: "send", label: "Send Payment", icon: "💸" },
+    { id: "history", label: "Payment History", icon: "📋" },
+    { id: "settings", label: "Payment Settings", icon: "⚙️" },
   ];
 
   // Toast management
@@ -79,12 +77,31 @@ export default function ProtectedAppComplete() {
 
   // Handle transaction completion
   const handleTransactionComplete = (result: TransactionResult) => {
-    console.log("Transaction completed:", result);
-    addTransactionToast("Transaction sent successfully!", result.hash);
+    console.log("Payment completed:", result);
+    addTransactionToast("Payment sent successfully!", result.hash);
     
+    // Save payment to history
+    savePaymentToHistory(result);
+    
+    // Refresh balance after payment
     setTimeout(() => {
       loadBalance();
     }, 2000);
+  };
+
+  // Save payment to local history
+  const savePaymentToHistory = (result: TransactionResult) => {
+    const existingHistory = JSON.parse(localStorage.getItem('payment-history') || '[]');
+    const paymentRecord = {
+      ...result,
+      id: Math.random().toString(36).substr(2, 9),
+      type: 'sent',
+      status: 'completed',
+      savedAt: new Date().toISOString(),
+    };
+    
+    const updatedHistory = [paymentRecord, ...existingHistory].slice(0, 100); // Keep last 100
+    localStorage.setItem('payment-history', JSON.stringify(updatedHistory));
   };
 
   // Load balance function
@@ -160,17 +177,171 @@ export default function ProtectedAppComplete() {
     setStatus(`Selected PKP: ${pkpInfo.ethAddress}`);
   };
 
+  // Payment History Component
+  const PaymentHistory = () => {
+    const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
+
+    useEffect(() => {
+      const history = JSON.parse(localStorage.getItem('payment-history') || '[]');
+      setPaymentHistory(history);
+    }, []);
+
+    return (
+      <div
+        style={{
+          padding: "20px",
+          backgroundColor: "#ffffff",
+          borderRadius: "12px",
+          border: "1px solid #e5e7eb",
+          boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+        }}
+      >
+        <h3 style={{ margin: "0 0 16px 0", color: "#1f2937" }}>
+          📋 Payment History
+        </h3>
+        
+        {paymentHistory.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "40px", color: "#6b7280" }}>
+            No payments yet. Send your first payment to see it here!
+          </div>
+        ) : (
+          <div style={{ maxHeight: "400px", overflowY: "auto" }}>
+            {paymentHistory.map((payment, index) => (
+              <div
+                key={payment.id || index}
+                style={{
+                  padding: "12px",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "8px",
+                  marginBottom: "8px",
+                  backgroundColor: "#f9fafb",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                  <span style={{ fontWeight: "500", color: "#374151" }}>
+                    {payment.value} {SUPPORTED_CHAINS[selectedChain as keyof typeof SUPPORTED_CHAINS]?.symbol}
+                  </span>
+                  <span style={{ fontSize: "12px", color: "#6b7280" }}>
+                    {new Date(payment.savedAt || payment.timestamp).toLocaleDateString()}
+                  </span>
+                </div>
+                <div style={{ fontSize: "12px", color: "#6b7280", fontFamily: "monospace" }}>
+                  To: {payment.to?.slice(0, 10)}...{payment.to?.slice(-8)}
+                </div>
+                <div style={{ fontSize: "12px", color: "#6b7280", fontFamily: "monospace" }}>
+                  Tx: {payment.hash?.slice(0, 10)}...{payment.hash?.slice(-8)}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Payment Settings Component
+  const PaymentSettings = () => {
+    const [autoSaveRecipients, setAutoSaveRecipients] = useState(true);
+    const [showTestnetWarning, setShowTestnetWarning] = useState(true);
+
+    return (
+      <div
+        style={{
+          padding: "20px",
+          backgroundColor: "#ffffff",
+          borderRadius: "12px",
+          border: "1px solid #e5e7eb",
+          boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+        }}
+      >
+        <h3 style={{ margin: "0 0 16px 0", color: "#1f2937" }}>
+          ⚙️ Payment Settings
+        </h3>
+        
+        <div style={{ marginBottom: "20px" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={autoSaveRecipients}
+              onChange={(e) => setAutoSaveRecipients(e.target.checked)}
+              style={{ width: "16px", height: "16px" }}
+            />
+            <span style={{ color: "#374151" }}>Automatically save recipients</span>
+          </label>
+          <p style={{ fontSize: "12px", color: "#6b7280", margin: "4px 0 0 24px" }}>
+            Save recipient addresses for quick access in future payments
+          </p>
+        </div>
+
+        <div style={{ marginBottom: "20px" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={showTestnetWarning}
+              onChange={(e) => setShowTestnetWarning(e.target.checked)}
+              style={{ width: "16px", height: "16px" }}
+            />
+            <span style={{ color: "#374151" }}>Show testnet warnings</span>
+          </label>
+          <p style={{ fontSize: "12px", color: "#6b7280", margin: "4px 0 0 24px" }}>
+            Display warnings when using test networks
+          </p>
+        </div>
+
+        <div
+          style={{
+            padding: "16px",
+            backgroundColor: "#f0f9ff",
+            border: "1px solid #bfdbfe",
+            borderRadius: "8px",
+            marginBottom: "16px",
+          }}
+        >
+          <h4 style={{ margin: "0 0 8px 0", color: "#1e40af", fontSize: "14px" }}>
+            🔐 Security Features
+          </h4>
+          <ul style={{ margin: "0", paddingLeft: "20px", color: "#1e40af", fontSize: "13px" }}>
+            <li>All payments are signed with your PKP wallet</li>
+            <li>Private keys never leave the Lit network</li>
+            <li>Transactions are cryptographically secure</li>
+            <li>No custody of funds - you maintain full control</li>
+          </ul>
+        </div>
+
+        <button
+          onClick={() => {
+            localStorage.removeItem('payment-history');
+            localStorage.removeItem('payment-recent-recipients');
+            localStorage.removeItem('payment-templates');
+            setStatus("Payment data cleared successfully");
+          }}
+          style={{
+            padding: "8px 16px",
+            backgroundColor: "#dc2626",
+            color: "white",
+            border: "none",
+            borderRadius: "6px",
+            fontSize: "14px",
+            cursor: "pointer",
+          }}
+        >
+          Clear Payment Data
+        </button>
+      </div>
+    );
+  };
+
   // Authentication and loading states
   if (!user) {
     return (
       <div style={{ padding: "20px", textAlign: "center" }}>
-        <h2>Not authenticated</h2>
-        <p>Please sign in to continue.</p>
+        <h2>Payment App - Authentication Required</h2>
+        <p>Please sign in to access your PKP payment wallet.</p>
         <button
           onClick={initiateAuthentication}
           style={{
             padding: "12px 24px",
-            backgroundColor: "#007bff",
+            backgroundColor: "#10b981",
             color: "white",
             border: "none",
             borderRadius: "8px",
@@ -180,7 +351,7 @@ export default function ProtectedAppComplete() {
             marginTop: "20px",
           }}
         >
-          Sign In
+          Sign In to Payment App
         </button>
       </div>
     );
@@ -195,19 +366,19 @@ export default function ProtectedAppComplete() {
             width: "40px",
             height: "40px",
             border: "4px solid #e3e3e3",
-            borderTop: "4px solid #007bff",
+            borderTop: "4px solid #10b981",
             borderRadius: "50%",
             animation: "spin 1s linear infinite",
             marginBottom: "20px",
           }}
         />
         <h2 style={{ color: "#333", marginBottom: "10px" }}>
-          Initialising Lit Protocol Services
+          Initializing Payment Wallet
         </h2>
         <p style={{ color: "#666" }}>
           {isInitializingServices
-            ? "Setting up your authentication context..."
-            : "Loading your PKP wallet..."}
+            ? "Setting up your PKP payment wallet..."
+            : "Loading your payment capabilities..."}
         </p>
 
         <style>{`
@@ -247,6 +418,25 @@ export default function ProtectedAppComplete() {
         />
       </DashboardLayout>
 
+      {/* App Title */}
+      <div
+        style={{
+          textAlign: "center",
+          marginBottom: "20px",
+          padding: "20px",
+          background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+          borderRadius: "12px",
+          color: "white",
+        }}
+      >
+        <h1 style={{ margin: "0 0 8px 0", fontSize: "24px", fontWeight: "700" }}>
+          💰 PKP Payment App
+        </h1>
+        <p style={{ margin: "0", fontSize: "16px", opacity: 0.9 }}>
+          Secure, decentralized payments powered by Lit Protocol
+        </p>
+      </div>
+
       {/* Status Display */}
       <StatusDisplay 
         status={status}
@@ -261,26 +451,17 @@ export default function ProtectedAppComplete() {
       />
 
       {/* Tab Content */}
-      {activeTab === "overview" && (
-        <WalletOperationsDashboard 
+      {activeTab === "send" && (
+        <PaymentOperationsDashboard 
           selectedPkp={selectedPkp}
           selectedChain={selectedChain}
           onTransactionComplete={handleTransactionComplete}
         />
       )}
 
-      {activeTab === "permissions" && (
-        <PermissionsDashboard />
-      )}
+      {activeTab === "history" && <PaymentHistory />}
 
-      {activeTab === "payment" && (
-        <PaymentManagerOperationsDashboard 
-          selectedPkp={selectedPkp}
-          selectedChain={selectedChain}
-          onTransactionComplete={handleTransactionComplete}
-          services={services}
-        />
-      )}
+      {activeTab === "settings" && <PaymentSettings />}
 
       {/* Transaction Toast Notifications */}
       <TransactionToastContainer 
@@ -372,7 +553,7 @@ export default function ProtectedAppComplete() {
                     margin: "0 0 8px 0",
                   }}
                 >
-                  🔄 Switch PKP Wallet
+                  🔄 Switch Payment Wallet
                 </h3>
                 <p
                   style={{
@@ -382,7 +563,7 @@ export default function ProtectedAppComplete() {
                     lineHeight: "1.4",
                   }}
                 >
-                  Select a different PKP wallet from your available options.
+                  Select a different PKP wallet for payments.
                 </p>
               </div>
             </div>

@@ -437,7 +437,7 @@ export default function ProtectedAppRefactored() {
                 transition: "all 0.2s",
               }}
             >
-              🔐 PKP Permissions
+              🔐 PKP Permissions 2
             </button>
           </div>
         </div>

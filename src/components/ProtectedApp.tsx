@@ -3,6 +3,7 @@ import bs58 from "bs58";
 import { useEffect, useState } from "react";
 import { useLitAuth } from "../contexts/LitAuthProvider";
 import PkpSelectionForDemo from "./common/PkpSelectionForDemo";
+import { PaymentManagerOperationsDashboard } from "./protectedApp/components/payment/PaymentManagerOperationsDashboard";
 
 // Configuration constants
 const SUPPORTED_CHAIN_ID = 2888; // Naga chain ID
@@ -539,7 +540,7 @@ export default function ProtectedApp() {
   const [isCheckingPermissions, setIsCheckingPermissions] = useState(false);
 
   // Tab navigation state
-  const [activeTab, setActiveTab] = useState<"overview" | "permissions">(
+  const [activeTab, setActiveTab] = useState<"overview" | "permissions" | "payment">(
     "overview"
   );
 
@@ -2295,7 +2296,26 @@ export default function ProtectedApp() {
               transition: "all 0.2s",
             }}
           >
-            🔐 PKP Permissions
+            🔐 PKP Permissions 2
+          </button>
+          <button
+            onClick={() => setActiveTab("payment")}
+            style={{
+              padding: "12px 24px",
+              border: "none",
+              backgroundColor: "transparent",
+              fontSize: "16px",
+              fontWeight: "600",
+              cursor: "pointer",
+              borderBottom:
+                activeTab === "payment"
+                  ? "2px solid #10b981"
+                  : "2px solid transparent",
+              color: activeTab === "payment" ? "#10b981" : "#6b7280",
+              transition: "all 0.2s",
+            }}
+          >
+            💰 Payment Manager
           </button>
         </div>
       </div>
@@ -4659,6 +4679,26 @@ export default function ProtectedApp() {
             </div>
           </div>
         </>
+      )}
+
+      {/* Payment Manager Tab */}
+      {activeTab === "payment" && (
+        <div style={{ marginTop: "20px" }}>
+          <PaymentManagerOperationsDashboard
+            selectedPkp={selectedPkp}
+            selectedChain={selectedChain}
+            onTransactionComplete={(result) => {
+              // Add transaction toast notification
+              addTransactionToast("PaymentManager transaction completed!", result.hash);
+              
+              // Refresh balance after transaction
+              setTimeout(() => {
+                loadBalance();
+              }, 2000);
+            }}
+            services={services}
+          />
+        </div>
       )}
 
       {/* CSS Animation for Loading Spinner */}

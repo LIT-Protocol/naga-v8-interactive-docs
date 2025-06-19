@@ -84,7 +84,7 @@ export const SignMessageForm: React.FC<SignMessageFormProps> = ({
       }}
     >
       <h3 style={{ margin: "0 0 16px 0", color: "#1f2937" }}>
-        ✍️ Sign Message
+        ✍️ Sign Message 2
       </h3>
       <p
         style={{
