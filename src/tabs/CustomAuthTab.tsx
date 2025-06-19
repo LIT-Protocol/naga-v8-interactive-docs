@@ -180,6 +180,10 @@ const signature = await litClient.chain.ethereum.pkpSign({
   pubKey: userPkpPublicKey,
   toSign: 'hello',
   authContext: userAuthContext,
+  
+  // 💰 Optional: Set custom maximum price you're willing to pay
+  // userMaxPrice: BigInt("1000000000000000"), // 0.001 ETH in Wei
+  // If not specified, Lit Protocol will automatically find the most optimised price
 });`;
 
 const VALIDATION_LIT_ACTION_CODE = `
@@ -621,6 +625,19 @@ export default function CustomAuthTab() {
           perspectives: the <strong>Site Owner</strong> who sets up the system
           and the <strong>User</strong> who interacts with it.
         </p>
+        
+        <div style={{
+          padding: "12px",
+          backgroundColor: "#e8f4fd",
+          borderRadius: "4px",
+          border: "1px solid #b3d9ff",
+          marginTop: "15px",
+          fontSize: "14px"
+        }}>
+          <strong>💰 Payment Information:</strong> PKP signing and Lit Action execution require payment. 
+          Visit the <a href="/payment-manager" style={{ color: "#0066cc", textDecoration: "underline" }}>
+          Payment Manager</a> page to understand pricing, deposit funds, and manage your payment balance.
+        </div>
       </GreyBoarderWhiteBgContainer>
 
       <GreyBoarderWhiteBgContainer>

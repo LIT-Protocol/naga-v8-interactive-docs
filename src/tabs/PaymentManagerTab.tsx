@@ -136,7 +136,7 @@ interface CanExecuteInfo {
 
 export default function PaymentManagerTab() {
   const { assertDependenciesLoaded, showError, clearError } = useAppContext();
-  const { address, isConnected } = useAccount();
+
   const { data: walletClient } = useWalletClient();
 
   // State management
@@ -392,9 +392,18 @@ export default function PaymentManagerTab() {
     <div className="tab-content">
       <h2>{OPERATION_NAME}</h2>
       <p>
-        The Payment Manager demonstrates Lit Protocol's payment functionality for managing deposits,
-        withdrawals, and balance queries on the Ledger Contract. You can deposit funds, request withdrawals 
-        with security delays, and manage balances for yourself or other users.
+        The Payment Manager demonstrates Lit Protocol's payment system - a billing system for decentralised 
+        cryptographic services. Users pay for compute resources on the Lit network to access core services like:
+      </p>
+      <ul style={{ marginLeft: "20px", marginBottom: "15px", color: "#495057" }}>
+        <li><strong>Encryption/Decryption</strong> - Secure data with programmable access control</li>
+        <li><strong>PKP Signing</strong> - Cryptographic keys that can sign transactions based on conditions</li>
+        <li><strong>Lit Actions</strong> - Serverless functions with cryptographic capabilities</li>
+      </ul>
+      <p>
+        Similar to how you pay AWS for cloud computing, this system ensures the decentralised network can 
+        sustain itself and pay node operators. You can deposit funds, request withdrawals with security delays, 
+        and manage balances for yourself or other users (enabling applications to sponsor their users' costs for better UX).
       </p>
 
       <GreyBoarderWhiteBgContainer>

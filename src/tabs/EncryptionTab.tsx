@@ -91,6 +91,10 @@ const encryptedData = await litClient.encrypt({
   unifiedAccessControlConditions: accs,
   chain: 'ethereum',
   // metadata: { dataType: 'string' }, // auto-inferred
+  
+  // 💰 Optional: Set custom maximum price you're willing to pay
+  // userMaxPrice: BigInt("1000000000000000"), // 0.001 ETH in Wei
+  // If not specified, Lit Protocol will automatically find the most optimised price
 });`;
 
 const DECRYPT_CODE = `
@@ -100,6 +104,10 @@ const decryptedResponse = await litClient.decrypt({
   unifiedAccessControlConditions: accs,
   authContext: bobAuthContext,
   chain: 'ethereum',
+  
+  // 💰 Optional: Set custom maximum price you're willing to pay
+  // userMaxPrice: BigInt("1000000000000000"), // 0.001 ETH in Wei
+  // If not specified, Lit Protocol will automatically find the most optimised price
 });`;
 
 export default function EncryptionTab() {
@@ -585,6 +593,19 @@ export default function EncryptionTab() {
         control conditions builder. Alice encrypts data, Bob decrypts it using
         properly configured access control conditions.
       </p>
+      
+      <div style={{
+        padding: "12px",
+        backgroundColor: "#e8f4fd",
+        borderRadius: "4px",
+        border: "1px solid #b3d9ff",
+        marginBottom: "15px",
+        fontSize: "14px"
+      }}>
+        <strong>💰 Payment Information:</strong> Encryption and decryption operations require payment. 
+        Visit the <a href="/payment-manager" style={{ color: "#0066cc", textDecoration: "underline" }}>
+        Payment Manager</a> page to understand pricing, deposit funds, and manage your payment balance.
+      </div>
 
       <GreyBoarderWhiteBgContainer>
         {/* ================================================ */}
