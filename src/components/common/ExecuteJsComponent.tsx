@@ -58,6 +58,10 @@ const result = await litClient.executeJs({
   code: litActionCode,        // Custom Lit Action code
   authContext: authContext,   // Auth context from previous steps
   jsParams: parsedJsParams,
+  
+  // 💰 Optional: Set custom maximum price you're willing to pay
+  // userMaxPrice: BigInt("1000000000000000"), // 0.001 ETH in Wei
+  // If not specified, Lit Protocol will automatically find the most optimised price
 });
 
 // Or execute with IPFS CID
@@ -65,6 +69,10 @@ const result = await litClient.executeJs({
   ipfsId: ipfsCid,           // IPFS CID of stored Lit Action
   authContext: authContext,   // Auth context from previous steps  
   jsParams: parsedJsParams,
+  
+  // 💰 Optional: Set custom maximum price you're willing to pay
+  // userMaxPrice: BigInt("1000000000000000"), // 0.001 ETH in Wei
+  // If not specified, Lit Protocol will automatically find the most optimised price
 });`;
 
 interface ExecuteJsComponentProps {
@@ -265,8 +273,23 @@ export default function ExecuteJsComponent({
       </h3>
       <p>
         Execute custom Lit Actions using your authenticated context. Choose
-        between custom code or IPFS-stored actions.
+        between custom code or IPFS-stored actions. The execution will automatically 
+        find the most optimised price, or you can specify a custom maximum price 
+        using the <code>userMaxPrice</code> parameter.
       </p>
+      
+      <div style={{
+        padding: "12px",
+        backgroundColor: "#e8f4fd",
+        borderRadius: "4px",
+        border: "1px solid #b3d9ff",
+        marginBottom: "15px",
+        fontSize: "14px"
+      }}>
+        <strong>💰 Payment Information:</strong> Lit Action execution requires payment. 
+        Visit the <a href="/payment-manager" style={{ color: "#0066cc", textDecoration: "underline" }}>
+        Payment Manager</a> page to understand pricing, deposit funds, and manage your payment balance.
+      </div>
 
       {/* SDK Parameter Structure Disclaimer - Moved to top */}
       <div

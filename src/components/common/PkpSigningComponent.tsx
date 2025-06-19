@@ -59,6 +59,10 @@ const signatures = await litClient.chain.raw.pkpSign({
   pubKey: pkpInfo.pubkey,
   authContext: authContext,
   toSign: messageBytes,          // UTF-8 encoded message
+  
+  // 💰 Optional: Set custom maximum price you're willing to pay
+  // userMaxPrice: BigInt("1000000000000000"), // 0.001 ETH in Wei
+  // If not specified, Lit Protocol will automatically find the most optimised price
 });`;
 
 interface PkpSigningComponentProps {
@@ -170,7 +174,24 @@ export default function PkpSigningComponent({
           </span>
         )}
       </h3>
-      <p>Use your PKP to sign a message with the selected chain and scheme.</p>
+      <p>
+        Use your PKP to sign a message with the selected chain and scheme. The signing operation 
+        will automatically find the most optimised price, or you can specify a custom maximum price 
+        using the <code>userMaxPrice</code> parameter.
+      </p>
+      
+      <div style={{
+        padding: "12px",
+        backgroundColor: "#e8f4fd",
+        borderRadius: "4px",
+        border: "1px solid #b3d9ff",
+        marginBottom: "15px",
+        fontSize: "14px"
+      }}>
+        <strong>💰 Payment Information:</strong> PKP signing operations require payment. 
+        Visit the <a href="/payment-manager" style={{ color: "#0066cc", textDecoration: "underline" }}>
+        Payment Manager</a> page to understand pricing, deposit funds, and manage your payment balance.
+      </div>
 
       <DisplayCode
         code={SIGN_MESSAGE_CODE_SNIPPET}
