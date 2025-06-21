@@ -190,33 +190,216 @@ startAllServices();`;
       {/* Service Architecture Overview */}
       <GreyBoarderWhiteBgContainer style={{ marginTop: "32px" }}>
         <div>
-          <h2>Service Architecture</h2>
-          <div
+          <h2 style={pageStyles.h2}>Service Architecture</h2>
+          <p
             style={{
-              backgroundColor: "#e7f3ff",
-              border: "1px solid #b3d9ff",
-              borderRadius: "6px",
-              padding: "20px",
+              color: "#666",
+              fontSize: "16px",
+              lineHeight: "1.6",
+              marginBottom: "24px",
             }}
           >
-            <ul style={{ marginBottom: "0", paddingLeft: "20px" }}>
-              <li>
-                <strong>Auth Server:</strong> API for PKP minting using various
-                authentication methods (Google, Discord, WebAuthn, Stytch, etc.)
-              </li>
-              <li>
-                <strong>Login Server:</strong> OAuth integration for social
-                logins (Google, Discord)
-              </li>
-              <li>
-                <strong>Worker:</strong> Background processing for PKP minting
-                operations, making API calls non-blocking
-              </li>
-              <li>
-                <strong>Redis:</strong> Job queue and caching layer for all
-                services
-              </li>
-            </ul>
+            The Lit Auth Services package provides three core services that work
+            together to create a complete authentication infrastructure:
+          </p>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+              gap: "20px",
+              marginTop: "24px",
+            }}
+          >
+            <div
+              style={{
+                padding: "20px",
+                backgroundColor: "#f8fafc",
+                borderRadius: "8px",
+                border: "1px solid #e2e8f0",
+                transition: "transform 0.2s, box-shadow 0.2s",
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.boxShadow = "0 8px 25px rgba(0,0,0,0.1)";
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "2rem",
+                  marginBottom: "12px",
+                }}
+              >
+                🔐
+              </div>
+              <h3
+                style={{
+                  margin: "0 0 8px 0",
+                  fontSize: "1.2rem",
+                  fontWeight: "600",
+                  color: "#1f2937",
+                }}
+              >
+                Auth Server
+              </h3>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "0.9rem",
+                  color: "#6b7280",
+                  lineHeight: "1.5",
+                }}
+              >
+                API for PKP minting using various authentication methods
+                (Google, Discord, WebAuthn, Stytch, etc.)
+              </p>
+            </div>
+
+            <div
+              style={{
+                padding: "20px",
+                backgroundColor: "#f8fafc",
+                borderRadius: "8px",
+                border: "1px solid #e2e8f0",
+                transition: "transform 0.2s, box-shadow 0.2s",
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.boxShadow = "0 8px 25px rgba(0,0,0,0.1)";
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "2rem",
+                  marginBottom: "12px",
+                }}
+              >
+                🔗
+              </div>
+              <h3
+                style={{
+                  margin: "0 0 8px 0",
+                  fontSize: "1.2rem",
+                  fontWeight: "600",
+                  color: "#1f2937",
+                }}
+              >
+                Login Server
+              </h3>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "0.9rem",
+                  color: "#6b7280",
+                  lineHeight: "1.5",
+                }}
+              >
+                OAuth integration for social logins (Google, Discord)
+              </p>
+            </div>
+
+            <div
+              style={{
+                padding: "20px",
+                backgroundColor: "#f8fafc",
+                borderRadius: "8px",
+                border: "1px solid #e2e8f0",
+                transition: "transform 0.2s, box-shadow 0.2s",
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.boxShadow = "0 8px 25px rgba(0,0,0,0.1)";
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "2rem",
+                  marginBottom: "12px",
+                }}
+              >
+                ⚙️
+              </div>
+              <h3
+                style={{
+                  margin: "0 0 8px 0",
+                  fontSize: "1.2rem",
+                  fontWeight: "600",
+                  color: "#1f2937",
+                }}
+              >
+                Background Worker
+              </h3>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "0.9rem",
+                  color: "#6b7280",
+                  lineHeight: "1.5",
+                }}
+              >
+                Background processing for PKP minting operations, making API
+                calls non-blocking
+              </p>
+            </div>
+
+            <div
+              style={{
+                padding: "20px",
+                backgroundColor: "#f8fafc",
+                borderRadius: "8px",
+                border: "1px solid #e2e8f0",
+                transition: "transform 0.2s, box-shadow 0.2s",
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.boxShadow = "0 8px 25px rgba(0,0,0,0.1)";
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "2rem",
+                  marginBottom: "12px",
+                }}
+              >
+                💾
+              </div>
+              <h3
+                style={{
+                  margin: "0 0 8px 0",
+                  fontSize: "1.2rem",
+                  fontWeight: "600",
+                  color: "#1f2937",
+                }}
+              >
+                Redis
+              </h3>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "0.9rem",
+                  color: "#6b7280",
+                  lineHeight: "1.5",
+                }}
+              >
+                Job queue and caching layer for all services
+              </p>
+            </div>
           </div>
         </div>
       </GreyBoarderWhiteBgContainer>
