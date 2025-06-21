@@ -6,8 +6,9 @@
  */
 
 import React from "react";
-import { useOutletContext } from "react-router-dom";
+import { Link, useOutletContext } from "react-router-dom";
 import { DisplayCode } from "../../components/DisplayCode";
+import GreyBoarderWhiteBgContainer from "../../components/layout/GreyboardWhiteBgContainer";
 
 interface TabContext {
   areDependenciesLoaded: () => boolean;
@@ -156,116 +157,147 @@ async function startAllServices() {
 
 startAllServices();`;
 
+  const pageStyles = {
+    h2: {
+      fontSize: "2rem",
+      fontWeight: "600",
+      color: "#1f2937",
+      marginBottom: "16px",
+      borderBottom: "1px solid #e5e7eb",
+      paddingBottom: "8px",
+    },
+  };
+
   return (
     <div style={{ maxWidth: "90%" }}>
-      <div style={{ marginBottom: "30px" }}>
-        <h1>Setup Auth Services</h1>
-        <p style={{ color: "#666", fontSize: "16px", lineHeight: "1.6" }}>
-          Create your own authentication infrastructure using the Lit Protocol
-          Auth Services package. This provides three core services: Auth Server
-          for PKP minting with various auth methods, Login Server for OAuth
-          flows, and a Worker for background minting operations.
-        </p>
-      </div>
+      <h1>Setup Custom Auth Services</h1>
 
-      {/* Service Architecture Overview */}
-      <div style={{ marginBottom: "30px" }}>
-        <h2>Service Architecture</h2>
-        <div
-          style={{
-            backgroundColor: "#e7f3ff",
-            border: "1px solid #b3d9ff",
-            borderRadius: "6px",
-            padding: "20px",
-          }}
-        >
-          <ul style={{ marginBottom: "0", paddingLeft: "20px" }}>
-            <li>
-              <strong>Auth Server:</strong> API for PKP minting using various
-              authentication methods (Google, Discord, WebAuthn, Stytch, etc.)
-            </li>
-            <li>
-              <strong>Login Server:</strong> OAuth integration for social logins
-              (Google, Discord)
-            </li>
-            <li>
-              <strong>Worker:</strong> Background processing for PKP minting
-              operations, making API calls non-blocking
-            </li>
-            <li>
-              <strong>Redis:</strong> Job queue and caching layer for all
-              services
-            </li>
+      <GreyBoarderWhiteBgContainer style={{ marginTop: "32px" }}>
+        <div>
+          <h2 style={pageStyles.h2}>Introduction</h2>
+          <p style={{ color: "#666", fontSize: "16px", lineHeight: "1.6" }}>
+            Create your own authentication infrastructure using the Lit Protocol
+            Auth Services package. This provides three core services:
+          </p>
+          <ul>
+            <li>Auth Server for PKP minting with various auth methods</li>
+            <li>Login Server for OAuth flows</li>
+            <li>Worker for background minting operations</li>
           </ul>
         </div>
-      </div>
+      </GreyBoarderWhiteBgContainer>
+
+      {/* Service Architecture Overview */}
+      <GreyBoarderWhiteBgContainer style={{ marginTop: "32px" }}>
+        <div>
+          <h2>Service Architecture</h2>
+          <div
+            style={{
+              backgroundColor: "#e7f3ff",
+              border: "1px solid #b3d9ff",
+              borderRadius: "6px",
+              padding: "20px",
+            }}
+          >
+            <ul style={{ marginBottom: "0", paddingLeft: "20px" }}>
+              <li>
+                <strong>Auth Server:</strong> API for PKP minting using various
+                authentication methods (Google, Discord, WebAuthn, Stytch, etc.)
+              </li>
+              <li>
+                <strong>Login Server:</strong> OAuth integration for social
+                logins (Google, Discord)
+              </li>
+              <li>
+                <strong>Worker:</strong> Background processing for PKP minting
+                operations, making API calls non-blocking
+              </li>
+              <li>
+                <strong>Redis:</strong> Job queue and caching layer for all
+                services
+              </li>
+            </ul>
+          </div>
+        </div>
+      </GreyBoarderWhiteBgContainer>
 
       {/* Main Exports */}
-      <div style={{ marginBottom: "30px" }}>
-        <h2>Main Exports</h2>
-        <DisplayCode code={mainExportsCode} language="typescript" />
-      </div>
+      <GreyBoarderWhiteBgContainer style={{ marginTop: "32px" }}>
+        <div style={{ marginBottom: "30px" }}>
+          <h2>Main Exports</h2>
+          <DisplayCode code={mainExportsCode} language="typescript" />
+        </div>
 
-      {/* Environment Configuration */}
-      <div style={{ marginBottom: "30px" }}>
-        <h2>Environment Configuration</h2>
-        <DisplayCode code={envConfigCode} language="bash" />
-      </div>
+        {/* Environment Configuration */}
+        <div>
+          <h2>Environment Configuration</h2>
+          <DisplayCode code={envConfigCode} language="bash" />
+        </div>
+      </GreyBoarderWhiteBgContainer>
 
       {/* Service Setup */}
-      <div style={{ marginBottom: "30px" }}>
-        <h2>Service Configuration</h2>
+      <GreyBoarderWhiteBgContainer style={{ marginTop: "32px" }}>
+        <div>
+          <h2>Service Configuration</h2>
 
-        {/* Auth Server */}
-        <div style={{ marginBottom: "20px" }}>
-          <h3>1. Auth Server</h3>
-          <p style={{ color: "#666", marginBottom: "15px" }}>
-            Handles PKP minting using various authentication methods (Google,
-            Discord, WebAuthn, Stytch, etc.).
-          </p>
-          <DisplayCode code={authServerCode} language="typescript" />
-        </div>
+          {/* Auth Server */}
+          <div style={{ marginBottom: "20px" }}>
+            <h3>1. Auth Server</h3>
+            <p style={{ color: "#666", marginBottom: "15px" }}>
+              Handles PKP minting using various authentication methods (Google,
+              Discord, WebAuthn, Stytch, etc.).
+            </p>
+            <DisplayCode code={authServerCode} language="typescript" />
+          </div>
 
-        {/* Login Server */}
-        <div style={{ marginBottom: "20px" }}>
-          <h3>2. Login Server</h3>
-          <p style={{ color: "#666", marginBottom: "15px" }}>
-            Handles OAuth flows for Google, Discord, and other providers.
-          </p>
-          <DisplayCode code={loginServerCode} language="typescript" />
-        </div>
+          {/* Login Server */}
+          <div style={{ marginBottom: "20px" }}>
+            <h3>2. Login Server</h3>
+            <p style={{ color: "#666", marginBottom: "15px" }}>
+              Handles OAuth flows for Google, Discord, and other providers.
+            </p>
+            <DisplayCode code={loginServerCode} language="typescript" />
+          </div>
 
-        {/* Worker */}
-        <div style={{ marginBottom: "20px" }}>
-          <h3>3. Background Worker</h3>
-          <p style={{ color: "#666", marginBottom: "15px" }}>
-            Processes PKP minting operations in the background, making API calls
-            non-blocking.
-          </p>
-          <DisplayCode code={workerCode} language="typescript" />
+          {/* Worker */}
+          <div style={{ marginBottom: "20px" }}>
+            <h3>3. Background Worker</h3>
+            <p style={{ color: "#666", marginBottom: "15px" }}>
+              Processes PKP minting operations in the background, making API
+              calls non-blocking.
+            </p>
+            <DisplayCode code={workerCode} language="typescript" />
+          </div>
         </div>
-      </div>
+      </GreyBoarderWhiteBgContainer>
 
       {/* Combined Setup */}
-      <div style={{ marginBottom: "30px" }}>
-        <h2>Running All Services Together</h2>
-        <p style={{ color: "#666", marginBottom: "15px" }}>
-          Example of how to start all three services in a single application.
-        </p>
-        <DisplayCode code={runAllServicesCode} language="typescript" />
-      </div>
+      <GreyBoarderWhiteBgContainer style={{ marginTop: "32px" }}>
+        <div>
+          <h2>Running All Services Together</h2>
+          <p style={{ color: "#666", marginBottom: "15px" }}>
+            Example of how to start all three services in a single application.
+          </p>
+          <DisplayCode code={runAllServicesCode} language="typescript" />
+        </div>
+      </GreyBoarderWhiteBgContainer>
 
       {/* Next Steps */}
       <div
         style={{
-          backgroundColor: "#d4edda",
-          border: "1px solid #c3e6cb",
-          borderRadius: "6px",
+          backgroundColor: "#f0f9ff",
+          border: "1px solid #3b82f6",
+          borderRadius: "8px",
           padding: "20px",
+          marginTop: "20px",
         }}
       >
-        <h3 style={{ margin: "0 0 10px 0", color: "#155724" }}>Next Steps</h3>
-        <p style={{ margin: "0", color: "#155724" }}>
+        <h3
+          style={{ margin: "0 0 10px 0", color: "#1e40af", fontSize: "1.2rem" }}
+        >
+          🚀 Next Steps
+        </h3>
+        <p style={{ margin: "0", color: "#1e3a8a", lineHeight: "1.5" }}>
           Once your auth services are configured, proceed to explore the various
           authentication methods like Google Auth, Discord Auth, WebAuthn, and
           custom authentication flows.

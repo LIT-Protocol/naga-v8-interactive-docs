@@ -76,6 +76,12 @@ interface DisplayCodeProps {
    * @default false
    */
   isSuccess?: boolean;
+
+  /**
+   * Whether to show error styling (red border animation)
+   * @default false
+   */
+  isError?: boolean;
 }
 
 export const DisplayCode: React.FC<DisplayCodeProps> = ({
@@ -90,6 +96,7 @@ export const DisplayCode: React.FC<DisplayCodeProps> = ({
   useSideBySide = false,
   theme = "dracula",
   isSuccess = false,
+  isError = false,
 }) => {
   const [isCopied, setIsCopied] = useState(false);
   const [isResultExpanded, setIsResultExpanded] = useState(false);
@@ -278,9 +285,17 @@ export const DisplayCode: React.FC<DisplayCodeProps> = ({
         marginTop: "20px",
         backgroundColor: "#f5f5f5",
         borderRadius: "8px",
-        border: isSuccess ? "2px solid #28a745" : "1px solid #e0e0e0",
+        border: isSuccess
+          ? "2px solid #28a745"
+          : isError
+          ? "2px solid #dc3545"
+          : "1px solid #e0e0e0",
         overflow: "hidden", // Important for the animation
-        boxShadow: isSuccess ? "0 0 20px rgba(40, 167, 69, 0.3)" : "none",
+        boxShadow: isSuccess
+          ? "0 0 20px rgba(40, 167, 69, 0.3)"
+          : isError
+          ? "0 0 20px rgba(220, 53, 69, 0.3)"
+          : "none",
         transition: "all 0.3s ease-in-out",
       }}
     >
@@ -292,18 +307,22 @@ export const DisplayCode: React.FC<DisplayCodeProps> = ({
           cursor: "pointer",
           padding: "15px",
           borderBottom: isResultExpanded ? "1px solid #e0e0e0" : "none",
-          backgroundColor: isSuccess ? "rgba(40, 167, 69, 0.1)" : "transparent",
+          backgroundColor: isSuccess
+            ? "rgba(40, 167, 69, 0.1)"
+            : isError
+            ? "rgba(220, 53, 69, 0.1)"
+            : "transparent",
         }}
         onClick={toggleResult}
       >
         <h4
           style={{
             margin: 0,
-            color: isSuccess ? "#28a745" : "inherit",
-            fontWeight: isSuccess ? "600" : "normal",
+            color: isSuccess ? "#28a745" : isError ? "#dc3545" : "inherit",
+            fontWeight: isSuccess || isError ? "600" : "normal",
           }}
         >
-          {isSuccess ? "✅ " : ""}
+          {isSuccess ? "✅ " : isError ? "❌ " : ""}
           {resultLabel}
         </h4>
         <button
