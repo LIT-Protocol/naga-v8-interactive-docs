@@ -29,6 +29,7 @@ import HomePageTab from "./tabs/HomePageTab";
 import WhatIsLitTab from "./tabs/LearningLit/WhatIsLitTab";
 import HowItWorksTab from "./tabs/LearningLit/HowItWorksTab";
 import GettingStartedTab from "./tabs/BuildingWithLit/GettingStartedTab";
+import ProgrammableKeysOverview from "./tabs/ProgrammableKeys/Overview";
 
 // Create a type for the context
 type ContextType = {
@@ -127,6 +128,13 @@ export const router = createBrowserRouter([
         path: "storage-plugins",
         element: <StoragePluginsTab />,
       },
+
+      // PKPs
+      {
+        path: "pkps/overview",
+        element: <ProgrammableKeysOverview />,
+      },
+
       // EOA and Auth Routes
       {
         path: "eoa-native",
