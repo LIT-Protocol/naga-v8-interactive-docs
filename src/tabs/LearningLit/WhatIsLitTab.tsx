@@ -80,49 +80,53 @@ const WhatIsLitTab: React.FC = () => {
       <GreyBoarderWhiteBgContainer>
         <h2 style={pageStyles.h2}>Introduction</h2>
         <p style={pageStyles.p}>
-          Lit Protocol is a decentralized key management and compute network
-          designed to empower builders of applications, wallets, protocols, and
-          AI agents in the Web3 ecosystem.
+          Lit Protocol is a decentralized key management network that solves the
+          fundamental Web3 security dilemma: how to manage secrets without
+          compromising security, user experience, or decentralization. The
+          network empowers developers to create secure, decentralized
+          applications that manage crypto assets, private data, and user
+          authority seamlessly across any blockchain or distributed system.
         </p>
         <p style={pageStyles.p}>
-          By combining cutting-edge cryptography, sealed confidential hardware,
-          and peer-to-peer networking, Lit provides developers with powerful
-          tools to enhance security, privacy, and functionality in decentralized
-          applications.
+          Traditional approaches force an impossible choice. Giving private keys
+          or credentials to centralized servers creates massive security
+          responsibilities and single points of failure. Putting the burden
+          entirely on end users requires them to navigate complex key management
+          and opens up avenues for compromise. Lit Protocol eliminates this
+          tradeoff.
         </p>
         <p style={pageStyles.p}>
-          Lit offers developers building in web3 with several core functions and
-          capabilities:
+          Lit's distributed architecture ensures secrets remain verifiably
+          secure—encrypted at the hardware level and fragmented across a
+          decentralized network with no single point of failure. Using threshold
+          signature schemes (MPC TSS) as a foundation means that for the first
+          time, universal accounts can be programmed and automated without
+          trusting centralized custodians.
+        </p>
+        <p style={pageStyles.p}>
+          This underlying security architecture enables powerful developer
+          capabilities. Using Lit's SDK, builders can easily:
         </p>
         <ul style={pageStyles.ul}>
+          <li style={pageStyles.li}>Encrypt and decrypt private data</li>
           <li style={pageStyles.li}>
-            Decentralized key management with enhanced programmability and fault
-            tolerance
+            Create and manage Web3 wallets, accounts, and signers
           </li>
           <li style={pageStyles.li}>
-            Privacy-preserving compute and signing operations powered by sealed
-            confidential hardware
+            Sign transactions and messages on virtually any blockchain
           </li>
           <li style={pageStyles.li}>
-            Flexible access control rules to make managing private data seamless
-          </li>
-          <li style={pageStyles.li}>
-            Chain agnostic and cross-chain compatible to enable advanced Chain
-            Abstraction
+            Execute automated signing and/or decryption operations based on
+            programmable conditions
           </li>
           <li style={pageStyles.li}>
             Read and write to any off-chain endpoint to ensure compatibility
             with legacy systems and the rest of the web2 world
           </li>
-          <li style={pageStyles.li}>
-            Encrypted execution environments to power the next-generation of
-            private AI inference and training
-          </li>
         </ul>
         <p style={pageStyles.p}>
-          These features enable developers to create innovative solutions that
-          address critical challenges in Web3 development, particularly in areas
-          requiring high levels of security and privacy.
+          These capabilities enable builders to create immutable, interoperable,
+          and user-owned applications, AI agents, and protocols.
         </p>
         <p style={pageStyles.p}>
           Explore our{" "}
@@ -148,25 +152,27 @@ const WhatIsLitTab: React.FC = () => {
           applications across various domains:
         </p>
 
-        <h3 style={pageStyles.h3}>Secure Key Management and User Onboarding</h3>
+        <h3 style={pageStyles.h3}>Web3 Wallets and User Onboarding</h3>
         <p style={pageStyles.p}>
-          Developers can generate and manage non-custodial keys, enabling
-          seamless user onboarding without relying on centralized custodians.
-          This capability is utilized in projects like{" "}
-          <LinkExt href="https://app.patchwallet.com/">PatchWallet</LinkExt>,{" "}
-          <LinkExt href="https://www.silk.sc/">Silk</LinkExt>,{" "}
+          Developers can use Lit to generate and manage non-custodial keys using
+          a variety of flexible authentication flows (ex. oAuth and Passkeys)
+          with support for programmable transaction automation. This
+          functionality enables seamless onboarding experiences that don't
+          sacrifice UX while keeping users in control.{" "}
           <LinkExt href="https://www.collab.land/">Collab.Land</LinkExt>,{" "}
-          <LinkExt href="https://www.tria.so/">Tria</LinkExt>, and{" "}
-          <LinkExt href="https://index.network/">Index Network</LinkExt> to
-          create user-friendly wallet experiences and account abstraction
+          <LinkExt href="https://plurality.network/">Plurality Network</LinkExt>
+          ,{" "}
+          <LinkExt href="https://www.tradegenius.com/">Genius Protocol</LinkExt>
+          , to create user-friendly wallet experiences and account abstraction
           solutions.
         </p>
 
-        <h3 style={pageStyles.h3}>Data Encryption and Access Control</h3>
+        <h3 style={pageStyles.h3}>Digital Identity</h3>
         <p style={pageStyles.p}>
           Lit allows for flexible encryption and access management based on
           blockchain state, token ownership, or other on/off-chain conditions.
-          This feature is leveraged by projects such as{" "}
+          This can be used for digital identity and IP rights management,
+          verifiable data marketplaces, DWeb storage solutions, and more.{" "}
           <LinkExt href="https://docs.verifymedia.com/publishing/access-control/methods/lit-protocol">
             Fox
           </LinkExt>
