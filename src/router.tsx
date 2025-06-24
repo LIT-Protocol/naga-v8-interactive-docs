@@ -129,9 +129,9 @@ export const router = createBrowserRouter([
         element: <StoragePluginsTab />,
       },
 
-      // PKPs
+      // Programmable Keys
       {
-        path: "pkps/overview",
+        path: "programmable-keys/overview",
         element: <ProgrammableKeysOverview />,
       },
 
