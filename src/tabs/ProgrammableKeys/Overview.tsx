@@ -7,6 +7,8 @@
 
 import React from "react";
 import GreyBoarderWhiteBgContainer from "../../components/layout/GreyboardWhiteBgContainer";
+import WarningCallout from "../../components/common/WarningCallout";
+import { Link } from "react-router-dom";
 
 interface ComparisonCardProps {
   title: string;
@@ -299,6 +301,31 @@ const ProgrammableKeysOverview: React.FC = () => {
 
       <GreyBoarderWhiteBgContainer style={{ marginTop: "32px" }}>
         <h2 style={pageStyles.h2}>PKPs vs. Wrapped Keys</h2>
+
+        <WarningCallout
+          title="Wrapped Keys Not Supported by V8 of the Lit SDKs"
+          message={
+            <>
+              <p>
+                Wrapped Keys are not currently supported in version 8 of the Lit
+                SDKs, but will be available in a future release.
+              </p>
+              <p>
+                If you'd like to use Wrapped Keys in your application, please
+                refer to the{" "}
+                <Link
+                  to="https://developer.litprotocol.com/user-wallets/wrapped-keys/overview"
+                  style={{ color: "#3b82f6", textDecoration: "underline" }}
+                >
+                  V7 Wrapped Keys documentation.
+                </Link>{" "}
+              </p>
+            </>
+          }
+          variant="warning"
+          style={{ marginBottom: "24px" }}
+        />
+
         <p style={pageStyles.p}>
           PKPs and Wrapped Keys both manage private keys, but they work
           differently and suit different needs:
@@ -325,9 +352,9 @@ const ProgrammableKeysOverview: React.FC = () => {
             title={comparisonData.wrappedKeys.title}
             description={comparisonData.wrappedKeys.description}
             details={comparisonData.wrappedKeys.details}
-            backgroundColor="#fef3c7"
-            borderColor="#f59e0b"
-            textColor="#92400e"
+            backgroundColor="#f0fdf4"
+            borderColor="#22c55e"
+            textColor="#166534"
           />
         </div>
 
@@ -373,7 +400,7 @@ const ProgrammableKeysOverview: React.FC = () => {
           </div>
 
           <div>
-            <h3 style={{ ...pageStyles.h3, color: "#92400e" }}>Wrapped Keys</h3>
+            <h3 style={{ ...pageStyles.h3, color: "#166534" }}>Wrapped Keys</h3>
             <ul style={pageStyles.ul}>
               {comparisonData.wrappedKeys.features.map((feature, index) => (
                 <li key={index} style={pageStyles.li}>
@@ -419,21 +446,21 @@ const ProgrammableKeysOverview: React.FC = () => {
           <div
             style={{
               padding: "16px",
-              backgroundColor: "#fef3c7",
+              backgroundColor: "#f0fdf4",
               borderRadius: "8px",
-              border: "1px solid #f59e0b",
+              border: "1px solid #22c55e",
             }}
           >
             <h4
               style={{
                 margin: "0 0 8px 0",
-                color: "#92400e",
+                color: "#166534",
                 fontWeight: "600",
               }}
             >
               Wrapped Keys
             </h4>
-            <p style={{ margin: 0, fontSize: "0.9rem", color: "#92400e" }}>
+            <p style={{ margin: 0, fontSize: "0.9rem", color: "#166534" }}>
               {comparisonData.wrappedKeys.security}
             </p>
           </div>

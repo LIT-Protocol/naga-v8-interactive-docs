@@ -329,8 +329,8 @@ const ACTIONS = [
 
   // PKPs
   {
-    id: "pkps-overview",
-    path: "/pkps/overview",
+    id: "programmable-keys-overview",
+    path: "/programmable-keys/overview",
     name: "Overview",
     description: "Overview of Programmable Keys",
     category: "Programmable Keys",
