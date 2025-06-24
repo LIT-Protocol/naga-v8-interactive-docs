@@ -30,6 +30,7 @@ import WhatIsLitTab from "./tabs/LearningLit/WhatIsLitTab";
 import HowItWorksTab from "./tabs/LearningLit/HowItWorksTab";
 import GettingStartedTab from "./tabs/BuildingWithLit/GettingStartedTab";
 import ProgrammableKeysOverview from "./tabs/ProgrammableKeys/Overview";
+import PkpGettingStarted from "./tabs/ProgrammableKeys/PKPs/GettingStarted";
 
 // Create a type for the context
 type ContextType = {
@@ -131,8 +132,12 @@ export const router = createBrowserRouter([
 
       // PKPs
       {
-        path: "pkps/overview",
+        path: "programmable-keys/overview",
         element: <ProgrammableKeysOverview />,
+      },
+      {
+        path: "programmable-keys/pkps/getting-started",
+        element: <PkpGettingStarted />,
       },
 
       // EOA and Auth Routes

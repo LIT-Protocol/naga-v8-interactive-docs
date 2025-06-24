@@ -327,14 +327,24 @@ const ACTIONS = [
   //   type: "primary",
   // },
 
-  // PKPs
+  // Primary: Programmable Keys
   {
-    id: "pkps-overview",
-    path: "/pkps/overview",
+    id: "programmable-keys-overview",
+    path: "/programmable-keys/overview",
     name: "Overview",
     description: "Overview of Programmable Keys",
     category: "Programmable Keys",
     type: "primary",
+  },
+  // Secondary: PKPs
+  {
+    id: "pkps-getting-started",
+    path: "/programmable-keys/pkps/getting-started",
+    name: "Getting Started",
+    description: "Complete guide to minting and using PKPs",
+    category: "Programmable Keys",
+    type: "secondary",
+    secondarySection: "PKPs",
   },
 
   // EOA Authentication
@@ -410,6 +420,7 @@ const ACTIONS = [
     description: "Authenticate using Stytch TOTP (Authenticator App)",
     category: "PKP Auth Methods",
     type: "secondary",
+    secondarySection: "Two-Factor Auth",
   },
   {
     id: "custom-auth",
@@ -842,75 +853,119 @@ export const HomePage = () => {
                               {/* Secondary Actions - Collapsible Tree */}
                               {hasSecondaryActions && (
                                 <>
-                                  {/* Toggle Button for Secondary Actions */}
-                                  <button
-                                    onClick={() =>
-                                      toggleCategoryCollapse(secondaryKey)
-                                    }
-                                    style={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      width: "100%",
-                                      padding: "8px 15px",
-                                      marginTop: "8px",
-                                      marginBottom: "4px",
-                                      backgroundColor: "transparent",
-                                      border: "1px solid #e0e0e0",
-                                      borderRadius: "4px",
-                                      cursor: "pointer",
-                                      fontSize: "0.85rem",
-                                      color: "#666",
-                                      fontWeight: "600",
-                                    }}
-                                  >
-                                    <span style={{ marginRight: "8px" }}>
-                                      {isSecondaryCollapsed ? "▶" : "▼"}
-                                    </span>
-                                    Secondary Methods ({secondaryActions.length}
-                                    )
-                                  </button>
+                                  {/* Group secondary actions by secondarySection */}
+                                  {(() => {
+                                    const secondaryGroups: {
+                                      [key: string]: typeof secondaryActions;
+                                    } = {};
 
-                                  {/* Secondary Actions List */}
-                                  {!isSecondaryCollapsed &&
-                                    secondaryActions.map((action) => (
-                                      <div
-                                        key={action.id}
-                                        style={{ marginBottom: "4px" }}
-                                      >
-                                        <Link
-                                          to={action.path}
-                                          style={{
-                                            display: "block",
-                                            padding: "8px 15px",
-                                            paddingLeft: "35px", // Indent to show hierarchy
-                                            borderRadius: "4px",
-                                            cursor: "pointer",
-                                            backgroundColor:
-                                              activeMethod === action.id
-                                                ? "#3b82f6"
-                                                : "#f8f9fa",
-                                            color:
-                                              activeMethod === action.id
-                                                ? "#ffffff"
-                                                : "#333333",
-                                            border: `1px solid ${
-                                              activeMethod === action.id
-                                                ? "#3b82f6"
-                                                : "#e9ecef"
-                                            }`,
-                                            borderLeft: `3px solid #fbbf24`, // Visual indicator for dependency
-                                            transition: "all 0.2s",
-                                            width: "100%",
-                                            textAlign: "left",
-                                            fontWeight: "500",
-                                            textDecoration: "none",
-                                            fontSize: "0.9rem",
-                                          }}
-                                        >
-                                          {action.name}
-                                        </Link>
-                                      </div>
-                                    ))}
+                                    secondaryActions.forEach((action) => {
+                                      const section =
+                                        (action as any).secondarySection ||
+                                        "Other";
+                                      if (!secondaryGroups[section]) {
+                                        secondaryGroups[section] = [];
+                                      }
+                                      secondaryGroups[section].push(action);
+                                    });
+
+                                    return Object.entries(secondaryGroups).map(
+                                      (
+                                        [sectionName, sectionActions],
+                                        sectionIndex
+                                      ) => {
+                                        const sectionKey = `${secondaryKey}-${sectionName}`;
+                                        const isSectionCollapsed =
+                                          collapsedCategories[sectionKey];
+
+                                        return (
+                                          <div key={sectionName}>
+                                            {/* Toggle Button for Secondary Section */}
+                                            <button
+                                              onClick={() =>
+                                                toggleCategoryCollapse(
+                                                  sectionKey
+                                                )
+                                              }
+                                              style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                width: "100%",
+                                                padding: "8px 15px",
+                                                marginTop:
+                                                  sectionIndex === 0
+                                                    ? "8px"
+                                                    : "4px",
+                                                marginBottom: "4px",
+                                                backgroundColor: "transparent",
+                                                border: "1px solid #e0e0e0",
+                                                borderRadius: "4px",
+                                                cursor: "pointer",
+                                                fontSize: "0.85rem",
+                                                color: "#666",
+                                                fontWeight: "600",
+                                              }}
+                                            >
+                                              <span
+                                                style={{ marginRight: "8px" }}
+                                              >
+                                                {isSectionCollapsed ? "▶" : "▼"}
+                                              </span>
+                                              {sectionName} (
+                                              {sectionActions.length})
+                                            </button>
+
+                                            {/* Secondary Section Actions List */}
+                                            {!isSectionCollapsed &&
+                                              sectionActions.map((action) => (
+                                                <div
+                                                  key={action.id}
+                                                  style={{
+                                                    marginBottom: "4px",
+                                                  }}
+                                                >
+                                                  <Link
+                                                    to={action.path}
+                                                    style={{
+                                                      display: "block",
+                                                      padding: "8px 15px",
+                                                      paddingLeft: "35px", // Indent to show hierarchy
+                                                      borderRadius: "4px",
+                                                      cursor: "pointer",
+                                                      backgroundColor:
+                                                        activeMethod ===
+                                                        action.id
+                                                          ? "#3b82f6"
+                                                          : "#f8f9fa",
+                                                      color:
+                                                        activeMethod ===
+                                                        action.id
+                                                          ? "#ffffff"
+                                                          : "#333333",
+                                                      border: `1px solid ${
+                                                        activeMethod ===
+                                                        action.id
+                                                          ? "#3b82f6"
+                                                          : "#e9ecef"
+                                                      }`,
+                                                      borderLeft: `3px solid #fbbf24`, // Visual indicator for dependency
+                                                      transition: "all 0.2s",
+                                                      width: "100%",
+                                                      textAlign: "left",
+                                                      fontWeight: "500",
+                                                      textDecoration: "none",
+                                                      fontSize: "0.9rem",
+                                                    }}
+                                                  >
+                                                    {action.name}
+                                                  </Link>
+                                                </div>
+                                              ))}
+                                          </div>
+                                        );
+                                      }
+                                    );
+                                  })()}
                                 </>
                               )}
                             </div>
