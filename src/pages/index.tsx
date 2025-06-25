@@ -502,6 +502,8 @@ export const HomePage = () => {
     // Learning Lit and Building With Lit remain expanded (false = not collapsed)
     "Learning Lit": false,
     "Building With Lit": false,
+    // Security section collapsed by default
+    security: true,
   });
   const [siteAuthConfig, setSiteAuthConfig] = useState<any>({
     domain: window.location.host,
