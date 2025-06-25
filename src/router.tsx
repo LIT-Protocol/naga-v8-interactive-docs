@@ -7,15 +7,14 @@ import {
 } from "react-router-dom";
 import { MainLayout } from "./layouts/MainLayout";
 import { HomePage } from "./pages";
-import DiscordAuthTab from "./tabs/PKPAuthMethods/DiscordAuthTab";
-import GoogleAuthTab from "./tabs/PKPAuthMethods/GoogleAuthTab";
-import WebAuthnTab from "./tabs/PKPAuthMethods/WebAuthnTab";
-import EoaAuthTab from "./tabs/PKPAuthMethods/EoaAuthTab";
-import StytchEmailOtpAuthTab from "./tabs/PKPAuthMethods/StytchEmailOtpAuthTab";
-import StytchSmsOtpAuthTab from "./tabs/PKPAuthMethods/StytchSmsOtpAuthTab";
-import StytchWhatsAppOtpAuthTab from "./tabs/PKPAuthMethods/StytchWhatsAppOtpAuthTab";
+import DiscordAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/DiscordAuthTab";
+import GoogleAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/GoogleAuthTab";
+import WebAuthnTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/WebAuthnTab";
+import EoaAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/EoaAuthTab";
+import StytchEmailOtpAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/StytchEmailOtpAuthTab";
+import StytchSmsOtpAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/StytchSmsOtpAuthTab";
+import StytchWhatsAppOtpAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/StytchWhatsAppOtpAuthTab";
 import CustomAuthTab from "./tabs/CustomAuthTab";
-
 import LitAuthProviderDemoTab from "./tabs/LearningLit/LitAuthProviderDemoTab";
 import EncryptionTab from "./tabs/EncryptionTab";
 import SetupLitClientTab from "./tabs/BuildingWithLit/SetupLitClientTab";
@@ -23,13 +22,14 @@ import SetupAuthManagerTab from "./tabs/BuildingWithLit/SetupAuthManagerTab";
 import SetupAuthServicesTab from "./tabs/BuildingWithLit/SetupAuthServicesTab";
 import EoaNativeTab from "./tabs/EoaNativeTab";
 import StoragePluginsTab from "./tabs/GettingStarted/StoragePluginsTab";
-import StytchTotpAuthTab from "./tabs/PKPAuthMethods/2fa/StytchTotpAuthTab";
+import StytchTotpAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/2fa/StytchTotpAuthTab";
 import PaymentManagerTab from "./tabs/PaymentManagerTab";
 import HomePageTab from "./tabs/HomePageTab";
 import WhatIsLitTab from "./tabs/LearningLit/WhatIsLitTab";
 import HowItWorksTab from "./tabs/LearningLit/HowItWorksTab";
 import GettingStartedTab from "./tabs/BuildingWithLit/GettingStartedTab";
 import ProgrammableKeysOverview from "./tabs/ProgrammableKeys/Overview";
+import PkpGettingStarted from "./tabs/ProgrammableKeys/PKPs/GettingStarted";
 import SecurityOverviewTab from "./tabs/LearningLit/Security/Overview";
 import NodeArchitectureTab from "./tabs/LearningLit/Security/NodeArchitecture";
 import KeyGenerationTab from "./tabs/LearningLit/Security/KeyGeneration";
@@ -169,46 +169,50 @@ export const router = createBrowserRouter([
         path: "programmable-keys/overview",
         element: <ProgrammableKeysOverview />,
       },
+      {
+        path: "programmable-keys/pkps/getting-started",
+        element: <PkpGettingStarted />,
+      },
 
       // EOA and Auth Routes
       {
-        path: "eoa-native",
+        path: "programmable-keys/pkps/auth-methods/eoa-native",
         element: <EoaNativeTab />,
       },
       {
-        path: "google-auth",
+        path: "programmable-keys/pkps/auth-methods/google",
         element: <GoogleAuthTab />,
       },
       {
-        path: "discord-auth",
+        path: "programmable-keys/pkps/auth-methods/discord",
         element: <DiscordAuthTab />,
       },
       {
-        path: "webauthn-auth",
+        path: "programmable-keys/pkps/auth-methods/webauthn",
         element: <WebAuthnTab />,
       },
       {
-        path: "eoa-auth",
+        path: "programmable-keys/pkps/auth-methods/eoa",
         element: <EoaAuthTab />,
       },
       {
-        path: "stytch-email-otp-auth",
+        path: "programmable-keys/pkps/auth-methods/stytch-email-otp",
         element: <StytchEmailOtpAuthTab />,
       },
       {
-        path: "stytch-sms-otp-auth",
+        path: "programmable-keys/pkps/auth-methods/stytch-sms-otp",
         element: <StytchSmsOtpAuthTab />,
       },
       {
-        path: "stytch-whatsapp-otp-auth",
+        path: "programmable-keys/pkps/auth-methods/stytch-whatsapp-otp",
         element: <StytchWhatsAppOtpAuthTab />,
       },
       {
-        path: "stytch-totp-auth",
+        path: "programmable-keys/pkps/auth-methods/stytch-totp",
         element: <StytchTotpAuthTab />,
       },
       {
-        path: "custom-auth",
+        path: "programmable-keys/pkps/auth-methods/custom-auth",
         element: <CustomAuthTab />,
       },
       {

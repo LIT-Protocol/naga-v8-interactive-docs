@@ -1,30 +1,29 @@
 import { useState } from "react";
-import { DisplayCode } from "../../components/DisplayCode";
-import GreyBoarderWhiteBgContainer from "../../components/layout/GreyboardWhiteBgContainer";
-import EoaAuthSection from "../../components/common/EoaAuthSection";
-import PkpSelectionComponent from "../../components/common/PkpSelectionComponent";
-import { useAppContext } from "../../router";
-import PkpSigningComponent from "../../components/common/PkpSigningComponent";
-import ExecuteJsComponent from "../../components/common/ExecuteJsComponent";
+import { DisplayCode } from "../../../../components/DisplayCode";
+import GreyBoarderWhiteBgContainer from "../../../../components/layout/GreyboardWhiteBgContainer";
+import PkpSelectionComponent from "../../../../components/common/PkpSelectionComponent";
+import { useAppContext } from "../../../../router";
+import PkpSigningComponent from "../../../../components/common/PkpSigningComponent";
+import ExecuteJsComponent from "../../../../components/common/ExecuteJsComponent";
 
-const AUTH_NAME = "Stytch SMS OTP Authentication";
+const AUTH_NAME = "Stytch WhatsApp OTP Authentication";
 
 // Configuration constants
 const DEFAULT_AUTH_SERVICE_BASE_URL = "https://naga-auth-service.onrender.com";
 
 // Code snippets for each functionality
 const SEND_OTP_CODE = `
-import { StytchSmsOtpAuthenticator } from "@lit-protocol/auth";
+import { StytchWhatsAppOtpAuthenticator } from "@lit-protocol/auth";
 
-const { methodId } = await StytchSmsOtpAuthenticator.sendOtp({
+const { methodId } = await StytchWhatsAppOtpAuthenticator.sendOtp({
   phoneNumber: "+1234567890",
   authServiceBaseUrl: "https://naga-auth-service.onrender.com"
 });`;
 
 const VERIFY_OTP_CODE = `
-import { StytchSmsOtpAuthenticator } from "@lit-protocol/auth";
+import { StytchWhatsAppOtpAuthenticator } from "@lit-protocol/auth";
 
-const authData = await StytchSmsOtpAuthenticator.authenticate({
+const authData = await StytchWhatsAppOtpAuthenticator.authenticate({
   methodId: methodId, // from sendOtp step
   code: "123456", // user-entered OTP code
   authServiceBaseUrl: "https://naga-auth-service.onrender.com"
@@ -40,7 +39,7 @@ import { StytchTotp2FAAuthenticator } from "@lit-protocol/auth";
 
 // Step 1: Create TOTP registration
 const registrationData = await StytchTotp2FAAuthenticator.initiateTotpRegistration({
-  userId:authData?.metadata?.userId // from your SMS auth
+  userId:authData?.metadata?.userId // from your WhatsApp auth
   authServiceBaseUrl: "https://naga-auth-service.onrender.com"
 });
 
@@ -69,7 +68,7 @@ const authContext = await authManager.createPkpAuthContext({
   litClient: litClient,
 });`;
 
-export default function StytchSmsOtpAuthTab() {
+export default function StytchWhatsAppOtpAuthTab() {
   const {
     getDependencyStatus,
     areDependenciesLoaded,
@@ -104,64 +103,32 @@ export default function StytchSmsOtpAuthTab() {
   const [authData, setAuthData] = useState<any>(null);
   const [pkpInfo, setPkpInfo] = useState<any>(null);
 
-  // Success feedback state
-  const [successActions, setSuccessActions] = useState<Set<string>>(new Set());
-
-  // Function to show success feedback
-  const showSuccess = (actionId: string) => {
-    setSuccessActions((prev) => new Set([...prev, actionId]));
-    // Auto-clear after 3 seconds
-    setTimeout(() => {
-      setSuccessActions((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(actionId);
-        return newSet;
-      });
-    }, 3000);
-  };
-
-  // Utility function to format error messages properly
-  const formatErrorMessage = (prefix: string, error: any): string => {
-    let errorMessage = prefix;
-    if (error?.message) {
-      errorMessage += error.message;
-    } else if (typeof error === "object") {
-      errorMessage += JSON.stringify(error, null, 2);
-    } else {
-      errorMessage += String(error);
-    }
-    return errorMessage;
-  };
-
   const sendOtp = async () => {
     try {
       setIsSendingOtp(true);
-      setStatus("Sending OTP to phone number...");
+      setStatus("Sending OTP to WhatsApp...");
 
       if (!phoneNumber) {
         throw new Error("Please enter a valid phone number.");
       }
 
-      // Import StytchSmsOtpAuthenticator dynamically
-      const { StytchSmsOtpAuthenticator } = await import(
+      // Import StytchWhatsAppOtpAuthenticator dynamically
+      const { StytchWhatsAppOtpAuthenticator } = await import(
         "@lit-protocol/auth"
       );
 
-      const result = await StytchSmsOtpAuthenticator.sendOtp({
+      const result = await StytchWhatsAppOtpAuthenticator.sendOtp({
         phoneNumber: phoneNumber,
         authServiceBaseUrl: authServiceBaseUrl,
       });
 
       setMethodId(result.methodId);
       setStatus(
-        `OTP sent successfully to ${phoneNumber}. Check your phone for the verification code.`
+        `OTP sent successfully to ${phoneNumber} via WhatsApp. Check your WhatsApp messages for the verification code.`
       );
-      showSuccess("stytch-sms-send-otp");
     } catch (error: any) {
       console.error("Error sending OTP:", error);
-      const errorMessage = formatErrorMessage("Failed to send OTP: ", error);
-      setStatus(errorMessage);
-      showError?.(errorMessage);
+      setStatus(`Failed to send OTP: ${error?.message || "Unknown error"}`);
     } finally {
       setIsSendingOtp(false);
     }
@@ -178,33 +145,104 @@ export default function StytchSmsOtpAuthTab() {
         );
       }
 
-      // Import StytchSmsOtpAuthenticator dynamically
-      const { StytchSmsOtpAuthenticator } = await import(
+      // Import StytchWhatsAppOtpAuthenticator dynamically
+      const { StytchWhatsAppOtpAuthenticator } = await import(
         "@lit-protocol/auth"
       );
 
-      const authData = await StytchSmsOtpAuthenticator.authenticate({
+      const authData = await StytchWhatsAppOtpAuthenticator.authenticate({
         methodId: methodId,
         code: otpCode,
         authServiceBaseUrl: authServiceBaseUrl,
       });
 
       setAuthData(authData);
-      setStatus("OTP verified successfully! You can now optionally set up 2FA or mint a PKP directly.");
-      showSuccess("stytch-sms-verify-otp");
+      setStatus(
+        "OTP verified successfully! You can now optionally set up 2FA or mint a PKP directly."
+      );
 
       // Cache the userId
       if (authData?.metadata?.userId && phoneNumber) {
-        localStorage.setItem(`stytchSmsOtp:${phoneNumber}`, authData.metadata.userId);
-        console.log(`Cached userId for stytchSmsOtp:${phoneNumber}`);
+        localStorage.setItem(
+          `stytchWhatsAppOtp:${phoneNumber}`,
+          authData.metadata.userId
+        );
+        console.log(`Cached userId for stytchWhatsAppOtp:${phoneNumber}`);
       }
     } catch (error: any) {
       console.error("Error verifying OTP:", error);
-      const errorMessage = formatErrorMessage("Failed to verify OTP: ", error);
-      setStatus(errorMessage);
-      showError?.(errorMessage);
+      setStatus(`Failed to verify OTP: ${error?.message || "Unknown error"}`);
     } finally {
       setIsVerifyingOtp(false);
+    }
+  };
+
+  // 2FA Setup Functions
+  const setupTotp = async () => {
+    try {
+      setIsSettingUpTotp(true);
+      setStatus("Setting up TOTP 2FA...");
+
+      if (!authData?.metadata?.userId) {
+        throw new Error(
+          "No user ID found in auth data. Please verify OTP first."
+        );
+      }
+
+      // Import StytchTotp2FAAuthenticator dynamically
+      const { StytchTotp2FAAuthenticator } = await import("@lit-protocol/auth");
+
+      const registrationData =
+        await StytchTotp2FAAuthenticator.initiateTotpRegistration({
+          userId: authData?.metadata?.userId,
+          authServiceBaseUrl: authServiceBaseUrl,
+        });
+
+      setTotpRegistrationData(registrationData);
+      setStatus(
+        "TOTP 2FA setup initiated! Scan the QR code with your authenticator app and enter the code to complete setup."
+      );
+    } catch (error: any) {
+      console.error("Error setting up TOTP:", error);
+      setStatus(`Failed to setup TOTP: ${error?.message || "Unknown error"}`);
+    } finally {
+      setIsSettingUpTotp(false);
+    }
+  };
+
+  const verifyTotpSetup = async () => {
+    try {
+      setIsVerifyingTotpSetup(true);
+      setStatus("Verifying TOTP setup...");
+
+      if (!totpSetupCode || !totpRegistrationData?.totpRegistrationId) {
+        throw new Error(
+          "Please enter the TOTP code from your authenticator app."
+        );
+      }
+
+      // Import StytchTotp2FAAuthenticator dynamically
+      const { StytchTotp2FAAuthenticator } = await import("@lit-protocol/auth");
+
+      const verifyResult =
+        await StytchTotp2FAAuthenticator.verifyTotpRegistration({
+          userId: authData.metadata.userId,
+          totpRegistrationId: totpRegistrationData.totpRegistrationId,
+          totpCode: totpSetupCode,
+          authServiceBaseUrl: authServiceBaseUrl,
+        });
+
+      setStatus(
+        "🎉 TOTP 2FA setup completed successfully! You can now use the TOTP 2FA tab for future logins."
+      );
+      setShowTotpSetup(false);
+    } catch (error: any) {
+      console.error("Error verifying TOTP setup:", error);
+      setStatus(
+        `Failed to verify TOTP setup: ${error?.message || "Unknown error"}`
+      );
+    } finally {
+      setIsVerifyingTotpSetup(false);
     }
   };
 
@@ -239,83 +277,13 @@ export default function StytchSmsOtpAuthTab() {
       console.log("authContext:", authContext);
       setAuthContext(authContext);
       setStatus("Auth context created successfully");
-      showSuccess("stytch-sms-create-auth-context");
     } catch (error: any) {
       console.error("Error creating auth context:", error);
-      const errorMessage = formatErrorMessage("Failed to create auth context: ", error);
-      setStatus(errorMessage);
-      showError?.(errorMessage);
+      setStatus(
+        `Failed to create auth context: ${error?.message || "Unknown error"}`
+      );
     } finally {
       setIsCreatingAuthContext(false);
-    }
-  };
-
-  // 2FA Setup Functions
-  const setupTotp = async () => {
-    try {
-      setIsSettingUpTotp(true);
-      setStatus("Setting up TOTP 2FA...");
-
-      if (!authData?.metadata?.userId) {
-        throw new Error("No user ID found in auth data. Please verify OTP first.");
-      }
-
-      // Import StytchTotp2FAAuthenticator dynamically
-      const { StytchTotp2FAAuthenticator } = await import(
-        "@lit-protocol/auth"
-      );
-
-      const registrationData = await StytchTotp2FAAuthenticator.initiateTotpRegistration({
-        userId:authData?.metadata?.userId,  
-        authServiceBaseUrl: authServiceBaseUrl,
-      });
-
-      setTotpRegistrationData(registrationData);
-      setStatus(
-        "TOTP 2FA setup initiated! Scan the QR code with your authenticator app and enter the code to complete setup."
-      );
-      showSuccess("stytch-sms-setup-totp");
-    } catch (error: any) {
-      console.error("Error setting up TOTP:", error);
-      const errorMessage = formatErrorMessage("Failed to setup TOTP: ", error);
-      setStatus(errorMessage);
-      showError?.(errorMessage);
-    } finally {
-      setIsSettingUpTotp(false);
-    }
-  };
-
-  const verifyTotpSetup = async () => {
-    try {
-      setIsVerifyingTotpSetup(true);
-      setStatus("Verifying TOTP setup...");
-
-      if (!totpSetupCode || !totpRegistrationData?.totpRegistrationId) {
-        throw new Error("Please enter the TOTP code from your authenticator app.");
-      }
-
-      // Import StytchTotp2FAAuthenticator dynamically
-      const { StytchTotp2FAAuthenticator } = await import(
-        "@lit-protocol/auth"
-      );
-
-      const verifyResult = await StytchTotp2FAAuthenticator.verifyTotpRegistration({
-        userId:authData?.metadata?.userId,
-        totpRegistrationId: totpRegistrationData.totpRegistrationId,
-        totpCode: totpSetupCode,
-        authServiceBaseUrl: authServiceBaseUrl,
-      });
-
-      setStatus("🎉 TOTP 2FA setup completed successfully! You can now use the TOTP 2FA tab for future logins.");
-      setShowTotpSetup(false);
-      showSuccess("stytch-sms-verify-totp-setup");
-    } catch (error: any) {
-      console.error("Error verifying TOTP setup:", error);
-      const errorMessage = formatErrorMessage("Failed to verify TOTP setup: ", error);
-      setStatus(errorMessage);
-      showError?.(errorMessage);
-    } finally {
-      setIsVerifyingTotpSetup(false);
     }
   };
 
@@ -323,10 +291,10 @@ export default function StytchSmsOtpAuthTab() {
     <div className="tab-content">
       <h2>{AUTH_NAME}</h2>
       <p>
-        {AUTH_NAME} uses Stytch's SMS OTP service to authenticate users
-        through mobile phone verification. This method sends a one-time password (OTP)
-        to your phone number, which you then use to verify your identity and
-        mint a PKP.
+        {AUTH_NAME} uses Stytch's WhatsApp OTP service to authenticate users
+        through WhatsApp messaging. This method sends a one-time password (OTP)
+        to your WhatsApp account via your phone number, which you then use to
+        verify your identity and mint a PKP.
       </p>
 
       <GreyBoarderWhiteBgContainer>
@@ -367,6 +335,12 @@ export default function StytchSmsOtpAuthTab() {
               <span style={{ color: "red" }}>✗ Not provided</span>
             )}
           </li>
+          <li>
+            WhatsApp Account:{" "}
+            <span style={{ color: "orange" }}>
+              Ensure your phone number is associated with a WhatsApp account
+            </span>
+          </li>
         </ul>
 
         {/* Information box about backend requirement */}
@@ -380,12 +354,12 @@ export default function StytchSmsOtpAuthTab() {
           }}
         >
           <strong>⚠️ Backend Required:</strong> This authentication method
-          requires a backend service that handles Stytch SMS OTP operations.
-          The auth service already has the implementation in place with the{" "}
-          <code>/stytch/sms/send-otp</code> and{" "}
-          <code>/stytch/sms/verify-otp</code> endpoints, but they are disabled
-          by default. Simply run your auth service at the configured URL to
-          enable Stytch SMS OTP functionality.
+          requires a backend service that handles Stytch WhatsApp OTP
+          operations. The auth service already has the implementation in place
+          with the <code>/stytch/whatsapp/send-otp</code> and{" "}
+          <code>/stytch/whatsapp/verify-otp</code> endpoints, but they are
+          disabled by default. Simply run your auth service at the configured
+          URL to enable Stytch WhatsApp OTP functionality.
         </div>
       </GreyBoarderWhiteBgContainer>
 
@@ -393,10 +367,11 @@ export default function StytchSmsOtpAuthTab() {
         {/* ================================================ */}
         {/*                   Send OTP                       */}
         {/* ================================================ */}
-        <h3 style={{ marginTop: "20px" }}>Step 1: Send OTP to Phone</h3>
+        <h3 style={{ marginTop: "20px" }}>Step 1: Send OTP to WhatsApp</h3>
         <p>
-          Enter your phone number to receive a one-time password (OTP). The OTP
-          will be sent via Stytch's SMS service through your backend.
+          Enter your phone number to receive a one-time password (OTP) via
+          WhatsApp. The OTP will be sent through Stytch's WhatsApp service via
+          your backend to your WhatsApp account.
         </p>
 
         <DisplayCode
@@ -407,9 +382,13 @@ export default function StytchSmsOtpAuthTab() {
               <div style={{ marginBottom: "10px" }}>
                 <label
                   htmlFor="phoneNumber"
-                  style={{ display: "block", marginBottom: "5px", fontWeight: "500" }}
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontWeight: "500",
+                  }}
                 >
-                  Phone Number:
+                  Phone Number (WhatsApp):
                 </label>
                 <input
                   id="phoneNumber"
@@ -426,14 +405,19 @@ export default function StytchSmsOtpAuthTab() {
                   }}
                 />
                 <small style={{ color: "#666", fontSize: "12px" }}>
-                  Enter phone number in international format (e.g., +1234567890).
+                  Enter phone number in international format (e.g.,
+                  +1234567890). Must be associated with a WhatsApp account.
                 </small>
               </div>
 
               <div style={{ marginBottom: "10px" }}>
                 <label
                   htmlFor="authServiceBaseUrl"
-                  style={{ display: "block", marginBottom: "5px", fontWeight: "500" }}
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontWeight: "500",
+                  }}
                 >
                   Auth Service Base URL:
                 </label>
@@ -453,7 +437,8 @@ export default function StytchSmsOtpAuthTab() {
                   }}
                 />
                 <small style={{ color: "#666", fontSize: "12px" }}>
-                  URL of your authentication service that handles Stytch interaction.
+                  URL of your authentication service that handles Stytch
+                  interaction.
                 </small>
               </div>
 
@@ -462,15 +447,17 @@ export default function StytchSmsOtpAuthTab() {
                 disabled={isSendingOtp || !phoneNumber}
                 style={{
                   padding: "10px 15px",
-                  backgroundColor: isSendingOtp || !phoneNumber ? "#cccccc" : "#4285F4",
+                  backgroundColor:
+                    isSendingOtp || !phoneNumber ? "#cccccc" : "#25D366",
                   color: "white",
                   border: "none",
                   borderRadius: "4px",
-                  cursor: isSendingOtp || !phoneNumber ? "not-allowed" : "pointer",
+                  cursor:
+                    isSendingOtp || !phoneNumber ? "not-allowed" : "pointer",
                   fontWeight: "500",
                 }}
               >
-                {isSendingOtp ? "Sending OTP..." : "Send OTP to Phone"}
+                {isSendingOtp ? "Sending OTP..." : "Send OTP to WhatsApp"}
                 {!phoneNumber && " (Enter phone number first)"}
               </button>
             </div>
@@ -479,7 +466,6 @@ export default function StytchSmsOtpAuthTab() {
           resultLabel="Method ID"
           useSideBySide={true}
           theme="dracula"
-          isSuccess={successActions.has("stytch-sms-send-otp")}
         />
       </GreyBoarderWhiteBgContainer>
 
@@ -489,7 +475,7 @@ export default function StytchSmsOtpAuthTab() {
         {/* ================================================ */}
         <h3 style={{ marginTop: "20px" }}>Step 2: Verify OTP Code</h3>
         <p>
-          Enter the OTP code sent to your phone to verify your identity and
+          Enter the OTP code sent to your WhatsApp to verify your identity and
           generate authentication data.
         </p>
 
@@ -501,7 +487,11 @@ export default function StytchSmsOtpAuthTab() {
               <div style={{ marginBottom: "10px" }}>
                 <label
                   htmlFor="otpCode"
-                  style={{ display: "block", marginBottom: "5px", fontWeight: "500" }}
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontWeight: "500",
+                  }}
                 >
                   OTP Code:
                 </label>
@@ -523,7 +513,7 @@ export default function StytchSmsOtpAuthTab() {
                   }}
                 />
                 <small style={{ color: "#666", fontSize: "12px" }}>
-                  Enter the 6-digit code sent to your phone.
+                  Enter the 6-digit code sent to your WhatsApp.
                 </small>
               </div>
 
@@ -533,12 +523,16 @@ export default function StytchSmsOtpAuthTab() {
                 style={{
                   padding: "10px 15px",
                   backgroundColor:
-                    isVerifyingOtp || !otpCode || !methodId ? "#cccccc" : "#4285F4",
+                    isVerifyingOtp || !otpCode || !methodId
+                      ? "#cccccc"
+                      : "#25D366",
                   color: "white",
                   border: "none",
                   borderRadius: "4px",
                   cursor:
-                    isVerifyingOtp || !otpCode || !methodId ? "not-allowed" : "pointer",
+                    isVerifyingOtp || !otpCode || !methodId
+                      ? "not-allowed"
+                      : "pointer",
                   fontWeight: "500",
                 }}
               >
@@ -551,7 +545,6 @@ export default function StytchSmsOtpAuthTab() {
           resultLabel="Auth Data"
           useSideBySide={true}
           theme="dracula"
-          isSuccess={successActions.has("stytch-sms-verify-otp")}
         />
       </GreyBoarderWhiteBgContainer>
 
@@ -618,7 +611,9 @@ export default function StytchSmsOtpAuthTab() {
                     <div style={{ marginBottom: "10px" }}>
                       <button
                         onClick={setupTotp}
-                        disabled={isSettingUpTotp || !authData?.metadata?.userId}
+                        disabled={
+                          isSettingUpTotp || !authData?.metadata?.userId
+                        }
                         style={{
                           padding: "10px 15px",
                           backgroundColor:
@@ -645,7 +640,6 @@ export default function StytchSmsOtpAuthTab() {
                   resultLabel="TOTP Registration Data"
                   useSideBySide={true}
                   theme="dracula"
-                  isSuccess={successActions.has("stytch-sms-setup-totp")}
                 />
 
                 {/* QR Code Display */}
@@ -722,9 +716,9 @@ export default function StytchSmsOtpAuthTab() {
                                 fontWeight: "500",
                               }}
                             >
-                              ⚠️ Store these recovery codes in a safe place. Each
-                              code can only be used once to regain access if you
-                              lose your authenticator device.
+                              ⚠️ Store these recovery codes in a safe place.
+                              Each code can only be used once to regain access
+                              if you lose your authenticator device.
                             </p>
                           </div>
                           <div
@@ -905,16 +899,16 @@ export default function StytchSmsOtpAuthTab() {
           setStatus={setStatus}
           assertDependenciesLoaded={assertDependenciesLoaded}
           showError={showError}
-          authMethodName="Stytch SMS OTP Auth"
+          authMethodName="Stytch WhatsApp OTP Auth"
           mintCodeSnippet={MINT_PKP_CODE}
           disabled={!authData}
         />
       </GreyBoarderWhiteBgContainer>
 
-      {/* ================================================ */}
-      {/*               Create AuthContext                  */}
-      {/* ================================================ */}
       <GreyBoarderWhiteBgContainer>
+        {/* ================================================ */}
+        {/*               Create AuthContext                  */}
+        {/* ================================================ */}
         <h3 style={{ marginTop: 0 }}>
           Step 4: Create AuthContext{" "}
           {!pkpInfo && (
@@ -956,7 +950,8 @@ export default function StytchSmsOtpAuthTab() {
                 color: "white",
                 border: "none",
                 borderRadius: "4px",
-                cursor: isCreatingAuthContext || !pkpInfo ? "not-allowed" : "pointer",
+                cursor:
+                  isCreatingAuthContext || !pkpInfo ? "not-allowed" : "pointer",
                 fontWeight: "500",
               }}
             >
@@ -969,21 +964,20 @@ export default function StytchSmsOtpAuthTab() {
           resultLabel="AuthContext Information"
           useSideBySide={true}
           theme="dracula"
-          isSuccess={successActions.has("stytch-sms-create-auth-context")}
         />
       </GreyBoarderWhiteBgContainer>
 
-      <GreyBoarderWhiteBgContainer>
-        {/* ================================================ */}
-        {/*               Sign Message with PKP               */}
-        {/* ================================================ */}
+      {/* ================================================ */}
+      {/*               Sign Message with PKP               */}
+      {/* ================================================ */}
 
+      <GreyBoarderWhiteBgContainer>
         <PkpSigningComponent
           authContext={authContext}
           pkpInfo={pkpInfo}
           setStatus={setStatus}
           assertDependenciesLoaded={assertDependenciesLoaded}
-          defaultMessage="Hello from Stytch SMS OTP PKP!"
+          defaultMessage="Hello from Stytch WhatsApp OTP PKP!"
           componentTitle={`Step 5: Sign Message with PKP (${AUTH_NAME})`}
         />
       </GreyBoarderWhiteBgContainer>
@@ -998,7 +992,7 @@ export default function StytchSmsOtpAuthTab() {
           pkpInfo={pkpInfo}
           setStatus={setStatus}
           assertDependenciesLoaded={assertDependenciesLoaded}
-          defaultMessage="Hello from Stytch SMS OTP Lit Action!"
+          defaultMessage="Hello from Stytch WhatsApp OTP Lit Action!"
           componentTitle={`Step 6: Execute Lit Action (${AUTH_NAME})`}
           showError={showError}
         />
