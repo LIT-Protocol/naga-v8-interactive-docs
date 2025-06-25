@@ -123,13 +123,12 @@ const ProgrammableKeysOverview: React.FC = () => {
         <>
           <p>
             New blockchain key pairs (ECDSA or EdDSA){" "}
-            <a
-              href="https://docs.google.com/document/d/1eaSk6822d4B-bJtMiiGp4n9N4qZPnwWaEZOy-Xs8AK0/edit?tab=t.0#heading=h.neg7c932dvso"
-              target="_blank"
+            <Link
+              to="/learning-lit/security/key-generation"
               style={{ color: "#0ea5e9", textDecoration: "underline" }}
             >
               created through DKG
-            </a>
+            </Link>
             , where multiple Lit nodes collaborate to generate a new private key
             without any single node ever seeing the complete key. When signing
             collectively produce a valid signature without reconstructing the
@@ -184,13 +183,12 @@ const ProgrammableKeysOverview: React.FC = () => {
           <p>
             Existing private keys are either encrypted and imported into the
             Wrapped Keys backend service, or generated and encrypted within a{" "}
-            <a
-              href="https://docs.google.com/document/d/1eaSk6822d4B-bJtMiiGp4n9N4qZPnwWaEZOy-Xs8AK0/edit?tab=t.0#heading=h.4trh1ft0780l"
-              target="_blank"
+            <Link
+              to="/learning-lit/security/node-architecture"
               style={{ color: "#0ea5e9", textDecoration: "underline" }}
             >
               secure part of a Lit node
-            </a>{" "}
+            </Link>{" "}
             (called a trusted execution environment, or TEE) and then stored in
             the Wrapped Keys backend service.
           </p>
