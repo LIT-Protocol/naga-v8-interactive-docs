@@ -1,13 +1,11 @@
-import { createAuthManager, GoogleAuthenticator } from "@lit-protocol/auth";
-import { createLitClient } from "@lit-protocol/lit-client";
+import { GoogleAuthenticator } from "@lit-protocol/auth";
 import { useState } from "react";
-import { DisplayCode } from "../../components/DisplayCode";
-import GreyBoarderWhiteBgContainer from "../../components/layout/GreyboardWhiteBgContainer";
-import EoaAuthSection from "../../components/common/EoaAuthSection";
-import { useAppContext } from "../../router";
-import PkpSigningComponent from "../../components/common/PkpSigningComponent";
-import PkpSelectionComponent from "../../components/common/PkpSelectionComponent";
-import ExecuteJsComponent from "../../components/common/ExecuteJsComponent";
+import { DisplayCode } from "../../../../components/DisplayCode";
+import GreyBoarderWhiteBgContainer from "../../../../components/layout/GreyboardWhiteBgContainer";
+import { useAppContext } from "../../../../router";
+import PkpSigningComponent from "../../../../components/common/PkpSigningComponent";
+import PkpSelectionComponent from "../../../../components/common/PkpSelectionComponent";
+import ExecuteJsComponent from "../../../../components/common/ExecuteJsComponent";
 
 const AUTH_NAME = "Google Authentication";
 
@@ -209,18 +207,27 @@ export default function GoogleAuthTab() {
         Server or your own Login Server. This can be used to mint a PKP and then
         sign messages.
       </p>
-      
-      <div style={{
-        padding: "12px",
-        backgroundColor: "#e8f4fd",
-        borderRadius: "4px",
-        border: "1px solid #b3d9ff",
-        marginBottom: "15px",
-        fontSize: "14px"
-      }}>
-        <strong>💰 Payment Information:</strong> PKP signing and Lit Action execution require payment. 
-        Visit the <a href="/payment-manager" style={{ color: "#0066cc", textDecoration: "underline" }}>
-        Payment Manager</a> page to understand pricing, deposit funds, and manage your payment balance.
+
+      <div
+        style={{
+          padding: "12px",
+          backgroundColor: "#e8f4fd",
+          borderRadius: "4px",
+          border: "1px solid #b3d9ff",
+          marginBottom: "15px",
+          fontSize: "14px",
+        }}
+      >
+        <strong>💰 Payment Information:</strong> PKP signing and Lit Action
+        execution require payment. Visit the{" "}
+        <a
+          href="/payment-manager"
+          style={{ color: "#0066cc", textDecoration: "underline" }}
+        >
+          Payment Manager
+        </a>{" "}
+        page to understand pricing, deposit funds, and manage your payment
+        balance.
       </div>
 
       <GreyBoarderWhiteBgContainer>

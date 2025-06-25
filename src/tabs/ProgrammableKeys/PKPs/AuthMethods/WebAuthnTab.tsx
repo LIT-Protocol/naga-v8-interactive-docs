@@ -1,12 +1,11 @@
 import { WebAuthnAuthenticator } from "@lit-protocol/auth";
 import { useEffect, useState } from "react";
-import EoaAuthSection from "../../components/common/EoaAuthSection";
-import PkpSelectionComponent from "../../components/common/PkpSelectionComponent";
-import { DisplayCode } from "../../components/DisplayCode";
-import GreyBoarderWhiteBgContainer from "../../components/layout/GreyboardWhiteBgContainer";
-import { useAppContext } from "../../router";
-import PkpSigningComponent from "../../components/common/PkpSigningComponent";
-import ExecuteJsComponent from "../../components/common/ExecuteJsComponent";
+import PkpSelectionComponent from "../../../../components/common/PkpSelectionComponent";
+import { DisplayCode } from "../../../../components/DisplayCode";
+import GreyBoarderWhiteBgContainer from "../../../../components/layout/GreyboardWhiteBgContainer";
+import { useAppContext } from "../../../../router";
+import PkpSigningComponent from "../../../../components/common/PkpSigningComponent";
+import ExecuteJsComponent from "../../../../components/common/ExecuteJsComponent";
 
 const AUTH_NAME = "WebAuthn Authentication";
 
@@ -142,7 +141,10 @@ export default function WebAuthnTab() {
       showSuccess("webauthn-register");
     } catch (error: any) {
       console.error("Error registering WebAuthn credential:", error);
-      const errorMessage = formatErrorMessage("Failed to register WebAuthn credential: ", error);
+      const errorMessage = formatErrorMessage(
+        "Failed to register WebAuthn credential: ",
+        error
+      );
       setStatus(errorMessage);
       showError?.(errorMessage);
     } finally {
@@ -162,7 +164,10 @@ export default function WebAuthnTab() {
       showSuccess("webauthn-authenticate");
     } catch (error: any) {
       console.error("Error authenticating with WebAuthn:", error);
-      const errorMessage = formatErrorMessage("Failed to authenticate with WebAuthn: ", error);
+      const errorMessage = formatErrorMessage(
+        "Failed to authenticate with WebAuthn: ",
+        error
+      );
       setStatus(errorMessage);
       showError?.(errorMessage);
     } finally {
@@ -209,7 +214,10 @@ export default function WebAuthnTab() {
       showSuccess("webauthn-create-auth-context");
     } catch (error: any) {
       console.error("Error creating auth context:", error);
-      const errorMessage = formatErrorMessage("Failed to create auth context: ", error);
+      const errorMessage = formatErrorMessage(
+        "Failed to create auth context: ",
+        error
+      );
       setStatus(errorMessage);
       showError?.(errorMessage);
     } finally {

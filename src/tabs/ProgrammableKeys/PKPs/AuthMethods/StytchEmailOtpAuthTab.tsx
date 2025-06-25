@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { DisplayCode } from "../../components/DisplayCode";
-import GreyBoarderWhiteBgContainer from "../../components/layout/GreyboardWhiteBgContainer";
-import EoaAuthSection from "../../components/common/EoaAuthSection";
-import PkpSelectionComponent from "../../components/common/PkpSelectionComponent";
-import { useAppContext } from "../../router";
-import PkpSigningComponent from "../../components/common/PkpSigningComponent";
-import ExecuteJsComponent from "../../components/common/ExecuteJsComponent";
+import { DisplayCode } from "../../../../components/DisplayCode";
+import GreyBoarderWhiteBgContainer from "../../../../components/layout/GreyboardWhiteBgContainer";
+import PkpSelectionComponent from "../../../../components/common/PkpSelectionComponent";
+import { useAppContext } from "../../../../router";
+import PkpSigningComponent from "../../../../components/common/PkpSigningComponent";
+import ExecuteJsComponent from "../../../../components/common/ExecuteJsComponent";
 
 const AUTH_NAME = "Stytch Email OTP Authentication";
 
@@ -197,7 +196,10 @@ export default function StytchEmailOtpAuthTab() {
 
       // Cache the userId
       if (authData?.metadata?.userId && email) {
-        localStorage.setItem(`stytchEmailOtp:${email}`, authData.metadata.userId);
+        localStorage.setItem(
+          `stytchEmailOtp:${email}`,
+          authData.metadata.userId
+        );
         console.log(`Cached userId for stytchEmailOtp:${email}`);
       }
     } catch (error: any) {
@@ -262,7 +264,6 @@ export default function StytchEmailOtpAuthTab() {
       // Import StytchTotp2FAAuthenticator dynamically
       const { StytchTotp2FAAuthenticator } = await import("@lit-protocol/auth");
 
-
       const verifyResult =
         await StytchTotp2FAAuthenticator.verifyTotpRegistration({
           userId: authData.metadata.userId,
@@ -280,7 +281,10 @@ export default function StytchEmailOtpAuthTab() {
       showSuccess("stytch-email-verify-totp-setup");
     } catch (error: any) {
       console.error("Error verifying TOTP setup:", error);
-      const errorMessage = formatErrorMessage("Failed to verify TOTP setup: ", error);
+      const errorMessage = formatErrorMessage(
+        "Failed to verify TOTP setup: ",
+        error
+      );
       setStatus(errorMessage);
       showError?.(errorMessage);
     } finally {
@@ -322,7 +326,10 @@ export default function StytchEmailOtpAuthTab() {
       showSuccess("stytch-email-create-auth-context");
     } catch (error: any) {
       console.error("Error creating auth context:", error);
-      const errorMessage = formatErrorMessage("Failed to create auth context: ", error);
+      const errorMessage = formatErrorMessage(
+        "Failed to create auth context: ",
+        error
+      );
       setStatus(errorMessage);
       showError?.(errorMessage);
     } finally {
