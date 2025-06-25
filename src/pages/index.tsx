@@ -371,6 +371,16 @@ const ACTIONS = [
   //   type: "primary",
   // },
 
+  // PKPs
+  {
+    id: "programmable-keys-overview",
+    path: "/programmable-keys/overview",
+    name: "Overview",
+    description: "Overview of Programmable Keys",
+    category: "Programmable Keys",
+    type: "primary",
+  },
+
   // EOA Authentication
   {
     id: "eoa-native",

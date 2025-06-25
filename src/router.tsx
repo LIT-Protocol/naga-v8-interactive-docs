@@ -29,6 +29,7 @@ import HomePageTab from "./tabs/HomePageTab";
 import WhatIsLitTab from "./tabs/LearningLit/WhatIsLitTab";
 import HowItWorksTab from "./tabs/LearningLit/HowItWorksTab";
 import GettingStartedTab from "./tabs/BuildingWithLit/GettingStartedTab";
+import ProgrammableKeysOverview from "./tabs/ProgrammableKeys/Overview";
 import SecurityOverviewTab from "./tabs/LearningLit/Security/Overview";
 import NodeArchitectureTab from "./tabs/LearningLit/Security/NodeArchitecture";
 import KeyGenerationTab from "./tabs/LearningLit/Security/KeyGeneration";
@@ -162,6 +163,13 @@ export const router = createBrowserRouter([
         path: "storage-plugins",
         element: <StoragePluginsTab />,
       },
+
+      // Programmable Keys
+      {
+        path: "programmable-keys/overview",
+        element: <ProgrammableKeysOverview />,
+      },
+
       // EOA and Auth Routes
       {
         path: "eoa-native",
