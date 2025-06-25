@@ -33,6 +33,18 @@ const getAuthManager = (): AuthManager => {
   return authManagerInstance;
 };
 
+// Type definitions for navigation items
+interface NavigationItem {
+  id: string;
+  path?: string;
+  name: string;
+  description?: string;
+  category?: string; // Optional for child items
+  type?: "primary" | "secondary"; // Optional for child items
+  secondarySection?: string;
+  children?: NavigationItem[];
+}
+
 // DependencyStatus component for displaying dependency status with proper alignment
 type Dependency = {
   name: string;
@@ -240,8 +252,118 @@ const DependencyStatus = ({
   );
 };
 
+// Recursive Navigation Item Component
+interface NavigationItemProps {
+  item: NavigationItem;
+  level: number;
+  activeMethod: string;
+  collapsedCategories: { [key: string]: boolean };
+  setCollapsedCategories: (
+    updater: (prev: { [key: string]: boolean }) => { [key: string]: boolean }
+  ) => void;
+  location: { pathname: string };
+}
+
+const NavigationItem = ({
+  item,
+  level,
+  activeMethod,
+  collapsedCategories,
+  setCollapsedCategories,
+  location,
+}: NavigationItemProps) => {
+  const hasChildren = item.children && item.children.length > 0;
+  const isCollapsed = collapsedCategories[item.id];
+  const isActive = activeMethod === item.id;
+  const isPathActive = item.path && location.pathname === item.path;
+
+  const indentLevel = level * 15;
+  const fontSize = Math.max(0.9 - level * 0.05, 0.75); // Decrease font size for deeper levels
+
+  if (hasChildren) {
+    return (
+      <div style={{ marginBottom: "4px" }}>
+        <div style={{ position: "relative" }}>
+          <button
+            type="button"
+            style={{
+              display: "block",
+              width: "100%",
+              padding: "10px 15px",
+              paddingLeft: `${10 + indentLevel}px`,
+              borderRadius: "4px",
+              cursor: "pointer",
+              backgroundColor: isActive ? "#3b82f6" : "#ffffff",
+              color: isActive ? "#ffffff" : "#333333",
+              border: `1px solid ${isActive ? "#3b82f6" : "#dddddd"}`,
+              transition: "all 0.2s",
+              textAlign: "left",
+              fontWeight: "500",
+              textDecoration: "none",
+              position: "relative",
+              fontSize: `${fontSize}rem`,
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setCollapsedCategories((prev) => ({
+                ...prev,
+                [item.id]: !prev[item.id],
+              }));
+            }}
+          >
+            <span style={{ marginRight: 8 }}>{isCollapsed ? "▶" : "▼"}</span>
+            {item.name}
+          </button>
+
+          {/* Recursive children */}
+          {!isCollapsed && (
+            <div style={{ marginLeft: 0 }}>
+              {item.children!.map((child) => (
+                <NavigationItem
+                  key={child.id}
+                  item={child}
+                  level={level + 1}
+                  activeMethod={activeMethod}
+                  collapsedCategories={collapsedCategories}
+                  setCollapsedCategories={setCollapsedCategories}
+                  location={location}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  } else {
+    return (
+      <Link
+        to={item.path || ""}
+        style={{
+          display: "block",
+          padding: "10px 15px",
+          paddingLeft: `${10 + indentLevel}px`,
+          borderRadius: "4px",
+          cursor: "pointer",
+          backgroundColor: isPathActive ? "#3b82f6" : "#ffffff",
+          color: isPathActive ? "#ffffff" : "#333333",
+          border: `1px solid ${isPathActive ? "#3b82f6" : "#e9ecef"}`,
+          transition: "all 0.2s",
+          width: "100%",
+          textAlign: "left",
+          fontWeight: "500",
+          textDecoration: "none",
+          fontSize: `${fontSize}rem`,
+          marginBottom: 2,
+        }}
+      >
+        {item.name}
+      </Link>
+    );
+  }
+};
+
 // Authentication methods configuration
-const ACTIONS = [
+const ACTIONS: NavigationItem[] = [
   {
     id: "home",
     path: "/",
@@ -393,91 +515,75 @@ const ACTIONS = [
         path: "/programmable-keys/pkps/getting-started",
         name: "Getting Started",
       },
+      {
+        id: "pkps-auth-methods",
+        path: "/programmable-keys/pkps/auth-methods",
+        name: "Auth Methods",
+        children: [
+          {
+            id: "pkps-auth-methods-eoa-native",
+            path: "/programmable-keys/pkps/auth-methods/eoa-native",
+            name: "EOA Native",
+            description: "Direct EOA usage for PKP management",
+          },
+          {
+            id: "pkps-auth-methods-eoa",
+            path: "/programmable-keys/pkps/auth-methods/eoa",
+            name: "EOA Auth",
+            description: "Authenticate using your EOA account",
+          },
+          {
+            id: "pkps-auth-methods-google",
+            path: "/programmable-keys/pkps/auth-methods/google",
+            name: "Google oAuth",
+            description: "Authenticate using your Google account",
+          },
+          {
+            id: "pkps-auth-methods-discord",
+            path: "/programmable-keys/pkps/auth-methods/discord",
+            name: "Discord oAuth",
+            description: "Authenticate using your Discord account",
+          },
+          {
+            id: "pkps-auth-methods-webauthn",
+            path: "/programmable-keys/pkps/auth-methods/webauthn",
+            name: "WebAuthn",
+            description: "Authenticate using your WebAuthn device",
+          },
+          {
+            id: "pkps-auth-methods-stytch-email-otp",
+            path: "/programmable-keys/pkps/auth-methods/stytch-email-otp",
+            name: "Stytch Email OTP",
+            description: "Authenticate using Stytch Email OTP verification",
+          },
+          {
+            id: "pkps-auth-methods-stytch-sms-otp",
+            path: "/programmable-keys/pkps/auth-methods/stytch-sms-otp",
+            name: "Stytch SMS OTP",
+            description: "Authenticate using Stytch SMS OTP verification",
+          },
+          {
+            id: "pkps-auth-methods-stytch-whatsapp-otp",
+            path: "/programmable-keys/pkps/auth-methods/stytch-whatsapp-otp",
+            name: "Stytch WhatsApp OTP",
+            description: "Authenticate using Stytch WhatsApp OTP verification",
+          },
+          {
+            id: "pkps-auth-methods-stytch-totp",
+            path: "/programmable-keys/pkps/auth-methods/stytch-totp",
+            name: "Stytch 2FA TOTP",
+            description: "Authenticate using Stytch TOTP (Authenticator App)",
+          },
+          {
+            id: "pkps-auth-methods-custom-auth",
+            path: "/programmable-keys/pkps/auth-methods/custom-auth",
+            name: "Custom Auth",
+            description:
+              "Build your own custom authentication with Lit Actions",
+          },
+        ],
+      },
     ],
-  },
-
-  // EOA Authentication
-  {
-    id: "eoa-native",
-    path: "/eoa-native",
-    name: "EOA Native",
-    description: "Direct EOA usage for PKP management",
-    category: "EOA Auth",
-    type: "primary",
-  },
-  {
-    id: "eoa-auth",
-    path: "/eoa-auth",
-    name: "EOA",
-    description: "Authenticate using your EOA account",
-    category: "PKP Auth Methods",
-    type: "primary",
-  },
-
-  {
-    id: "google-auth",
-    path: "/google-auth",
-    name: "Google",
-    description: "Authenticate using your Google account",
-    category: "PKP Auth Methods",
-    type: "primary",
-  },
-  {
-    id: "discord-auth",
-    path: "/discord-auth",
-    name: "Discord",
-    description: "Authenticate using your Discord account",
-    category: "PKP Auth Methods",
-    type: "primary",
-  },
-  {
-    id: "webauthn-auth",
-    path: "/webauthn-auth",
-    name: "WebAuthn",
-    description: "Authenticate using your WebAuthn device",
-    category: "PKP Auth Methods",
-    type: "primary",
-  },
-  {
-    id: "stytch-email-otp-auth",
-    path: "/stytch-email-otp-auth",
-    name: "Stytch Email OTP",
-    description: "Authenticate using Stytch Email OTP verification",
-    category: "PKP Auth Methods",
-    type: "primary",
-  },
-  {
-    id: "stytch-sms-otp-auth",
-    path: "/stytch-sms-otp-auth",
-    name: "Stytch SMS OTP",
-    description: "Authenticate using Stytch SMS OTP verification",
-    category: "PKP Auth Methods",
-    type: "primary",
-  },
-  {
-    id: "stytch-whatsapp-otp-auth",
-    path: "/stytch-whatsapp-otp-auth",
-    name: "Stytch WhatsApp OTP",
-    description: "Authenticate using Stytch WhatsApp OTP verification",
-    category: "PKP Auth Methods",
-    type: "primary",
-  },
-  {
-    id: "stytch-totp-auth",
-    path: "/stytch-totp-auth",
-    name: "(2FA) Stytch TOTP",
-    description: "Authenticate using Stytch TOTP (Authenticator App)",
-    category: "PKP Auth Methods",
-    type: "secondary",
-    secondarySection: "Two-Factor Auth",
-  },
-  {
-    id: "custom-auth",
-    path: "/custom-auth",
-    name: "Custom Auth (Demo IdP)",
-    description: "Build your own custom authentication with Lit Actions",
-    category: "PKP Custom Auth",
-    type: "primary",
   },
 
   // Encryption & Access Control
@@ -555,7 +661,8 @@ export const HomePage = () => {
     try {
       // Create a simple beep sound
       const audioContext = new (window.AudioContext ||
-        (window as any).webkitAudioContext)();
+        (window as { webkitAudioContext?: typeof AudioContext })
+          .webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
 
@@ -764,10 +871,13 @@ export const HomePage = () => {
             {(() => {
               const groupedActions: { [key: string]: typeof ACTIONS } = {};
               ACTIONS.forEach((action) => {
-                if (!groupedActions[action.category]) {
-                  groupedActions[action.category] = [];
+                // Only group actions that have a category
+                if (action.category) {
+                  if (!groupedActions[action.category]) {
+                    groupedActions[action.category] = [];
+                  }
+                  groupedActions[action.category].push(action);
                 }
-                groupedActions[action.category].push(action);
               });
 
               return Object.entries(groupedActions).map(
@@ -869,101 +979,17 @@ export const HomePage = () => {
                               {/* Primary Actions */}
                               {primaryActions.map((action) =>
                                 action.children ? (
-                                  <div
+                                  <NavigationItem
                                     key={action.id}
-                                    style={{ marginBottom: "4px" }}
-                                  >
-                                    <div style={{ position: "relative" }}>
-                                      <button
-                                        type="button"
-                                        style={{
-                                          display: "block",
-                                          width: "100%",
-                                          padding: "10px 15px",
-                                          borderRadius: "4px",
-                                          cursor: "pointer",
-                                          backgroundColor:
-                                            activeMethod === action.id
-                                              ? "#3b82f6"
-                                              : "#ffffff",
-                                          color:
-                                            activeMethod === action.id
-                                              ? "#ffffff"
-                                              : "#333333",
-                                          border: `1px solid ${
-                                            activeMethod === action.id
-                                              ? "#3b82f6"
-                                              : "#dddddd"
-                                          }`,
-                                          transition: "all 0.2s",
-                                          textAlign: "left",
-                                          fontWeight: "500",
-                                          textDecoration: "none",
-                                          position: "relative",
-                                        }}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setCollapsedCategories((prev) => ({
-                                            ...prev,
-                                            [action.id]: !prev[action.id],
-                                          }));
-                                        }}
-                                      >
-                                        <span style={{ marginRight: 8 }}>
-                                          {collapsedCategories[action.id]
-                                            ? "▶"
-                                            : "▼"}
-                                        </span>
-                                        {action.name}
-                                      </button>
-                                      {/* Dropdown for children */}
-                                      {!collapsedCategories[action.id] && (
-                                        <div
-                                          style={{
-                                            marginLeft: 15,
-                                            marginTop: 2,
-                                          }}
-                                        >
-                                          {action.children.map((child) => {
-                                            const isChildActive =
-                                              location.pathname === child.path;
-                                            return (
-                                              <Link
-                                                key={child.id}
-                                                to={child.path || ""}
-                                                style={{
-                                                  display: "block",
-                                                  padding: "8px 15px",
-                                                  borderRadius: "4px",
-                                                  cursor: "pointer",
-                                                  backgroundColor: isChildActive
-                                                    ? "#3b82f6"
-                                                    : "#ffffff",
-                                                  color: isChildActive
-                                                    ? "#ffffff"
-                                                    : "#333333",
-                                                  border: `1px solid ${
-                                                    isChildActive
-                                                      ? "#3b82f6"
-                                                      : "#e9ecef"
-                                                  }`,
-                                                  transition: "all 0.2s",
-                                                  width: "100%",
-                                                  textAlign: "left",
-                                                  fontWeight: "500",
-                                                  textDecoration: "none",
-                                                  fontSize: "0.95rem",
-                                                  marginBottom: 2,
-                                                }}
-                                              >
-                                                {child.name}
-                                              </Link>
-                                            );
-                                          })}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
+                                    item={action}
+                                    level={0}
+                                    activeMethod={activeMethod}
+                                    collapsedCategories={collapsedCategories}
+                                    setCollapsedCategories={
+                                      setCollapsedCategories
+                                    }
+                                    location={location}
+                                  />
                                 ) : (
                                   <Link
                                     key={action.id}

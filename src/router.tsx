@@ -177,43 +177,43 @@ export const router = createBrowserRouter([
 
       // EOA and Auth Routes
       {
-        path: "eoa-native",
+        path: "programmable-keys/pkps/auth-methods/eoa-native",
         element: <EoaNativeTab />,
       },
       {
-        path: "google-auth",
+        path: "programmable-keys/pkps/auth-methods/google",
         element: <GoogleAuthTab />,
       },
       {
-        path: "discord-auth",
+        path: "programmable-keys/pkps/auth-methods/discord",
         element: <DiscordAuthTab />,
       },
       {
-        path: "webauthn-auth",
+        path: "programmable-keys/pkps/auth-methods/webauthn",
         element: <WebAuthnTab />,
       },
       {
-        path: "eoa-auth",
+        path: "programmable-keys/pkps/auth-methods/eoa",
         element: <EoaAuthTab />,
       },
       {
-        path: "stytch-email-otp-auth",
+        path: "programmable-keys/pkps/auth-methods/stytch-email-otp",
         element: <StytchEmailOtpAuthTab />,
       },
       {
-        path: "stytch-sms-otp-auth",
+        path: "programmable-keys/pkps/auth-methods/stytch-sms-otp",
         element: <StytchSmsOtpAuthTab />,
       },
       {
-        path: "stytch-whatsapp-otp-auth",
+        path: "programmable-keys/pkps/auth-methods/stytch-whatsapp-otp",
         element: <StytchWhatsAppOtpAuthTab />,
       },
       {
-        path: "stytch-totp-auth",
+        path: "programmable-keys/pkps/auth-methods/stytch-totp",
         element: <StytchTotpAuthTab />,
       },
       {
-        path: "custom-auth",
+        path: "programmable-keys/pkps/auth-methods/custom-auth",
         element: <CustomAuthTab />,
       },
       {
