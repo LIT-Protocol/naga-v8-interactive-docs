@@ -30,6 +30,13 @@ import WhatIsLitTab from "./tabs/LearningLit/WhatIsLitTab";
 import HowItWorksTab from "./tabs/LearningLit/HowItWorksTab";
 import GettingStartedTab from "./tabs/BuildingWithLit/GettingStartedTab";
 import ProgrammableKeysOverview from "./tabs/ProgrammableKeys/Overview";
+import SecurityOverviewTab from "./tabs/LearningLit/Security/Overview";
+import NodeArchitectureTab from "./tabs/LearningLit/Security/NodeArchitecture";
+import KeyGenerationTab from "./tabs/LearningLit/Security/KeyGeneration";
+import OnChainCoordinationTab from "./tabs/LearningLit/Security/OnChainCoordination";
+import CommunicatingWithNodes from "./tabs/LearningLit/Security/CommunicatingWithNodes";
+import CryptoeconomicSecurity from "./tabs/LearningLit/Security/CryptoeconomicSecurity";
+import BackupAndRecovery from "./tabs/LearningLit/Security/BackupAndRecovery";
 
 // Create a type for the context
 type ContextType = {
@@ -101,6 +108,34 @@ export const router = createBrowserRouter([
       {
         path: "learning-lit/how-it-works",
         element: <HowItWorksTab />,
+      },
+      {
+        path: "learning-lit/security",
+        element: <SecurityOverviewTab />,
+      },
+      {
+        path: "learning-lit/security/node-architecture",
+        element: <NodeArchitectureTab />,
+      },
+      {
+        path: "learning-lit/security/key-generation",
+        element: <KeyGenerationTab />,
+      },
+      {
+        path: "learning-lit/security/on-chain-coordination",
+        element: <OnChainCoordinationTab />,
+      },
+      {
+        path: "learning-lit/security/communicating-with-nodes",
+        element: <CommunicatingWithNodes />,
+      },
+      {
+        path: "learning-lit/security/cryptoeconomic-security",
+        element: <CryptoeconomicSecurity />,
+      },
+      {
+        path: "learning-lit/security/backup-and-recovery",
+        element: <BackupAndRecovery />,
       },
       {
         path: "learning-lit/demo",

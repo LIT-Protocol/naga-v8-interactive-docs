@@ -9,6 +9,7 @@
 import React from "react";
 import GreyBoarderWhiteBgContainer from "../../components/layout/GreyboardWhiteBgContainer";
 import { Link } from "react-router-dom";
+import NoteCallout from "../../components/common/NoteCallout";
 
 // A helper component for external links to ensure they open in a new tab.
 const LinkExt = ({
@@ -80,49 +81,53 @@ const WhatIsLitTab: React.FC = () => {
       <GreyBoarderWhiteBgContainer>
         <h2 style={pageStyles.h2}>Introduction</h2>
         <p style={pageStyles.p}>
-          Lit Protocol is a decentralized key management and compute network
-          designed to empower builders of applications, wallets, protocols, and
-          AI agents in the Web3 ecosystem.
+          Lit Protocol is a decentralized key management network that solves the
+          fundamental Web3 security dilemma: how to manage secrets without
+          compromising security, user experience, or decentralization. The
+          network empowers developers to create secure, decentralized
+          applications that manage crypto assets, private data, and user
+          authority seamlessly across any blockchain or distributed system.
         </p>
         <p style={pageStyles.p}>
-          By combining cutting-edge cryptography, sealed confidential hardware,
-          and peer-to-peer networking, Lit provides developers with powerful
-          tools to enhance security, privacy, and functionality in decentralized
-          applications.
+          Traditional approaches force an impossible choice. Giving private keys
+          or credentials to centralized servers creates massive security
+          responsibilities and single points of failure. Putting the burden
+          entirely on end users requires them to navigate complex key management
+          and opens up avenues for compromise. Lit Protocol eliminates this
+          tradeoff.
         </p>
         <p style={pageStyles.p}>
-          Lit offers developers building in web3 with several core functions and
-          capabilities:
+          Lit's distributed architecture ensures secrets remain verifiably
+          secure—encrypted at the hardware level and fragmented across a
+          decentralized network with no single point of failure. Using threshold
+          signature schemes (MPC TSS) as a foundation means that for the first
+          time, universal accounts can be programmed and automated without
+          trusting centralized custodians.
+        </p>
+        <p style={pageStyles.p}>
+          This underlying security architecture enables powerful developer
+          capabilities. Using Lit's SDK, builders can easily:
         </p>
         <ul style={pageStyles.ul}>
+          <li style={pageStyles.li}>Encrypt and decrypt private data</li>
           <li style={pageStyles.li}>
-            Decentralized key management with enhanced programmability and fault
-            tolerance
+            Create and manage Web3 wallets, accounts, and signers
           </li>
           <li style={pageStyles.li}>
-            Privacy-preserving compute and signing operations powered by sealed
-            confidential hardware
+            Sign transactions and messages on virtually any blockchain
           </li>
           <li style={pageStyles.li}>
-            Flexible access control rules to make managing private data seamless
-          </li>
-          <li style={pageStyles.li}>
-            Chain agnostic and cross-chain compatible to enable advanced Chain
-            Abstraction
+            Execute automated signing and/or decryption operations based on
+            programmable conditions
           </li>
           <li style={pageStyles.li}>
             Read and write to any off-chain endpoint to ensure compatibility
             with legacy systems and the rest of the web2 world
           </li>
-          <li style={pageStyles.li}>
-            Encrypted execution environments to power the next-generation of
-            private AI inference and training
-          </li>
         </ul>
         <p style={pageStyles.p}>
-          These features enable developers to create innovative solutions that
-          address critical challenges in Web3 development, particularly in areas
-          requiring high levels of security and privacy.
+          These capabilities enable builders to create immutable, interoperable,
+          and user-owned applications, AI agents, and protocols.
         </p>
         <p style={pageStyles.p}>
           Explore our{" "}
@@ -148,45 +153,56 @@ const WhatIsLitTab: React.FC = () => {
           applications across various domains:
         </p>
 
-        <h3 style={pageStyles.h3}>Secure Key Management and User Onboarding</h3>
+        <h3 style={pageStyles.h3}>Web3 Wallets and User Onboarding</h3>
         <p style={pageStyles.p}>
-          Developers can generate and manage non-custodial keys, enabling
-          seamless user onboarding without relying on centralized custodians.
-          This capability is utilized in projects like{" "}
-          <LinkExt href="https://app.patchwallet.com/">PatchWallet</LinkExt>,{" "}
-          <LinkExt href="https://www.silk.sc/">Silk</LinkExt>,{" "}
+          Developers can use Lit to generate and manage non-custodial keys using
+          a variety of flexible authentication flows (ex. oAuth and Passkeys)
+          with support for programmable transaction automation. This
+          functionality enables seamless onboarding experiences that don't
+          sacrifice UX while keeping users in control.{" "}
           <LinkExt href="https://www.collab.land/">Collab.Land</LinkExt>,{" "}
-          <LinkExt href="https://www.tria.so/">Tria</LinkExt>, and{" "}
-          <LinkExt href="https://index.network/">Index Network</LinkExt> to
-          create user-friendly wallet experiences and account abstraction
+          <LinkExt href="https://plurality.network/">Plurality Network</LinkExt>
+          ,{" "}
+          <LinkExt href="https://www.tradegenius.com/">Genius Protocol</LinkExt>
+          , to create user-friendly wallet experiences and account abstraction
           solutions.
         </p>
 
-        <h3 style={pageStyles.h3}>Data Encryption and Access Control</h3>
+        <h3 style={pageStyles.h3}>Digital Identity</h3>
         <p style={pageStyles.p}>
           Lit allows for flexible encryption and access management based on
           blockchain state, token ownership, or other on/off-chain conditions.
-          This feature is leveraged by projects such as{" "}
-          <LinkExt href="https://docs.verifymedia.com/publishing/access-control/methods/lit-protocol">
-            Fox
-          </LinkExt>
-          , <LinkExt href="https://www.terminal3.io/">Terminal3</LinkExt>,{" "}
+          This can be used for digital identity and IP rights management,
+          verifiable data marketplaces, DWeb storage solutions, and more.{" "}
           <LinkExt href="https://streamr.network/">Streamr</LinkExt>,{" "}
+          <LinkExt href="https://bonny.so/">Bonny</LinkExt>,{" "}
           <LinkExt href="https://cheqd.io/">Cheqd</LinkExt>,{" "}
-          <LinkExt href="https://www.lens.xyz/">Lens Protocol</LinkExt>, and{" "}
-          <LinkExt href="https://publicgoods.network/">Gitcoin</LinkExt> for
-          secure content sharing and data marketplaces.
+          <LinkExt href="https://beaconprotocol.com/">Beacon Protocol</LinkExt>,{" "}
+          <LinkExt href="https://www.lens.xyz/">Lens Protocol</LinkExt>,{" "}
+          <LinkExt href="https://irys.xyz/">Irys</LinkExt>,{" "}
+          <LinkExt href="https://docs.verifymedia.com/publishing/access-control/methods/lit-protocol">
+            Verify (Fox Corp)
+          </LinkExt>
+          , and{" "}
+          <LinkExt href="https://www.alexandriabooks.com/">
+            Alexandria Labs
+          </LinkExt>{" "}
+          to secure content sharing and data marketplaces.
         </p>
 
-        <h3 style={pageStyles.h3}>Cross-Chain Interactions and Automation</h3>
+        <h3 style={pageStyles.h3}>Chain Abstraction and DeFi</h3>
         <p style={pageStyles.p}>
-          With Lit Actions, developers can create serverless functions that
-          interact with multiple blockchains, facilitating cross-chain messaging
-          and transaction automation. The{" "}
-          <LinkExt href="https://github.com/Yacht-Labs/yacht-lit-sdk">
-            Yacht Labs SDK
-          </LinkExt>{" "}
-          demonstrate practical implementations of this capability.
+          Developers can utilize Lit's programmable and chain-agnostic signing
+          capabilities to facilitate cross-chain interoperability and
+          generalized message passing to create a more unified and capital
+          efficient Web3 ecosystem.
+          <LinkExt href="https://www.tradegenius.com/">Genius Protocol</LinkExt>
+          , <LinkExt href="https://www.tria.so/">Tria</LinkExt>,{" "}
+          <LinkExt href="https://emblem.vision/">Emblem Vault</LinkExt>,{" "}
+          <LinkExt href="https://eco.com/">Eco</LinkExt>,{" "}
+          <LinkExt href="https://polaris.app/">Polaris</LinkExt>,{" "}
+          <LinkExt href="https://vaultlayer.xyz/">VaultLayer</LinkExt>, and{" "}
+          <LinkExt href="https://gvnr.xyz/">GVNR</LinkExt>.
         </p>
 
         <h3 style={pageStyles.h3}>Data Oracles and Real-World Integration</h3>
@@ -196,168 +212,60 @@ const WhatIsLitTab: React.FC = () => {
           contracts and real-world information.
         </p>
 
-        <h3 style={pageStyles.h3}>
-          Environments for Privacy-Preserving AI and Machine Learning
-        </h3>
-        <p style={pageStyles.p}>
-          The secure compute environment provided by Lit allows for the
-          execution of AI models in a privacy-preserving and verifiable manner,
-          opening up new possibilities for responsible AI development in the
-          Web3 space.
-        </p>
-      </GreyBoarderWhiteBgContainer>
+        <NoteCallout
+          title="Data Oracle Kit"
+          message={
+            <>
+              <p>
+                The{" "}
+                <a
+                  href="https://github.com/LIT-Protocol/lit-oracle-kit"
+                  target="_blank"
+                  style={{ color: "#3b82f6", textDecoration: "underline" }}
+                >
+                  Lit Oracle Kit
+                </a>{" "}
+                demonstrates how the Lit Network can be used to sign data pulled
+                from the web (or another blockchain) and write it to chain.
+              </p>
+              <p style={{ marginTop: "8px", fontWeight: "500" }}>
+                <strong>Note:</strong> This kit is currently built for V7 of the
+                Lit SDK. A V8 version is coming soon!
+              </p>
+            </>
+          }
+          variant="note"
+          style={{ marginBottom: "16px" }}
+        />
 
-      <GreyBoarderWhiteBgContainer style={{ marginTop: "32px" }}>
-        <h2 style={pageStyles.h2}>Industry Applications</h2>
+        <h3 style={pageStyles.h3}>AI Agents and Infrastructure</h3>
         <p style={pageStyles.p}>
-          Lit Protocol and its ecosystem partners are driving innovation across
-          various sectors:
-        </p>
-
-        <h3 style={pageStyles.h3}>Developer Tooling</h3>
-        <p style={pageStyles.p}>
-          Projects like{" "}
-          <LinkExt href="https://alchemy.com/?ref=spark.litprotocol.com">
-            Alchemy
-          </LinkExt>
-          ,{" "}
-          <LinkExt href="https://www.pimlico.io/?ref=spark.litprotocol.com">
-            Pimlico
-          </LinkExt>
-          ,{" "}
-          <LinkExt href="https://www.openfort.xyz/?ref=spark.litprotocol.com">
-            Openfort
-          </LinkExt>
-          ,{" "}
-          <LinkExt href="https://www.lens.xyz/?ref=spark.litprotocol.com">
-            Lens Protocol
-          </LinkExt>
-          ,{" "}
-          <LinkExt href="https://useorbis.com/?ref=spark.litprotocol.com">
-            Orbis
-          </LinkExt>
-          ,{" "}
-          <LinkExt href="https://spheron.network/?ref=spark.litprotocol.com">
-            Spheron
-          </LinkExt>
-          , and{" "}
-          <LinkExt href="https://www.snowballtools.xyz/?ref=spark.litprotocol.com">
-            Snowball
-          </LinkExt>{" "}
-          leverage Lit's generalized services to provide developers with SDKs
-          that power specific use cases such as account abstraction, private
-          data on Web3 social platforms, token-gated chat, and mobile wallet
-          tooling.
+          Agent devs can use Lit's signing and compute capabilities to build
+          autonomous, verifiable, and unruggable agents and infra solutions. If
+          you're focused on building in this category, check out Lit's Vincent
+          product to get started. Example implementations include:
         </p>
 
-        <h3 style={pageStyles.h3}>Data Marketplaces</h3>
+        <h3 style={pageStyles.h3}>Web3 Infrastructure</h3>
         <p style={pageStyles.p}>
-          Protocols like{" "}
-          <LinkExt href="https://cheqd.io/?ref=spark.litprotocol.com">
-            Cheqd
-          </LinkExt>
-          ,{" "}
-          <LinkExt href="https://karatdao.com/?ref=spark.litprotocol.com">
-            KaratDAO
-          </LinkExt>
-          ,{" "}
-          <LinkExt href="https://index.network/?ref=spark.litprotocol.com">
-            Index
-          </LinkExt>
-          , and{" "}
-          <LinkExt href="https://streamr.network/?ref=spark.litprotocol.com">
-            Streamr
-          </LinkExt>{" "}
-          use Lit for encryption in the commercialization of data, powering
-          trustless marketplaces built on blockchains and the open web.
-        </p>
-
-        <h3 style={pageStyles.h3}>Identity Management</h3>
-        <p style={pageStyles.p}>
-          Projects like{" "}
-          <LinkExt href="https://www.oamo.io/?ref=spark.litprotocol.com">
-            Oamo
-          </LinkExt>
-          ,{" "}
-          <LinkExt href="https://krebit.id/?ref=spark.litprotocol.com">
-            Krebit
-          </LinkExt>
-          ,{" "}
-          <LinkExt href="https://terminal3.io/?ref=spark.litprotocol.com">
-            Terminal3
-          </LinkExt>
-          , and{" "}
-          <LinkExt href="https://www.holonym.id/?ref=spark.litprotocol.com">
-            Holonym
-          </LinkExt>{" "}
-          use Lit to power the selective disclosure of encrypted data and
-          credentials, giving users control over how their information is
-          accessed, managed, and monetized.
-        </p>
-
-        <h3 style={pageStyles.h3}>Content Authenticity</h3>
-        <p style={pageStyles.p}>
-          Blockchain Creative Labs has integrated Lit within their{" "}
-          <LinkExt href="https://www.verifymedia.com/?ref=spark.litprotocol.com">
-            Verify
-          </LinkExt>{" "}
-          platform as a secure signing backend, enabling content to be stored
-          privately and under proper licensing.
-        </p>
-
-        <h3 style={pageStyles.h3}>Digital Product NFTs</h3>
-        <p style={pageStyles.p}>
-          Teams like{" "}
-          <LinkExt href="https://crossmint.io/?ref=spark.litprotocol.com">
-            Crossmint
-          </LinkExt>
-          ,{" "}
-          <LinkExt href="https://www.molecule.xyz/?ref=spark.litprotocol.com">
-            Molecule
-          </LinkExt>
-          ,{" "}
-          <LinkExt href="https://alexandrialabs.xyz/?ref=spark.litprotocol.com">
-            Alexandria
-          </LinkExt>
-          ,{" "}
-          <LinkExt href="https://charmverse.io/?ref=spark.litprotocol.com">
-            CharmVerse
-          </LinkExt>
-          , and{" "}
-          <LinkExt href="https://anotherblock.io/drops/the-jackson-5-big-boy-limited-edition?ref=spark.litprotocol.com">
-            Anotherblock
-          </LinkExt>{" "}
-          use Lit to meet consumer demand for more creative utility for digital
-          assets, such as unlockable NFTs and selective decryption for managing
-          IP rights.
-        </p>
-
-        <h3 style={pageStyles.h3}>User Wallets</h3>
-        <p style={pageStyles.p}>
-          Lit is being used as a decentralized key management solution for
-          wallets and onboarding experiences by teams like{" "}
-          <LinkExt href="https://www.collab.land/?ref=spark.litprotocol.com">
-            Collab.Land
-          </LinkExt>
-          ,{" "}
-          <LinkExt href="https://infinex.xyz/?ref=spark.litprotocol.com">
-            Infinex
-          </LinkExt>
-          ,{" "}
-          <LinkExt href="https://app.patchwallet.com/?ref=spark.litprotocol.com">
-            PatchWallet
-          </LinkExt>
-          ,{" "}
-          <LinkExt href="https://www.silk.sc/?ref=spark.litprotocol.com">
-            Silk
-          </LinkExt>
-          , and{" "}
-          <LinkExt href="https://xion.burnt.com/?ref=spark.litprotocol.com">
-            Burnt
-          </LinkExt>
-          . These products take the form of wallet applications, account
-          abstraction signers, and embedded wallets on existing platforms like
-          Telegram and Discord.
+          Projects in this category are focused on delivering essential
+          infrastructure critical to Web3 application development. This includes
+          payment infrastructure, smart contract tooling, grants management,
+          video streaming, and more. The following projects leverage Lit's
+          signing, encryption, and compute capabilities in a multitude of ways
+          to deliver value to end consumers.
+          <LinkExt href="https://request.network/">
+            Request Network
+          </LinkExt>,{" "}
+          <LinkExt href="https://request.network/">Request Network</LinkExt>,{" "}
+          <LinkExt href="https://www.crossmint.com/">Crossmint</LinkExt>,{" "}
+          <LinkExt href="https://www.gitcoin.co/">Gitcoin</LinkExt>,{" "}
+          <LinkExt href="https://www.livepeer.org/">Livepeer</LinkExt>,{" "}
+          <LinkExt href="https://www.hatsprotocol.xyz/">Hats Protocol</LinkExt>,{" "}
+          <LinkExt href="https://opencampus.xyz/">Open Campus</LinkExt>,{" "}
+          <LinkExt href="https://charmverse.io/">CharmVerse</LinkExt>,{" "}
+          <LinkExt href="https://www.spheron.network/">Spheron Network</LinkExt>
+          , and <LinkExt href="https://sign.global/">Sign Protocol</LinkExt>.
         </p>
       </GreyBoarderWhiteBgContainer>
 

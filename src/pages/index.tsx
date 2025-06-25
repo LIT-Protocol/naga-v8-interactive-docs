@@ -267,6 +267,50 @@ const ACTIONS = [
     type: "primary",
   },
   {
+    id: "security",
+    name: "Security",
+    description: "An overview of Lit Protocol security.",
+    category: "Learning Lit",
+    type: "primary",
+    children: [
+      {
+        id: "security-overview",
+        path: "/learning-lit/security",
+        name: "Overview",
+      },
+      {
+        id: "security-node-architecture",
+        path: "/learning-lit/security/node-architecture",
+        name: "Node Architecture",
+      },
+      {
+        id: "security-key-generation",
+        path: "/learning-lit/security/key-generation",
+        name: "Key Generation",
+      },
+      {
+        id: "security-on-chain-coordination",
+        path: "/learning-lit/security/on-chain-coordination",
+        name: "On-Chain Coordination",
+      },
+      {
+        id: "security-communicating-with-nodes",
+        path: "/learning-lit/security/communicating-with-nodes",
+        name: "Communicating with Nodes",
+      },
+      {
+        id: "security-cryptoeconomic-security",
+        path: "/learning-lit/security/cryptoeconomic-security",
+        name: "Cryptoeconomic Security",
+      },
+      {
+        id: "security-backup-and-recovery",
+        path: "/learning-lit/security/backup-and-recovery",
+        name: "Backup and Recovery",
+      },
+    ],
+  },
+  {
     id: "demo",
     path: "/learning-lit/demo",
     name: "Demo",
@@ -468,6 +512,8 @@ export const HomePage = () => {
     // Learning Lit and Building With Lit remain expanded (false = not collapsed)
     "Learning Lit": false,
     "Building With Lit": false,
+    // Security section collapsed by default
+    security: true,
   });
   const [siteAuthConfig, setSiteAuthConfig] = useState<any>({
     domain: window.location.host,
@@ -737,7 +783,7 @@ export const HomePage = () => {
                         primaryActions.map((action) => (
                           <Link
                             key={action.id}
-                            to={action.path}
+                            to={action.path || ""}
                             style={{
                               display: "block",
                               padding: "10px 15px",
@@ -805,39 +851,137 @@ export const HomePage = () => {
                           {!isCategoryCollapsed && (
                             <div style={{ marginLeft: "0px" }}>
                               {/* Primary Actions */}
-                              {primaryActions.map((action) => (
-                                <Link
-                                  key={action.id}
-                                  to={action.path}
-                                  style={{
-                                    display: "block",
-                                    padding: "10px 15px",
-                                    marginBottom: "4px",
-                                    borderRadius: "4px",
-                                    cursor: "pointer",
-                                    backgroundColor:
-                                      activeMethod === action.id
-                                        ? "#3b82f6"
-                                        : "#ffffff",
-                                    color:
-                                      activeMethod === action.id
-                                        ? "#ffffff"
-                                        : "#333333",
-                                    border: `1px solid ${
-                                      activeMethod === action.id
-                                        ? "#3b82f6"
-                                        : "#dddddd"
-                                    }`,
-                                    transition: "all 0.2s",
-                                    width: "100%",
-                                    textAlign: "left",
-                                    fontWeight: "500",
-                                    textDecoration: "none",
-                                  }}
-                                >
-                                  {action.name}
-                                </Link>
-                              ))}
+                              {primaryActions.map((action) =>
+                                action.children ? (
+                                  <div
+                                    key={action.id}
+                                    style={{ marginBottom: "4px" }}
+                                  >
+                                    <div style={{ position: "relative" }}>
+                                      <button
+                                        type="button"
+                                        style={{
+                                          display: "block",
+                                          width: "100%",
+                                          padding: "10px 15px",
+                                          borderRadius: "4px",
+                                          cursor: "pointer",
+                                          backgroundColor:
+                                            activeMethod === action.id
+                                              ? "#3b82f6"
+                                              : "#ffffff",
+                                          color:
+                                            activeMethod === action.id
+                                              ? "#ffffff"
+                                              : "#333333",
+                                          border: `1px solid ${
+                                            activeMethod === action.id
+                                              ? "#3b82f6"
+                                              : "#dddddd"
+                                          }`,
+                                          transition: "all 0.2s",
+                                          textAlign: "left",
+                                          fontWeight: "500",
+                                          textDecoration: "none",
+                                          position: "relative",
+                                        }}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setCollapsedCategories((prev) => ({
+                                            ...prev,
+                                            [action.id]: !prev[action.id],
+                                          }));
+                                        }}
+                                      >
+                                        <span style={{ marginRight: 8 }}>
+                                          {collapsedCategories[action.id]
+                                            ? "▶"
+                                            : "▼"}
+                                        </span>
+                                        {action.name}
+                                      </button>
+                                      {/* Dropdown for children */}
+                                      {!collapsedCategories[action.id] && (
+                                        <div
+                                          style={{
+                                            marginLeft: 15,
+                                            marginTop: 2,
+                                          }}
+                                        >
+                                          {action.children.map((child) => {
+                                            const isChildActive =
+                                              location.pathname === child.path;
+                                            return (
+                                              <Link
+                                                key={child.id}
+                                                to={child.path || ""}
+                                                style={{
+                                                  display: "block",
+                                                  padding: "8px 15px",
+                                                  borderRadius: "4px",
+                                                  cursor: "pointer",
+                                                  backgroundColor: isChildActive
+                                                    ? "#3b82f6"
+                                                    : "#ffffff",
+                                                  color: isChildActive
+                                                    ? "#ffffff"
+                                                    : "#333333",
+                                                  border: `1px solid ${
+                                                    isChildActive
+                                                      ? "#3b82f6"
+                                                      : "#e9ecef"
+                                                  }`,
+                                                  transition: "all 0.2s",
+                                                  width: "100%",
+                                                  textAlign: "left",
+                                                  fontWeight: "500",
+                                                  textDecoration: "none",
+                                                  fontSize: "0.95rem",
+                                                  marginBottom: 2,
+                                                }}
+                                              >
+                                                {child.name}
+                                              </Link>
+                                            );
+                                          })}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <Link
+                                    key={action.id}
+                                    to={action.path || ""}
+                                    style={{
+                                      display: "block",
+                                      padding: "10px 15px",
+                                      marginBottom: "4px",
+                                      borderRadius: "4px",
+                                      cursor: "pointer",
+                                      backgroundColor:
+                                        activeMethod === action.id
+                                          ? "#3b82f6"
+                                          : "#ffffff",
+                                      color:
+                                        activeMethod === action.id
+                                          ? "#ffffff"
+                                          : "#333333",
+                                      border: `1px solid ${
+                                        activeMethod === action.id
+                                          ? "#3b82f6"
+                                          : "#dddddd"
+                                      }`,
+                                      transition: "all 0.2s",
+                                      width: "100%",
+                                      textAlign: "left",
+                                      fontWeight: "500",
+                                      textDecoration: "none",
+                                    }}
+                                  >
+                                    {action.name}
+                                  </Link>
+                                )
+                              )}
 
                               {/* Secondary Actions - Collapsible Tree */}
                               {hasSecondaryActions && (
@@ -878,7 +1022,7 @@ export const HomePage = () => {
                                         style={{ marginBottom: "4px" }}
                                       >
                                         <Link
-                                          to={action.path}
+                                          to={action.path || ""}
                                           style={{
                                             display: "block",
                                             padding: "8px 15px",
