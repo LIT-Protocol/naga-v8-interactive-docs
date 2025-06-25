@@ -257,8 +257,8 @@ interface NavigationItemProps {
   item: NavigationItem;
   level: number;
   activeMethod: string;
-  collapsedCategories: { [key: string]: boolean };
-  setCollapsedCategories: (
+  expandedCategories: { [key: string]: boolean };
+  setExpandedCategories: (
     updater: (prev: { [key: string]: boolean }) => { [key: string]: boolean }
   ) => void;
   location: { pathname: string };
@@ -268,12 +268,12 @@ const NavigationItem = ({
   item,
   level,
   activeMethod,
-  collapsedCategories,
-  setCollapsedCategories,
+  expandedCategories,
+  setExpandedCategories,
   location,
 }: NavigationItemProps) => {
   const hasChildren = item.children && item.children.length > 0;
-  const isCollapsed = collapsedCategories[item.id];
+  const isExpanded = expandedCategories[item.id];
   const isActive = activeMethod === item.id;
   const isPathActive = item.path && location.pathname === item.path;
 
@@ -305,18 +305,18 @@ const NavigationItem = ({
             }}
             onClick={(e) => {
               e.stopPropagation();
-              setCollapsedCategories((prev) => ({
+              setExpandedCategories((prev) => ({
                 ...prev,
                 [item.id]: !prev[item.id],
               }));
             }}
           >
-            <span style={{ marginRight: 8 }}>{isCollapsed ? "▶" : "▼"}</span>
+            <span style={{ marginRight: 8 }}>{isExpanded ? "▼" : "▶"}</span>
             {item.name}
           </button>
 
           {/* Recursive children */}
-          {!isCollapsed && (
+          {isExpanded && (
             <div style={{ marginLeft: 0 }}>
               {item.children!.map((child) => (
                 <NavigationItem
@@ -324,8 +324,8 @@ const NavigationItem = ({
                   item={child}
                   level={level + 1}
                   activeMethod={activeMethod}
-                  collapsedCategories={collapsedCategories}
-                  setCollapsedCategories={setCollapsedCategories}
+                  expandedCategories={expandedCategories}
+                  setExpandedCategories={setExpandedCategories}
                   location={location}
                 />
               ))}
@@ -523,14 +523,15 @@ const ACTIONS: NavigationItem[] = [
           {
             id: "pkps-auth-methods-eoa-native",
             path: "/programmable-keys/pkps/auth-methods/eoa-native",
-            name: "EOA Native",
+            name: "Ethereum Wallet (Native)",
             description: "Direct EOA usage for PKP management",
           },
           {
             id: "pkps-auth-methods-eoa",
             path: "/programmable-keys/pkps/auth-methods/eoa",
-            name: "EOA Auth",
-            description: "Authenticate using your EOA account",
+            name: "Ethereum Wallet (SIWE)",
+            description:
+              "Authenticate using your Ethereum wallet and a SIWE message",
           },
           {
             id: "pkps-auth-methods-google",
@@ -622,20 +623,13 @@ export const HomePage = () => {
   const [authManager, setAuthManager] = useState<AuthManager | null>(null);
   const [authContext, setAuthContext] = useState<any>(null);
   const [activeMethod, setActiveMethod] = useState<string>("eoa");
-  const [collapsedCategories, setCollapsedCategories] = useState<{
+  const [expandedCategories, setExpandedCategories] = useState<{
     [key: string]: boolean;
   }>({
-    // All sections collapsed by default except Learning Lit and Building With Lit
-    "PKP Auth Methods": true,
-    "PKP Custom Auth": true,
-    "EOA Auth": true,
-    "Encryption & Access Control": true,
-    "Payment Management": true,
-    // Learning Lit and Building With Lit remain expanded (false = not collapsed)
-    "Learning Lit": false,
-    "Building With Lit": false,
-    // Security section collapsed by default
-    security: true,
+    // Only specify items that should be expanded by default
+    // Everything else will be collapsed by default
+    "Learning Lit": true,
+    "Building With Lit": true,
   });
   const [siteAuthConfig, setSiteAuthConfig] = useState<any>({
     domain: window.location.host,
@@ -700,7 +694,7 @@ export const HomePage = () => {
 
   // Function to toggle category collapse state
   const toggleCategoryCollapse = (categoryKey: string) => {
-    setCollapsedCategories((prev) => ({
+    setExpandedCategories((prev) => ({
       ...prev,
       [categoryKey]: !prev[categoryKey],
     }));
@@ -893,9 +887,8 @@ export const HomePage = () => {
                   const hasSecondaryActions = secondaryActions.length > 0;
                   const categoryKey = category;
                   const secondaryKey = `${category}-secondary`;
-                  const isCategoryCollapsed = collapsedCategories[categoryKey];
-                  const isSecondaryCollapsed =
-                    collapsedCategories[secondaryKey];
+                  const isCategoryExpanded = expandedCategories[categoryKey];
+                  const isSecondaryExpanded = expandedCategories[secondaryKey];
 
                   return (
                     <div key={category}>
@@ -959,7 +952,7 @@ export const HomePage = () => {
                             }}
                           >
                             <span style={{ marginRight: "8px" }}>
-                              {isCategoryCollapsed ? "▶" : "▼"}
+                              {isCategoryExpanded ? "▼" : "▶"}
                             </span>
                             {category}
                             <span
@@ -974,7 +967,7 @@ export const HomePage = () => {
                           </button>
 
                           {/* Category Content */}
-                          {!isCategoryCollapsed && (
+                          {isCategoryExpanded && (
                             <div style={{ marginLeft: "0px" }}>
                               {/* Primary Actions */}
                               {primaryActions.map((action) =>
@@ -984,9 +977,9 @@ export const HomePage = () => {
                                     item={action}
                                     level={0}
                                     activeMethod={activeMethod}
-                                    collapsedCategories={collapsedCategories}
-                                    setCollapsedCategories={
-                                      setCollapsedCategories
+                                    expandedCategories={expandedCategories}
+                                    setExpandedCategories={
+                                      setExpandedCategories
                                     }
                                     location={location}
                                   />
@@ -1050,14 +1043,14 @@ export const HomePage = () => {
                                     }}
                                   >
                                     <span style={{ marginRight: "8px" }}>
-                                      {isSecondaryCollapsed ? "▶" : "▼"}
+                                      {isSecondaryExpanded ? "▼" : "▶"}
                                     </span>
                                     Secondary Methods ({secondaryActions.length}
                                     )
                                   </button>
 
                                   {/* Secondary Actions List */}
-                                  {!isSecondaryCollapsed &&
+                                  {isSecondaryExpanded &&
                                     secondaryActions.map((action) => (
                                       <div
                                         key={action.id}
