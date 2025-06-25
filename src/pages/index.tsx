@@ -2,7 +2,7 @@ import { createAuthManager, storagePlugins } from "@lit-protocol/auth";
 import { createLitClient } from "@lit-protocol/lit-client";
 import { nagaDev } from "@lit-protocol/networks";
 import { useEffect, useState } from "react";
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, Outlet, useLocation } from "react-router-dom";
 import { MainLayout } from "../layouts/MainLayout";
 
 // --- Singleton instances ---
@@ -243,36 +243,115 @@ const DependencyStatus = ({
 // Authentication methods configuration
 const ACTIONS = [
   {
-    id: "demo",
-    path: "/demo",
-    name: "Demo",
-    description: "Demo page",
-    category: "Demo",
+    id: "home",
+    path: "/",
+    name: "Home",
+    description: "Welcome to Lit Protocol Interactive Documentation",
+    category: "Home",
     type: "primary",
   },
-  // Getting Started - Foundation Setup
+  {
+    id: "what-is-lit",
+    path: "/learning-lit/what-is-lit",
+    name: "What is Lit Protocol",
+    description: "An overview of Lit Protocol.",
+    category: "Learning Lit",
+    type: "primary",
+  },
+  {
+    id: "how-it-works",
+    path: "/learning-lit/how-it-works",
+    name: "How It Works",
+    description: "An overview of how Lit Protocol works.",
+    category: "Learning Lit",
+    type: "primary",
+  },
+  {
+    id: "security",
+    name: "Security",
+    description: "An overview of Lit Protocol security.",
+    category: "Learning Lit",
+    type: "primary",
+    children: [
+      {
+        id: "security-overview",
+        path: "/learning-lit/security",
+        name: "Overview",
+      },
+      {
+        id: "security-node-architecture",
+        path: "/learning-lit/security/node-architecture",
+        name: "Node Architecture",
+      },
+      {
+        id: "security-key-generation",
+        path: "/learning-lit/security/key-generation",
+        name: "Key Generation",
+      },
+      {
+        id: "security-on-chain-coordination",
+        path: "/learning-lit/security/on-chain-coordination",
+        name: "On-Chain Coordination",
+      },
+      {
+        id: "security-communicating-with-nodes",
+        path: "/learning-lit/security/communicating-with-nodes",
+        name: "Communicating with Nodes",
+      },
+      {
+        id: "security-cryptoeconomic-security",
+        path: "/learning-lit/security/cryptoeconomic-security",
+        name: "Cryptoeconomic Security",
+      },
+      {
+        id: "security-backup-and-recovery",
+        path: "/learning-lit/security/backup-and-recovery",
+        name: "Backup and Recovery",
+      },
+    ],
+  },
+  {
+    id: "demo",
+    path: "/learning-lit/demo",
+    name: "Demo",
+    description:
+      "Interactive demo showcasing Lit Protocol authentication and encryption features",
+    category: "Learning Lit",
+    type: "primary",
+  },
+
+  // Building With Lit
+  {
+    id: "building-getting-started",
+    path: "/building-with-lit/getting-started",
+    name: "Getting Started",
+    description:
+      "Introduction to building with Lit Protocol and setup overview",
+    category: "Building With Lit",
+    type: "primary",
+  },
   {
     id: "setup-lit-client",
-    path: "/setup-lit-client",
+    path: "/building-with-lit/setup-lit-client",
     name: "Setup Lit Client",
     description: "Create and configure your Lit Protocol client instance",
-    category: "Getting Started",
+    category: "Building With Lit",
     type: "primary",
   },
   {
     id: "setup-auth-manager",
-    path: "/setup-auth-manager",
+    path: "/building-with-lit/setup-auth-manager",
     name: "Setup Auth Manager",
     description: "Create and configure authentication manager with storage",
-    category: "Getting Started",
+    category: "Building With Lit",
     type: "primary",
   },
   {
     id: "setup-auth-services",
-    path: "/setup-auth-services",
+    path: "/building-with-lit/setup-auth-services",
     name: "Setup Auth Services",
     description: "Configure your own auth infrastructure (servers & worker)",
-    category: "Getting Started",
+    category: "Building With Lit",
     type: "primary",
   },
   // {
@@ -413,7 +492,19 @@ export const HomePage = () => {
   const [activeMethod, setActiveMethod] = useState<string>("eoa");
   const [collapsedCategories, setCollapsedCategories] = useState<{
     [key: string]: boolean;
-  }>({});
+  }>({
+    // All sections collapsed by default except Learning Lit and Building With Lit
+    "PKP Auth Methods": true,
+    "PKP Custom Auth": true,
+    "EOA Auth": true,
+    "Encryption & Access Control": true,
+    "Payment Management": true,
+    // Learning Lit and Building With Lit remain expanded (false = not collapsed)
+    "Learning Lit": false,
+    "Building With Lit": false,
+    // Security section collapsed by default
+    security: true,
+  });
   const [siteAuthConfig, setSiteAuthConfig] = useState<any>({
     domain: window.location.host,
     statement: "🫵 YOU AGREED TO THE TERMS AND CONDITIONS",
@@ -678,150 +769,287 @@ export const HomePage = () => {
                         />
                       )}
 
-                      {/* Collapsible Category Header */}
-                      <button
-                        onClick={() => toggleCategoryCollapse(categoryKey)}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          width: "100%",
-                          padding: "12px 0",
-                          backgroundColor: "transparent",
-                          border: "none",
-                          cursor: "pointer",
-                          fontSize: "1rem",
-                          color: "#555",
-                          fontWeight: "600",
-                          textAlign: "left",
-                        }}
-                      >
-                        <span style={{ marginRight: "8px" }}>
-                          {isCategoryCollapsed ? "▶" : "▼"}
-                        </span>
-                        {category}
-                        <span
-                          style={{
-                            marginLeft: "8px",
-                            fontSize: "0.8rem",
-                            color: "#888",
-                          }}
-                        >
-                          ({actionsInCategory.length})
-                        </span>
-                      </button>
-
-                      {/* Category Content */}
-                      {!isCategoryCollapsed && (
-                        <div style={{ marginLeft: "0px" }}>
-                          {/* Primary Actions */}
-                          {primaryActions.map((action) => (
-                            <Link
-                              key={action.id}
-                              to={action.path}
+                      {category === "Home" ? (
+                        primaryActions.map((action) => (
+                          <Link
+                            key={action.id}
+                            to={action.path || ""}
+                            style={{
+                              display: "block",
+                              padding: "10px 15px",
+                              marginBottom: "4px",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                              backgroundColor:
+                                activeMethod === action.id
+                                  ? "#3b82f6"
+                                  : "#ffffff",
+                              color:
+                                activeMethod === action.id
+                                  ? "#ffffff"
+                                  : "#333333",
+                              border: `1px solid ${
+                                activeMethod === action.id
+                                  ? "#3b82f6"
+                                  : "#dddddd"
+                              }`,
+                              transition: "all 0.2s",
+                              width: "100%",
+                              textAlign: "left",
+                              fontWeight: "500",
+                              textDecoration: "none",
+                            }}
+                          >
+                            {action.name}
+                          </Link>
+                        ))
+                      ) : (
+                        <>
+                          {/* Collapsible Category Header */}
+                          <button
+                            onClick={() => toggleCategoryCollapse(categoryKey)}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              width: "100%",
+                              padding: "12px 0",
+                              backgroundColor: "transparent",
+                              border: "none",
+                              cursor: "pointer",
+                              fontSize: "1rem",
+                              color: "#555",
+                              fontWeight: "600",
+                              textAlign: "left",
+                            }}
+                          >
+                            <span style={{ marginRight: "8px" }}>
+                              {isCategoryCollapsed ? "▶" : "▼"}
+                            </span>
+                            {category}
+                            <span
                               style={{
-                                display: "block",
-                                padding: "10px 15px",
-                                marginBottom: "4px",
-                                borderRadius: "4px",
-                                cursor: "pointer",
-                                backgroundColor:
-                                  activeMethod === action.id
-                                    ? "#3b82f6"
-                                    : "#ffffff",
-                                color:
-                                  activeMethod === action.id
-                                    ? "#ffffff"
-                                    : "#333333",
-                                border: `1px solid ${
-                                  activeMethod === action.id
-                                    ? "#3b82f6"
-                                    : "#dddddd"
-                                }`,
-                                transition: "all 0.2s",
-                                width: "100%",
-                                textAlign: "left",
-                                fontWeight: "500",
-                                textDecoration: "none",
+                                marginLeft: "8px",
+                                fontSize: "0.8rem",
+                                color: "#888",
                               }}
                             >
-                              {action.name}
-                            </Link>
-                          ))}
+                              ({actionsInCategory.length})
+                            </span>
+                          </button>
 
-                          {/* Secondary Actions - Collapsible Tree */}
-                          {hasSecondaryActions && (
-                            <>
-                              {/* Toggle Button for Secondary Actions */}
-                              <button
-                                onClick={() =>
-                                  toggleCategoryCollapse(secondaryKey)
-                                }
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  width: "100%",
-                                  padding: "8px 15px",
-                                  marginTop: "8px",
-                                  marginBottom: "4px",
-                                  backgroundColor: "transparent",
-                                  border: "1px solid #e0e0e0",
-                                  borderRadius: "4px",
-                                  cursor: "pointer",
-                                  fontSize: "0.85rem",
-                                  color: "#666",
-                                  fontWeight: "600",
-                                }}
-                              >
-                                <span style={{ marginRight: "8px" }}>
-                                  {isSecondaryCollapsed ? "▶" : "▼"}
-                                </span>
-                                Secondary Methods ({secondaryActions.length})
-                              </button>
-
-                              {/* Secondary Actions List */}
-                              {!isSecondaryCollapsed &&
-                                secondaryActions.map((action) => (
+                          {/* Category Content */}
+                          {!isCategoryCollapsed && (
+                            <div style={{ marginLeft: "0px" }}>
+                              {/* Primary Actions */}
+                              {primaryActions.map((action) =>
+                                action.children ? (
                                   <div
                                     key={action.id}
                                     style={{ marginBottom: "4px" }}
                                   >
-                                    <Link
-                                      to={action.path}
-                                      style={{
-                                        display: "block",
-                                        padding: "8px 15px",
-                                        paddingLeft: "35px", // Indent to show hierarchy
-                                        borderRadius: "4px",
-                                        cursor: "pointer",
-                                        backgroundColor:
-                                          activeMethod === action.id
-                                            ? "#3b82f6"
-                                            : "#f8f9fa",
-                                        color:
-                                          activeMethod === action.id
-                                            ? "#ffffff"
-                                            : "#333333",
-                                        border: `1px solid ${
-                                          activeMethod === action.id
-                                            ? "#3b82f6"
-                                            : "#e9ecef"
-                                        }`,
-                                        borderLeft: `3px solid #fbbf24`, // Visual indicator for dependency
-                                        transition: "all 0.2s",
-                                        width: "100%",
-                                        textAlign: "left",
-                                        fontWeight: "500",
-                                        textDecoration: "none",
-                                        fontSize: "0.9rem",
-                                      }}
-                                    >
-                                      {action.name}
-                                    </Link>
+                                    <div style={{ position: "relative" }}>
+                                      <button
+                                        type="button"
+                                        style={{
+                                          display: "block",
+                                          width: "100%",
+                                          padding: "10px 15px",
+                                          borderRadius: "4px",
+                                          cursor: "pointer",
+                                          backgroundColor:
+                                            activeMethod === action.id
+                                              ? "#3b82f6"
+                                              : "#ffffff",
+                                          color:
+                                            activeMethod === action.id
+                                              ? "#ffffff"
+                                              : "#333333",
+                                          border: `1px solid ${
+                                            activeMethod === action.id
+                                              ? "#3b82f6"
+                                              : "#dddddd"
+                                          }`,
+                                          transition: "all 0.2s",
+                                          textAlign: "left",
+                                          fontWeight: "500",
+                                          textDecoration: "none",
+                                          position: "relative",
+                                        }}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setCollapsedCategories((prev) => ({
+                                            ...prev,
+                                            [action.id]: !prev[action.id],
+                                          }));
+                                        }}
+                                      >
+                                        <span style={{ marginRight: 8 }}>
+                                          {collapsedCategories[action.id]
+                                            ? "▶"
+                                            : "▼"}
+                                        </span>
+                                        {action.name}
+                                      </button>
+                                      {/* Dropdown for children */}
+                                      {!collapsedCategories[action.id] && (
+                                        <div
+                                          style={{
+                                            marginLeft: 15,
+                                            marginTop: 2,
+                                          }}
+                                        >
+                                          {action.children.map((child) => {
+                                            const isChildActive =
+                                              location.pathname === child.path;
+                                            return (
+                                              <Link
+                                                key={child.id}
+                                                to={child.path || ""}
+                                                style={{
+                                                  display: "block",
+                                                  padding: "8px 15px",
+                                                  borderRadius: "4px",
+                                                  cursor: "pointer",
+                                                  backgroundColor: isChildActive
+                                                    ? "#3b82f6"
+                                                    : "#ffffff",
+                                                  color: isChildActive
+                                                    ? "#ffffff"
+                                                    : "#333333",
+                                                  border: `1px solid ${
+                                                    isChildActive
+                                                      ? "#3b82f6"
+                                                      : "#e9ecef"
+                                                  }`,
+                                                  transition: "all 0.2s",
+                                                  width: "100%",
+                                                  textAlign: "left",
+                                                  fontWeight: "500",
+                                                  textDecoration: "none",
+                                                  fontSize: "0.95rem",
+                                                  marginBottom: 2,
+                                                }}
+                                              >
+                                                {child.name}
+                                              </Link>
+                                            );
+                                          })}
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
-                                ))}
-                            </>
+                                ) : (
+                                  <Link
+                                    key={action.id}
+                                    to={action.path || ""}
+                                    style={{
+                                      display: "block",
+                                      padding: "10px 15px",
+                                      marginBottom: "4px",
+                                      borderRadius: "4px",
+                                      cursor: "pointer",
+                                      backgroundColor:
+                                        activeMethod === action.id
+                                          ? "#3b82f6"
+                                          : "#ffffff",
+                                      color:
+                                        activeMethod === action.id
+                                          ? "#ffffff"
+                                          : "#333333",
+                                      border: `1px solid ${
+                                        activeMethod === action.id
+                                          ? "#3b82f6"
+                                          : "#dddddd"
+                                      }`,
+                                      transition: "all 0.2s",
+                                      width: "100%",
+                                      textAlign: "left",
+                                      fontWeight: "500",
+                                      textDecoration: "none",
+                                    }}
+                                  >
+                                    {action.name}
+                                  </Link>
+                                )
+                              )}
+
+                              {/* Secondary Actions - Collapsible Tree */}
+                              {hasSecondaryActions && (
+                                <>
+                                  {/* Toggle Button for Secondary Actions */}
+                                  <button
+                                    onClick={() =>
+                                      toggleCategoryCollapse(secondaryKey)
+                                    }
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      width: "100%",
+                                      padding: "8px 15px",
+                                      marginTop: "8px",
+                                      marginBottom: "4px",
+                                      backgroundColor: "transparent",
+                                      border: "1px solid #e0e0e0",
+                                      borderRadius: "4px",
+                                      cursor: "pointer",
+                                      fontSize: "0.85rem",
+                                      color: "#666",
+                                      fontWeight: "600",
+                                    }}
+                                  >
+                                    <span style={{ marginRight: "8px" }}>
+                                      {isSecondaryCollapsed ? "▶" : "▼"}
+                                    </span>
+                                    Secondary Methods ({secondaryActions.length}
+                                    )
+                                  </button>
+
+                                  {/* Secondary Actions List */}
+                                  {!isSecondaryCollapsed &&
+                                    secondaryActions.map((action) => (
+                                      <div
+                                        key={action.id}
+                                        style={{ marginBottom: "4px" }}
+                                      >
+                                        <Link
+                                          to={action.path || ""}
+                                          style={{
+                                            display: "block",
+                                            padding: "8px 15px",
+                                            paddingLeft: "35px", // Indent to show hierarchy
+                                            borderRadius: "4px",
+                                            cursor: "pointer",
+                                            backgroundColor:
+                                              activeMethod === action.id
+                                                ? "#3b82f6"
+                                                : "#f8f9fa",
+                                            color:
+                                              activeMethod === action.id
+                                                ? "#ffffff"
+                                                : "#333333",
+                                            border: `1px solid ${
+                                              activeMethod === action.id
+                                                ? "#3b82f6"
+                                                : "#e9ecef"
+                                            }`,
+                                            borderLeft: `3px solid #fbbf24`, // Visual indicator for dependency
+                                            transition: "all 0.2s",
+                                            width: "100%",
+                                            textAlign: "left",
+                                            fontWeight: "500",
+                                            textDecoration: "none",
+                                            fontSize: "0.9rem",
+                                          }}
+                                        >
+                                          {action.name}
+                                        </Link>
+                                      </div>
+                                    ))}
+                                </>
+                              )}
+                            </div>
                           )}
-                        </div>
+                        </>
                       )}
                     </div>
                   );

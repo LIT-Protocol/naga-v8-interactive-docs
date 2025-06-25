@@ -2,7 +2,6 @@ import { createAuthManager } from "@lit-protocol/auth";
 import { createLitClient } from "@lit-protocol/lit-client";
 import {
   createBrowserRouter,
-  Navigate,
   Outlet,
   useOutletContext,
 } from "react-router-dom";
@@ -17,15 +16,26 @@ import StytchSmsOtpAuthTab from "./tabs/PKPAuthMethods/StytchSmsOtpAuthTab";
 import StytchWhatsAppOtpAuthTab from "./tabs/PKPAuthMethods/StytchWhatsAppOtpAuthTab";
 import CustomAuthTab from "./tabs/CustomAuthTab";
 
-import LitAuthProviderDemoTab from "./tabs/LitAuthProviderDemoTab";
+import LitAuthProviderDemoTab from "./tabs/LearningLit/LitAuthProviderDemoTab";
 import EncryptionTab from "./tabs/EncryptionTab";
-import SetupLitClientTab from "./tabs/GettingStarted/SetupLitClientTab";
-import SetupAuthManagerTab from "./tabs/GettingStarted/SetupAuthManagerTab";
-import SetupAuthServicesTab from "./tabs/GettingStarted/SetupAuthServicesTab";
+import SetupLitClientTab from "./tabs/BuildingWithLit/SetupLitClientTab";
+import SetupAuthManagerTab from "./tabs/BuildingWithLit/SetupAuthManagerTab";
+import SetupAuthServicesTab from "./tabs/BuildingWithLit/SetupAuthServicesTab";
 import EoaNativeTab from "./tabs/EoaNativeTab";
 import StoragePluginsTab from "./tabs/GettingStarted/StoragePluginsTab";
 import StytchTotpAuthTab from "./tabs/PKPAuthMethods/2fa/StytchTotpAuthTab";
 import PaymentManagerTab from "./tabs/PaymentManagerTab";
+import HomePageTab from "./tabs/HomePageTab";
+import WhatIsLitTab from "./tabs/LearningLit/WhatIsLitTab";
+import HowItWorksTab from "./tabs/LearningLit/HowItWorksTab";
+import GettingStartedTab from "./tabs/BuildingWithLit/GettingStartedTab";
+import SecurityOverviewTab from "./tabs/LearningLit/Security/Overview";
+import NodeArchitectureTab from "./tabs/LearningLit/Security/NodeArchitecture";
+import KeyGenerationTab from "./tabs/LearningLit/Security/KeyGeneration";
+import OnChainCoordinationTab from "./tabs/LearningLit/Security/OnChainCoordination";
+import CommunicatingWithNodes from "./tabs/LearningLit/Security/CommunicatingWithNodes";
+import CryptoeconomicSecurity from "./tabs/LearningLit/Security/CryptoeconomicSecurity";
+import BackupAndRecovery from "./tabs/LearningLit/Security/BackupAndRecovery";
 
 // Create a type for the context
 type ContextType = {
@@ -86,25 +96,67 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Navigate to="/demo" replace />,
+        element: <HomePageTab />,
+      },
+
+      // Learning Lit
+      {
+        path: "learning-lit/what-is-lit",
+        element: <WhatIsLitTab />,
       },
       {
-        path: "demo",
+        path: "learning-lit/how-it-works",
+        element: <HowItWorksTab />,
+      },
+      {
+        path: "learning-lit/security",
+        element: <SecurityOverviewTab />,
+      },
+      {
+        path: "learning-lit/security/node-architecture",
+        element: <NodeArchitectureTab />,
+      },
+      {
+        path: "learning-lit/security/key-generation",
+        element: <KeyGenerationTab />,
+      },
+      {
+        path: "learning-lit/security/on-chain-coordination",
+        element: <OnChainCoordinationTab />,
+      },
+      {
+        path: "learning-lit/security/communicating-with-nodes",
+        element: <CommunicatingWithNodes />,
+      },
+      {
+        path: "learning-lit/security/cryptoeconomic-security",
+        element: <CryptoeconomicSecurity />,
+      },
+      {
+        path: "learning-lit/security/backup-and-recovery",
+        element: <BackupAndRecovery />,
+      },
+      {
+        path: "learning-lit/demo",
         element: <LitAuthProviderDemoTab />,
       },
 
-      // Getting Started Routes
+      // Building With Lit
       {
-        path: "setup-lit-client",
+        path: "building-with-lit/setup-lit-client",
         element: <SetupLitClientTab />,
       },
       {
-        path: "setup-auth-manager",
+        path: "building-with-lit/setup-auth-manager",
         element: <SetupAuthManagerTab />,
       },
       {
-        path: "setup-auth-services",
+        path: "building-with-lit/setup-auth-services",
         element: <SetupAuthServicesTab />,
+      },
+      {
+        path: "building-with-lit/getting-started",
+        element: <GettingStartedTab />,
       },
       {
         path: "storage-plugins",
