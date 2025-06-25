@@ -955,15 +955,6 @@ export const HomePage = () => {
                               {isCategoryExpanded ? "▼" : "▶"}
                             </span>
                             {category}
-                            <span
-                              style={{
-                                marginLeft: "8px",
-                                fontSize: "0.8rem",
-                                color: "#888",
-                              }}
-                            >
-                              ({actionsInCategory.length})
-                            </span>
                           </button>
 
                           {/* Category Content */}
