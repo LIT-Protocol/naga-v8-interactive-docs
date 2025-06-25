@@ -371,7 +371,7 @@ const ACTIONS = [
   //   type: "primary",
   // },
 
-  // PKPs
+  // Primary: Programmable Keys
   {
     id: "programmable-keys-overview",
     path: "/programmable-keys/overview",
@@ -379,6 +379,21 @@ const ACTIONS = [
     description: "Overview of Programmable Keys",
     category: "Programmable Keys",
     type: "primary",
+  },
+  // Secondary: PKPs
+  {
+    id: "pkps",
+    name: "PKPs",
+    description: "Guide to minting and using PKPs",
+    category: "Programmable Keys",
+    type: "primary",
+    children: [
+      {
+        id: "pkps-getting-started",
+        path: "/programmable-keys/pkps/getting-started",
+        name: "Getting Started",
+      },
+    ],
   },
 
   // EOA Authentication
@@ -454,6 +469,7 @@ const ACTIONS = [
     description: "Authenticate using Stytch TOTP (Authenticator App)",
     category: "PKP Auth Methods",
     type: "secondary",
+    secondarySection: "Two-Factor Auth",
   },
   {
     id: "custom-auth",

@@ -30,6 +30,7 @@ import WhatIsLitTab from "./tabs/LearningLit/WhatIsLitTab";
 import HowItWorksTab from "./tabs/LearningLit/HowItWorksTab";
 import GettingStartedTab from "./tabs/BuildingWithLit/GettingStartedTab";
 import ProgrammableKeysOverview from "./tabs/ProgrammableKeys/Overview";
+import PkpGettingStarted from "./tabs/ProgrammableKeys/PKPs/GettingStarted";
 import SecurityOverviewTab from "./tabs/LearningLit/Security/Overview";
 import NodeArchitectureTab from "./tabs/LearningLit/Security/NodeArchitecture";
 import KeyGenerationTab from "./tabs/LearningLit/Security/KeyGeneration";
@@ -168,6 +169,10 @@ export const router = createBrowserRouter([
       {
         path: "programmable-keys/overview",
         element: <ProgrammableKeysOverview />,
+      },
+      {
+        path: "programmable-keys/pkps/getting-started",
+        element: <PkpGettingStarted />,
       },
 
       // EOA and Auth Routes
