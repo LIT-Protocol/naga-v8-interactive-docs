@@ -133,18 +133,18 @@ export default function EoaAuthTab() {
             <code>viewPKPsByAuthData</code>
           </strong>{" "}
           utility function allows you to fetch all PKPs associated with a
-          specific authentication method. You can optionally provide pagination
-          parameters to control the number of results and offset.
+          specific Auth Method. You can optionally provide pagination parameters
+          to control the number of results and offset.
         </p>
         <p style={pageStyles.p}>The parameters for this method include:</p>
         <ul style={{ marginBottom: "16px" }}>
           <li>
-            <code>authMethodType</code> - The authentication method type (e.g.,
-            1 for Google, 2 for Discord, etc).
+            <code>authMethodType</code> - The Auth Method type (e.g., 1 for
+            Google, 2 for Discord, etc).
           </li>
           <li>
-            <code>authMethodId</code> - The unique identifier for the
-            authentication method (e.g., Google user ID).
+            <code>authMethodId</code> - The unique identifier for the Auth
+            Method (e.g., Google user ID).
           </li>
           <li>
             <code>pagination</code> - An optional parameter used to set the{" "}
