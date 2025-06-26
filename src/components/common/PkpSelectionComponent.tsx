@@ -1,10 +1,10 @@
 /**
  * PkpSelectionComponent.tsx
- * 
+ *
  * A reusable component that allows users to either:
  * 1. Mint a new PKP using their authentication data
  * 2. Select from existing PKPs they already have (using viewPKPsByAuthData API)
- * 
+ *
  * Features:
  * - Pagination support for large PKP collections
  * - Caching with storage providers for performance
@@ -19,6 +19,8 @@ import { storagePlugins } from "@lit-protocol/auth";
 // Configuration constants
 const DEFAULT_PAGE_SIZE = 5;
 const CACHE_STORAGE_PATH = "./lit-pkp-cache";
+// Configuration constants
+const FAUCET_URL = "https://chronicle-yellowstone-faucet.getlit.dev/";
 
 // Code snippets for documentation
 const VIEW_PKPS_CODE = `
@@ -86,8 +88,10 @@ export default function PkpSelectionComponent({
   disabled = false,
 }: PkpSelectionComponentProps) {
   // Selection mode state
-  const [selectionMode, setSelectionMode] = useState<"mint" | "existing">("existing");
-  
+  const [selectionMode, setSelectionMode] = useState<"mint" | "existing">(
+    "existing"
+  );
+
   // Existing PKPs state
   const [existingPkps, setExistingPkps] = useState<PKPInfo[]>([]);
   const [isLoadingPkps, setIsLoadingPkps] = useState(false);
@@ -98,10 +102,10 @@ export default function PkpSelectionComponent({
     total: 0,
     hasMore: false,
   });
-  
+
   // Minting state
   const [isMinting, setIsMinting] = useState(false);
-  
+
   // Success feedback state
   const [successActions, setSuccessActions] = useState<Set<string>>(new Set());
 
@@ -131,7 +135,10 @@ export default function PkpSelectionComponent({
   };
 
   // Load existing PKPs
-  const loadExistingPkps = async (offset: number = 0, append: boolean = false) => {
+  const loadExistingPkps = async (
+    offset: number = 0,
+    append: boolean = false
+  ) => {
     if (!authData) {
       setStatus("No authentication data available. Please authenticate first.");
       return;
@@ -145,8 +152,8 @@ export default function PkpSelectionComponent({
 
       // Create storage provider for caching
       const storageProvider = storagePlugins.localStorage({
-        appName: 'lit-pkp-demo',
-        networkName: 'naga-dev',
+        appName: "lit-pkp-demo",
+        networkName: "naga-dev",
       });
 
       const result = await litClient.viewPKPsByAuthData({
@@ -184,12 +191,19 @@ export default function PkpSelectionComponent({
       if (result.pagination.total === 0) {
         setStatus("No existing PKPs found. You can mint a new one.");
       } else {
-        setStatus(`Found ${result.pagination.total} PKP${result.pagination.total === 1 ? '' : 's'} associated with your account.`);
+        setStatus(
+          `Found ${result.pagination.total} PKP${
+            result.pagination.total === 1 ? "" : "s"
+          } associated with your account.`
+        );
         showSuccess("load-pkps");
       }
     } catch (error: any) {
       console.error("Error loading existing PKPs:", error);
-      const errorMessage = formatErrorMessage("Failed to load existing PKPs: ", error);
+      const errorMessage = formatErrorMessage(
+        "Failed to load existing PKPs: ",
+        error
+      );
       setStatus(errorMessage);
       showError?.(errorMessage);
     } finally {
@@ -215,7 +229,9 @@ export default function PkpSelectionComponent({
   // Mint a new PKP
   const mintNewPkp = async () => {
     if (!authData || (!account && !walletClient)) {
-      setStatus("Missing authentication data or account. Please authenticate first.");
+      setStatus(
+        "Missing authentication data or account. Please authenticate first."
+      );
       return;
     }
 
@@ -262,7 +278,10 @@ export default function PkpSelectionComponent({
       }
     } catch (error: any) {
       console.error("Error minting PKP:", error);
-      const errorMessage = formatErrorMessage(`Failed to mint PKP with ${authMethodName}: `, error);
+      const errorMessage = formatErrorMessage(
+        `Failed to mint PKP with ${authMethodName}: `,
+        error
+      );
       setStatus(errorMessage);
       showError?.(errorMessage);
     } finally {
@@ -284,17 +303,18 @@ export default function PkpSelectionComponent({
 
   return (
     <div>
-      <h3 style={{ marginTop: "20px" }}>
-        Step 3: Get or Mint PKP
-      </h3>
+      <h3 style={{ marginTop: "20px" }}>Step 3: Get or Mint PKP</h3>
       <p>
-        You can either select an existing PKP associated with your account or mint a new one.
-        Existing PKPs are loaded with caching for better performance.
+        You can either select an existing PKP associated with your account or
+        mint a new one. Existing PKPs are loaded with caching for better
+        performance.
       </p>
 
       {/* Mode Selection */}
       <div style={{ marginBottom: "20px" }}>
-        <label style={{ display: "block", marginBottom: "8px", fontWeight: "500" }}>
+        <label
+          style={{ display: "block", marginBottom: "8px", fontWeight: "500" }}
+        >
           Choose PKP Option:
         </label>
         <div style={{ display: "flex", gap: "10px", marginBottom: "15px" }}>
@@ -303,7 +323,8 @@ export default function PkpSelectionComponent({
             disabled={disabled}
             style={{
               padding: "8px 15px",
-              backgroundColor: selectionMode === "existing" ? "#4285F4" : "#f0f0f0",
+              backgroundColor:
+                selectionMode === "existing" ? "#4285F4" : "#f0f0f0",
               color: selectionMode === "existing" ? "white" : "#333",
               border: "1px solid #ddd",
               borderRadius: "4px",
@@ -344,11 +365,17 @@ export default function PkpSelectionComponent({
                   disabled={isLoadingPkps || !authData || disabled}
                   style={{
                     padding: "10px 15px",
-                    backgroundColor: isLoadingPkps || !authData || disabled ? "#cccccc" : "#6f42c1",
+                    backgroundColor:
+                      isLoadingPkps || !authData || disabled
+                        ? "#cccccc"
+                        : "#6f42c1",
                     color: "white",
                     border: "none",
                     borderRadius: "4px",
-                    cursor: isLoadingPkps || !authData || disabled ? "not-allowed" : "pointer",
+                    cursor:
+                      isLoadingPkps || !authData || disabled
+                        ? "not-allowed"
+                        : "pointer",
                     fontWeight: "500",
                     marginRight: "10px",
                   }}
@@ -368,7 +395,7 @@ export default function PkpSelectionComponent({
               {existingPkps.length > 0 && (
                 <div style={{ marginBottom: "15px" }}>
                   <h4 style={{ margin: "0 0 10px 0", fontSize: "16px" }}>
-                    Your PKPs:
+                    Select an existing PKP:
                   </h4>
                   <div style={{ maxHeight: "300px", overflowY: "auto" }}>
                     {existingPkps.map((pkp, index) => (
@@ -377,28 +404,58 @@ export default function PkpSelectionComponent({
                         onClick={() => selectExistingPkp(index)}
                         style={{
                           padding: "12px",
-                          border: selectedPkpIndex === index ? "2px solid #4285F4" : "1px solid #ddd",
+                          border:
+                            selectedPkpIndex === index
+                              ? "2px solid #4285F4"
+                              : "1px solid #ddd",
                           borderRadius: "6px",
                           marginBottom: "8px",
                           cursor: "pointer",
-                          backgroundColor: selectedPkpIndex === index ? "#f0f8ff" : "#f9f9f9",
+                          backgroundColor:
+                            selectedPkpIndex === index ? "#f0f8ff" : "#f9f9f9",
                           transition: "all 0.2s ease",
                         }}
                       >
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
+                        >
                           <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: "12px", color: "#666", marginBottom: "4px" }}>
+                            <div
+                              style={{
+                                fontSize: "12px",
+                                color: "#666",
+                                marginBottom: "4px",
+                              }}
+                            >
                               Token ID: {pkp.tokenId.slice(0, 20)}...
                             </div>
-                            <div style={{ fontSize: "12px", color: "#666", marginBottom: "4px" }}>
+                            <div
+                              style={{
+                                fontSize: "12px",
+                                color: "#666",
+                                marginBottom: "4px",
+                              }}
+                            >
                               Public Key: {pkp.publicKey.slice(0, 30)}...
                             </div>
-                            <div style={{ fontSize: "14px", fontWeight: "500" }}>
+                            <div
+                              style={{ fontSize: "14px", fontWeight: "500" }}
+                            >
                               ETH Address: {pkp.ethAddress}
                             </div>
                           </div>
                           {selectedPkpIndex === index && (
-                            <div style={{ color: "#4285F4", fontWeight: "bold", fontSize: "14px" }}>
+                            <div
+                              style={{
+                                color: "#4285F4",
+                                fontWeight: "bold",
+                                fontSize: "14px",
+                              }}
+                            >
                               ✓ Selected
                             </div>
                           )}
@@ -423,50 +480,89 @@ export default function PkpSelectionComponent({
                         marginTop: "10px",
                       }}
                     >
-                      {isLoadingPkps ? "Loading..." : `Load More (${pagination.total - existingPkps.length} remaining)`}
+                      {isLoadingPkps
+                        ? "Loading..."
+                        : `Load More (${
+                            pagination.total - existingPkps.length
+                          } remaining)`}
                     </button>
                   )}
                 </div>
               )}
             </div>
           }
-          resultData={selectedPkpIndex !== null ? existingPkps[selectedPkpIndex] : null}
+          resultData={
+            selectedPkpIndex !== null ? existingPkps[selectedPkpIndex] : null
+          }
           resultLabel="Selected PKP Information"
           useSideBySide={true}
           theme="dracula"
-          isSuccess={successActions.has("load-pkps") || successActions.has("select-pkp")}
+          isSuccess={
+            successActions.has("load-pkps") || successActions.has("select-pkp")
+          }
         />
       )}
 
       {/* Mint New PKP Section */}
       {selectionMode === "mint" && (
-        <DisplayCode
-          code={mintCodeSnippet}
-          language="typescript"
-          renderComponent={
-            <button
-              onClick={mintNewPkp}
-              disabled={isMinting || !authData || disabled}
-              style={{
-                padding: "10px 15px",
-                backgroundColor: isMinting || !authData || disabled ? "#cccccc" : "#28a745",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: isMinting || !authData || disabled ? "not-allowed" : "pointer",
-                fontWeight: "500",
-              }}
+        <>
+          {/* Faucet Information */}
+          <div
+            style={{
+              marginTop: "15px",
+              marginBottom: "15px",
+              padding: "10px",
+              backgroundColor: "#e8f4fd",
+              borderRadius: "4px",
+              border: "1px solid #b3d9ff",
+            }}
+          >
+            <strong>💰 Need Test Tokens?</strong> Minting a new PKP requires
+            test tokens. Visit the{" "}
+            <a
+              href={FAUCET_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "#0066cc", textDecoration: "underline" }}
             >
-              {isMinting ? "Minting PKP..." : `Mint New PKP with ${authMethodName}`}
-              {!authData && " (Authenticate first)"}
-            </button>
-          }
-          resultData={null} // Will be handled by parent component
-          resultLabel="Minted PKP Information"
-          useSideBySide={true}
-          theme="dracula"
-          isSuccess={successActions.has("mint-pkp")}
-        />
+              Chronicle Yellowstone Faucet
+            </a>{" "}
+            to get test tokens for your EOA account.
+          </div>
+          <DisplayCode
+            code={mintCodeSnippet}
+            language="typescript"
+            renderComponent={
+              <button
+                onClick={mintNewPkp}
+                disabled={isMinting || !authData || disabled}
+                style={{
+                  padding: "10px 15px",
+                  backgroundColor:
+                    isMinting || !authData || disabled ? "#cccccc" : "#28a745",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor:
+                    isMinting || !authData || disabled
+                      ? "not-allowed"
+                      : "pointer",
+                  fontWeight: "500",
+                }}
+              >
+                {isMinting
+                  ? "Minting PKP..."
+                  : `Mint New PKP with ${authMethodName}`}
+                {!authData && " (Authenticate first)"}
+              </button>
+            }
+            resultData={null} // Will be handled by parent component
+            resultLabel="Minted PKP Information"
+            useSideBySide={true}
+            theme="dracula"
+            isSuccess={successActions.has("mint-pkp")}
+          />
+        </>
       )}
 
       {/* Info Box */}
@@ -480,10 +576,11 @@ export default function PkpSelectionComponent({
           fontSize: "14px",
         }}
       >
-        <strong>💡 Performance Note:</strong> Loading existing PKPs uses caching to improve performance. 
-        The first load may take longer, but subsequent loads will be much faster. 
-        PKP data is cached locally and respects pagination for efficient memory usage.
+        <strong>💡 Performance Note:</strong> Loading existing PKPs uses caching
+        to improve performance. The first load may take longer, but subsequent
+        loads will be much faster. PKP data is cached locally and respects
+        pagination for efficient memory usage.
       </div>
     </div>
   );
-} 
+}

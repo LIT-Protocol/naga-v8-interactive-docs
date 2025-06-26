@@ -302,6 +302,7 @@ const NavigationItem = ({
               textDecoration: "none",
               position: "relative",
               fontSize: `${fontSize}rem`,
+              marginBottom: "2px",
             }}
             onClick={(e) => {
               e.stopPropagation();
@@ -581,6 +582,31 @@ const ACTIONS: NavigationItem[] = [
             name: "Custom Auth",
             description:
               "Build your own custom authentication with Lit Actions",
+          },
+        ],
+      },
+      {
+        id: "pkps-view-methods",
+        path: "/programmable-keys/pkps/view-methods",
+        name: "View Methods",
+        children: [
+          {
+            id: "pkps-view-methods-pkp-permissions",
+            path: "/programmable-keys/pkps/view/pkp-permissions",
+            name: "PKP Permissions",
+            description: "View PKP permissions",
+          },
+          {
+            id: "pkps-view-methods-pkps-by-address",
+            path: "/programmable-keys/pkps/view/pkps-by-address",
+            name: "PKPs by Address",
+            description: "View PKPs by address",
+          },
+          {
+            id: "pkps-view-methods-pkps-by-auth",
+            path: "/programmable-keys/pkps/view/pkps-by-auth",
+            name: "PKPs by Auth",
+            description: "View PKPs by auth",
           },
         ],
       },
