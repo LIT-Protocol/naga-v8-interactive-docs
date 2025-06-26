@@ -3,6 +3,8 @@ import { DisplayCode } from "../../../../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../../../../components/layout/GreyboardWhiteBgContainer";
 import { useAppContext } from "../../../../router";
 import { pageStyles } from "../../../../styles/pageStyles";
+import { NoteCallout } from "../../../../components/common";
+import { Link } from "react-router-dom";
 
 export default function PKPsByAddressTab() {
   const { setStatus, assertDependenciesLoaded, showError } = useAppContext();
@@ -96,6 +98,37 @@ console.log(pkps);
 
       <GreyBoarderWhiteBgContainer>
         <h2 style={pageStyles.h2}>Query PKPs by Address</h2>
+
+        <NoteCallout
+          message={
+            <>
+              <p>
+                PKPs are represented by ERC-721 tokens. The{" "}
+                <code>viewPKPsByAddress</code> function will only return PKPs
+                for which the provided <code>ownerAddress</code> is the current
+                owner of the ERC-721 token.
+              </p>
+              <p>
+                If you minted a PKP using an Auth Method other than{" "}
+                <Link
+                  to="/programmable-keys/pkps/auth-methods/eoa-native"
+                  style={{ color: "#3b82f6", textDecoration: "underline" }}
+                >
+                  EOA Native
+                </Link>
+                , the PKP may not appear in the results.
+              </p>
+              <p>
+                This is because when using non-EOA Native Auth Method
+                interactive code examples in these docs, the PKP ERC-721 token
+                is minted and is assigned ownership to the PKP itself.
+              </p>
+            </>
+          }
+          variant="note"
+          style={{ marginBottom: "16px" }}
+        />
+
         <form
           onSubmit={(e) => {
             e.preventDefault();
