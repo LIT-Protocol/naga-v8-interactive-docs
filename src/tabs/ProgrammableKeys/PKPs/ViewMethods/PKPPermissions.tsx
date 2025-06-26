@@ -9,7 +9,7 @@ import AccountMethodSelector, {
 import { DisplayCode } from "../../../../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../../../../components/layout/GreyboardWhiteBgContainer";
 import { useAppContext } from "../../../../router";
-import PkpViewMethodComponent from "../../../../components/common/PkpViewMethodComponent";
+import PkpViewPermissionsComponent from "../../../../components/common/PkpViewPermissionsComponent";
 
 // Code snippets for each functionality
 const AUTHENTICATE_PRIVATE_KEY_CODE = `
@@ -175,28 +175,43 @@ export default function PKPViewPermissionsTab() {
       <GreyBoarderWhiteBgContainer>
         <h2 style={pageStyles.h2}>Intro</h2>
         <p style={pageStyles.p}>
+          The{" "}
           <strong>
             <code>viewPKPPermissions</code>
           </strong>{" "}
-          is a utility function that allows you to retrieve the current
-          permissions associated with a Programmable Key Pair (PKP) using one of
-          the following identifiers:
+          utility function allows you to retrieve the current permissions
+          associated with a Programmable Key Pair (PKP) using one of the
+          following identifiers:
         </p>
-        <ul style={{ marginBottom: "16px" }}>
-          <li>
+        <ul style={pageStyles.ul}>
+          <li style={pageStyles.li}>
             <code>tokenId</code> - The token ID of the PKP NFT.
           </li>
-          <li>
+          <li style={pageStyles.li}>
             <code>address</code> - The Ethereum address of the PKP.
           </li>
-          <li>
+          <li style={pageStyles.li}>
             <code>pubkey</code> - The public key of the PKP.
           </li>
         </ul>
         <p style={pageStyles.p}>
-          The returned permissions include the permitted Lit Actions, allowed
-          Ethereum addresses, and configured authentication methods for a given
-          PKP.
+          The returned result includes the permissions associated with the PKP,
+          including:
+        </p>
+        <ul style={pageStyles.ul}>
+          <li style={pageStyles.li}>The permitted Lit Actions</li>
+          <li style={pageStyles.li}>Allowed Ethereum addresses</li>
+          <li style={pageStyles.li}>Configured authentication methods</li>
+        </ul>
+        <p style={pageStyles.p}>
+          Included in the returned result for both the permitted Lit Actions and
+          authentication methods, are the auth method <code>scopes</code> which
+          specify whether the Lit Action/auth method has been permitted to sign
+          anything, or only EIP-191 messages.
+        </p>
+        <p style={pageStyles.p}>
+          Permitted Ethereum addresses are always given the ability to sign
+          arbitrary data i.e. both EIP-191 messages and transactions.
         </p>
       </GreyBoarderWhiteBgContainer>
 
@@ -337,7 +352,7 @@ export default function PKPViewPermissionsTab() {
 
       <GreyBoarderWhiteBgContainer>
         {/* ================================================ */}
-        {/*               Get PKP Permissions                */}
+        {/*               PKP Selection Component            */}
         {/* ================================================ */}
         <PkpSelectionComponent
           authData={authData}
@@ -358,10 +373,8 @@ export default function PKPViewPermissionsTab() {
         {/* ================================================ */}
         {/*               Get PKP Permissions                */}
         {/* ================================================ */}
-        <PkpViewMethodComponent
+        <PkpViewPermissionsComponent
           pkpInfo={pkpInfo}
-          account={account}
-          walletClient={walletClient}
           setStatus={setStatus}
           assertDependenciesLoaded={assertDependenciesLoaded}
           showError={showError}

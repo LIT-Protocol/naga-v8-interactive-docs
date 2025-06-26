@@ -150,12 +150,6 @@ export default function PkpSelectionComponent({
 
       const { litClient } = assertDependenciesLoaded();
 
-      // Create storage provider for caching
-      const storageProvider = storagePlugins.localStorage({
-        appName: "lit-pkp-demo",
-        networkName: "naga-dev",
-      });
-
       const result = await litClient.viewPKPsByAuthData({
         authData: {
           authMethodType: authData.authMethodType,
@@ -165,7 +159,6 @@ export default function PkpSelectionComponent({
           limit: pagination.limit,
           offset: offset,
         },
-        storageProvider,
       });
 
       const pkps = result.pkps.map((pkp: any) => ({
