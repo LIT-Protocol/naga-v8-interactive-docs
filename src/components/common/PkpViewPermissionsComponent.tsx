@@ -50,10 +50,8 @@ interface PkpViewMethodComponentProps {
   disabled?: boolean;
 }
 
-export default function PkpViewMethodComponent({
+export default function PkpViewPermissionsComponent({
   pkpInfo,
-  account,
-  walletClient,
   setStatus,
   assertDependenciesLoaded,
   showError,
@@ -207,7 +205,7 @@ export default function PkpViewMethodComponent({
             <button
               key={type}
               onClick={() => setSelectedIdentifierType(type)}
-              disabled={disabled || !pkpInfo}
+              disabled={disabled || !pkpInfo || type === "ethAddress"}
               style={{
                 padding: "10px 15px",
                 backgroundColor:
@@ -215,7 +213,10 @@ export default function PkpViewMethodComponent({
                 color: selectedIdentifierType === type ? "white" : "#333",
                 border: "1px solid #ddd",
                 borderRadius: "4px",
-                cursor: disabled || !pkpInfo ? "not-allowed" : "pointer",
+                cursor:
+                  disabled || !pkpInfo || type === "ethAddress"
+                    ? "not-allowed"
+                    : "pointer",
                 fontSize: "14px",
                 display: "flex",
                 alignItems: "center",
