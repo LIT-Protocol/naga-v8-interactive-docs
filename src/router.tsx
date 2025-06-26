@@ -38,6 +38,7 @@ import CommunicatingWithNodes from "./tabs/LearningLit/Security/CommunicatingWit
 import CryptoeconomicSecurity from "./tabs/LearningLit/Security/CryptoeconomicSecurity";
 import BackupAndRecovery from "./tabs/LearningLit/Security/BackupAndRecovery";
 import PKPPermissions from "./tabs/ProgrammableKeys/PKPs/ViewMethods/PKPPermissions";
+import PKPsByAddress from "./tabs/ProgrammableKeys/PKPs/ViewMethods/PKPsByAddress";
 
 // Create a type for the context
 type ContextType = {
@@ -227,6 +228,10 @@ export const router = createBrowserRouter([
       {
         path: "programmable-keys/pkps/view/pkp-permissions",
         element: <PKPPermissions />,
+      },
+      {
+        path: "programmable-keys/pkps/view/pkps-by-address",
+        element: <PKPsByAddress />,
       },
     ],
   },
