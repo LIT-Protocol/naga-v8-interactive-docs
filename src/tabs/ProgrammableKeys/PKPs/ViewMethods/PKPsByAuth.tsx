@@ -9,11 +9,7 @@ import AccountMethodSelector, {
 import { DisplayCode } from "../../../../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../../../../components/layout/GreyboardWhiteBgContainer";
 import { useAppContext } from "../../../../router";
-import EoaAuthSection from "../../../../components/common/EoaAuthSection";
-import ExecuteJsComponent from "../../../../components/common/ExecuteJsComponent";
 import { pageStyles } from "../../../../styles/pageStyles";
-
-const AUTH_NAME = "EOA Authentication";
 
 // Configuration constants
 const FAUCET_URL = "https://chronicle-yellowstone-faucet.getlit.dev/";
@@ -22,61 +18,32 @@ const FAUCET_URL = "https://chronicle-yellowstone-faucet.getlit.dev/";
 const AUTHENTICATE_PRIVATE_KEY_CODE = `
 import { ViemAccountAuthenticator } from '@lit-protocol/auth';
 
-const authData = await ViemAccountAuthenticator.authenticate(myAccount);`;
+const authData = await ViemAccountAuthenticator.authenticate(
+  myAccount
+);`;
 
 const AUTHENTICATE_WALLET_CLIENT_CODE = `
 import { WalletClientAuthenticator } from '@lit-protocol/auth';
 
-const authData = await WalletClientAuthenticator.authenticate(walletClient);`;
-
-const MINT_PKP_CODE = `
-const mintedPkpWithEoaAuth = await litClient.mintWithAuth({
-  account: myAccount, // or walletClient depending on method
-  authData: authData,
-  scopes: ['sign-anything'],
-});`;
-
-const CREATE_AUTH_CONTEXT_CODE = `
-const authContext = await authManager.createPkpAuthContext({
-  authData: authData, // <-- Retrieved earlier
-  pkpPublicKey: pkpInfo.pubkey, // <-- Minted earlier
-  authConfig: {
-    resources: [
-      ["pkp-signing", "*"],
-      ["lit-action-execution", "*"],
-    ],
-    capabilityAuthSigs: [],
-    expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
-    statement: "",
-    domain: window.location.origin,
-  },
-  litClient: litClient,
-});`;
+const authData = await WalletClientAuthenticator.authenticate(
+  walletClient
+);`;
 
 export default function EoaAuthTab() {
   const { data: walletClient } = useWalletClient();
   const {
     getDependencyStatus,
-    areDependenciesLoaded,
-    authContext,
-    activeMethod,
-    setAuthContext,
-    setActiveMethod,
     setStatus,
     assertDependenciesLoaded,
-    siteAuthConfig,
     showError,
-    clearError,
   } = useAppContext();
 
   const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const [isCreatingAuthContext, setIsCreatingAuthContext] = useState(false);
 
   const [accountMethod, setAccountMethod] =
     useState<AccountMethod>("walletClient"); // Default to wallet client
   const [account, setAccount] = useState<any>(null);
   const [authData, setAuthData] = useState<any>(null);
-  const [pkpInfo, setPkpInfo] = useState<any>(null);
 
   // Success feedback state
   const [successActions, setSuccessActions] = useState<Set<string>>(new Set());
@@ -154,51 +121,6 @@ export default function EoaAuthTab() {
     }
   };
 
-  const createAuthContext = async () => {
-    try {
-      setIsCreatingAuthContext(true);
-      setStatus("Creating auth context...");
-
-      const { authManager, litClient } = assertDependenciesLoaded();
-
-      if (!pkpInfo) {
-        setStatus("Cannot sign: Missing PKP or Lit Client.");
-        return;
-      }
-
-      const authContext = await authManager.createPkpAuthContext({
-        authData: authData,
-        pkpPublicKey: pkpInfo.pubkey,
-        authConfig: {
-          capabilityAuthSigs: [],
-          expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
-          statement: "",
-          domain: "",
-          resources: [
-            ["pkp-signing", "*"],
-            ["lit-action-execution", "*"],
-          ],
-        },
-        litClient: litClient,
-      });
-
-      console.log("authContext:", authContext);
-      setAuthContext(authContext);
-      setStatus("Auth context created successfully");
-      showSuccess("eoa-create-auth-context");
-    } catch (error: any) {
-      console.error("Error creating auth context:", error);
-      const errorMessage = formatErrorMessage(
-        "Failed to create auth context: ",
-        error
-      );
-      setStatus(errorMessage);
-      showError?.(errorMessage);
-    } finally {
-      setIsCreatingAuthContext(false);
-    }
-  };
-
   return (
     <div className="tab-content">
       <h1 style={pageStyles.h1}>View PKPs by Auth Data</h1>
@@ -206,12 +128,13 @@ export default function EoaAuthTab() {
       <GreyBoarderWhiteBgContainer>
         <h2 style={pageStyles.h2}>Intro</h2>
         <p style={pageStyles.p}>
+          The{" "}
           <strong>
             <code>viewPKPsByAuthData</code>
           </strong>{" "}
-          allows you to fetch all PKPs associated with a specific authentication
-          method. You can optionally provide pagination parameters to control
-          the number of results and offset.
+          utility function allows you to fetch all PKPs associated with a
+          specific authentication method. You can optionally provide pagination
+          parameters to control the number of results and offset.
         </p>
         <p style={pageStyles.p}>The parameters for this method include:</p>
         <ul style={{ marginBottom: "16px" }}>
@@ -224,17 +147,17 @@ export default function EoaAuthTab() {
             authentication method (e.g., Google user ID).
           </li>
           <li>
-            <code>accessToken</code> - Optional. The access token for the
-            authentication method.
+            <code>pagination</code> - An optional parameter used to set the{" "}
+            <code>limit</code> and <code>offset</code> for paginated results.
           </li>
           <li>
-            <code>pagination</code> - Optional. Set <code>limit</code> and{" "}
-            <code>offset</code> for paginated results.
+            <code>storageProvider</code> - An optional parameter used to set a
+            storage provider to be used for caching the result of the method.
           </li>
         </ul>
         <p style={pageStyles.p}>
           The returned result includes a list of PKPs associated with the auth
-          data, and may include pagination metadata.
+          data, and includes additional pagination metadata.
         </p>
       </GreyBoarderWhiteBgContainer>
 
@@ -401,7 +324,6 @@ export default function EoaAuthTab() {
         {/* ================================================ */}
         <PkpsByAuthComponent
           authData={authData}
-          onPkpSelected={setPkpInfo}
           setStatus={setStatus}
           assertDependenciesLoaded={assertDependenciesLoaded}
           showError={showError}

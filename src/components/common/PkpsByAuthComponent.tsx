@@ -14,7 +14,6 @@
 
 import { useState, useEffect } from "react";
 import { DisplayCode } from "../DisplayCode";
-import { storagePlugins } from "@lit-protocol/auth";
 
 interface PKPInfo {
   tokenId: string;
@@ -30,7 +29,6 @@ interface AuthData {
 
 interface PkpsByAuthComponentProps {
   authData: AuthData | null;
-  onPkpSelected: (pkpInfo: PKPInfo) => void;
   setStatus: (message: string) => void;
   assertDependenciesLoaded: () => { litClient: unknown; authManager: unknown };
   showError?: (errorMessage: string) => void;
