@@ -70,12 +70,13 @@ console.log(pkps);
       <GreyBoarderWhiteBgContainer>
         <h2 style={pageStyles.h2}>Intro</h2>
         <p style={pageStyles.p}>
+          The{" "}
           <strong>
             <code>viewPKPsByAddress</code>
           </strong>{" "}
-          allows you to fetch all PKPs owned by a specific Ethereum address. You
-          can optionally provide pagination parameters to control the number of
-          results and offset.
+          utility function allows you to fetch all PKPs owned by a specific
+          Ethereum address. You can optionally provide pagination parameters to
+          control the number of results and offset.
         </p>
         <ul style={{ marginBottom: "16px" }}>
           <li>
