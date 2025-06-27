@@ -592,12 +592,6 @@ const ACTIONS: NavigationItem[] = [
             description:
               "Build your own custom authentication with Lit Actions",
           },
-          {
-            id: "pkps-auth-methods-add-remove",
-            path: "/programmable-keys/pkps/auth-methods/add-remove",
-            name: "Add & Remove Auth Methods",
-            description: "Add or remove auth methods from a PKP",
-          },
         ],
       },
       {
