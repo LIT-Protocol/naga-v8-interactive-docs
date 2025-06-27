@@ -44,6 +44,7 @@ import AddRemoveAuthMethods from "./tabs/ProgrammableKeys/PKPs/AuthMethods/AddRe
 import SigningRaw from "./tabs/ProgrammableKeys/PKPs/PKPSigning/SigningRaw";
 import PkpSignEth from "./tabs/ProgrammableKeys/PKPs/PKPSigning/SigningEth";
 import PkpSignBtc from "./tabs/ProgrammableKeys/PKPs/PKPSigning/SigningBtc";
+import ConnectingToDApp from "./tabs/ProgrammableKeys/PKPs/ConnectingToDApp";
 
 // Create a type for the context
 type ContextType = {
@@ -259,6 +260,11 @@ export const router = createBrowserRouter([
       {
         path: "programmable-keys/pkps/signing/btc",
         element: <PkpSignBtc />,
+      },
+      // Connecting PKPs to dApps
+      {
+        path: "programmable-keys/pkps/connecting-to-dapps",
+        element: <ConnectingToDApp />,
       },
     ],
   },
