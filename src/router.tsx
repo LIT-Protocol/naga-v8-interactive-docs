@@ -37,6 +37,7 @@ import OnChainCoordinationTab from "./tabs/LearningLit/Security/OnChainCoordinat
 import CommunicatingWithNodes from "./tabs/LearningLit/Security/CommunicatingWithNodes";
 import CryptoeconomicSecurity from "./tabs/LearningLit/Security/CryptoeconomicSecurity";
 import BackupAndRecovery from "./tabs/LearningLit/Security/BackupAndRecovery";
+import PKPPermissions from "./tabs/ProgrammableKeys/PKPs/ViewMethods/PKPPermissions";
 
 // Create a type for the context
 type ContextType = {
@@ -173,8 +174,7 @@ export const router = createBrowserRouter([
         path: "programmable-keys/pkps/getting-started",
         element: <PkpGettingStarted />,
       },
-
-      // EOA and Auth Routes
+      // PKP Auth Methods
       {
         path: "programmable-keys/pkps/auth-methods/eoa-native",
         element: <EoaNativeTab />,
@@ -222,6 +222,11 @@ export const router = createBrowserRouter([
       {
         path: "payment-manager",
         element: <PaymentManagerTab />,
+      },
+      // PKP View Methods
+      {
+        path: "programmable-keys/pkps/view/pkp-permissions",
+        element: <PKPPermissions />,
       },
     ],
   },
