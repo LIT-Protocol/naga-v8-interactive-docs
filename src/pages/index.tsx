@@ -588,7 +588,7 @@ const ACTIONS: NavigationItem[] = [
       {
         id: "pkps-view-methods",
         path: "/programmable-keys/pkps/view-methods",
-        name: "View Methods",
+        name: "View PKP Info",
         children: [
           {
             id: "pkps-view-methods-pkp-permissions",
