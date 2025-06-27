@@ -42,6 +42,7 @@ import PKPsByAddress from "./tabs/ProgrammableKeys/PKPs/ViewPkpInfo/PKPsByAddres
 import PKPsByAuth from "./tabs/ProgrammableKeys/PKPs/ViewPkpInfo/PKPsByAuth";
 import AddRemoveAuthMethods from "./tabs/ProgrammableKeys/PKPs/AuthMethods/AddRemoveAuthMethods";
 import SigningRaw from "./tabs/ProgrammableKeys/PKPs/PKPSigning/SigningRaw";
+import PkpSignEth from "./tabs/ProgrammableKeys/PKPs/PKPSigning/SigningEth";
 
 // Create a type for the context
 type ContextType = {
@@ -249,6 +250,10 @@ export const router = createBrowserRouter([
       {
         path: "programmable-keys/pkps/signing/raw",
         element: <SigningRaw />,
+      },
+      {
+        path: "programmable-keys/pkps/signing/eth",
+        element: <PkpSignEth />,
       },
     ],
   },
