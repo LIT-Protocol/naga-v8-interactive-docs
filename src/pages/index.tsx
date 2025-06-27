@@ -650,6 +650,12 @@ const ACTIONS: NavigationItem[] = [
           },
         ],
       },
+      {
+        id: "pkps-connecting-to-dapps",
+        path: "/programmable-keys/pkps/connecting-to-dapps",
+        name: "Connecting to dApps",
+        description: "Connect your PKP to a dApp",
+      },
     ],
   },
 
