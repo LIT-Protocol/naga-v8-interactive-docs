@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { DisplayCode } from "../components/DisplayCode";
-import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgContainer";
-import { useAppContext } from "../router";
-import PkpSigningComponent from "../components/common/PkpSigningComponent";
+import { DisplayCode } from "../../../../components/DisplayCode";
+import GreyBoarderWhiteBgContainer from "../../../../components/layout/GreyboardWhiteBgContainer";
+import { useAppContext } from "../../../../router";
+import PkpSigningComponent from "../../../../components/common/PkpSigningComponent";
 import { privateKeyToAccount } from "viem/accounts";
-import { utils as litUtils } from '@lit-protocol/lit-client';
+import { utils as litUtils } from "@lit-protocol/lit-client";
 
 const AUTH_NAME = "Custom Authentication (dApp-Centric)";
 
@@ -16,7 +16,6 @@ const DEFAULT_DEMO_PASSWORD = "lit";
 // Site owner private key for minting PKPs (provided for demo)
 const SITE_OWNER_PRIVATE_KEY =
   "0x65b80901b185bd7bd9c07178c8e3b2bfae62472feeeb86d3dd834e5b14c2d5f8";
-
 
 // Code snippets for each step
 const SITE_OWNER_BACKEND_CODE = `
@@ -625,18 +624,27 @@ export default function CustomAuthTab() {
           perspectives: the <strong>Site Owner</strong> who sets up the system
           and the <strong>User</strong> who interacts with it.
         </p>
-        
-        <div style={{
-          padding: "12px",
-          backgroundColor: "#e8f4fd",
-          borderRadius: "4px",
-          border: "1px solid #b3d9ff",
-          marginTop: "15px",
-          fontSize: "14px"
-        }}>
-          <strong>💰 Payment Information:</strong> PKP signing and Lit Action execution require payment. 
-          Visit the <a href="/payment-manager" style={{ color: "#0066cc", textDecoration: "underline" }}>
-          Payment Manager</a> page to understand pricing, deposit funds, and manage your payment balance.
+
+        <div
+          style={{
+            padding: "12px",
+            backgroundColor: "#e8f4fd",
+            borderRadius: "4px",
+            border: "1px solid #b3d9ff",
+            marginTop: "15px",
+            fontSize: "14px",
+          }}
+        >
+          <strong>💰 Payment Information:</strong> PKP signing and Lit Action
+          execution require payment. Visit the{" "}
+          <a
+            href="/payment-manager"
+            style={{ color: "#0066cc", textDecoration: "underline" }}
+          >
+            Payment Manager
+          </a>{" "}
+          page to understand pricing, deposit funds, and manage your payment
+          balance.
         </div>
       </GreyBoarderWhiteBgContainer>
 

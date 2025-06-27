@@ -7,14 +7,14 @@ import {
 } from "react-router-dom";
 import { MainLayout } from "./layouts/MainLayout";
 import { HomePage } from "./pages";
-import DiscordAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/DiscordAuthTab";
-import GoogleAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/GoogleAuthTab";
-import WebAuthnTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/WebAuthnTab";
-import EoaAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/EoaAuthTab";
-import StytchEmailOtpAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/StytchEmailOtpAuthTab";
-import StytchSmsOtpAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/StytchSmsOtpAuthTab";
-import StytchWhatsAppOtpAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/StytchWhatsAppOtpAuthTab";
-import CustomAuthTab from "./tabs/CustomAuthTab";
+import DiscordAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/AuthMethodProviders/DiscordAuthTab";
+import GoogleAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/AuthMethodProviders/GoogleAuthTab";
+import WebAuthnTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/AuthMethodProviders/WebAuthnTab";
+import EoaAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/AuthMethodProviders/EoaAuthTab";
+import StytchEmailOtpAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/AuthMethodProviders/StytchEmailOtpAuthTab";
+import StytchSmsOtpAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/AuthMethodProviders/StytchSmsOtpAuthTab";
+import StytchWhatsAppOtpAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/AuthMethodProviders/StytchWhatsAppOtpAuthTab";
+import CustomAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/CustomAuthTab";
 import LitAuthProviderDemoTab from "./tabs/LearningLit/LitAuthProviderDemoTab";
 import EncryptionTab from "./tabs/EncryptionTab";
 import SetupLitClientTab from "./tabs/BuildingWithLit/SetupLitClientTab";
@@ -22,7 +22,7 @@ import SetupAuthManagerTab from "./tabs/BuildingWithLit/SetupAuthManagerTab";
 import SetupAuthServicesTab from "./tabs/BuildingWithLit/SetupAuthServicesTab";
 import EoaNativeTab from "./tabs/EoaNativeTab";
 import StoragePluginsTab from "./tabs/GettingStarted/StoragePluginsTab";
-import StytchTotpAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/2fa/StytchTotpAuthTab";
+import StytchTotpAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/AuthMethodProviders/2fa/StytchTotpAuthTab";
 import PaymentManagerTab from "./tabs/PaymentManagerTab";
 import HomePageTab from "./tabs/HomePageTab";
 import WhatIsLitTab from "./tabs/LearningLit/WhatIsLitTab";
@@ -37,9 +37,9 @@ import OnChainCoordinationTab from "./tabs/LearningLit/Security/OnChainCoordinat
 import CommunicatingWithNodes from "./tabs/LearningLit/Security/CommunicatingWithNodes";
 import CryptoeconomicSecurity from "./tabs/LearningLit/Security/CryptoeconomicSecurity";
 import BackupAndRecovery from "./tabs/LearningLit/Security/BackupAndRecovery";
-import PKPPermissions from "./tabs/ProgrammableKeys/PKPs/ViewMethods/PKPPermissions";
-import PKPsByAddress from "./tabs/ProgrammableKeys/PKPs/ViewMethods/PKPsByAddress";
-import PKPsByAuth from "./tabs/ProgrammableKeys/PKPs/ViewMethods/PKPsByAuth";
+import PKPPermissions from "./tabs/ProgrammableKeys/PKPs/ViewPkpInfo/PKPPermissions";
+import PKPsByAddress from "./tabs/ProgrammableKeys/PKPs/ViewPkpInfo/PKPsByAddress";
+import PKPsByAuth from "./tabs/ProgrammableKeys/PKPs/ViewPkpInfo/PKPsByAuth";
 
 // Create a type for the context
 type ContextType = {

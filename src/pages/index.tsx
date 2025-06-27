@@ -522,64 +522,73 @@ const ACTIONS: NavigationItem[] = [
         name: "Auth Methods",
         children: [
           {
-            id: "pkps-auth-methods-eoa-native",
-            path: "/programmable-keys/pkps/auth-methods/eoa-native",
-            name: "Ethereum Wallet (Native)",
-            description: "Direct EOA usage for PKP management",
-          },
-          {
-            id: "pkps-auth-methods-eoa",
-            path: "/programmable-keys/pkps/auth-methods/eoa",
-            name: "Ethereum Wallet (SIWE)",
-            description:
-              "Authenticate using your Ethereum wallet and a SIWE message",
-          },
-          {
-            id: "pkps-auth-methods-google",
-            path: "/programmable-keys/pkps/auth-methods/google",
-            name: "Google oAuth",
-            description: "Authenticate using your Google account",
-          },
-          {
-            id: "pkps-auth-methods-discord",
-            path: "/programmable-keys/pkps/auth-methods/discord",
-            name: "Discord oAuth",
-            description: "Authenticate using your Discord account",
-          },
-          {
-            id: "pkps-auth-methods-webauthn",
-            path: "/programmable-keys/pkps/auth-methods/webauthn",
-            name: "WebAuthn",
-            description: "Authenticate using your WebAuthn device",
-          },
-          {
-            id: "pkps-auth-methods-stytch-email-otp",
-            path: "/programmable-keys/pkps/auth-methods/stytch-email-otp",
-            name: "Stytch Email OTP",
-            description: "Authenticate using Stytch Email OTP verification",
-          },
-          {
-            id: "pkps-auth-methods-stytch-sms-otp",
-            path: "/programmable-keys/pkps/auth-methods/stytch-sms-otp",
-            name: "Stytch SMS OTP",
-            description: "Authenticate using Stytch SMS OTP verification",
-          },
-          {
-            id: "pkps-auth-methods-stytch-whatsapp-otp",
-            path: "/programmable-keys/pkps/auth-methods/stytch-whatsapp-otp",
-            name: "Stytch WhatsApp OTP",
-            description: "Authenticate using Stytch WhatsApp OTP verification",
-          },
-          {
-            id: "pkps-auth-methods-stytch-totp",
-            path: "/programmable-keys/pkps/auth-methods/stytch-totp",
-            name: "Stytch 2FA TOTP",
-            description: "Authenticate using Stytch TOTP (Authenticator App)",
+            id: "pkps-auth-method-providers",
+            path: "/programmable-keys/pkps/auth-method-providers",
+            name: "Auth Method Providers",
+            children: [
+              {
+                id: "pkps-auth-methods-eoa-native",
+                path: "/programmable-keys/pkps/auth-methods/eoa-native",
+                name: "Ethereum Wallet (Native)",
+                description: "Direct EOA usage for PKP management",
+              },
+              {
+                id: "pkps-auth-methods-eoa",
+                path: "/programmable-keys/pkps/auth-methods/eoa",
+                name: "Ethereum Wallet (SIWE)",
+                description:
+                  "Authenticate using your Ethereum wallet and a SIWE message",
+              },
+              {
+                id: "pkps-auth-methods-google",
+                path: "/programmable-keys/pkps/auth-methods/google",
+                name: "Google oAuth",
+                description: "Authenticate using your Google account",
+              },
+              {
+                id: "pkps-auth-methods-discord",
+                path: "/programmable-keys/pkps/auth-methods/discord",
+                name: "Discord oAuth",
+                description: "Authenticate using your Discord account",
+              },
+              {
+                id: "pkps-auth-methods-webauthn",
+                path: "/programmable-keys/pkps/auth-methods/webauthn",
+                name: "WebAuthn",
+                description: "Authenticate using your WebAuthn device",
+              },
+              {
+                id: "pkps-auth-methods-stytch-email-otp",
+                path: "/programmable-keys/pkps/auth-methods/stytch-email-otp",
+                name: "Stytch Email OTP",
+                description: "Authenticate using Stytch Email OTP verification",
+              },
+              {
+                id: "pkps-auth-methods-stytch-sms-otp",
+                path: "/programmable-keys/pkps/auth-methods/stytch-sms-otp",
+                name: "Stytch SMS OTP",
+                description: "Authenticate using Stytch SMS OTP verification",
+              },
+              {
+                id: "pkps-auth-methods-stytch-whatsapp-otp",
+                path: "/programmable-keys/pkps/auth-methods/stytch-whatsapp-otp",
+                name: "Stytch WhatsApp OTP",
+                description:
+                  "Authenticate using Stytch WhatsApp OTP verification",
+              },
+              {
+                id: "pkps-auth-methods-stytch-totp",
+                path: "/programmable-keys/pkps/auth-methods/stytch-totp",
+                name: "Stytch 2FA TOTP",
+                description:
+                  "Authenticate using Stytch TOTP (Authenticator App)",
+              },
+            ],
           },
           {
             id: "pkps-auth-methods-custom-auth",
             path: "/programmable-keys/pkps/auth-methods/custom-auth",
-            name: "Custom Auth",
+            name: "Custom Auth Method",
             description:
               "Build your own custom authentication with Lit Actions",
           },
