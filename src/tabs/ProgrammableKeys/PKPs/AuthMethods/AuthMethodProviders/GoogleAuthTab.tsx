@@ -1,11 +1,11 @@
 import { GoogleAuthenticator } from "@lit-protocol/auth";
 import { useState } from "react";
-import { DisplayCode } from "../../../../components/DisplayCode";
-import GreyBoarderWhiteBgContainer from "../../../../components/layout/GreyboardWhiteBgContainer";
-import { useAppContext } from "../../../../router";
-import PkpSigningComponent from "../../../../components/common/PkpSigningComponent";
-import PkpSelectionComponent from "../../../../components/common/PkpSelectionComponent";
-import ExecuteJsComponent from "../../../../components/common/ExecuteJsComponent";
+import { DisplayCode } from "../../../../../components/DisplayCode";
+import GreyBoarderWhiteBgContainer from "../../../../../components/layout/GreyboardWhiteBgContainer";
+import { useAppContext } from "../../../../../router";
+import PkpSigningComponent from "../../../../../components/common/PkpSigningComponent";
+import PkpSelectionComponent from "../../../../../components/common/PkpSelectionComponent";
+import ExecuteJsComponent from "../../../../../components/common/ExecuteJsComponent";
 
 const AUTH_NAME = "Google Authentication";
 
