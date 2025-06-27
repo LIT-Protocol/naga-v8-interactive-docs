@@ -59,17 +59,51 @@ const res = await litClient.viewPKPPermissions({
 
 console.log('viewPKPPermissions:', res);`;
 
-const ADD_PERMISSIONS_CODE = `
-// Add permissions to allow the PKP to be used for signing
+// Different code snippets for different addPermitted actions
+const ADD_PERMITTED_ACTION_CODE = `
 const addPermissionsTx = await pkpPermissionsManager.addPermittedAction({
   ipfsId: "QmWGkjZKcfsE9nabey7cXf8ViZ5Mf5CvLFTHbsYa79s3ER",
   scopes: ["sign-anything"],
 });`;
 
-const REMOVE_PERMISSIONS_CODE = `
+const ADD_PERMITTED_ADDRESS_CODE = `
+// A dummy address is being used as an example
+const addPermissionsTx = await pkpPermissionsManager.addPermittedAddress({
+  address: "0x1234567890123456789012345678901234567890",
+  scopes: ["no-permissions"],
+});`;
+
+const ADD_PERMITTED_AUTH_METHOD_SCOPE_CODE = `
+// This is adding the Sign Anything scope
+// to the address 0x1234567890123456789012345678901234567890
+const addPermissionsTx = await pkpPermissionsManager.addPermittedAuthMethodScope({
+  tokenId: pkpInfo.tokenId,
+  authMethodType: 1,
+  authMethodId: "0x1234567890123456789012345678901234567890",
+  scopeId: 1, // Sign Anything scope
+});`;
+
+// Different code snippets for different removePermitted actions
+const REMOVE_PERMITTED_ACTION_CODE = `
 // Remove permissions from the PKP
 const removePermissionsTx = await pkpPermissionsManager.removePermittedAction({
+  tokenId: pkpInfo.tokenId,  
   ipfsId: "QmWGkjZKcfsE9nabey7cXf8ViZ5Mf5CvLFTHbsYa79s3ER",
+});`;
+
+const REMOVE_PERMITTED_ADDRESS_CODE = `
+// Remove a permitted address from this PKP
+const removePermissionsTx = await pkpPermissionsManager.removePermittedAddress({
+  tokenId: pkpInfo.tokenId,
+  address: "0x1234567890123456789012345678901234567890",
+});`;
+
+const REMOVE_PERMITTED_AUTH_METHOD_CODE = `
+// Remove a permitted auth method from this PKP
+const removePermissionsTx = await pkpPermissionsManager.removePermittedAuthMethod({
+  tokenId: pkpInfo.tokenId,
+  authMethodType: 1,
+  authMethodId: "0x1234567890123456789012345678901234567890",
 });`;
 
 const GET_PKP_VIEM_ACCOUNT_CODE = `
@@ -86,12 +120,23 @@ console.log("PKP Address:", pkpViemAccount.address);`;
 import { createLitClient } from "@lit-protocol/lit-client";
 import { NoteCallout, WarningCallout } from "../../../../components/common";
 import { pageStyles } from "../../../../styles/pageStyles";
+import { keccak256, toBytes } from "viem";
 
 type LitClient = Awaited<
   ReturnType<
     Awaited<ReturnType<typeof createLitClient>>["getPKPPermissionsManager"]
   >
 >;
+
+type AddPermittedActionType =
+  | "addPermittedAction"
+  | "addPermittedAddress"
+  | "addPermittedAuthMethodScope";
+
+type RemovePermittedActionType =
+  | "removePermittedAction"
+  | "removePermittedAddress"
+  | "removePermittedAuthMethod";
 
 export default function AddRemoveAuthMethods() {
   const { data: walletClient } = useWalletClient();
@@ -112,6 +157,14 @@ export default function AddRemoveAuthMethods() {
   const [isRemovingPermissions, setIsRemovingPermissions] = useState(false);
   const [isCreatingAuthContext, setIsCreatingAuthContext] = useState(false);
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
+
+  // Add permitted action type selection state
+  const [selectedAddPermittedType, setSelectedAddPermittedType] =
+    useState<AddPermittedActionType>("addPermittedAction");
+
+  // Remove permitted action type selection state
+  const [selectedRemovePermittedType, setSelectedRemovePermittedType] =
+    useState<RemovePermittedActionType>("removePermittedAction");
 
   const [accountMethod, setAccountMethod] =
     useState<AccountMethod>("walletClient"); // Default to wallet client
@@ -177,6 +230,62 @@ export default function AddRemoveAuthMethods() {
       errorMessage += String(error);
     }
     return errorMessage;
+  };
+
+  // Get the appropriate code snippet for the selected add permitted type
+  const getAddPermittedCodeSnippet = (): string => {
+    switch (selectedAddPermittedType) {
+      case "addPermittedAction":
+        return ADD_PERMITTED_ACTION_CODE;
+      case "addPermittedAddress":
+        return ADD_PERMITTED_ADDRESS_CODE;
+      case "addPermittedAuthMethodScope":
+        return ADD_PERMITTED_AUTH_METHOD_SCOPE_CODE;
+      default:
+        return ADD_PERMITTED_ACTION_CODE;
+    }
+  };
+
+  // Get the appropriate label for the selected add permitted type
+  const getAddPermittedLabel = (): string => {
+    switch (selectedAddPermittedType) {
+      case "addPermittedAction":
+        return "Lit Action";
+      case "addPermittedAddress":
+        return "Ethereum Address";
+      case "addPermittedAuthMethodScope":
+        return "Auth Method";
+      default:
+        return "Lit Action";
+    }
+  };
+
+  // Get the appropriate code snippet for the selected remove permitted type
+  const getRemovePermittedCodeSnippet = (): string => {
+    switch (selectedRemovePermittedType) {
+      case "removePermittedAction":
+        return REMOVE_PERMITTED_ACTION_CODE;
+      case "removePermittedAddress":
+        return REMOVE_PERMITTED_ADDRESS_CODE;
+      case "removePermittedAuthMethod":
+        return REMOVE_PERMITTED_AUTH_METHOD_CODE;
+      default:
+        return REMOVE_PERMITTED_ACTION_CODE;
+    }
+  };
+
+  // Get the appropriate label for the selected remove permitted type
+  const getRemovePermittedLabel = (): string => {
+    switch (selectedRemovePermittedType) {
+      case "removePermittedAction":
+        return "Lit Action";
+      case "removePermittedAddress":
+        return "Ethereum Address";
+      case "removePermittedAuthMethod":
+        return "Auth Method";
+      default:
+        return "Lit Action";
+    }
   };
 
   const authenticate = async () => {
@@ -381,26 +490,48 @@ export default function AddRemoveAuthMethods() {
       throw new Error("No PKP permissions manager found. Get manager first.");
     }
 
-    setStatus("Adding permissions to PKP...");
+    setStatus(`Adding ${selectedAddPermittedType} to PKP...`);
     setIsAddingPermissions(true);
     setAddPermissionsResult(null);
 
     try {
-      // Add permissions to allow the PKP to be used for signing
-      const addPermissionsTx = await pkpPermissionsManager.addPermittedAction({
-        ipfsId: "QmWGkjZKcfsE9nabey7cXf8ViZ5Mf5CvLFTHbsYa79s3ER",
-        scopes: ["sign-anything"],
-      });
+      let addPermissionsTx;
+
+      switch (selectedAddPermittedType) {
+        case "addPermittedAction":
+          addPermissionsTx = await pkpPermissionsManager.addPermittedAction({
+            ipfsId: "QmWGkjZKcfsE9nabey7cXf8ViZ5Mf5CvLFTHbsYa79s3ER",
+            scopes: ["sign-anything"],
+          });
+          break;
+        case "addPermittedAddress":
+          addPermissionsTx = await pkpPermissionsManager.addPermittedAddress({
+            address: "0x1234567890123456789012345678901234567890",
+            scopes: ["no-permissions"],
+          });
+          break;
+        case "addPermittedAuthMethodScope":
+          addPermissionsTx =
+            await pkpPermissionsManager.addPermittedAuthMethodScope({
+              tokenId: pkpInfo.tokenId,
+              authMethodType: 1,
+              authMethodId: "0x1234567890123456789012345678901234567890",
+              scopeId: 1,
+            });
+          break;
+        default:
+          throw new Error("Invalid add permitted action type selected");
+      }
 
       setAddPermissionsResult(addPermissionsTx);
-      console.log("✅ addPermissions result:", addPermissionsTx);
-      setStatus("Permissions added to PKP successfully!");
+      console.log(`✅ ${selectedAddPermittedType} result:`, addPermissionsTx);
+      setStatus(`${selectedAddPermittedType} added to PKP successfully!`);
       showSuccess("add-remove-auth-add-permissions");
       showPermissionActionSuccess("add");
     } catch (error: any) {
-      console.error("Error adding permissions to PKP:", error);
+      console.error(`Error adding ${selectedAddPermittedType} to PKP:`, error);
       const errorMessage = formatErrorMessage(
-        "Failed to add permissions to PKP: ",
+        `Failed to add ${selectedAddPermittedType} to PKP: `,
         error
       );
       setStatus(errorMessage);
@@ -415,26 +546,57 @@ export default function AddRemoveAuthMethods() {
       throw new Error("No PKP permissions manager found. Get manager first.");
     }
 
-    setStatus("Removing permissions from PKP...");
+    setStatus(`Removing ${selectedRemovePermittedType} from PKP...`);
     setIsRemovingPermissions(true);
     setRemovePermissionsResult(null);
 
     try {
-      // Remove permissions from the PKP
-      const removePermissionsTx =
-        await pkpPermissionsManager.removePermittedAction({
-          ipfsId: "QmWGkjZKcfsE9nabey7cXf8ViZ5Mf5CvLFTHbsYa79s3ER",
-        });
+      let removePermissionsTx;
+
+      switch (selectedRemovePermittedType) {
+        case "removePermittedAction":
+          removePermissionsTx =
+            await pkpPermissionsManager.removePermittedAction({
+              tokenId: pkpInfo.tokenId,
+              ipfsId: "QmWGkjZKcfsE9nabey7cXf8ViZ5Mf5CvLFTHbsYa79s3ER",
+            });
+          break;
+        case "removePermittedAddress":
+          removePermissionsTx =
+            await pkpPermissionsManager.removePermittedAddress({
+              tokenId: pkpInfo.tokenId,
+              address: "0x1234567890123456789012345678901234567890",
+            });
+          break;
+        case "removePermittedAuthMethod":
+          removePermissionsTx =
+            await pkpPermissionsManager.removePermittedAuthMethod({
+              tokenId: pkpInfo.tokenId,
+              authMethodType: 1,
+              authMethodId: "0x1234567890123456789012345678901234567890",
+            });
+          break;
+        default:
+          throw new Error("Invalid remove permitted action type selected");
+      }
 
       setRemovePermissionsResult(removePermissionsTx);
-      console.log("✅ removePermissions result:", removePermissionsTx);
-      setStatus("Permissions removed from PKP successfully!");
+      console.log(
+        `✅ ${selectedRemovePermittedType} result:`,
+        removePermissionsTx
+      );
+      setStatus(
+        `${selectedRemovePermittedType} removed from PKP successfully!`
+      );
       showSuccess("add-remove-auth-remove-permissions");
       showPermissionActionSuccess("remove");
     } catch (error: any) {
-      console.error("Error removing permissions from PKP:", error);
+      console.error(
+        `Error removing ${selectedRemovePermittedType} from PKP:`,
+        error
+      );
       const errorMessage = formatErrorMessage(
-        "Failed to remove permissions from PKP: ",
+        `Failed to remove ${selectedRemovePermittedType} from PKP: `,
         error
       );
       setStatus(errorMessage);
@@ -514,60 +676,6 @@ export default function AddRemoveAuthMethods() {
     </button>
   );
 
-  // Component to render Add Permissions button
-  const AddPermissionsButton = () => (
-    <button
-      onClick={addPermissionsToPkp}
-      disabled={isAddingPermissions || !pkpPermissionsManager}
-      style={{
-        padding: "10px 15px",
-        backgroundColor:
-          isAddingPermissions || !pkpPermissionsManager ? "#cccccc" : "#007bff",
-        color: "white",
-        border: "none",
-        borderRadius: "4px",
-        cursor:
-          isAddingPermissions || !pkpPermissionsManager
-            ? "not-allowed"
-            : "pointer",
-        fontWeight: "500",
-      }}
-    >
-      {isAddingPermissions
-        ? "Adding Permissions..."
-        : "Add Signing Permissions"}
-      {!pkpPermissionsManager && " (Get manager first)"}
-    </button>
-  );
-
-  // Component to render Remove Permissions button
-  const RemovePermissionsButton = () => (
-    <button
-      onClick={removePermissionsFromPkp}
-      disabled={isRemovingPermissions || !pkpPermissionsManager}
-      style={{
-        padding: "10px 15px",
-        backgroundColor:
-          isRemovingPermissions || !pkpPermissionsManager
-            ? "#cccccc"
-            : "#007bff",
-        color: "white",
-        border: "none",
-        borderRadius: "4px",
-        cursor:
-          isRemovingPermissions || !pkpPermissionsManager
-            ? "not-allowed"
-            : "pointer",
-        fontWeight: "500",
-      }}
-    >
-      {isRemovingPermissions
-        ? "Removing Permissions..."
-        : "Remove Signing Permissions"}
-      {!pkpPermissionsManager && " (Get manager first)"}
-    </button>
-  );
-
   const chainInfo = SUPPORTED_CHAINS["yellowstone"];
 
   return (
@@ -594,11 +702,11 @@ export default function AddRemoveAuthMethods() {
             permission to sign data using your PKP.
           </li>
           <li style={pageStyles.li}>
-            <code>addPermittedAuthMethodScope</code> - Allows you to permit an
-            Auth Method to sign data using your PKP. This is useful if you
-            wanted to permit signing capability to additional Auth Methods such
-            as Google or Discord oAuth, or even custom Auth Methods you've
-            created.
+            <code>addPermittedAuthMethodScope</code> - Allows you to permit
+            additional Auth Method scopes to an existing permitted Auth Method.
+            This is useful if an Auth Method was permitted without a signing
+            scope, or was permitted with a scope that doesn't allow signing
+            arbitrary data.
           </li>
         </ul>
         <p style={pageStyles.p}>
@@ -967,11 +1075,83 @@ export default function AddRemoveAuthMethods() {
             <span style={{ color: "orange" }}>(Get manager first)</span>
           )}
         </h3>
+        <div style={{ marginBottom: "20px" }}>
+          <label
+            style={{ display: "block", marginBottom: "8px", fontWeight: "500" }}
+          >
+            Select Permission Type:
+          </label>
+          <div
+            style={{
+              display: "flex",
+              gap: "10px",
+              marginBottom: "15px",
+              flexWrap: "wrap",
+            }}
+          >
+            {[
+              {
+                type: "addPermittedAction" as const,
+                label: "Lit Action",
+              },
+              {
+                type: "addPermittedAddress" as const,
+                label: "Ethereum Address",
+              },
+              {
+                type: "addPermittedAuthMethodScope" as const,
+                label: "Auth Method",
+              },
+            ].map(({ type, label }) => (
+              <button
+                key={type}
+                onClick={() => setSelectedAddPermittedType(type)}
+                disabled={!pkpPermissionsManager}
+                style={{
+                  padding: "10px 15px",
+                  backgroundColor:
+                    selectedAddPermittedType === type ? "#4285F4" : "#f0f0f0",
+                  color: selectedAddPermittedType === type ? "white" : "#333",
+                  border: "1px solid #ddd",
+                  borderRadius: "4px",
+                  cursor: !pkpPermissionsManager ? "not-allowed" : "pointer",
+                  fontSize: "14px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <p>
-          Add permissions to allow your PKP to be used for signing operations.
-          This adds the "sign anything" scope which enables general signing
-          functionality.
+          {selectedAddPermittedType === "addPermittedAction" &&
+            "Permit a Lit Action to sign using your PKP."}
+          {selectedAddPermittedType === "addPermittedAddress" &&
+            "Permit an Ethereum address to sign using your PKP."}
+          {selectedAddPermittedType === "addPermittedAuthMethodScope" &&
+            "Permit an additional Auth Method scope to an existing permitted Auth Method."}
         </p>
+
+        <p style={pageStyles.p}>The available Auth Method scopes are:</p>
+        <ul style={pageStyles.ul}>
+          <li style={pageStyles.li}>
+            <code>no-permissions</code> (Scope ID: 0) - No signing permissions
+            granted to the Auth Method.
+          </li>
+          <li style={pageStyles.li}>
+            <code>sign-anything</code> (Scope ID: 1) - Permits the Auth Method
+            to sign arbitrary data. This is the default scope for all Auth
+            Methods.
+          </li>
+          <li style={pageStyles.li}>
+            <code>personal-sign</code> (Scope ID: 2) - Permits the Auth Method
+            to sign personal messages (EIP-191).
+          </li>
+        </ul>
 
         <WarningCallout
           title="This action requires your PKP to be funded with test tokens"
@@ -999,9 +1179,34 @@ export default function AddRemoveAuthMethods() {
         />
 
         <DisplayCode
-          code={ADD_PERMISSIONS_CODE}
+          code={getAddPermittedCodeSnippet()}
           language="typescript"
-          renderComponent={<AddPermissionsButton />}
+          renderComponent={
+            <button
+              onClick={addPermissionsToPkp}
+              disabled={isAddingPermissions || !pkpPermissionsManager}
+              style={{
+                padding: "10px 15px",
+                backgroundColor:
+                  isAddingPermissions || !pkpPermissionsManager
+                    ? "#cccccc"
+                    : "#007bff",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor:
+                  isAddingPermissions || !pkpPermissionsManager
+                    ? "not-allowed"
+                    : "pointer",
+                fontWeight: "500",
+              }}
+            >
+              {isAddingPermissions
+                ? `Permitting ${getAddPermittedLabel()}...`
+                : `Permit ${getAddPermittedLabel()}`}
+              {!pkpPermissionsManager && " (Get manager first)"}
+            </button>
+          }
           resultData={addPermissionsResult}
           resultLabel="Add Permissions Result"
           useSideBySide={true}
@@ -1031,14 +1236,74 @@ export default function AddRemoveAuthMethods() {
         {/*             Remove PKP Permissions               */}
         {/* ================================================ */}
         <h3 style={{ marginTop: "20px" }}>
-          Step 9: Remove Signing Permissions{" "}
+          Step 9: Remove Permissions{" "}
           {!pkpPermissionsManager && (
             <span style={{ color: "orange" }}>(Get manager first)</span>
           )}
         </h3>
+
+        <div style={{ marginBottom: "20px" }}>
+          <label
+            style={{ display: "block", marginBottom: "8px", fontWeight: "500" }}
+          >
+            Select Permission Type to Remove:
+          </label>
+          <div
+            style={{
+              display: "flex",
+              gap: "10px",
+              marginBottom: "15px",
+              flexWrap: "wrap",
+            }}
+          >
+            {[
+              {
+                type: "removePermittedAction" as const,
+                label: "Lit Action",
+              },
+              {
+                type: "removePermittedAddress" as const,
+                label: "Ethereum Address",
+              },
+              {
+                type: "removePermittedAuthMethod" as const,
+                label: "Auth Method",
+              },
+            ].map(({ type, label }) => (
+              <button
+                key={type}
+                onClick={() => setSelectedRemovePermittedType(type)}
+                disabled={!pkpPermissionsManager}
+                style={{
+                  padding: "10px 15px",
+                  backgroundColor:
+                    selectedRemovePermittedType === type
+                      ? "#4285F4"
+                      : "#f0f0f0",
+                  color:
+                    selectedRemovePermittedType === type ? "white" : "#333",
+                  border: "1px solid #ddd",
+                  borderRadius: "4px",
+                  cursor: !pkpPermissionsManager ? "not-allowed" : "pointer",
+                  fontSize: "14px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <p>
-          Remove permissions from your PKP to revoke signing capabilities. This
-          removes the "sign anything" scope, disabling signing functionality.
+          {selectedRemovePermittedType === "removePermittedAction" &&
+            "Remove a Lit Action's permission to sign using your PKP."}
+          {selectedRemovePermittedType === "removePermittedAddress" &&
+            "Remove an Ethereum address's permission to sign using your PKP."}
+          {selectedRemovePermittedType === "removePermittedAuthMethod" &&
+            "Remove an Auth Method's permission to sign using your PKP."}
         </p>
 
         <WarningCallout
@@ -1067,9 +1332,34 @@ export default function AddRemoveAuthMethods() {
         />
 
         <DisplayCode
-          code={REMOVE_PERMISSIONS_CODE}
+          code={getRemovePermittedCodeSnippet()}
           language="typescript"
-          renderComponent={<RemovePermissionsButton />}
+          renderComponent={
+            <button
+              onClick={removePermissionsFromPkp}
+              disabled={isRemovingPermissions || !pkpPermissionsManager}
+              style={{
+                padding: "10px 15px",
+                backgroundColor:
+                  isRemovingPermissions || !pkpPermissionsManager
+                    ? "#cccccc"
+                    : "#007bff",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor:
+                  isRemovingPermissions || !pkpPermissionsManager
+                    ? "not-allowed"
+                    : "pointer",
+                fontWeight: "500",
+              }}
+            >
+              {isRemovingPermissions
+                ? `Removing ${getRemovePermittedLabel()}...`
+                : `Remove ${getRemovePermittedLabel()}`}
+              {!pkpPermissionsManager && " (Get manager first)"}
+            </button>
+          }
           resultData={removePermissionsResult}
           resultLabel="Remove Permissions Result"
           useSideBySide={true}
