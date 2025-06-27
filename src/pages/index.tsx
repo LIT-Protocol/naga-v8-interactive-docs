@@ -661,13 +661,35 @@ const ACTIONS: NavigationItem[] = [
 
   // Encryption & Access Control
   {
-    id: "encryption",
-    path: "/encryption",
-    name: "Encryption & Decryption",
+    id: "encryption-overview",
+    path: "/encryption/overview",
+    name: "Overview",
     description: "Encrypt and decrypt data using access control conditions",
     category: "Encryption & Access Control",
     type: "primary",
   },
+  {
+    id: "encryption-quickstart",
+    path: "/encryption/quickstart",
+    name: "Quickstart",
+    description: "Quickstart guide to encrypting and decrypting data",
+    category: "Encryption & Access Control",
+    type: "primary",
+  },
+  // {
+  //   id: "encryption",
+  //   name: "Encryption",
+  //   description: "Guide to encrypting and decrypting data",
+  //   category: "Encryption & Access Control",
+  //   type: "primary",
+  //   children: [
+  //     {
+  //       id: "encryption-overview",
+  //       path: "/encryption/overview",
+  //       name: "Overview",
+  //     },
+  //   ],
+  // },
 
   // Payment Management
   {

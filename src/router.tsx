@@ -45,6 +45,7 @@ import SigningRaw from "./tabs/ProgrammableKeys/PKPs/PKPSigning/SigningRaw";
 import PkpSignEth from "./tabs/ProgrammableKeys/PKPs/PKPSigning/SigningEth";
 import PkpSignBtc from "./tabs/ProgrammableKeys/PKPs/PKPSigning/SigningBtc";
 import ConnectingToDApp from "./tabs/ProgrammableKeys/PKPs/ConnectingToDApp";
+import EncryptionAccessControlOverview from "./tabs/EncryptionAccessControl/Overview";
 
 // Create a type for the context
 type ContextType = {
@@ -223,10 +224,6 @@ export const router = createBrowserRouter([
         element: <CustomAuthTab />,
       },
       {
-        path: "encryption",
-        element: <EncryptionTab />,
-      },
-      {
         path: "payment-manager",
         element: <PaymentManagerTab />,
       },
@@ -265,6 +262,16 @@ export const router = createBrowserRouter([
       {
         path: "programmable-keys/pkps/connecting-to-dapps",
         element: <ConnectingToDApp />,
+      },
+
+      // Encryption and Access Control
+      {
+        path: "encryption/overview",
+        element: <EncryptionAccessControlOverview />,
+      },
+      {
+        path: "encryption/quickstart",
+        element: <EncryptionTab />,
       },
     ],
   },
