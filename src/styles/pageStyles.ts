@@ -8,6 +8,8 @@ export interface PageStyles {
     input: CSSProperties;
     inputRow: CSSProperties;
     button: (isLoading?: boolean) => CSSProperties;
+    ul: CSSProperties;
+    li: CSSProperties;
 }
 
 export const pageStyles: PageStyles = {
@@ -60,4 +62,13 @@ export const pageStyles: PageStyles = {
         fontWeight: 500,
         fontSize: "1rem",
     }),
+    ul: {
+        listStyleType: "disc",
+        paddingLeft: "20px",
+        marginBottom: "16px",
+    },
+    li: {
+        marginBottom: "8px",
+        color: "#4b5563",
+    },
 }; 
