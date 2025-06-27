@@ -2,6 +2,7 @@ import { useState } from "react";
 import { DisplayCode } from "../../../../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../../../../components/layout/GreyboardWhiteBgContainer";
 import { useAppContext } from "../../../../router";
+import { pageStyles } from "../../../../styles/pageStyles";
 import { NoteCallout } from "../../../../components/common";
 import { Link } from "react-router-dom";
 
@@ -54,58 +55,6 @@ export default function PKPsByAddressTab() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const pageStyles = {
-    h1: {
-      fontSize: "2.5rem",
-      fontWeight: "700",
-      color: "#1f2937",
-      marginBottom: "24px",
-    },
-    h2: {
-      fontSize: "2rem",
-      fontWeight: "600",
-      color: "#1f2937",
-      marginBottom: "16px",
-      borderBottom: "1px solid #e5e7eb",
-      paddingBottom: "8px",
-    },
-    p: {
-      fontSize: "1rem",
-      lineHeight: "1.6",
-      color: "#4b5563",
-      marginBottom: "16px",
-    },
-    label: {
-      fontWeight: 500,
-      marginBottom: 4,
-      display: "block",
-    },
-    input: {
-      padding: "8px 12px",
-      border: "1px solid #d1d5db",
-      borderRadius: "4px",
-      fontSize: "1rem",
-      marginBottom: "12px",
-      width: "100%",
-      boxSizing: "border-box" as const,
-    },
-    inputRow: {
-      display: "flex",
-      gap: "12px",
-      marginBottom: "12px",
-    },
-    button: {
-      padding: "10px 18px",
-      backgroundColor: isLoading ? "#cccccc" : "#007bff",
-      color: "white",
-      border: "none",
-      borderRadius: "4px",
-      cursor: isLoading ? "not-allowed" : "pointer",
-      fontWeight: 500,
-      fontSize: "1rem",
-    },
   };
 
   // Dynamically generate the code example based on current input

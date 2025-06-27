@@ -569,10 +569,11 @@ export default function PkpSelectionComponent({
           fontSize: "14px",
         }}
       >
-        <strong>💡 Performance Note:</strong> Loading existing PKPs uses caching
-        to improve performance. The first load may take longer, but subsequent
-        loads will be much faster. PKP data is cached locally and respects
-        pagination for efficient memory usage.
+        <strong>💡 Performance Note:</strong> When using a{" "}
+        <code>storageProvider</code>, loading PKPs uses caching to improve
+        performance. The first load may take longer, but subsequent loads will
+        be much faster. PKP data is cached locally and respects pagination for
+        efficient memory usage.
       </div>
     </div>
   );
