@@ -625,6 +625,31 @@ const ACTIONS: NavigationItem[] = [
           },
         ],
       },
+      {
+        id: "pkps-signing",
+        path: "/programmable-keys/pkps/signing",
+        name: "PKP Signing",
+        children: [
+          {
+            id: "pkps-signing-raw",
+            path: "/programmable-keys/pkps/signing/raw",
+            name: "Raw Signing",
+            description: "Sign data using your PKP",
+          },
+          {
+            id: "pkps-signing-eth",
+            path: "/programmable-keys/pkps/signing/eth",
+            name: "Ethereum Signing",
+            description: "Sign data using your PKP",
+          },
+          {
+            id: "pkps-btc-signing",
+            path: "/programmable-keys/pkps/signing/btc",
+            name: "Bitcoin Signing",
+            description: "Sign data using your PKP",
+          },
+        ],
+      },
     ],
   },
 
