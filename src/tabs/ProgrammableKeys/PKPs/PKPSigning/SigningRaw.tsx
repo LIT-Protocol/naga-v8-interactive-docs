@@ -12,9 +12,6 @@ import GreyBoarderWhiteBgContainer from "../../../../components/layout/Greyboard
 import { useAppContext } from "../../../../router";
 import { pageStyles } from "../../../../styles/pageStyles";
 
-// Configuration constants
-const FAUCET_URL = "https://chronicle-yellowstone-faucet.getlit.dev/";
-
 // Code snippets for each functionality
 const AUTHENTICATE_PRIVATE_KEY_CODE = `
 import { ViemAccountAuthenticator } from '@lit-protocol/auth';
@@ -54,16 +51,11 @@ export default function PkpSignRaw() {
   const { data: walletClient } = useWalletClient();
   const {
     getDependencyStatus,
-    areDependenciesLoaded,
     authContext,
-    activeMethod,
     setAuthContext,
-    setActiveMethod,
     setStatus,
     assertDependenciesLoaded,
-    siteAuthConfig,
     showError,
-    clearError,
   } = useAppContext();
 
   const [isAuthenticating, setIsAuthenticating] = useState(false);
