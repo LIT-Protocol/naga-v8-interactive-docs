@@ -40,6 +40,7 @@ import BackupAndRecovery from "./tabs/LearningLit/Security/BackupAndRecovery";
 import PKPPermissions from "./tabs/ProgrammableKeys/PKPs/ViewPkpInfo/PKPPermissions";
 import PKPsByAddress from "./tabs/ProgrammableKeys/PKPs/ViewPkpInfo/PKPsByAddress";
 import PKPsByAuth from "./tabs/ProgrammableKeys/PKPs/ViewPkpInfo/PKPsByAuth";
+import AddRemoveAuthMethods from "./tabs/ProgrammableKeys/PKPs/AuthMethods/AddRemoveAuthMethods";
 
 // Create a type for the context
 type ContextType = {
@@ -237,6 +238,11 @@ export const router = createBrowserRouter([
       {
         path: "programmable-keys/pkps/view/pkps-by-auth",
         element: <PKPsByAuth />,
+      },
+      // Add/Remove Auth Methods
+      {
+        path: "programmable-keys/pkps/auth-methods/add-remove",
+        element: <AddRemoveAuthMethods />,
       },
     ],
   },
