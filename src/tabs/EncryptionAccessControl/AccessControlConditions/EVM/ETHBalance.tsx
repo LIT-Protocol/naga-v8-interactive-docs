@@ -46,8 +46,20 @@ const ETHBalance: React.FC = () => {
     chainKey: string,
     chainSymbol: string,
     includeWallet: boolean,
-    address: string
+    address: string,
+    chainInfo: EVMChain | null
   ) => {
+    // Get decimals from chain info, prioritizing nativeCurrency.decimals, then decimals, then default to 18
+    const decimals =
+      chainInfo?.nativeCurrency?.decimals ?? chainInfo?.decimals ?? 18;
+
+    // Calculate amounts based on the chain's native currency decimals
+    const oneUnit = BigInt(10) ** BigInt(decimals);
+    const pointOneAmount = (oneUnit / BigInt(10)).toString(); // 0.1 units
+    const oneAmount = oneUnit.toString(); // 1 unit
+    const fiveAmount = (oneUnit * BigInt(5)).toString(); // 5 units
+    const tenAmount = (oneUnit * BigInt(10)).toString(); // 10 units
+
     const walletOwnershipSection = includeWallet
       ? `.requireWalletOwnership('${address}')
   .on('${chainKey}')
@@ -63,6 +75,9 @@ const ETHBalance: React.FC = () => {
       ? `Require wallet ownership${ethBalanceDescription}`
       : `Require users to hold the specified ${chainSymbol} balance`;
 
+    const baseUnitName =
+      decimals === 18 ? "wei" : `smallest unit (10^-${decimals})`;
+
     return {
       "greater-equal": {
         title: `>= (Greater Than or Equal)`,
@@ -70,10 +85,10 @@ const ETHBalance: React.FC = () => {
         builderCode: `import { createAccBuilder } from '@lit-protocol/access-control-conditions';
 
 const accs = createAccBuilder()
-  ${walletOwnershipSection}.requireEthBalance('100000000000000000', '>=') // 0.1 ${chainSymbol} in wei
+  ${walletOwnershipSection}.requireEthBalance('${pointOneAmount}', '>=') // 0.1 ${chainSymbol} in ${baseUnitName}
   .on('${chainKey}')
   .build();`,
-        amount: "100000000000000000",
+        amount: pointOneAmount,
         comparator: ">=" as const,
       },
       "greater-than": {
@@ -82,10 +97,10 @@ const accs = createAccBuilder()
         builderCode: `import { createAccBuilder } from '@lit-protocol/access-control-conditions';
 
 const accs = createAccBuilder()
-  ${walletOwnershipSection}.requireEthBalance('1000000000000000000', '>') // More than 1 ${chainSymbol}
+  ${walletOwnershipSection}.requireEthBalance('${oneAmount}', '>') // More than 1 ${chainSymbol} in ${baseUnitName}
   .on('${chainKey}')
   .build();`,
-        amount: "1000000000000000000",
+        amount: oneAmount,
         comparator: ">" as const,
       },
       "equal-to": {
@@ -94,10 +109,10 @@ const accs = createAccBuilder()
         builderCode: `import { createAccBuilder } from '@lit-protocol/access-control-conditions';
 
 const accs = createAccBuilder()
-  ${walletOwnershipSection}.requireEthBalance('5000000000000000000', '=') // Exactly 5 ${chainSymbol}
+  ${walletOwnershipSection}.requireEthBalance('${fiveAmount}', '=') // Exactly 5 ${chainSymbol} in ${baseUnitName}
   .on('${chainKey}')
   .build();`,
-        amount: "5000000000000000000",
+        amount: fiveAmount,
         comparator: "=" as const,
       },
       "less-equal": {
@@ -106,10 +121,10 @@ const accs = createAccBuilder()
         builderCode: `import { createAccBuilder } from '@lit-protocol/access-control-conditions';
 
 const accs = createAccBuilder()
-  ${walletOwnershipSection}.requireEthBalance('10000000000000000000', '<=') // Max 10 ${chainSymbol}
+  ${walletOwnershipSection}.requireEthBalance('${tenAmount}', '<=') // Max 10 ${chainSymbol} in ${baseUnitName}
   .on('${chainKey}')
   .build();`,
-        amount: "10000000000000000000",
+        amount: tenAmount,
         comparator: "<=" as const,
       },
     };
@@ -119,7 +134,8 @@ const accs = createAccBuilder()
     selectedChain,
     selectedChainInfo?.symbol || "ETH",
     includeWalletOwnership,
-    walletAddress
+    walletAddress,
+    selectedChainInfo
   );
 
   const buildConditions = () => {
@@ -267,21 +283,25 @@ const accs = createAccBuilder()
         })()}
 
         <NoteCallout
-          title="Make sure to specify units of ETH in Wei"
+          title="Native Currency Units and Decimals"
           message={
             <>
               <p style={pageStyles.p}>
-                All amounts of ETH must be specified in{" "}
-                <strong>wei (smallest unit)</strong>. 1 ETH =
-                1,000,000,000,000,000,000 wei (10^18).
+                All amounts must be specified in the{" "}
+                <strong>smallest unit of the native currency</strong>. Different
+                chains have different decimal places.
               </p>
               <p style={pageStyles.p}>
-                Make sure to convert ETH to wei before using it in the
-                condition:
+                Convert currency amounts to smallest units before using them:
                 <DisplayCode
                   style={{ marginTop: "10px" }}
-                  code={`import { parseEther } from 'viem';
-const weiAmount = parseEther("1.5").toString(); // Converts 1.5 ETH to wei representation`}
+                  code={`import { parseEther, parseUnits } from 'viem';
+
+// For 18 decimal currencies (ETH, POL, etc.)
+const amount18 = parseEther("1.5").toString(); // 1.5 tokens
+
+// For other decimal currencies
+const amount6 = parseUnits("1.5", 6).toString(); // 1.5 tokens with 6 decimals`}
                   language="typescript"
                   theme="dracula"
                 />
