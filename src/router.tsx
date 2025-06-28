@@ -16,7 +16,7 @@ import StytchSmsOtpAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/AuthMe
 import StytchWhatsAppOtpAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/AuthMethodProviders/StytchWhatsAppOtpAuthTab";
 import CustomAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/CustomAuthTab";
 import LitAuthProviderDemoTab from "./tabs/LearningLit/LitAuthProviderDemoTab";
-import EncryptionTab from "./tabs/EncryptionTab";
+import EncryptionQuickStart from "./tabs/EncryptionAccessControl/QuickStart";
 import SetupLitClientTab from "./tabs/BuildingWithLit/SetupLitClientTab";
 import SetupAuthManagerTab from "./tabs/BuildingWithLit/SetupAuthManagerTab";
 import SetupAuthServicesTab from "./tabs/BuildingWithLit/SetupAuthServicesTab";
@@ -45,6 +45,17 @@ import SigningRaw from "./tabs/ProgrammableKeys/PKPs/PKPSigning/SigningRaw";
 import PkpSignEth from "./tabs/ProgrammableKeys/PKPs/PKPSigning/SigningEth";
 import PkpSignBtc from "./tabs/ProgrammableKeys/PKPs/PKPSigning/SigningBtc";
 import ConnectingToDApp from "./tabs/ProgrammableKeys/PKPs/ConnectingToDApp";
+import EncryptionAccessControlOverview from "./tabs/EncryptionAccessControl/Overview";
+import BooleanLogic from "./tabs/EncryptionAccessControl/AccessControlConditions/BooleanLogic";
+import ETHBalance from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/ETHBalance";
+import SupportedEVMChains from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/SupportedChains";
+import ERC20Balance from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/ERC20Balance";
+import ERC721Ownership from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/ERC721Ownership";
+import WalletOwnership from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/WalletOwnership";
+import TimeBased from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/TimeBased";
+import DAOMembership from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/DAOMembership";
+import POAPOwnership from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/POAPOwnership";
+import CustomContractCalls from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/CustomContractCalls";
 
 // Create a type for the context
 type ContextType = {
@@ -223,10 +234,6 @@ export const router = createBrowserRouter([
         element: <CustomAuthTab />,
       },
       {
-        path: "encryption",
-        element: <EncryptionTab />,
-      },
-      {
         path: "payment-manager",
         element: <PaymentManagerTab />,
       },
@@ -265,6 +272,57 @@ export const router = createBrowserRouter([
       {
         path: "programmable-keys/pkps/connecting-to-dapps",
         element: <ConnectingToDApp />,
+      },
+
+      // Encryption and Access Control
+      {
+        path: "encryption/overview",
+        element: <EncryptionAccessControlOverview />,
+      },
+      {
+        path: "encryption/quickstart",
+        element: <EncryptionQuickStart />,
+      },
+      {
+        path: "encryption/access-control/boolean-logic",
+        element: <BooleanLogic />,
+      },
+      // Access Control Conditions: EVM
+      {
+        path: "encryption/access-control/evm/supported-chains",
+        element: <SupportedEVMChains />,
+      },
+      {
+        path: "encryption/access-control/evm/eth-balance",
+        element: <ETHBalance />,
+      },
+      {
+        path: "encryption/access-control/evm/erc20-balance",
+        element: <ERC20Balance />,
+      },
+      {
+        path: "encryption/access-control/evm/erc721-ownership",
+        element: <ERC721Ownership />,
+      },
+      {
+        path: "encryption/access-control/evm/wallet-ownership",
+        element: <WalletOwnership />,
+      },
+      {
+        path: "encryption/access-control/evm/time-based",
+        element: <TimeBased />,
+      },
+      {
+        path: "encryption/access-control/evm/dao-membership",
+        element: <DAOMembership />,
+      },
+      {
+        path: "encryption/access-control/evm/poap-ownership",
+        element: <POAPOwnership />,
+      },
+      {
+        path: "encryption/access-control/evm/custom-contract-calls",
+        element: <CustomContractCalls />,
       },
     ],
   },

@@ -258,9 +258,7 @@ interface NavigationItemProps {
   level: number;
   activeMethod: string;
   expandedCategories: { [key: string]: boolean };
-  setExpandedCategories: (
-    updater: (prev: { [key: string]: boolean }) => { [key: string]: boolean }
-  ) => void;
+  toggleCategoryCollapse: (categoryKey: string) => void;
   location: { pathname: string };
 }
 
@@ -269,7 +267,7 @@ const NavigationItem = ({
   level,
   activeMethod,
   expandedCategories,
-  setExpandedCategories,
+  toggleCategoryCollapse,
   location,
 }: NavigationItemProps) => {
   const hasChildren = item.children && item.children.length > 0;
@@ -306,10 +304,7 @@ const NavigationItem = ({
             }}
             onClick={(e) => {
               e.stopPropagation();
-              setExpandedCategories((prev) => ({
-                ...prev,
-                [item.id]: !prev[item.id],
-              }));
+              toggleCategoryCollapse(item.id);
             }}
           >
             <span style={{ marginRight: 8 }}>{isExpanded ? "▼" : "▶"}</span>
@@ -326,7 +321,7 @@ const NavigationItem = ({
                   level={level + 1}
                   activeMethod={activeMethod}
                   expandedCategories={expandedCategories}
-                  setExpandedCategories={setExpandedCategories}
+                  toggleCategoryCollapse={toggleCategoryCollapse}
                   location={location}
                 />
               ))}
@@ -661,13 +656,125 @@ const ACTIONS: NavigationItem[] = [
 
   // Encryption & Access Control
   {
-    id: "encryption",
-    path: "/encryption",
-    name: "Encryption & Decryption",
+    id: "encryption-overview",
+    path: "/encryption/overview",
+    name: "Overview",
     description: "Encrypt and decrypt data using access control conditions",
     category: "Encryption & Access Control",
     type: "primary",
   },
+  {
+    id: "encryption-quickstart",
+    path: "/encryption/quickstart",
+    name: "Quickstart",
+    description: "Quickstart guide to encrypting and decrypting data",
+    category: "Encryption & Access Control",
+    type: "primary",
+  },
+  {
+    id: "encryption-access-control-conditions",
+    path: "/encryption/accs",
+    name: "Access Control Conditions",
+    description: "Access Control Conditions for encrypting data",
+    category: "Encryption & Access Control",
+    type: "primary",
+    children: [
+      {
+        id: "encryption-access-control-conditions-boolean-logic",
+        path: "/encryption/access-control/boolean-logic",
+        name: "Boolean Logic",
+      },
+      {
+        id: "encryption-access-control-conditions-evm",
+        path: "/encryption/access-control/evm",
+        name: "EVM Based Conditions",
+        description: "Access Control Conditions for EVM",
+        category: "Encryption & Access Control",
+        type: "secondary",
+        children: [
+          {
+            id: "encryption-access-control-conditions-evm-supported-chains",
+            path: "/encryption/access-control/evm/supported-chains",
+            name: "Supported EVM Chains",
+            description: "Access Control Conditions for Supported EVM Chains",
+            category: "Encryption & Access Control",
+            type: "secondary",
+          },
+          {
+            id: "encryption-access-control-conditions-evm-custom-contract-calls",
+            path: "/encryption/access-control/evm/custom-contract-calls",
+            name: "Custom Contract Calls",
+            description: "Access Control Conditions for Custom Contract Calls",
+          },
+          {
+            id: "encryption-access-control-conditions-evm-wallet-ownership",
+            path: "/encryption/access-control/evm/wallet-ownership",
+            name: "Wallet Ownership",
+            description: "Access Control Conditions for Wallet Ownership",
+            category: "Encryption & Access Control",
+            type: "secondary",
+          },
+          {
+            id: "encryption-access-control-conditions-evm-eth-balance",
+            path: "/encryption/access-control/evm/eth-balance",
+            name: "ETH Balance",
+            description: "Access Control Conditions for ETH Balance",
+            category: "Encryption & Access Control",
+            type: "secondary",
+          },
+          {
+            id: "encryption-access-control-conditions-evm-erc20-balance",
+            path: "/encryption/access-control/evm/erc20-balance",
+            name: "ERC-20 Balance",
+            description: "Access Control Conditions for ERC20 Balance",
+            category: "Encryption & Access Control",
+            type: "secondary",
+          },
+          {
+            id: "encryption-access-control-conditions-evm-erc721-ownership",
+            path: "/encryption/access-control/evm/erc721-ownership",
+            name: "ERC-721 NFT Ownership",
+            description: "Access Control Conditions for ERC721 Ownership",
+            category: "Encryption & Access Control",
+            type: "secondary",
+          },
+          {
+            id: "encryption-access-control-conditions-evm-time-based",
+            path: "/encryption/access-control/evm/time-based",
+            name: "Time Based",
+            description: "Access Control Conditions for Time Based",
+          },
+          {
+            id: "encryption-access-control-conditions-evm-dao-membership",
+            path: "/encryption/access-control/evm/dao-membership",
+            name: "DAO Membership",
+            description: "Access Control Conditions for DAO Membership",
+          },
+          {
+            id: "encryption-access-control-conditions-evm-poap-ownership",
+            path: "/encryption/access-control/evm/poap-ownership",
+            name: "POAP Ownership",
+            description: "Access Control Conditions for POAP Ownership",
+          },
+        ],
+      },
+    ],
+  },
+
+  // {
+  //   id: "encryption",
+  //   name: "Encryption",
+  //   description: "Guide to encrypting and decrypting data",
+  //   category: "Encryption & Access Control",
+  //   type: "primary",
+  //   children: [
+  //     {
+  //       id: "encryption-overview",
+  //       path: "/encryption/overview",
+  //       name: "Overview",
+  //     },
+  //   ],
+  // },
 
   // Payment Management
   {
@@ -695,14 +802,69 @@ export const HomePage = () => {
   const [authManager, setAuthManager] = useState<AuthManager | null>(null);
   const [authContext, setAuthContext] = useState<any>(null);
   const [activeMethod, setActiveMethod] = useState<string>("eoa");
+  // Helper function to find all parent categories for a given path
+  const findCategoriesForPath = (path: string): string[] => {
+    const categories: string[] = [];
+
+    const findInActions = (
+      actions: NavigationItem[],
+      parentHierarchy: string[] = []
+    ): boolean => {
+      for (const action of actions) {
+        if (action.path === path) {
+          // Add the main category if it exists
+          if (action.category) categories.push(action.category);
+          // Add all parent IDs in the hierarchy
+          parentHierarchy.forEach((parent) => categories.push(parent));
+          return true;
+        }
+
+        if (action.children) {
+          const newHierarchy = action.category
+            ? [...parentHierarchy, action.id]
+            : [...parentHierarchy, action.id];
+          if (findInActions(action.children, newHierarchy)) {
+            // If found in children, also add this action's category
+            if (action.category) categories.push(action.category);
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+
+    findInActions(ACTIONS);
+    return [...new Set(categories)]; // Remove duplicates
+  };
+
+  // Get expanded categories based on current path
+  const getExpandedCategoriesForPath = (
+    path: string
+  ): { [key: string]: boolean } => {
+    const defaultExpanded: { [key: string]: boolean } = {
+      "Learning Lit": true,
+      "Building With Lit": true,
+    };
+
+    // Always expand categories for the current path
+    const currentPathCategories = findCategoriesForPath(path);
+    console.log(
+      "Current path:",
+      path,
+      "Found categories:",
+      currentPathCategories
+    );
+    currentPathCategories.forEach((category) => {
+      defaultExpanded[category] = true;
+    });
+
+    console.log("Final expanded categories:", defaultExpanded);
+    return defaultExpanded;
+  };
+
   const [expandedCategories, setExpandedCategories] = useState<{
     [key: string]: boolean;
-  }>({
-    // Only specify items that should be expanded by default
-    // Everything else will be collapsed by default
-    "Learning Lit": true,
-    "Building With Lit": true,
-  });
+  }>(getExpandedCategoriesForPath(location.pathname));
   const [siteAuthConfig, setSiteAuthConfig] = useState<any>({
     domain: window.location.host,
     statement: "🫵 YOU AGREED TO THE TERMS AND CONDITIONS",
@@ -813,12 +975,24 @@ export const HomePage = () => {
     }
   }, [litClient, authManager]);
 
-  // Update activeMethod based on the current path
+  // Update activeMethod and ensure current path categories are expanded
   useEffect(() => {
     const path = location.pathname;
     const actionId =
       ACTIONS.find((action) => action.path === path)?.id || "eoa";
     setActiveMethod(actionId);
+
+    // Ensure current path categories are expanded (but preserve existing expansions)
+    const currentPathCategories = findCategoriesForPath(path);
+    if (currentPathCategories.length > 0) {
+      setExpandedCategories((prev) => {
+        const updated = { ...prev };
+        currentPathCategories.forEach((category) => {
+          updated[category] = true;
+        });
+        return updated;
+      });
+    }
   }, [location.pathname]);
 
   function assertDependenciesLoaded() {
@@ -1041,8 +1215,8 @@ export const HomePage = () => {
                                     level={0}
                                     activeMethod={activeMethod}
                                     expandedCategories={expandedCategories}
-                                    setExpandedCategories={
-                                      setExpandedCategories
+                                    toggleCategoryCollapse={
+                                      toggleCategoryCollapse
                                     }
                                     location={location}
                                   />
