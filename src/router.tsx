@@ -58,6 +58,7 @@ import POAPOwnership from "./tabs/EncryptionAccessControl/AccessControlCondition
 import CustomContractCalls from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/CustomContractCalls";
 import SOLBalance from "./tabs/EncryptionAccessControl/AccessControlConditions/SOL/SOLBalance";
 import NFTOwnership from "./tabs/EncryptionAccessControl/AccessControlConditions/SOL/NFTOwnership";
+import ComparisonOperators from "./tabs/EncryptionAccessControl/AccessControlConditions/ComparisonOperators";
 
 // Create a type for the context
 type ContextType = {
@@ -288,6 +289,10 @@ export const router = createBrowserRouter([
       {
         path: "encryption/access-control/boolean-logic",
         element: <BooleanLogic />,
+      },
+      {
+        path: "encryption/access-control/comparison-operators",
+        element: <ComparisonOperators />,
       },
       // Access Control Conditions: EVM
       {

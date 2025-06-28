@@ -685,6 +685,11 @@ const ACTIONS: NavigationItem[] = [
         name: "Boolean Logic",
       },
       {
+        id: "encryption-access-control-conditions-comparison-operators",
+        path: "/encryption/access-control/comparison-operators",
+        name: "Comparison Operators",
+      },
+      {
         id: "encryption-access-control-conditions-evm",
         path: "/encryption/access-control/evm",
         name: "EVM Based Conditions",
