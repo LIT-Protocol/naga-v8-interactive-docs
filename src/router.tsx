@@ -51,6 +51,7 @@ import ETHBalance from "./tabs/EncryptionAccessControl/AccessControlConditions/E
 import SupportedEVMChains from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/SupportedChains";
 import ERC20Balance from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/ERC20Balance";
 import ERC721Ownership from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/ERC721Ownership";
+import WalletOwnership from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/WalletOwnership";
 
 // Create a type for the context
 type ContextType = {
@@ -298,6 +299,10 @@ export const router = createBrowserRouter([
       {
         path: "encryption/access-control/evm/erc721-ownership",
         element: <ERC721Ownership />,
+      },
+      {
+        path: "encryption/access-control/evm/wallet-ownership",
+        element: <WalletOwnership />,
       },
     ],
   },

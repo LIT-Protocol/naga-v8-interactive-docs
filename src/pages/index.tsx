@@ -706,6 +706,14 @@ const ACTIONS: NavigationItem[] = [
             type: "secondary",
           },
           {
+            id: "encryption-access-control-conditions-evm-wallet-ownership",
+            path: "/encryption/access-control/evm/wallet-ownership",
+            name: "Wallet Ownership",
+            description: "Access Control Conditions for Wallet Ownership",
+            category: "Encryption & Access Control",
+            type: "secondary",
+          },
+          {
             id: "encryption-access-control-conditions-evm-eth-balance",
             path: "/encryption/access-control/evm/eth-balance",
             name: "ETH Balance",
@@ -716,7 +724,7 @@ const ACTIONS: NavigationItem[] = [
           {
             id: "encryption-access-control-conditions-evm-erc20-balance",
             path: "/encryption/access-control/evm/erc20-balance",
-            name: "ERC20 Balance",
+            name: "ERC-20 Balance",
             description: "Access Control Conditions for ERC20 Balance",
             category: "Encryption & Access Control",
             type: "secondary",
@@ -724,7 +732,7 @@ const ACTIONS: NavigationItem[] = [
           {
             id: "encryption-access-control-conditions-evm-erc721-ownership",
             path: "/encryption/access-control/evm/erc721-ownership",
-            name: "ERC721 Ownership",
+            name: "ERC-721 NFT Ownership",
             description: "Access Control Conditions for ERC721 Ownership",
             category: "Encryption & Access Control",
             type: "secondary",

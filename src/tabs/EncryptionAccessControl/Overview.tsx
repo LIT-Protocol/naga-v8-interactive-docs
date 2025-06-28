@@ -258,7 +258,7 @@ const EncryptionAccessControlOverview: React.FC = () => {
   ];
 
   return (
-    <div style={pageStyles.container}>
+    <div className="tab-content">
       <h1 style={pageStyles.h1}>Encryption and Access Control</h1>
 
       <GreyBoarderWhiteBgContainer>
