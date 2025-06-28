@@ -56,6 +56,7 @@ import TimeBased from "./tabs/EncryptionAccessControl/AccessControlConditions/EV
 import DAOMembership from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/DAOMembership";
 import POAPOwnership from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/POAPOwnership";
 import CustomContractCalls from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/CustomContractCalls";
+import SOLBalance from "./tabs/EncryptionAccessControl/AccessControlConditions/SOL/SOLBalance";
 
 // Create a type for the context
 type ContextType = {
@@ -323,6 +324,11 @@ export const router = createBrowserRouter([
       {
         path: "encryption/access-control/evm/custom-contract-calls",
         element: <CustomContractCalls />,
+      },
+      // Access Control Conditions: SOL
+      {
+        path: "encryption/access-control/sol/sol-balance",
+        element: <SOLBalance />,
       },
     ],
   },

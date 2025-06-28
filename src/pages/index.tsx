@@ -758,6 +758,24 @@ const ACTIONS: NavigationItem[] = [
           },
         ],
       },
+      {
+        id: "encryption-access-control-conditions-sol",
+        path: "/encryption/access-control/sol",
+        name: "SOL Based Conditions",
+        description: "Access Control Conditions for SOL",
+        category: "Encryption & Access Control",
+        type: "secondary",
+        children: [
+          {
+            id: "encryption-access-control-conditions-sol-sol-balance",
+            path: "/encryption/access-control/sol/sol-balance",
+            name: "SOL Balance",
+            description: "Access Control Conditions for SOL Balance",
+            category: "Encryption & Access Control",
+            type: "secondary",
+          },
+        ],
+      },
     ],
   },
 
