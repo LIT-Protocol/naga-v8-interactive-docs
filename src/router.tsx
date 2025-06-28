@@ -57,6 +57,7 @@ import DAOMembership from "./tabs/EncryptionAccessControl/AccessControlCondition
 import POAPOwnership from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/POAPOwnership";
 import CustomContractCalls from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/CustomContractCalls";
 import SOLBalance from "./tabs/EncryptionAccessControl/AccessControlConditions/SOL/SOLBalance";
+import NFTOwnership from "./tabs/EncryptionAccessControl/AccessControlConditions/SOL/NFTOwnership";
 
 // Create a type for the context
 type ContextType = {
@@ -329,6 +330,10 @@ export const router = createBrowserRouter([
       {
         path: "encryption/access-control/sol/sol-balance",
         element: <SOLBalance />,
+      },
+      {
+        path: "encryption/access-control/sol/nft-ownership",
+        element: <NFTOwnership />,
       },
     ],
   },

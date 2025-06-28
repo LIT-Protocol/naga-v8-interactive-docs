@@ -32,8 +32,8 @@ const SOLBalance: React.FC = () => {
     const tenSOL = solToLamports("10"); // 10 SOL
 
     const walletOwnershipSection = includeWallet
-      ? `.requireWalletOwnership('${address}')
-  .on('ethereum')
+      ? `.requireSolWalletOwnership('${address}')
+  .on('solana')
   .and()
   `
       : "";
@@ -111,9 +111,9 @@ const accs = createAccBuilder()
       // Add wallet ownership requirement if enabled
       if (includeWalletOwnership) {
         builder = builder
-          .requireWalletOwnership(walletAddress)
+          .requireSolWalletOwnership(walletAddress)
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .on("ethereum" as any)
+          .on("solana" as any)
           .and();
       }
 
@@ -146,7 +146,7 @@ const accs = createAccBuilder()
         </p>
         <p style={pageStyles.p}>
           In the examples below, you'll see how to use the{" "}
-          <code>requireEthBalance()</code> method to create SOL balance checks
+          <code>requireSolBalance()</code> method to create SOL balance checks
           that can be combined with other conditions using{" "}
           <Link
             to="/encryption/access-control/boolean-logic"
@@ -352,11 +352,9 @@ const lamports = Math.floor(1.5 * 1000000000).toString(); // 1.5 SOL`}
                             <p style={pageStyles.p}>
                               When enabling the wallet ownership requirement,
                               you must include <code>.on(chain)</code> after the
-                              wallet ownership check to enable chaining with
-                              <code>.and()</code>, however, the chain specified
-                              by <code>.on(chain)</code> has no affect on the
-                              validation process and should always be set to{" "}
-                              <code>ethereum</code>.
+                              wallet ownership check to enable chaining with{" "}
+                              <code>.and()</code>. For Solana wallet ownership,
+                              the chain should be set to <code>solana</code>.
                             </p>
                           </>
                         }
@@ -379,7 +377,7 @@ const lamports = Math.floor(1.5 * 1000000000).toString(); // 1.5 SOL`}
                         </label>
                         <input
                           type="text"
-                          placeholder="Enter wallet address (0x...)"
+                          placeholder="Enter Solana wallet address"
                           value={walletAddress}
                           onChange={(e) => setWalletAddress(e.target.value)}
                           style={{
