@@ -47,6 +47,8 @@ import PkpSignBtc from "./tabs/ProgrammableKeys/PKPs/PKPSigning/SigningBtc";
 import ConnectingToDApp from "./tabs/ProgrammableKeys/PKPs/ConnectingToDApp";
 import EncryptionAccessControlOverview from "./tabs/EncryptionAccessControl/Overview";
 import BooleanLogic from "./tabs/EncryptionAccessControl/AccessControlConditions/BooleanLogic";
+import ETHBalance from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/ETHBalance";
+import SupportedEVMChains from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/SupportedChains";
 
 // Create a type for the context
 type ContextType = {
@@ -277,6 +279,15 @@ export const router = createBrowserRouter([
       {
         path: "encryption/access-control/boolean-logic",
         element: <BooleanLogic />,
+      },
+      // Access Control Conditions: EVM
+      {
+        path: "encryption/access-control/evm/supported-chains",
+        element: <SupportedEVMChains />,
+      },
+      {
+        path: "encryption/access-control/evm/eth-balance",
+        element: <ETHBalance />,
       },
     ],
   },

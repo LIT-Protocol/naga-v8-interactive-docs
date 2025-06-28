@@ -689,6 +689,32 @@ const ACTIONS: NavigationItem[] = [
         path: "/encryption/access-control/boolean-logic",
         name: "Boolean Logic",
       },
+      {
+        id: "encryption-access-control-conditions-evm",
+        path: "/encryption/access-control/evm",
+        name: "EVM Based Conditions",
+        description: "Access Control Conditions for EVM",
+        category: "Encryption & Access Control",
+        type: "secondary",
+        children: [
+          {
+            id: "encryption-access-control-conditions-evm-supported-chains",
+            path: "/encryption/access-control/evm/supported-chains",
+            name: "Supported EVM Chains",
+            description: "Access Control Conditions for Supported EVM Chains",
+            category: "Encryption & Access Control",
+            type: "secondary",
+          },
+          {
+            id: "encryption-access-control-conditions-evm-eth-balance",
+            path: "/encryption/access-control/evm/eth-balance",
+            name: "ETH Balance",
+            description: "Access Control Conditions for ETH Balance",
+            category: "Encryption & Access Control",
+            type: "secondary",
+          },
+        ],
+      },
     ],
   },
 
