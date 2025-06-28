@@ -258,9 +258,7 @@ interface NavigationItemProps {
   level: number;
   activeMethod: string;
   expandedCategories: { [key: string]: boolean };
-  setExpandedCategories: (
-    updater: (prev: { [key: string]: boolean }) => { [key: string]: boolean }
-  ) => void;
+  toggleCategoryCollapse: (categoryKey: string) => void;
   location: { pathname: string };
 }
 
@@ -269,7 +267,7 @@ const NavigationItem = ({
   level,
   activeMethod,
   expandedCategories,
-  setExpandedCategories,
+  toggleCategoryCollapse,
   location,
 }: NavigationItemProps) => {
   const hasChildren = item.children && item.children.length > 0;
@@ -306,10 +304,7 @@ const NavigationItem = ({
             }}
             onClick={(e) => {
               e.stopPropagation();
-              setExpandedCategories((prev) => ({
-                ...prev,
-                [item.id]: !prev[item.id],
-              }));
+              toggleCategoryCollapse(item.id);
             }}
           >
             <span style={{ marginRight: 8 }}>{isExpanded ? "▼" : "▶"}</span>
@@ -326,7 +321,7 @@ const NavigationItem = ({
                   level={level + 1}
                   activeMethod={activeMethod}
                   expandedCategories={expandedCategories}
-                  setExpandedCategories={setExpandedCategories}
+                  toggleCategoryCollapse={toggleCategoryCollapse}
                   location={location}
                 />
               ))}
@@ -783,14 +778,52 @@ export const HomePage = () => {
   const [authManager, setAuthManager] = useState<AuthManager | null>(null);
   const [authContext, setAuthContext] = useState<any>(null);
   const [activeMethod, setActiveMethod] = useState<string>("eoa");
+  // Helper function to find all parent categories for a given path
+  const findCategoriesForPath = (path: string): string[] => {
+    const categories: string[] = [];
+
+    const findInActions = (
+      actions: NavigationItem[],
+      parentCategory?: string
+    ): void => {
+      for (const action of actions) {
+        if (action.path === path) {
+          if (action.category) categories.push(action.category);
+          if (parentCategory) categories.push(parentCategory);
+          return;
+        }
+
+        if (action.children) {
+          findInActions(action.children, action.id);
+        }
+      }
+    };
+
+    findInActions(ACTIONS);
+    return categories;
+  };
+
+  // Get expanded categories based on current path
+  const getExpandedCategoriesForPath = (
+    path: string
+  ): { [key: string]: boolean } => {
+    const defaultExpanded: { [key: string]: boolean } = {
+      "Learning Lit": true,
+      "Building With Lit": true,
+    };
+
+    // Always expand categories for the current path
+    const currentPathCategories = findCategoriesForPath(path);
+    currentPathCategories.forEach((category) => {
+      defaultExpanded[category] = true;
+    });
+
+    return defaultExpanded;
+  };
+
   const [expandedCategories, setExpandedCategories] = useState<{
     [key: string]: boolean;
-  }>({
-    // Only specify items that should be expanded by default
-    // Everything else will be collapsed by default
-    "Learning Lit": true,
-    "Building With Lit": true,
-  });
+  }>(getExpandedCategoriesForPath(location.pathname));
   const [siteAuthConfig, setSiteAuthConfig] = useState<any>({
     domain: window.location.host,
     statement: "🫵 YOU AGREED TO THE TERMS AND CONDITIONS",
@@ -901,12 +934,15 @@ export const HomePage = () => {
     }
   }, [litClient, authManager]);
 
-  // Update activeMethod based on the current path
+  // Update activeMethod and expanded categories based on the current path
   useEffect(() => {
     const path = location.pathname;
     const actionId =
       ACTIONS.find((action) => action.path === path)?.id || "eoa";
     setActiveMethod(actionId);
+
+    // Update expanded categories for current path
+    setExpandedCategories(getExpandedCategoriesForPath(path));
   }, [location.pathname]);
 
   function assertDependenciesLoaded() {
@@ -1129,8 +1165,8 @@ export const HomePage = () => {
                                     level={0}
                                     activeMethod={activeMethod}
                                     expandedCategories={expandedCategories}
-                                    setExpandedCategories={
-                                      setExpandedCategories
+                                    toggleCategoryCollapse={
+                                      toggleCategoryCollapse
                                     }
                                     location={location}
                                   />

@@ -3,7 +3,7 @@ import { createAccBuilder } from "@lit-protocol/access-control-conditions";
 import { DisplayCode } from "../../../../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../../../../components/layout/GreyboardWhiteBgContainer";
 import { pageStyles } from "../../../../styles/pageStyles";
-import { NoteCallout } from "../../../../components/common";
+
 import { Link } from "react-router-dom";
 import EVMChainsSelector from "../../../../components/EVMChainsSelector";
 
