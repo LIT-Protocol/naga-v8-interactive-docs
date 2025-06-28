@@ -49,6 +49,7 @@ import EncryptionAccessControlOverview from "./tabs/EncryptionAccessControl/Over
 import BooleanLogic from "./tabs/EncryptionAccessControl/AccessControlConditions/BooleanLogic";
 import ETHBalance from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/ETHBalance";
 import SupportedEVMChains from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/SupportedChains";
+import ERC20Balance from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/ERC20Balance";
 
 // Create a type for the context
 type ContextType = {
@@ -288,6 +289,10 @@ export const router = createBrowserRouter([
       {
         path: "encryption/access-control/evm/eth-balance",
         element: <ETHBalance />,
+      },
+      {
+        path: "encryption/access-control/evm/erc20-balance",
+        element: <ERC20Balance />,
       },
     ],
   },
