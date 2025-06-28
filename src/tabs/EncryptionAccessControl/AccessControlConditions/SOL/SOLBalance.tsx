@@ -23,7 +23,7 @@ const SOLBalance: React.FC = () => {
     return Math.floor(solNumber * 1000000000).toString();
   };
 
-  // Example templates for the four comparison operators
+  // Example templates for the five comparison operators
   const getExamples = (includeWallet: boolean, address: string) => {
     // Calculate amounts in lamports
     const pointOneSOL = solToLamports("0.1"); // 0.1 SOL
@@ -95,6 +95,18 @@ const accs = createAccBuilder()
         amount: tenSOL,
         comparator: "<=" as const,
       },
+      "less-than": {
+        title: `< (Less Than)`,
+        description: `${combinedDescription} (less than 5 SOL)`,
+        builderCode: `import { createAccBuilder } from '@lit-protocol/access-control-conditions';
+
+const accs = createAccBuilder()
+  ${walletOwnershipSection}.requireSolBalance('${fiveSOL}', '<') // Less than 5 SOL in lamports
+  .on('solana')
+  .build();`,
+        amount: fiveSOL,
+        comparator: "<" as const,
+      },
     };
   };
 
@@ -154,57 +166,88 @@ const accs = createAccBuilder()
           >
             Boolean Logic
           </Link>
+          and{" "}
+          <Link
+            to="/encryption/access-control/comparison-operators"
+            style={{ color: "#007bff", textDecoration: "underline" }}
+          >
+            Comparison Operators
+          </Link>
           .
         </p>
       </GreyBoarderWhiteBgContainer>
 
       <GreyBoarderWhiteBgContainer>
-        <h2 style={pageStyles.h2}>Comparison Operators</h2>
+        <h2 style={pageStyles.h2}>SOL Balance Scenarios</h2>
 
         <p style={pageStyles.p}>
-          The comparison operator is an optional parameter, if not provided the
-          <code>requireSolBalance</code> control condition will default to{" "}
-          <code>=</code>, requiring the address to have exactly the specified
-          amount.
+          SOL balance conditions can be configured in several ways depending on
+          your access control needs:
         </p>
 
         {(() => {
-          const operators = [
+          const scenarios = [
             {
-              symbol: ">=",
-              title: "Greater Than or Equal",
-              description: (
-                <>
-                  Requires <strong>at least</strong> the specified amount
-                </>
-              ),
+              title: "Minimum SOL Balance",
+              description:
+                "Require users to hold at least a specific amount of SOL",
+              example: `.requireSolBalance(
+  '100000000',
+  '>='
+)`,
             },
             {
-              symbol: ">",
-              title: "Greater Than",
-              description: (
-                <>
-                  Requires <strong>more than</strong> the specified amount
-                </>
-              ),
+              title: "Maximum SOL Balance",
+              description: "Limit access to users with smaller balances",
+              example: `.requireSolBalance(
+  '5000000000',
+  '<='
+)`,
             },
             {
-              symbol: "=",
-              title: "Equal To",
-              description: (
-                <>
-                  Requires <strong>exactly</strong> the specified amount
-                </>
-              ),
+              title: "Exact SOL Balance",
+              description:
+                "Require users to have exactly the specified amount of SOL",
+              example: `.requireSolBalance(
+  '1000000000',
+  '='
+)`,
             },
             {
-              symbol: "<=",
-              title: "Less Than or Equal",
-              description: (
-                <>
-                  Requires <strong>at most</strong> the specified amount
-                </>
-              ),
+              title: "Exclusive SOL Access",
+              description: "Exclude users with over the threshold amount",
+              example: `.requireSolBalance(
+  '1000000000',
+  '<'
+)`,
+            },
+            {
+              title: "SOL Balance Range",
+              description:
+                "Require SOL balance to fall within a specific range",
+              example: `.requireSolBalance(
+  '100000000',
+  '>='
+)
+.and()
+.requireSolBalance(
+  '10000000000',
+  '<='
+)`,
+            },
+            {
+              title: "Multiple SOL Tiers",
+              description:
+                "Accept multiple SOL balance thresholds with OR logic",
+              example: `.requireSolBalance(
+  '100000000',
+  '>='
+)
+.or()
+.requireSolBalance(
+  '5000000000',
+  '>='
+)`,
             },
           ];
 
@@ -213,6 +256,10 @@ const accs = createAccBuilder()
             backgroundColor: "#fff",
             borderRadius: "8px",
             border: "1px solid #007bff",
+            width: "100%",
+            maxWidth: "100%",
+            boxSizing: "border-box" as const,
+            overflow: "hidden",
           };
 
           const titleStyle = {
@@ -221,7 +268,7 @@ const accs = createAccBuilder()
           };
 
           const descriptionStyle = {
-            margin: 0,
+            margin: "0 0 8px 0",
             fontSize: "0.9rem",
             color: "#0c4a6e",
           };
@@ -230,17 +277,28 @@ const accs = createAccBuilder()
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gridTemplateColumns: "repeat(2, 1fr)",
                 gap: "15px",
                 marginBottom: "20px",
+                width: "100%",
+                maxWidth: "100%",
+                boxSizing: "border-box",
               }}
             >
-              {operators.map((operator) => (
-                <div key={operator.symbol} style={cardStyle}>
-                  <h4 style={titleStyle}>
-                    {operator.symbol} ({operator.title})
-                  </h4>
-                  <p style={descriptionStyle}>{operator.description}</p>
+              {scenarios.map((scenario, index) => (
+                <div key={index} style={cardStyle}>
+                  <h4 style={titleStyle}>{scenario.title}</h4>
+                  <p style={descriptionStyle}>{scenario.description}</p>
+                  <DisplayCode
+                    code={scenario.example}
+                    language="typescript"
+                    theme="dracula"
+                    style={{
+                      marginTop: "8px",
+                      maxWidth: "100%",
+                      overflow: "auto",
+                    }}
+                  />
                 </div>
               ))}
             </div>
@@ -252,8 +310,9 @@ const accs = createAccBuilder()
           message={
             <>
               <p style={pageStyles.p}>
-                All amounts must be specified in <strong>lamports</strong> (the
-                smallest unit of SOL). 1 SOL = 1,000,000,000 lamports.
+                All amounts must be specified in <strong>lamports</strong>, the{" "}
+                <strong>smallest unit of SOL</strong>. 1 SOL = 1,000,000,000
+                lamports.
               </p>
               <p style={pageStyles.p}>
                 Convert SOL amounts to lamports before using them:

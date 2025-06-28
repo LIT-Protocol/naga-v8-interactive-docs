@@ -127,6 +127,18 @@ const accs = createAccBuilder()
         amount: tenAmount,
         comparator: "<=" as const,
       },
+      "less-than": {
+        title: `< (Less Than)`,
+        description: `${combinedDescription} (less than 5 ${chainSymbol})`,
+        builderCode: `import { createAccBuilder } from '@lit-protocol/access-control-conditions';
+
+const accs = createAccBuilder()
+  ${walletOwnershipSection}.requireEthBalance('${fiveAmount}', '<') // Less than 5 ${chainSymbol} in ${baseUnitName}
+  .on('${chainKey}')
+  .build();`,
+        amount: fiveAmount,
+        comparator: "<" as const,
+      },
     };
   };
 
@@ -189,57 +201,69 @@ const accs = createAccBuilder()
         <p style={pageStyles.p}>
           In the examples below, you'll see how to use the{" "}
           <code>requireEthBalance()</code> method to create balance checks using
-          different chains, amounts, and comparison operators.
+          different chains, amounts,{" "}
+          <Link
+            to="/encryption/access-control/boolean-logic"
+            style={{ color: "#007bff", textDecoration: "underline" }}
+          >
+            Boolean Logic
+          </Link>
+          , and{" "}
+          <Link
+            to="/encryption/access-control/comparison-operators"
+            style={{ color: "#007bff", textDecoration: "underline" }}
+          >
+            Comparison Operators
+          </Link>
+          .
         </p>
       </GreyBoarderWhiteBgContainer>
 
       <GreyBoarderWhiteBgContainer>
-        <h2 style={pageStyles.h2}>Comparison Operators</h2>
+        <h2 style={pageStyles.h2}>Balance Scenarios</h2>
 
         <p style={pageStyles.p}>
-          The comparison operator is an optional parameter, if not provided the
-          <code>requireEthBalance</code> control condition will default to{" "}
-          <code>=</code>, requiring the address to have exactly the specified
-          amount.
+          Balance conditions can be configured in several ways depending on your
+          access control needs:
         </p>
 
         {(() => {
-          const operators = [
+          const scenarios = [
             {
-              symbol: ">=",
-              title: "Greater Than or Equal",
-              description: (
-                <>
-                  Requires <strong>at least</strong> the specified amount
-                </>
-              ),
+              title: "Minimum Balance",
+              description:
+                "Require users to hold at least a specific amount of native tokens",
+              example: ".requireEthBalance('1000000000000000000', '>=')",
             },
             {
-              symbol: ">",
-              title: "Greater Than",
-              description: (
-                <>
-                  Requires <strong>more than</strong> the specified amount
-                </>
-              ),
+              title: "Maximum Balance",
+              description:
+                "Limit access to users with smaller balances (useful for airdrops)",
+              example: ".requireEthBalance('5000000000000000000', '<=')",
             },
             {
-              symbol: "=",
-              title: "Equal To",
-              description: (
-                <>
-                  Requires <strong>exactly</strong> the specified amount
-                </>
-              ),
+              title: "Exact Balance",
+              description: "Require users to have exactly the specified amount",
+              example: ".requireEthBalance('1000000000000000000', '=')",
             },
             {
-              symbol: "<=",
-              title: "Less Than or Equal",
-              description: (
-                <>
-                  Requires <strong>at most</strong> the specified amount
-                </>
-              ),
+              title: "Exclusive Access",
+              description: "Exclude users with over the threshold amount",
+              example: ".requireEthBalance('1000000000000000000', '<')",
+            },
+            {
+              title: "Balance Range",
+              description: "Require balance to fall within a specific range",
+              example: `.requireEthBalance('1000000000000000000', '>=')
+.and()
+.requireEthBalance('10000000000000000000', '<=')`,
+            },
+            {
+              title: "Multiple Balance Tiers",
+              description: "Accept multiple balance thresholds with OR logic",
+              example: `.requireEthBalance('1000000000000000000', '>=')
+.or()
+.requireEthBalance('5000000000000000000', '>=')`,
             },
           ];
 
@@ -248,6 +272,10 @@ const accs = createAccBuilder()
             backgroundColor: "#fff",
             borderRadius: "8px",
             border: "1px solid #007bff",
+            width: "100%",
+            maxWidth: "100%",
+            boxSizing: "border-box" as const,
+            overflow: "hidden",
           };
 
           const titleStyle = {
@@ -256,7 +284,7 @@ const accs = createAccBuilder()
           };
 
           const descriptionStyle = {
-            margin: 0,
+            margin: "0 0 8px 0",
             fontSize: "0.9rem",
             color: "#0c4a6e",
           };
@@ -265,17 +293,28 @@ const accs = createAccBuilder()
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gridTemplateColumns: "repeat(2, 1fr)",
                 gap: "15px",
                 marginBottom: "20px",
+                width: "100%",
+                maxWidth: "100%",
+                boxSizing: "border-box",
               }}
             >
-              {operators.map((operator) => (
-                <div key={operator.symbol} style={cardStyle}>
-                  <h4 style={titleStyle}>
-                    {operator.symbol} ({operator.title})
-                  </h4>
-                  <p style={descriptionStyle}>{operator.description}</p>
+              {scenarios.map((scenario, index) => (
+                <div key={index} style={cardStyle}>
+                  <h4 style={titleStyle}>{scenario.title}</h4>
+                  <p style={descriptionStyle}>{scenario.description}</p>
+                  <DisplayCode
+                    code={scenario.example}
+                    language="typescript"
+                    theme="dracula"
+                    style={{
+                      marginTop: "8px",
+                      maxWidth: "100%",
+                      overflow: "auto",
+                    }}
+                  />
                 </div>
               ))}
             </div>
@@ -288,8 +327,10 @@ const accs = createAccBuilder()
             <>
               <p style={pageStyles.p}>
                 All amounts must be specified in the{" "}
-                <strong>smallest unit of the native currency</strong>. Different
-                chains have different decimal places.
+                <strong>
+                  smallest unit of the native currency of the blockchain
+                </strong>
+                . Different chains have different decimal places.
               </p>
               <p style={pageStyles.p}>
                 Convert currency amounts to smallest units before using them:
