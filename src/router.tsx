@@ -60,6 +60,8 @@ import SOLBalance from "./tabs/EncryptionAccessControl/AccessControlConditions/S
 import NFTOwnership from "./tabs/EncryptionAccessControl/AccessControlConditions/SOL/NFTOwnership";
 import ComparisonOperators from "./tabs/EncryptionAccessControl/AccessControlConditions/ComparisonOperators";
 import SOLWalletOwnership from "./tabs/EncryptionAccessControl/AccessControlConditions/SOL/WalletOwnership";
+import CosmosWalletOwnership from "./tabs/EncryptionAccessControl/AccessControlConditions/Cosmos/WalletOwnership";
+import CosmosBalance from "./tabs/EncryptionAccessControl/AccessControlConditions/Cosmos/CosmosBalance";
 
 // Create a type for the context
 type ContextType = {
@@ -344,6 +346,15 @@ export const router = createBrowserRouter([
       {
         path: "encryption/access-control/sol/wallet-ownership",
         element: <SOLWalletOwnership />,
+      },
+      // Access Control Conditions: Cosmos
+      {
+        path: "encryption/access-control/cosmos/wallet-ownership",
+        element: <CosmosWalletOwnership />,
+      },
+      {
+        path: "encryption/access-control/cosmos/cosmos-balance",
+        element: <CosmosBalance />,
       },
     ],
   },

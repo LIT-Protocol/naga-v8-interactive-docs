@@ -797,6 +797,32 @@ const ACTIONS: NavigationItem[] = [
           },
         ],
       },
+      {
+        id: "encryption-access-control-conditions-cosmos",
+        path: "/encryption/access-control/cosmos",
+        name: "Cosmos Based Conditions",
+        description: "Access Control Conditions for Cosmos",
+        category: "Encryption & Access Control",
+        type: "secondary",
+        children: [
+          {
+            id: "encryption-access-control-conditions-cosmos-wallet-ownership",
+            path: "/encryption/access-control/cosmos/wallet-ownership",
+            name: "Wallet Ownership",
+            description: "Access Control Conditions for Wallet Ownership",
+            category: "Encryption & Access Control",
+            type: "secondary",
+          },
+          {
+            id: "encryption-access-control-conditions-cosmos-cosmos-balance",
+            path: "/encryption/access-control/cosmos/cosmos-balance",
+            name: "Cosmos Balance",
+            description: "Access Control Conditions for Cosmos Balance",
+            category: "Encryption & Access Control",
+            type: "secondary",
+          },
+        ],
+      },
     ],
   },
 
