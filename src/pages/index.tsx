@@ -701,6 +701,12 @@ const ACTIONS: NavigationItem[] = [
             type: "secondary",
           },
           {
+            id: "encryption-access-control-conditions-evm-custom-contract-calls",
+            path: "/encryption/access-control/evm/custom-contract-calls",
+            name: "Custom Contract Calls",
+            description: "Access Control Conditions for Custom Contract Calls",
+          },
+          {
             id: "encryption-access-control-conditions-evm-wallet-ownership",
             path: "/encryption/access-control/evm/wallet-ownership",
             name: "Wallet Ownership",

@@ -55,6 +55,7 @@ import WalletOwnership from "./tabs/EncryptionAccessControl/AccessControlConditi
 import TimeBased from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/TimeBased";
 import DAOMembership from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/DAOMembership";
 import POAPOwnership from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/POAPOwnership";
+import CustomContractCalls from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/CustomContractCalls";
 
 // Create a type for the context
 type ContextType = {
@@ -318,6 +319,10 @@ export const router = createBrowserRouter([
       {
         path: "encryption/access-control/evm/poap-ownership",
         element: <POAPOwnership />,
+      },
+      {
+        path: "encryption/access-control/evm/custom-contract-calls",
+        element: <CustomContractCalls />,
       },
     ],
   },

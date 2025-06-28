@@ -237,6 +237,12 @@ const EncryptionAccessControlOverview: React.FC = () => {
       link: "/encryption/access-control/evm/erc721-ownership",
     },
     {
+      title: "Custom Contract Calls",
+      description:
+        "Make custom contract calls to any smart contract on a supported EVM chain",
+      link: "/encryption/access-control/evm/custom-contract-calls",
+    },
+    {
       title: "Time-Based Access",
       description: "Control access based on timestamps and time windows",
       link: "/encryption/access-control/evm/time-based",
