@@ -676,6 +676,22 @@ const ACTIONS: NavigationItem[] = [
     category: "Encryption & Access Control",
     type: "primary",
   },
+  {
+    id: "encryption-access-control-conditions",
+    path: "/encryption/accs",
+    name: "Access Control Conditions",
+    description: "Access Control Conditions for encrypting data",
+    category: "Encryption & Access Control",
+    type: "primary",
+    children: [
+      {
+        id: "encryption-access-control-conditions-boolean-logic",
+        path: "/encryption/access-control/boolean-logic",
+        name: "Boolean Logic",
+      },
+    ],
+  },
+
   // {
   //   id: "encryption",
   //   name: "Encryption",

@@ -16,7 +16,7 @@ import StytchSmsOtpAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/AuthMe
 import StytchWhatsAppOtpAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/AuthMethodProviders/StytchWhatsAppOtpAuthTab";
 import CustomAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/CustomAuthTab";
 import LitAuthProviderDemoTab from "./tabs/LearningLit/LitAuthProviderDemoTab";
-import EncryptionTab from "./tabs/EncryptionAccessControl/QuickStart";
+import EncryptionQuickStart from "./tabs/EncryptionAccessControl/QuickStart";
 import SetupLitClientTab from "./tabs/BuildingWithLit/SetupLitClientTab";
 import SetupAuthManagerTab from "./tabs/BuildingWithLit/SetupAuthManagerTab";
 import SetupAuthServicesTab from "./tabs/BuildingWithLit/SetupAuthServicesTab";
@@ -46,6 +46,7 @@ import PkpSignEth from "./tabs/ProgrammableKeys/PKPs/PKPSigning/SigningEth";
 import PkpSignBtc from "./tabs/ProgrammableKeys/PKPs/PKPSigning/SigningBtc";
 import ConnectingToDApp from "./tabs/ProgrammableKeys/PKPs/ConnectingToDApp";
 import EncryptionAccessControlOverview from "./tabs/EncryptionAccessControl/Overview";
+import BooleanLogic from "./tabs/EncryptionAccessControl/AccessControlConditions/BooleanLogic";
 
 // Create a type for the context
 type ContextType = {
@@ -271,7 +272,11 @@ export const router = createBrowserRouter([
       },
       {
         path: "encryption/quickstart",
-        element: <EncryptionTab />,
+        element: <EncryptionQuickStart />,
+      },
+      {
+        path: "encryption/access-control/boolean-logic",
+        element: <BooleanLogic />,
       },
     ],
   },
