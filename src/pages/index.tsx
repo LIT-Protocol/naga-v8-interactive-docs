@@ -772,6 +772,14 @@ const ACTIONS: NavigationItem[] = [
         type: "secondary",
         children: [
           {
+            id: "encryption-access-control-conditions-sol-wallet-ownership",
+            path: "/encryption/access-control/sol/wallet-ownership",
+            name: "Wallet Ownership",
+            description: "Access Control Conditions for Wallet Ownership",
+            category: "Encryption & Access Control",
+            type: "secondary",
+          },
+          {
             id: "encryption-access-control-conditions-sol-sol-balance",
             path: "/encryption/access-control/sol/sol-balance",
             name: "SOL Balance",

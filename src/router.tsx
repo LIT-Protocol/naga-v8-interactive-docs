@@ -59,6 +59,7 @@ import CustomContractCalls from "./tabs/EncryptionAccessControl/AccessControlCon
 import SOLBalance from "./tabs/EncryptionAccessControl/AccessControlConditions/SOL/SOLBalance";
 import NFTOwnership from "./tabs/EncryptionAccessControl/AccessControlConditions/SOL/NFTOwnership";
 import ComparisonOperators from "./tabs/EncryptionAccessControl/AccessControlConditions/ComparisonOperators";
+import SOLWalletOwnership from "./tabs/EncryptionAccessControl/AccessControlConditions/SOL/WalletOwnership";
 
 // Create a type for the context
 type ContextType = {
@@ -339,6 +340,10 @@ export const router = createBrowserRouter([
       {
         path: "encryption/access-control/sol/nft-ownership",
         element: <NFTOwnership />,
+      },
+      {
+        path: "encryption/access-control/sol/wallet-ownership",
+        element: <SOLWalletOwnership />,
       },
     ],
   },
