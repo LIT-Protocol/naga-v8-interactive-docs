@@ -784,23 +784,33 @@ export const HomePage = () => {
 
     const findInActions = (
       actions: NavigationItem[],
-      parentCategory?: string
-    ): void => {
+      parentHierarchy: string[] = []
+    ): boolean => {
       for (const action of actions) {
         if (action.path === path) {
+          // Add the main category if it exists
           if (action.category) categories.push(action.category);
-          if (parentCategory) categories.push(parentCategory);
-          return;
+          // Add all parent IDs in the hierarchy
+          parentHierarchy.forEach((parent) => categories.push(parent));
+          return true;
         }
 
         if (action.children) {
-          findInActions(action.children, action.id);
+          const newHierarchy = action.category
+            ? [...parentHierarchy, action.id]
+            : [...parentHierarchy, action.id];
+          if (findInActions(action.children, newHierarchy)) {
+            // If found in children, also add this action's category
+            if (action.category) categories.push(action.category);
+            return true;
+          }
         }
       }
+      return false;
     };
 
     findInActions(ACTIONS);
-    return categories;
+    return [...new Set(categories)]; // Remove duplicates
   };
 
   // Get expanded categories based on current path
@@ -814,10 +824,17 @@ export const HomePage = () => {
 
     // Always expand categories for the current path
     const currentPathCategories = findCategoriesForPath(path);
+    console.log(
+      "Current path:",
+      path,
+      "Found categories:",
+      currentPathCategories
+    );
     currentPathCategories.forEach((category) => {
       defaultExpanded[category] = true;
     });
 
+    console.log("Final expanded categories:", defaultExpanded);
     return defaultExpanded;
   };
 
@@ -934,15 +951,24 @@ export const HomePage = () => {
     }
   }, [litClient, authManager]);
 
-  // Update activeMethod and expanded categories based on the current path
+  // Update activeMethod and ensure current path categories are expanded
   useEffect(() => {
     const path = location.pathname;
     const actionId =
       ACTIONS.find((action) => action.path === path)?.id || "eoa";
     setActiveMethod(actionId);
 
-    // Update expanded categories for current path
-    setExpandedCategories(getExpandedCategoriesForPath(path));
+    // Ensure current path categories are expanded (but preserve existing expansions)
+    const currentPathCategories = findCategoriesForPath(path);
+    if (currentPathCategories.length > 0) {
+      setExpandedCategories((prev) => {
+        const updated = { ...prev };
+        currentPathCategories.forEach((category) => {
+          updated[category] = true;
+        });
+        return updated;
+      });
+    }
   }, [location.pathname]);
 
   function assertDependenciesLoaded() {
