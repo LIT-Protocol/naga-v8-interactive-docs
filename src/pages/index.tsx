@@ -744,6 +744,12 @@ const ACTIONS: NavigationItem[] = [
             name: "DAO Membership",
             description: "Access Control Conditions for DAO Membership",
           },
+          {
+            id: "encryption-access-control-conditions-evm-poap-ownership",
+            path: "/encryption/access-control/evm/poap-ownership",
+            name: "POAP Ownership",
+            description: "Access Control Conditions for POAP Ownership",
+          },
         ],
       },
     ],

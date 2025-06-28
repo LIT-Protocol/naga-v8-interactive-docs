@@ -54,6 +54,7 @@ import ERC721Ownership from "./tabs/EncryptionAccessControl/AccessControlConditi
 import WalletOwnership from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/WalletOwnership";
 import TimeBased from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/TimeBased";
 import DAOMembership from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/DAOMembership";
+import POAPOwnership from "./tabs/EncryptionAccessControl/AccessControlConditions/EVM/POAPOwnership";
 
 // Create a type for the context
 type ContextType = {
@@ -313,6 +314,10 @@ export const router = createBrowserRouter([
       {
         path: "encryption/access-control/evm/dao-membership",
         element: <DAOMembership />,
+      },
+      {
+        path: "encryption/access-control/evm/poap-ownership",
+        element: <POAPOwnership />,
       },
     ],
   },
