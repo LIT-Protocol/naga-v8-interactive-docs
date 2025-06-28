@@ -222,26 +222,35 @@ const EncryptionAccessControlOverview: React.FC = () => {
 
   const examples = [
     {
+      title: "Wallet Ownership",
+      description: "Grant access to specific wallet addresses",
+      link: "/encryption/access-control/evm/wallet-ownership",
+    },
+    {
+      title: "Token Balance",
+      description: "Require minimum ETH or ERC-20 token balances",
+      link: "/encryption/access-control/evm/erc20-balance",
+    },
+    {
+      title: "NFT Ownership",
+      description: "Require ownership of specific ERC-721 NFTs",
+      link: "/encryption/access-control/evm/erc721-ownership",
+    },
+    {
+      title: "Time-Based Access",
+      description: "Control access based on timestamps and time windows",
+      link: "/encryption/access-control/evm/time-based",
+    },
+    {
       title: "DAO Membership",
       description: "Restrict access to members of a particular DAO",
-      link: "/encryption/evm/dao-membership",
+      link: "/encryption/access-control/evm/dao-membership",
     },
     {
-      title: "ERC-721 NFT Ownership",
-      description: "Require ownership of specific ERC-721 NFTs",
-      link: "/encryption/evm/token-ownership",
+      title: "POAP Ownership",
+      description: "Grant access to holders of specific event attendance POAPs",
+      link: "/encryption/access-control/evm/poap-ownership",
     },
-    {
-      title: "Smart Contract Calls",
-      description: "Use the result of any smart contract call as a condition",
-      link: "/encryption/evm/smart-contract-calls",
-    },
-    // {
-    //   title: "API Calls",
-    //   description:
-    //     "Use the result of any API call, such as a follow on Twitter",
-    //   link: "/access-control/lit-action-conditions",
-    // },
   ];
 
   const gettingStartedResources = [
@@ -251,9 +260,14 @@ const EncryptionAccessControlOverview: React.FC = () => {
       link: "/encryption/quickstart",
     },
     {
+      title: "Boolean Logic",
+      description: "Learn how to combine conditions with AND/OR logic",
+      link: "/encryption/access-control/boolean-logic",
+    },
+    {
       title: "EVM Based Conditions",
-      description: "Examples of basic EVM-based access control conditions",
-      link: "/access-control/evm/basic-examples",
+      description: "Explore all supported EVM-based access control conditions",
+      link: "/encryption/access-control/evm/supported-chains",
     },
   ];
 
