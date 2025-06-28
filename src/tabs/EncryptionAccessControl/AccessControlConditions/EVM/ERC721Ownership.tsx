@@ -6,6 +6,7 @@ import { pageStyles } from "../../../../styles/pageStyles";
 
 import { Link } from "react-router-dom";
 import EVMChainsSelector from "../../../../components/EVMChainsSelector";
+import { NoteCallout } from "../../../../components/common";
 
 interface EVMChain {
   name: string;
@@ -330,6 +331,28 @@ const accs = createAccBuilder()
                         operator
                       </p>
                     </div>
+
+                    {/* ACC Builder Syntax Callout */}
+                    {includeWalletOwnership && (
+                      <NoteCallout
+                        title="Chaining Requires .on(chain)"
+                        message={
+                          <>
+                            <p style={pageStyles.p}>
+                              When enabling the wallet ownership requirement,
+                              you must include <code>.on(chain)</code> after the
+                              wallet ownership check to enable chaining with
+                              <code>.and()</code>, however, the chain specified
+                              by <code>.on(chain)</code> has no affect on the
+                              validation process and should always be set to{" "}
+                              <code>ethereum</code>.
+                            </p>
+                          </>
+                        }
+                        variant="note"
+                        style={{ marginBottom: "20px" }}
+                      />
+                    )}
 
                     {/* Wallet Address Input */}
                     {includeWalletOwnership && (

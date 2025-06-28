@@ -732,6 +732,12 @@ const ACTIONS: NavigationItem[] = [
             category: "Encryption & Access Control",
             type: "secondary",
           },
+          {
+            id: "encryption-access-control-conditions-evm-time-based",
+            path: "/encryption/access-control/evm/time-based",
+            name: "Time Based",
+            description: "Access Control Conditions for Time Based",
+          },
         ],
       },
     ],
