@@ -738,6 +738,12 @@ const ACTIONS: NavigationItem[] = [
             name: "Time Based",
             description: "Access Control Conditions for Time Based",
           },
+          {
+            id: "encryption-access-control-conditions-evm-dao-membership",
+            path: "/encryption/access-control/evm/dao-membership",
+            name: "DAO Membership",
+            description: "Access Control Conditions for DAO Membership",
+          },
         ],
       },
     ],
