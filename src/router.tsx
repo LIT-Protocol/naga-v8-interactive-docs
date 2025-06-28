@@ -16,7 +16,7 @@ import StytchSmsOtpAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/AuthMe
 import StytchWhatsAppOtpAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/AuthMethodProviders/StytchWhatsAppOtpAuthTab";
 import CustomAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/CustomAuthTab";
 import LitAuthProviderDemoTab from "./tabs/LearningLit/LitAuthProviderDemoTab";
-import EncryptionTab from "./tabs/EncryptionTab";
+import EncryptionTab from "./tabs/EncryptionAccessControl/QuickStart";
 import SetupLitClientTab from "./tabs/BuildingWithLit/SetupLitClientTab";
 import SetupAuthManagerTab from "./tabs/BuildingWithLit/SetupAuthManagerTab";
 import SetupAuthServicesTab from "./tabs/BuildingWithLit/SetupAuthServicesTab";

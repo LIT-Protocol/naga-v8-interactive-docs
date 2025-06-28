@@ -9,6 +9,7 @@ export interface PageStyles {
     inputRow: CSSProperties;
     button: (isLoading?: boolean) => CSSProperties;
     ul: CSSProperties;
+    ol: CSSProperties;
     li: CSSProperties;
 }
 
@@ -64,6 +65,11 @@ export const pageStyles: PageStyles = {
     }),
     ul: {
         listStyleType: "disc",
+        paddingLeft: "20px",
+        marginBottom: "16px",
+    },
+    ol: {
+        listStyleType: "decimal",
         paddingLeft: "20px",
         marginBottom: "16px",
     },
