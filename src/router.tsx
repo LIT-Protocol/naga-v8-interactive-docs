@@ -63,6 +63,7 @@ import SOLWalletOwnership from "./tabs/EncryptionAccessControl/AccessControlCond
 import CosmosWalletOwnership from "./tabs/EncryptionAccessControl/AccessControlConditions/Cosmos/WalletOwnership";
 import CosmosBalance from "./tabs/EncryptionAccessControl/AccessControlConditions/Cosmos/CosmosBalance";
 import LitAction from "./tabs/EncryptionAccessControl/AccessControlConditions/LitAction";
+import LitActionsOverview from "./tabs/LitActions/Overview";
 
 // Create a type for the context
 type ContextType = {
@@ -360,6 +361,11 @@ export const router = createBrowserRouter([
       {
         path: "encryption/access-control/cosmos/cosmos-balance",
         element: <CosmosBalance />,
+      },
+      // Lit Actions
+      {
+        path: "lit-actions/overview",
+        element: <LitActionsOverview />,
       },
     ],
   },

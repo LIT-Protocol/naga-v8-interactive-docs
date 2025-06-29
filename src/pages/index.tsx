@@ -831,6 +831,16 @@ const ACTIONS: NavigationItem[] = [
     ],
   },
 
+  // Lit Actions
+  {
+    id: "lit-actions-overview",
+    path: "/lit-actions/overview",
+    name: "Overview",
+    description: "Overview of Lit Actions",
+    category: "Private Compute - Lit Actions",
+    type: "primary",
+  },
+
   // {
   //   id: "encryption",
   //   name: "Encryption",
