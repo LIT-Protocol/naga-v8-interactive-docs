@@ -840,7 +840,14 @@ const ACTIONS: NavigationItem[] = [
     category: "Private Compute - Lit Actions",
     type: "primary",
   },
-
+  {
+    id: "lit-actions-deploying",
+    path: "/lit-actions/deploying",
+    name: "Deploying",
+    description: "Deploying Lit Actions",
+    category: "Private Compute - Lit Actions",
+    type: "primary",
+  },
   // {
   //   id: "encryption",
   //   name: "Encryption",
