@@ -62,6 +62,7 @@ import ComparisonOperators from "./tabs/EncryptionAccessControl/AccessControlCon
 import SOLWalletOwnership from "./tabs/EncryptionAccessControl/AccessControlConditions/SOL/WalletOwnership";
 import CosmosWalletOwnership from "./tabs/EncryptionAccessControl/AccessControlConditions/Cosmos/WalletOwnership";
 import CosmosBalance from "./tabs/EncryptionAccessControl/AccessControlConditions/Cosmos/CosmosBalance";
+import LitAction from "./tabs/EncryptionAccessControl/AccessControlConditions/LitAction";
 
 // Create a type for the context
 type ContextType = {
@@ -296,6 +297,10 @@ export const router = createBrowserRouter([
       {
         path: "encryption/access-control/comparison-operators",
         element: <ComparisonOperators />,
+      },
+      {
+        path: "encryption/access-control/lit-action",
+        element: <LitAction />,
       },
       // Access Control Conditions: EVM
       {

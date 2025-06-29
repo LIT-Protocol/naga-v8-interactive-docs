@@ -690,6 +690,11 @@ const ACTIONS: NavigationItem[] = [
         name: "Comparison Operators",
       },
       {
+        id: "encryption-access-control-conditions-lit-action",
+        path: "/encryption/access-control/lit-action",
+        name: "Lit Action",
+      },
+      {
         id: "encryption-access-control-conditions-evm",
         path: "/encryption/access-control/evm",
         name: "EVM Based Conditions",
