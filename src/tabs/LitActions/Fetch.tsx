@@ -154,11 +154,11 @@ console.log("Result:", result);`;
             throttling.
           </li>
           <li style={pageStyles.li}>
-            <strong>Deterministic Responses:</strong> Lit nodes must agree on
-            the final result to reach consensus. If your API returns
-            inconsistent or non-deterministic data (e.g., timestamps or random
-            values), your action will timeout waiting for the nodes to reach
-            consensus.
+            <strong>Non-Deterministic Responses:</strong> If your API/data
+            source returns inconsistent or non-deterministic data (e.g.,
+            timestamps, random values, latest block), each Lit node can receive
+            a different response. This is important to consider when processing
+            the retrieved data.
           </li>
         </ul>
 
