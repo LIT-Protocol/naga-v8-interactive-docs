@@ -200,35 +200,20 @@ const CommunicatingWithNodes: React.FC = () => {
       <GreyBoarderWhiteBgContainer style={{ marginTop: "32px" }}>
         <h2 style={pageStyles.h2}>Active Nodes</h2>
         <p style={pageStyles.p}>
-          The following node operators are active on the{" "}
+          The Naga node operator set will be selected via a staking contest
+          following the Lit TGE. Any party interested in running a node will be
+          able to participate and the top 10 node operators based on "
           <a
-            href="https://developer.litprotocol.com/connecting-to-a-lit-network/mainnets"
+            href="https://github.com/LIT-Protocol/LITKEY-Token-Paper-v1/blob/main/%24LITKEY%20Whitepaper%20-%20v1.pdf"
             target="_blank"
             rel="noopener noreferrer"
             style={{ color: "#3b82f6", textDecoration: "underline" }}
           >
-            Datil Mainnet Beta
+            stake weight
           </a>
-          :
+          " will make up the initial operator set. More information will be
+          shared ahead of the launch.
         </p>
-        <ul style={pageStyles.ul}>
-          <li style={pageStyles.li}>
-            <strong>Encrypted transmission:</strong> All requests are encrypted
-            via SSL/TLS, preventing interception.
-          </li>
-          <li style={pageStyles.li}>Hypha Co-Op</li>
-          <li style={pageStyles.li}>Cheqd</li>
-          <li style={pageStyles.li}>Imperator</li>
-          <li style={pageStyles.li}>01nodes</li>
-          <li style={pageStyles.li}>Zerion</li>
-          <li style={pageStyles.li}>Thunderhead</li>
-          <li style={pageStyles.li}>HireNodes</li>
-          <li style={pageStyles.li}>CMT Digital</li>
-          <li style={pageStyles.li}>
-            Lit Protocol (managed by the Lit Protocol development company)
-          </li>
-        </ul>
-        {/* TODO Link to Lit Actions */}
         <p style={pageStyles.p}>
           Interested in running a node?{" "}
           <a
@@ -237,7 +222,7 @@ const CommunicatingWithNodes: React.FC = () => {
             rel="noopener noreferrer"
             style={{ color: "#3b82f6", textDecoration: "underline" }}
           >
-            Get in touch.
+            Reach out.
           </a>
         </p>
       </GreyBoarderWhiteBgContainer>
