@@ -312,7 +312,7 @@ const result = await litClient.executeJs({
               fontWeight: "500",
             }}
           >
-            permitting it as an Auth Method
+            permitting the Lit Action's IPFS CID as a permitted Auth Method
           </Link>{" "}
           with the <code>sign-anything</code> capability.
         </p>

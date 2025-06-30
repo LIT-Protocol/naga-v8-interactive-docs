@@ -889,6 +889,14 @@ const ACTIONS: NavigationItem[] = [
     type: "primary",
   },
   {
+    id: "lit-actions-pkp-signing-eip191",
+    path: "/lit-actions/pkp-signing-eip191",
+    name: "PKP Signing with EIP-191",
+    description: "Signing with a PKP using EIP-191",
+    category: "Private Compute - Lit Actions",
+    type: "primary",
+  },
+  {
     id: "lit-actions-broadcast-and-collect",
     path: "/lit-actions/broadcast-and-collect",
     name: "Aggregate Node Responses",
