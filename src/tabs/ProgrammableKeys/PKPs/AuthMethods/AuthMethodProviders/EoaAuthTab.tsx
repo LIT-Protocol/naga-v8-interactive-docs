@@ -12,6 +12,7 @@ import GreyBoarderWhiteBgContainer from "../../../../../components/layout/Greybo
 import { useAppContext } from "../../../../../router";
 import EoaAuthSection from "../../../../../components/common/EoaAuthSection";
 import ExecuteJsComponent from "../../../../../components/common/ExecuteJsComponent";
+import { Link } from "react-router-dom";
 
 const AUTH_NAME = "EOA Authentication";
 
@@ -207,28 +208,6 @@ export default function EoaAuthTab() {
         Ethereum account to authenticate and mint PKPs. You can either use a
         private key or connect your wallet.
       </p>
-
-      <div
-        style={{
-          padding: "12px",
-          backgroundColor: "#e8f4fd",
-          borderRadius: "4px",
-          border: "1px solid #b3d9ff",
-          marginBottom: "15px",
-          fontSize: "14px",
-        }}
-      >
-        <strong>💰 Payment Information:</strong> PKP signing and Lit Action
-        execution require payment. Visit the{" "}
-        <a
-          href="/payment-manager"
-          style={{ color: "#0066cc", textDecoration: "underline" }}
-        >
-          Payment Manager
-        </a>{" "}
-        page to understand pricing, deposit funds, and manage your payment
-        balance.
-      </div>
 
       <GreyBoarderWhiteBgContainer>
         {/* ================================================ */}

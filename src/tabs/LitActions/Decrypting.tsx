@@ -96,7 +96,7 @@ const restrictedAccessControlConditions = [
           <Link
             to="/learning-lit/security/node-architecture"
             style={{
-              color: "#0ea5e9",
+              color: "#007bff",
               textDecoration: "none",
               fontWeight: "500",
             }}
@@ -126,7 +126,7 @@ const restrictedAccessControlConditions = [
                 <Link
                   to={"/lit-actions/overview"}
                   style={{
-                    color: "#0ea5e9",
+                    color: "#007bff",
                     textDecoration: "none",
                     fontSize: "0.9rem",
                     fontWeight: "500",
@@ -151,7 +151,7 @@ const restrictedAccessControlConditions = [
           <Link
             to="/encryption-access-control/encrypting"
             style={{
-              color: "#0ea5e9",
+              color: "#007bff",
               textDecoration: "none",
               fontWeight: "500",
             }}

@@ -106,13 +106,15 @@ export default function GettingStartedTab() {
         <>
           <p>
             Use the{" "}
-            <a
-              href="/building-with-lit/setup-lit-client"
-              target="_blank"
-              style={{ color: "#3b82f6", textDecoration: "underline" }}
+            <Link
+              to="/building-with-lit/setup-lit-client"
+              style={{
+                color: "#007bff",
+                textDecoration: "underline",
+              }}
             >
               Lit Client
-            </a>{" "}
+            </Link>{" "}
             to mint a new PKP. This creates a blockchain account whose
             decentralized private key is securely controlled by the identity
             authenticated in Step 1.
@@ -145,13 +147,15 @@ export default function GettingStartedTab() {
         <>
           <p>
             Use the{" "}
-            <a
-              href="/building-with-lit/setup-auth-manager"
-              target="_blank"
-              style={{ color: "#3b82f6", textDecoration: "underline" }}
+            <Link
+              to="/building-with-lit/setup-auth-manager"
+              style={{
+                color: "#007bff",
+                textDecoration: "underline",
+              }}
             >
               Auth Manager
-            </a>{" "}
+            </Link>{" "}
             to create a <code>PkpAuthContext</code> tied to your PKP.
           </p>
           <p>
@@ -209,10 +213,22 @@ export default function GettingStartedTab() {
       description: "Checkout the different ways to authenticate and mint PKPs:",
       icon: "🔐",
       links: [
-        { text: "Ethereum wallet", to: "/pkp-auth-methods/eoa-auth" },
-        { text: "Google OAuth", to: "/pkp-auth-methods/google-oauth" },
-        { text: "Discord OAuth", to: "/pkp-auth-methods/discord-oauth" },
-        { text: "WebAuthn", to: "/pkp-auth-methods/webauthn" },
+        {
+          text: "Ethereum wallet",
+          to: "/programmable-keys/pkps/auth-methods/eoa",
+        },
+        {
+          text: "Google OAuth",
+          to: "/programmable-keys/pkps/auth-methods/google",
+        },
+        {
+          text: "Discord OAuth",
+          to: "/programmable-keys/pkps/auth-methods/discord",
+        },
+        {
+          text: "WebAuthn",
+          to: "/programmable-keys/pkps/auth-methods/webauthn",
+        },
       ],
     },
     {
@@ -220,8 +236,14 @@ export default function GettingStartedTab() {
       description: "Use your PKP to sign data and execute actions:",
       icon: "✍️",
       links: [
-        { text: "Sign Messages & Transactions", to: "/pkp-sign/sign" },
-        { text: "Sign within Lit Actions", to: "/pkp-sign/lit-actions" },
+        {
+          text: "Sign Messages & Transactions",
+          to: "/programmable-keys/pkps/signing/raw",
+        },
+        {
+          text: "Sign within Lit Actions",
+          to: "/lit-actions/pkp-signing",
+        },
       ],
     },
     {
@@ -229,9 +251,18 @@ export default function GettingStartedTab() {
       description: "View PKP metadata and permissions:",
       icon: "📊",
       links: [
-        { text: "View PKP Permissions", to: "/pkp-view/permissions" },
-        { text: "View PKPs by Auth Data", to: "/pkp-view/by-auth-data" },
-        { text: "View PKPs by Address", to: "/pkp-view/by-address" },
+        {
+          text: "View PKP Permissions",
+          to: "/programmable-keys/pkps/view/pkp-permissions",
+        },
+        {
+          text: "View PKPs by Auth Data",
+          to: "/programmable-keys/pkps/view/pkps-by-auth",
+        },
+        {
+          text: "View PKPs by Address",
+          to: "/programmable-keys/pkps/view/pkps-by-address",
+        },
       ],
     },
     {
@@ -239,10 +270,9 @@ export default function GettingStartedTab() {
       description: "Add or remove authentication methods for your PKPs:",
       icon: "⚙️",
       links: [
-        { text: "Add Auth Methods", to: "/pkp-auth-methods/add" },
         {
-          text: "Remove Auth Methods",
-          to: "/pkp-auth-methods/remove",
+          text: "Add or Remove Auth Methods",
+          to: "/programmable-keys/pkps/auth-methods/add-remove",
         },
       ],
     },

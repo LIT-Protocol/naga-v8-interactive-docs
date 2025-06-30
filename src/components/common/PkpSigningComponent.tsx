@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { DisplayCode } from "../DisplayCode"; // Assuming DisplayCode is in ../components/DisplayCode
+import { Link } from "react-router-dom";
 
 // Define types for chain and scheme to match SDK expectations
 export type SupportedChain = "ethereum" | "bitcoin" | "cosmos" | "solana"; // Add others if supported by raw.pkpSign
@@ -156,7 +157,10 @@ export default function PkpSigningComponent({
       showSuccess();
     } catch (error: any) {
       console.error("Error signing message:", error);
-      const errorMessage = formatErrorMessage("Failed to sign message: ", error);
+      const errorMessage = formatErrorMessage(
+        "Failed to sign message: ",
+        error
+      );
       setStatus(errorMessage);
       showError?.(errorMessage);
     } finally {
@@ -175,22 +179,32 @@ export default function PkpSigningComponent({
         )}
       </h3>
       <p>
-        Use your PKP to sign a message with the selected chain and scheme. The signing operation 
-        will automatically find the most optimised price, or you can specify a custom maximum price 
-        using the <code>userMaxPrice</code> parameter.
+        Use your PKP to sign a message with the selected chain and scheme. The
+        signing operation will automatically find the most optimised price, or
+        you can specify a custom maximum price using the{" "}
+        <code>userMaxPrice</code> parameter.
       </p>
-      
-      <div style={{
-        padding: "12px",
-        backgroundColor: "#e8f4fd",
-        borderRadius: "4px",
-        border: "1px solid #b3d9ff",
-        marginBottom: "15px",
-        fontSize: "14px"
-      }}>
-        <strong>💰 Payment Information:</strong> PKP signing operations require payment. 
-        Visit the <a href="/payment-manager" style={{ color: "#0066cc", textDecoration: "underline" }}>
-        Payment Manager</a> page to understand pricing, deposit funds, and manage your payment balance.
+
+      <div
+        style={{
+          padding: "12px",
+          backgroundColor: "#e8f4fd",
+          borderRadius: "4px",
+          border: "1px solid #b3d9ff",
+          marginBottom: "15px",
+          fontSize: "14px",
+        }}
+      >
+        <strong>💰 Payment Information:</strong> PKP signing operations require
+        payment. Visit the{" "}
+        <Link
+          to="/payment-manager"
+          style={{ color: "#0066cc", textDecoration: "underline" }}
+        >
+          Payment Manager
+        </Link>{" "}
+        page to understand pricing, deposit funds, and manage your payment
+        balance.
       </div>
 
       <DisplayCode
@@ -242,7 +256,9 @@ export default function PkpSigningComponent({
               <select
                 id={`pkp-chain-select-${pkpInfo?.pkpAddress}`}
                 value={selectedChain}
-                onChange={(e) => setSelectedChain(e.target.value as SupportedChain)}
+                onChange={(e) =>
+                  setSelectedChain(e.target.value as SupportedChain)
+                }
                 style={{
                   width: "100%",
                   padding: "10px",
@@ -276,7 +292,9 @@ export default function PkpSigningComponent({
               <select
                 id={`pkp-signing-scheme-select-${pkpInfo?.pkpAddress}`}
                 value={selectedScheme}
-                onChange={(e) => setSelectedScheme(e.target.value as SupportedScheme)}
+                onChange={(e) =>
+                  setSelectedScheme(e.target.value as SupportedScheme)
+                }
                 style={{
                   width: "100%",
                   padding: "10px",
@@ -293,9 +311,12 @@ export default function PkpSigningComponent({
                   </option>
                 ))}
               </select>
-              <small style={{ display: "block", marginTop: "5px", color: "#555" }}>
-                Note: The message will be UTF-8 encoded. Hashing is automatically
-                handled by Lit Protocol based on the selected chain.
+              <small
+                style={{ display: "block", marginTop: "5px", color: "#555" }}
+              >
+                Note: The message will be UTF-8 encoded. Hashing is
+                automatically handled by Lit Protocol based on the selected
+                chain.
               </small>
             </div>
 
@@ -305,12 +326,16 @@ export default function PkpSigningComponent({
               style={{
                 padding: "10px 15px",
                 backgroundColor:
-                  !(pkpInfo && authContext) || isSigning ? "#cccccc" : "#6f42c1",
+                  !(pkpInfo && authContext) || isSigning
+                    ? "#cccccc"
+                    : "#6f42c1",
                 color: "white",
                 border: "none",
                 borderRadius: "4px",
                 cursor:
-                  !(pkpInfo && authContext) || isSigning ? "not-allowed" : "pointer",
+                  !(pkpInfo && authContext) || isSigning
+                    ? "not-allowed"
+                    : "pointer",
                 fontWeight: "500",
               }}
             >

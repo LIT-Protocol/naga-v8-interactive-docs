@@ -260,7 +260,7 @@ const result = await litClient.executeJs({
               "Users may find it challenging to review and verify the exact code being executed by your Lit Action",
             ]}
             backgroundColor="#f0f9ff"
-            borderColor="#0ea5e9"
+            borderColor="#007bff"
             textColor="#0c4a6e"
           />
 
@@ -303,7 +303,7 @@ const result = await litClient.executeJs({
             href="https://developer.mozilla.org/en-US/docs/Glossary/IIFE"
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: "#0ea5e9", textDecoration: "underline" }}
+            style={{ color: "#007bff", textDecoration: "underline" }}
           >
             Immediately Invoked Function Expression
           </a>
@@ -339,7 +339,7 @@ const result = await litClient.executeJs({
             href="https://docs.ipfs.tech/quickstart/publish/#cids-explained"
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: "#0ea5e9", textDecoration: "underline" }}
+            style={{ color: "#007bff", textDecoration: "underline" }}
           >
             IPFS Content Identifier (CID)
           </a>{" "}
@@ -357,7 +357,7 @@ const result = await litClient.executeJs({
             href="https://docs.ipfs.tech/quickstart/publish/"
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: "#0ea5e9", textDecoration: "underline" }}
+            style={{ color: "#007bff", textDecoration: "underline" }}
           >
             here
           </a>
@@ -373,7 +373,7 @@ const result = await litClient.executeJs({
                   href="https://www.pinata.cloud/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ color: "#0ea5e9", textDecoration: "underline" }}
+                  style={{ color: "#007bff", textDecoration: "underline" }}
                 >
                   Pinata
                 </a>{" "}
@@ -433,7 +433,7 @@ const result = await litClient.executeJs({
             href="https://github.com/alanshaw/ipfs-only-hash"
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: "#0ea5e9", textDecoration: "underline" }}
+            style={{ color: "#007bff", textDecoration: "underline" }}
           >
             ipfs-only-hash
           </a>

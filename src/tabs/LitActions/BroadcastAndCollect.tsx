@@ -98,7 +98,7 @@ console.log("Median temperature from all nodes:", result);`;
                 <Link
                   to={"/lit-actions/quick-start"}
                   style={{
-                    color: "#0ea5e9",
+                    color: "#007bff",
                     textDecoration: "none",
                     fontSize: "0.9rem",
                     fontWeight: "500",
@@ -143,7 +143,7 @@ console.log("Median temperature from all nodes:", result);`;
           <Link
             to="/lit-actions/run-once"
             style={{
-              color: "#0ea5e9",
+              color: "#007bff",
               textDecoration: "none",
               fontWeight: "500",
             }}

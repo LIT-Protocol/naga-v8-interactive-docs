@@ -211,14 +211,6 @@ const GettingStartedTab: React.FC = () => {
                 backgroundColor: "white",
                 transition: "transform 0.2s, box-shadow 0.2s",
               }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 8px 25px rgba(0,0,0,0.1)";
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
             >
               <div
                 style={{
@@ -307,12 +299,6 @@ const GettingStartedTab: React.FC = () => {
                   fontWeight: "500",
                   transition: "background-color 0.2s",
                 }}
-                onMouseOver={(e) =>
-                  (e.currentTarget.style.backgroundColor = `${step.color}dd`)
-                }
-                onMouseOut={(e) =>
-                  (e.currentTarget.style.backgroundColor = step.color)
-                }
               >
                 Get Started →
               </Link>
@@ -320,34 +306,6 @@ const GettingStartedTab: React.FC = () => {
           ))}
         </div>
       </GreyBoarderWhiteBgContainer>
-
-      {/* Next Steps */}
-      <div
-        style={{
-          backgroundColor: "#f0f9ff",
-          border: "1px solid #3b82f6",
-          borderRadius: "8px",
-          padding: "20px",
-          marginTop: "20px",
-        }}
-      >
-        <h3
-          style={{ margin: "0 0 10px 0", color: "#1e40af", fontSize: "1.2rem" }}
-        >
-          🚀 Next Steps
-        </h3>
-        <p style={{ margin: "0", color: "#1e3a8a", lineHeight: "1.5" }}>
-          Ready to get started? Begin with{" "}
-          <Link
-            to="/building-with-lit/setup-lit-client"
-            style={{ color: "#3b82f6", textDecoration: "underline" }}
-          >
-            Setup Lit Client
-          </Link>{" "}
-          to establish your connection to the Lit Protocol network. This is the
-          foundation that all other components will build upon.
-        </p>
-      </div>
     </div>
   );
 };

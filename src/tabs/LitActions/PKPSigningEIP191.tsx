@@ -69,7 +69,7 @@ console.log("Signature:", result.signatures.messageSignature);`;
           <Link
             to="https://eips.ethereum.org/EIPS/eip-191"
             style={{
-              color: "#0ea5e9",
+              color: "#007bff",
               textDecoration: "none",
               fontWeight: "500",
             }}
@@ -104,7 +104,7 @@ console.log("Signature:", result.signatures.messageSignature);`;
                 <Link
                   to={"/lit-actions/quick-start"}
                   style={{
-                    color: "#0ea5e9",
+                    color: "#007bff",
                     textDecoration: "none",
                     fontSize: "0.9rem",
                     fontWeight: "500",
@@ -120,7 +120,7 @@ console.log("Signature:", result.signatures.messageSignature);`;
                 <Link
                   to={"/programmable-keys/overview"}
                   style={{
-                    color: "#0ea5e9",
+                    color: "#007bff",
                     textDecoration: "none",
                     fontSize: "0.9rem",
                     fontWeight: "500",
@@ -244,7 +244,7 @@ console.log("Signature:", result.signatures.messageSignature);`;
           <Link
             to="/programmable-keys/pkps/auth-methods/add-remove"
             style={{
-              color: "#0ea5e9",
+              color: "#007bff",
               textDecoration: "none",
               fontWeight: "500",
             }}

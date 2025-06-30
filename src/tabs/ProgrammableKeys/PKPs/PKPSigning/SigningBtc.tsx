@@ -11,6 +11,7 @@ import { DisplayCode } from "../../../../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../../../../components/layout/GreyboardWhiteBgContainer";
 import { useAppContext } from "../../../../router";
 import { pageStyles } from "../../../../styles/pageStyles";
+import { Link } from "react-router-dom";
 
 // Code snippets for each functionality
 const AUTHENTICATE_PRIVATE_KEY_CODE = `
@@ -218,12 +219,12 @@ export default function PkpSignBtc() {
         >
           <strong>💰 Payment Information:</strong> PKP signing requires payment.
           Visit the{" "}
-          <a
-            href="/payment-manager"
+          <Link
+            to="/payment-manager"
             style={{ color: "#0066cc", textDecoration: "underline" }}
           >
             Payment Manager
-          </a>{" "}
+          </Link>{" "}
           page to understand pricing, deposit funds, and manage your payment
           balance.
         </div>
