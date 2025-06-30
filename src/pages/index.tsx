@@ -856,6 +856,14 @@ const ACTIONS: NavigationItem[] = [
     category: "Private Compute - Lit Actions",
     type: "primary",
   },
+  {
+    id: "lit-actions-run-once",
+    path: "/lit-actions/run-once",
+    name: "Run Once",
+    description: "Run logic within a Lit Action only once",
+    category: "Private Compute - Lit Actions",
+    type: "primary",
+  },
   // {
   //   id: "encryption",
   //   name: "Encryption",

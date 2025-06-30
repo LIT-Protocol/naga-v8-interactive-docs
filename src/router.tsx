@@ -66,6 +66,7 @@ import LitAction from "./tabs/EncryptionAccessControl/AccessControlConditions/Li
 import LitActionsOverview from "./tabs/LitActions/Overview";
 import LitActionsDeploying from "./tabs/LitActions/Deploying";
 import LitActionsFetch from "./tabs/LitActions/Fetch";
+import LitActionsRunOnce from "./tabs/LitActions/RunOnce";
 
 // Create a type for the context
 type ContextType = {
@@ -376,6 +377,10 @@ export const router = createBrowserRouter([
       {
         path: "lit-actions/fetch",
         element: <LitActionsFetch />,
+      },
+      {
+        path: "lit-actions/run-once",
+        element: <LitActionsRunOnce />,
       },
     ],
   },
