@@ -8,11 +8,12 @@
 import React, { useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 import { createLitClient } from "@lit-protocol/lit-client";
-import { nagaDev } from "@lit-protocol/networks";
+import { nagaDev, nagaTest } from "@lit-protocol/networks";
 import { DisplayCode } from "../../components/DisplayCode";
 import { exploreClientStructure } from "../../utils/explore-structure";
 import SingletonPattern from "../../components/tips/SingletonPattern";
 import GreyBoarderWhiteBgContainer from "../../components/layout/GreyboardWhiteBgContainer";
+import { pageStyles } from "../../styles/pageStyles";
 
 interface TabContext {
   areDependenciesLoaded: () => boolean;
@@ -51,11 +52,11 @@ const SetupLitClientTab: React.FC = () => {
     },
     nagaTest: {
       name: "Naga Test",
-      config: null, // Will be available in future releases
+      config: nagaTest,
       description:
         "Decentralised test network. No persistency guarantees. Mirrors Datil code and configuration. Payment is enforced.",
       recommended: false,
-      available: false,
+      available: true,
     },
     naga: {
       name: "Naga",
@@ -202,19 +203,6 @@ const createClient = async () => {
 const client = await createClient();`;
   };
 
-  const singletonCode = getSingletonCode();
-
-  const pageStyles = {
-    h2: {
-      fontSize: "2rem",
-      fontWeight: "600",
-      color: "#1f2937",
-      marginBottom: "16px",
-      borderBottom: "1px solid #e5e7eb",
-      paddingBottom: "8px",
-    },
-  };
-
   return (
     <div style={{ maxWidth: "90%" }}>
       <h1>Setting Up the Lit Client</h1>
@@ -295,7 +283,7 @@ const client = await createClient();`;
                       >
                         <div>
                           <strong>{network.name}</strong>
-                          {network.recommended && (
+                          {network.available && (
                             <span
                               style={{
                                 marginLeft: "8px",

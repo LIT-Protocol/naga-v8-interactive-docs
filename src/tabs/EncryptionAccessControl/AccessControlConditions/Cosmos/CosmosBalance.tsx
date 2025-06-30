@@ -165,7 +165,7 @@ const accs = createAccBuilder()
             style={{ color: "#007bff", textDecoration: "underline" }}
           >
             Boolean Logic
-          </Link>
+          </Link>{" "}
           and{" "}
           <Link
             to="/encryption/access-control/comparison-operators"

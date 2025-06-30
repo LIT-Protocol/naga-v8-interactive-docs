@@ -8,6 +8,7 @@ import AccountMethodSelector, {
 import { DisplayCode } from "../../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../../components/layout/GreyboardWhiteBgContainer";
 import { useAppContext } from "../../router";
+import { Link } from "react-router-dom";
 
 // Code snippets for each functionality
 const AUTHENTICATE_PRIVATE_KEY_CODE = `
@@ -406,12 +407,12 @@ export default function LitActionsQuickStart() {
       >
         <strong>💰 Payment Information:</strong> Lit Action execution requires
         payment. Visit the{" "}
-        <a
-          href="/payment-manager"
-          style={{ color: "#0066cc", textDecoration: "underline" }}
+        <Link
+          to="/payment-manager"
+          style={{ color: "#007bff", textDecoration: "underline" }}
         >
           Payment Manager
-        </a>{" "}
+        </Link>{" "}
         page to understand pricing, deposit funds, and manage your payment
         balance.
       </div>
@@ -530,7 +531,7 @@ export default function LitActionsQuickStart() {
               style={{
                 padding: "10px 15px",
                 backgroundColor:
-                  isAuthenticating || !account ? "#cccccc" : "#0066cc",
+                  isAuthenticating || !account ? "#cccccc" : "#007bff",
                 color: "white",
                 border: "none",
                 borderRadius: "4px",
@@ -571,7 +572,7 @@ export default function LitActionsQuickStart() {
               style={{
                 padding: "10px 15px",
                 backgroundColor:
-                  isCreatingLitClient || !authData ? "#cccccc" : "#0066cc",
+                  isCreatingLitClient || !authData ? "#cccccc" : "#007bff",
                 color: "white",
                 border: "none",
                 borderRadius: "4px",
@@ -614,7 +615,7 @@ export default function LitActionsQuickStart() {
               style={{
                 padding: "10px 15px",
                 backgroundColor:
-                  isCreatingAuthManager || !litClient ? "#cccccc" : "#0066cc",
+                  isCreatingAuthManager || !litClient ? "#cccccc" : "#007bff",
                 color: "white",
                 border: "none",
                 borderRadius: "4px",
@@ -671,7 +672,7 @@ export default function LitActionsQuickStart() {
                   !litClient ||
                   !account
                     ? "#cccccc"
-                    : "#0066cc",
+                    : "#007bff",
                 color: "white",
                 border: "none",
                 borderRadius: "4px",
@@ -783,7 +784,7 @@ export default function LitActionsQuickStart() {
                   backgroundColor:
                     isExecutingAction || !eoaAuthContext || !litClient
                       ? "#cccccc"
-                      : "#0066cc",
+                      : "#007bff",
                   color: "white",
                   border: "none",
                   borderRadius: "4px",

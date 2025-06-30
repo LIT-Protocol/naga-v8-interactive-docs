@@ -25,7 +25,7 @@ const ProcessStep: React.FC<ProcessStepProps> = ({
       padding: "24px",
       backgroundColor: "#f8fafc",
       borderRadius: "12px",
-      border: "2px solid #0ea5e920",
+      border: "2px solid #007bff20",
     }}
   >
     <div
@@ -41,7 +41,7 @@ const ProcessStep: React.FC<ProcessStepProps> = ({
           width: "40px",
           height: "40px",
           borderRadius: "50%",
-          backgroundColor: "#0ea5e9",
+          backgroundColor: "#007bff",
           color: "white",
           display: "flex",
           alignItems: "center",
@@ -55,7 +55,7 @@ const ProcessStep: React.FC<ProcessStepProps> = ({
       <h4
         style={{
           margin: 0,
-          color: "#0ea5e9",
+          color: "#007bff",
           fontSize: "1.3rem",
           fontWeight: "600",
         }}

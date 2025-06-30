@@ -208,28 +208,6 @@ export default function GoogleAuthTab() {
         sign messages.
       </p>
 
-      <div
-        style={{
-          padding: "12px",
-          backgroundColor: "#e8f4fd",
-          borderRadius: "4px",
-          border: "1px solid #b3d9ff",
-          marginBottom: "15px",
-          fontSize: "14px",
-        }}
-      >
-        <strong>💰 Payment Information:</strong> PKP signing and Lit Action
-        execution require payment. Visit the{" "}
-        <a
-          href="/payment-manager"
-          style={{ color: "#0066cc", textDecoration: "underline" }}
-        >
-          Payment Manager
-        </a>{" "}
-        page to understand pricing, deposit funds, and manage your payment
-        balance.
-      </div>
-
       <GreyBoarderWhiteBgContainer>
         {/* ================================================ */}
         {/*                  Prerequisites                   */}

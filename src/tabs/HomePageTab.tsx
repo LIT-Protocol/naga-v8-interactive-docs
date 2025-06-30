@@ -105,6 +105,12 @@ const HomePageTab: React.FC = () => {
     },
     {
       step: "3",
+      title: "Understand the Security Model",
+      description: "Learn about the security model of Lit Protocol",
+      path: "/learning-lit/security",
+    },
+    {
+      step: "4",
       title: "Try Out the Demo",
       description: "See Lit in action with our interactive demo",
       path: "/learning-lit/demo",
@@ -114,27 +120,27 @@ const HomePageTab: React.FC = () => {
   const buildingSteps = [
     {
       step: "1",
-      title: "Setup Lit Client",
-      description: "Create and configure your Lit Protocol client instance",
-      path: "/setup-lit-client",
+      title: "Review the Getting Started Guide",
+      description: "Learn how to get started with Lit Protocol",
+      path: "/building-with-lit/getting-started",
     },
     {
       step: "2",
-      title: "Setup Auth Manager",
-      description: "Configure authentication manager with storage plugins",
-      path: "/setup-auth-manager",
+      title: "Setup the Lit Client",
+      description: "Create and configure your Lit Protocol client instance",
+      path: "/building-with-lit/setup-lit-client",
     },
     {
       step: "3",
-      title: "Setup Auth Services",
-      description: "Configure your own auth infrastructure (servers & worker)",
-      path: "/setup-auth-services",
+      title: "Setup the Auth Manager",
+      description: "Configure authentication manager with storage plugins",
+      path: "/building-with-lit/setup-auth-manager",
     },
     {
       step: "4",
-      title: "Build Your App",
-      description: "Start building with authentication and encryption",
-      path: "/demo",
+      title: "Learn About Setting Up Auth Services",
+      description: "Configure your own auth infrastructure (servers & worker)",
+      path: "/building-with-lit/setup-auth-services",
     },
   ];
 
@@ -245,15 +251,6 @@ const HomePageTab: React.FC = () => {
                       transition: "transform 0.2s, box-shadow 0.2s",
                       cursor: "pointer",
                     }}
-                    onMouseOver={(e: React.MouseEvent<HTMLDivElement>) => {
-                      e.currentTarget.style.transform = "translateY(-4px)";
-                      e.currentTarget.style.boxShadow =
-                        "0 8px 25px rgba(0,0,0,0.1)";
-                    }}
-                    onMouseOut={(e: React.MouseEvent<HTMLDivElement>) => {
-                      e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.boxShadow = "none";
-                    }}
                   >
                     <div
                       style={{
@@ -297,12 +294,6 @@ const HomePageTab: React.FC = () => {
                         fontWeight: "500",
                         transition: "background-color 0.2s",
                       }}
-                      onMouseOver={(e) =>
-                        (e.currentTarget.style.backgroundColor = "#2563eb")
-                      }
-                      onMouseOut={(e) =>
-                        (e.currentTarget.style.backgroundColor = "#3b82f6")
-                      }
                     >
                       Learn →
                     </Link>
@@ -344,15 +335,6 @@ const HomePageTab: React.FC = () => {
                       transition: "transform 0.2s, box-shadow 0.2s",
                       cursor: "pointer",
                     }}
-                    onMouseOver={(e: React.MouseEvent<HTMLDivElement>) => {
-                      e.currentTarget.style.transform = "translateY(-4px)";
-                      e.currentTarget.style.boxShadow =
-                        "0 8px 25px rgba(0,0,0,0.1)";
-                    }}
-                    onMouseOut={(e: React.MouseEvent<HTMLDivElement>) => {
-                      e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.boxShadow = "none";
-                    }}
                   >
                     <div
                       style={{
@@ -396,12 +378,6 @@ const HomePageTab: React.FC = () => {
                         fontWeight: "500",
                         transition: "background-color 0.2s",
                       }}
-                      onMouseOver={(e) =>
-                        (e.currentTarget.style.backgroundColor = "#059669")
-                      }
-                      onMouseOut={(e) =>
-                        (e.currentTarget.style.backgroundColor = "#10b981")
-                      }
                     >
                       Build →
                     </Link>
@@ -411,178 +387,6 @@ const HomePageTab: React.FC = () => {
             </GreyBoarderWhiteBgContainer>
           </div>
         </div>
-
-        {/* Learning Overview */}
-        {/* <div style={{ marginTop: "40px" }}>
-          <h2
-            style={{
-              textAlign: "center",
-              marginBottom: "32px",
-              color: "#1f2937",
-              fontSize: "2rem",
-            }}
-          >
-            🧠 Get Started Learning
-          </h2>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-              gap: "24px",
-            }}
-          >
-            {learningOverview.map((feature, index) => (
-              <div
-                key={index}
-                style={{
-                  border: `2px solid ${feature.color}20`,
-                  borderRadius: "12px",
-                  padding: "24px",
-                  backgroundColor: "white",
-                  transition: "transform 0.2s, box-shadow 0.2s",
-                  cursor: "pointer",
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.transform = "translateY(-4px)";
-                  e.currentTarget.style.boxShadow =
-                    "0 8px 25px rgba(0,0,0,0.1)";
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "none";
-                }}
-                onClick={() => (window.location.href = feature.path)}
-              >
-                <h3
-                  style={{
-                    color: feature.color,
-                    marginBottom: "12px",
-                    fontSize: "1.3rem",
-                    fontWeight: "600",
-                  }}
-                >
-                  {feature.title}
-                </h3>
-                <p
-                  style={{
-                    color: "#6b7280",
-                    marginBottom: "16px",
-                    lineHeight: "1.5",
-                  }}
-                >
-                  {feature.description}
-                </p>
-                <ul
-                  style={{
-                    listStyle: "none",
-                    padding: 0,
-                    margin: 0,
-                  }}
-                >
-                  {feature.items.map((item, itemIndex) => (
-                    <li
-                      key={itemIndex}
-                      style={{
-                        marginBottom: "8px",
-                        fontSize: "0.9rem",
-                        color: "#4b5563",
-                      }}
-                    >
-                      • {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </div> */}
-
-        {/* Features Overview */}
-        {/* <div style={{ marginTop: "40px" }}>
-          <h2
-            style={{
-              textAlign: "center",
-              marginBottom: "32px",
-              color: "#1f2937",
-              fontSize: "2rem",
-            }}
-          >
-            🛠️ Get Started Building
-          </h2>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-              gap: "24px",
-            }}
-          >
-            {buildingOverview.map((feature, index) => (
-              <div
-                key={index}
-                style={{
-                  border: `2px solid ${feature.color}20`,
-                  borderRadius: "12px",
-                  padding: "24px",
-                  backgroundColor: "white",
-                  transition: "transform 0.2s, box-shadow 0.2s",
-                  cursor: "pointer",
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.transform = "translateY(-4px)";
-                  e.currentTarget.style.boxShadow =
-                    "0 8px 25px rgba(0,0,0,0.1)";
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "none";
-                }}
-                onClick={() => (window.location.href = feature.path)}
-              >
-                <h3
-                  style={{
-                    color: feature.color,
-                    marginBottom: "12px",
-                    fontSize: "1.3rem",
-                    fontWeight: "600",
-                  }}
-                >
-                  {feature.title}
-                </h3>
-                <p
-                  style={{
-                    color: "#6b7280",
-                    marginBottom: "16px",
-                    lineHeight: "1.5",
-                  }}
-                >
-                  {feature.description}
-                </p>
-                <ul
-                  style={{
-                    listStyle: "none",
-                    padding: 0,
-                    margin: 0,
-                  }}
-                >
-                  {feature.items.map((item, itemIndex) => (
-                    <li
-                      key={itemIndex}
-                      style={{
-                        marginBottom: "8px",
-                        fontSize: "0.9rem",
-                        color: "#4b5563",
-                      }}
-                    >
-                      • {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </div> */}
 
         <GreyBoarderWhiteBgContainer style={{ marginTop: "32px" }}>
           <h2

@@ -1,6 +1,6 @@
 /**
  * SingletonPattern.tsx
- * 
+ *
  * A popup component that demonstrates the singleton pattern implementation
  * for Lit Protocol components like LitClient and AuthManager.
  */
@@ -19,18 +19,28 @@ const SingletonPattern: React.FC<SingletonPatternProps> = ({
   isOpen,
   onClose,
   componentType = "litClient",
-  selectedNetwork = "nagaDev"
+  selectedNetwork = "nagaDev",
 }) => {
-  const [activeTab, setActiveTab] = useState<"litClient" | "authManager">(componentType);
+  const [activeTab, setActiveTab] = useState<"litClient" | "authManager">(
+    componentType
+  );
 
   if (!isOpen) return null;
 
   const getLitClientSingletonCode = () => {
-    const networkImport = selectedNetwork === "nagaTest" ? "nagaTest" : 
-                         selectedNetwork === "naga" ? "naga" : "nagaDev";
-    const networkVar = selectedNetwork === "nagaTest" ? "nagaTest" : 
-                      selectedNetwork === "naga" ? "naga" : "nagaDev";
-    
+    const networkImport =
+      selectedNetwork === "nagaTest"
+        ? "nagaTest"
+        : selectedNetwork === "naga"
+        ? "naga"
+        : "nagaDev";
+    const networkVar =
+      selectedNetwork === "nagaTest"
+        ? "nagaTest"
+        : selectedNetwork === "naga"
+        ? "naga"
+        : "nagaDev";
+
     return `import { createLitClient } from "@lit-protocol/lit-client";
 import { ${networkImport} } from "@lit-protocol/networks";
 
@@ -70,7 +80,7 @@ const getAuthManager = () => {
     authManagerInstance = createAuthManager({
       storage: storagePlugins.localStorage({
         appName: "my-app",
-        networkName: "naga-dev",
+        networkName: "${selectedNetwork}",
       }),
     });
   }
@@ -89,7 +99,7 @@ const resetAuthManager = () => {
   };
 
   return (
-    <div 
+    <div
       style={{
         position: "fixed",
         top: 0,
@@ -148,21 +158,31 @@ const resetAuthManager = () => {
           {/* Description */}
           <div style={{ marginBottom: "20px" }}>
             <p style={{ color: "#666", fontSize: "14px", lineHeight: "1.6" }}>
-              The singleton pattern ensures that only one instance of a component exists throughout your application,
-              preventing memory leaks and maintaining consistent state.
+              The singleton pattern ensures that only one instance of a
+              component exists throughout your application, preventing memory
+              leaks and maintaining consistent state.
             </p>
           </div>
 
           {/* Tabs */}
           <div style={{ marginBottom: "20px" }}>
-            <div style={{ display: "flex", gap: "10px", borderBottom: "1px solid #dee2e6" }}>
+            <div
+              style={{
+                display: "flex",
+                gap: "10px",
+                borderBottom: "1px solid #dee2e6",
+              }}
+            >
               <button
                 onClick={() => setActiveTab("litClient")}
                 style={{
                   padding: "10px 16px",
                   border: "none",
                   background: "none",
-                  borderBottom: activeTab === "litClient" ? "2px solid #007bff" : "2px solid transparent",
+                  borderBottom:
+                    activeTab === "litClient"
+                      ? "2px solid #007bff"
+                      : "2px solid transparent",
                   color: activeTab === "litClient" ? "#007bff" : "#6c757d",
                   cursor: "pointer",
                   fontWeight: activeTab === "litClient" ? "bold" : "normal",
@@ -176,7 +196,10 @@ const resetAuthManager = () => {
                   padding: "10px 16px",
                   border: "none",
                   background: "none",
-                  borderBottom: activeTab === "authManager" ? "2px solid #007bff" : "2px solid transparent",
+                  borderBottom:
+                    activeTab === "authManager"
+                      ? "2px solid #007bff"
+                      : "2px solid transparent",
                   color: activeTab === "authManager" ? "#007bff" : "#6c757d",
                   cursor: "pointer",
                   fontWeight: activeTab === "authManager" ? "bold" : "normal",
@@ -189,23 +212,40 @@ const resetAuthManager = () => {
 
           {/* Code Display */}
           <div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "10px",
+              }}
+            >
               <h4 style={{ margin: 0, color: "#2c5282" }}>
-                {activeTab === "litClient" ? "Lit Client Singleton" : "Auth Manager Singleton"}
+                {activeTab === "litClient"
+                  ? "Lit Client Singleton"
+                  : "Auth Manager Singleton"}
               </h4>
             </div>
-            
+
             <DisplayCode
-              code={activeTab === "litClient" ? getLitClientSingletonCode() : getAuthManagerSingletonCode()}
+              code={
+                activeTab === "litClient"
+                  ? getLitClientSingletonCode()
+                  : getAuthManagerSingletonCode()
+              }
             />
           </div>
 
           {/* Benefits */}
           <div style={{ marginTop: "20px" }}>
-            <h4 style={{ color: "#0066cc", margin: "0 0 10px 0" }}>Benefits of Singleton Pattern:</h4>
+            <h4 style={{ color: "#0066cc", margin: "0 0 10px 0" }}>
+              Benefits of Singleton Pattern:
+            </h4>
             <ul style={{ paddingLeft: "20px", margin: 0, color: "#666" }}>
               <li>Prevents multiple instances and potential memory leaks</li>
-              <li>Maintains consistent configuration across your application</li>
+              <li>
+                Maintains consistent configuration across your application
+              </li>
             </ul>
           </div>
         </div>

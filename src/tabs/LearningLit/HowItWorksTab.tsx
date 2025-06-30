@@ -123,7 +123,7 @@ const HowItWorksTab: React.FC = () => {
           For an in-depth overview of how Lit keeps keys and assets secure,
           please check out the{" "}
           <Link
-            to="/security/introduction"
+            to="/learning-lit/security"
             style={{ color: "#3b82f6", textDecoration: "underline" }}
           >
             security

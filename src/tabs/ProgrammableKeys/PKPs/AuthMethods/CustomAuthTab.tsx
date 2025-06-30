@@ -5,6 +5,7 @@ import { useAppContext } from "../../../../router";
 import PkpSigningComponent from "../../../../components/common/PkpSigningComponent";
 import { privateKeyToAccount } from "viem/accounts";
 import { utils as litUtils } from "@lit-protocol/lit-client";
+import { Link } from "react-router-dom";
 
 const AUTH_NAME = "Custom Authentication (dApp-Centric)";
 
@@ -637,12 +638,12 @@ export default function CustomAuthTab() {
         >
           <strong>💰 Payment Information:</strong> PKP signing and Lit Action
           execution require payment. Visit the{" "}
-          <a
-            href="/payment-manager"
+          <Link
+            to="/payment-manager"
             style={{ color: "#0066cc", textDecoration: "underline" }}
           >
             Payment Manager
-          </a>{" "}
+          </Link>{" "}
           page to understand pricing, deposit funds, and manage your payment
           balance.
         </div>

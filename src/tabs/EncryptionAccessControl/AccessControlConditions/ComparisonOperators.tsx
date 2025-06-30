@@ -3,6 +3,7 @@ import GreyBoarderWhiteBgContainer from "../../../components/layout/GreyboardWhi
 import { pageStyles } from "../../../styles/pageStyles";
 import { DisplayCode } from "../../../components/DisplayCode";
 import { NoteCallout } from "../../../components/common";
+import { Link } from "react-router-dom";
 
 const ComparisonOperators: React.FC = () => {
   return (
@@ -20,19 +21,19 @@ const ComparisonOperators: React.FC = () => {
         <p style={pageStyles.p}>
           When working with access control conditions, you can specify a
           comparison operator as the last parameter in methods like{" "}
-          <a
-            href="/encryption/access-control/evm/erc20-balance"
+          <Link
+            to="/encryption/access-control/evm/erc20-balance"
             style={{ color: "#3b82f6", textDecoration: "none" }}
           >
             <code>requireTokenBalance()</code>
-          </a>
+          </Link>
           and{" "}
-          <a
-            href="/encryption/access-control/evm/time-based"
+          <Link
+            to="/encryption/access-control/evm/time-based"
             style={{ color: "#3b82f6", textDecoration: "none" }}
           >
             <code>requireTimestamp()</code>
-          </a>
+          </Link>
           .
         </p>
       </GreyBoarderWhiteBgContainer>
