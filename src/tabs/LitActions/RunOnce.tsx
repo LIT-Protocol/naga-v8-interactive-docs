@@ -66,7 +66,7 @@ const result = await litClient.executeJs({
       <h1 style={pageStyles.h1}>Running Code on a Single Node</h1>
 
       <GreyBoarderWhiteBgContainer>
-        <h2 style={pageStyles.h2}>Overview</h2>
+        <h2 style={pageStyles.h2}>Intro</h2>
         <p style={pageStyles.p}>
           By default, Lit Actions execute across every node in the Lit Network
           simultaneously. While this provides security and consensus, there are

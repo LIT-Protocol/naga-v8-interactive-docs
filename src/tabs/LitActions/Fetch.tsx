@@ -51,7 +51,7 @@ console.log("Result:", result);`;
       <h1 style={pageStyles.h1}>Fetching Data from the Web</h1>
 
       <GreyBoarderWhiteBgContainer>
-        <h2 style={pageStyles.h2}>Overview</h2>
+        <h2 style={pageStyles.h2}>Intro</h2>
         <p style={pageStyles.p}>
           Unlike traditional smart contracts, Lit Actions can natively
           communicate with the external world through HTTP requests. This

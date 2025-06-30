@@ -873,6 +873,14 @@ const ACTIONS: NavigationItem[] = [
     type: "primary",
   },
   {
+    id: "lit-actions-conditional-execution",
+    path: "/lit-actions/conditional-execution",
+    name: "Conditional Execution",
+    description: "Conditional execution of Lit Actions",
+    category: "Private Compute - Lit Actions",
+    type: "primary",
+  },
+  {
     id: "lit-actions-broadcast-and-collect",
     path: "/lit-actions/broadcast-and-collect",
     name: "Aggregate Node Responses",

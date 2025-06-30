@@ -69,6 +69,7 @@ import LitActionsFetch from "./tabs/LitActions/Fetch";
 import LitActionsRunOnce from "./tabs/LitActions/RunOnce";
 import LitActionsGetRpcUrl from "./tabs/LitActions/GetRpcUrl";
 import LitActionsBroadcastAndCollect from "./tabs/LitActions/BroadcastAndCollect";
+import LitActionsConditionalExecution from "./tabs/LitActions/ConditionalExecution";
 
 // Create a type for the context
 type ContextType = {
@@ -391,6 +392,10 @@ export const router = createBrowserRouter([
       {
         path: "lit-actions/broadcast-and-collect",
         element: <LitActionsBroadcastAndCollect />,
+      },
+      {
+        path: "lit-actions/conditional-execution",
+        element: <LitActionsConditionalExecution />,
       },
     ],
   },

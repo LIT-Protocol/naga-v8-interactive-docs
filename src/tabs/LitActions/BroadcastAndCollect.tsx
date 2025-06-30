@@ -87,7 +87,7 @@ const result = await litClient.executeJs({
       <h1 style={pageStyles.h1}>Broadcast and Collect</h1>
 
       <GreyBoarderWhiteBgContainer>
-        <h2 style={pageStyles.h2}>Overview</h2>
+        <h2 style={pageStyles.h2}>Intro</h2>
         <p style={pageStyles.p}>
           The <code>broadcastAndCollect()</code> function allows you to run an
           operation on every node in the Lit network, collect their responses,

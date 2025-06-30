@@ -49,7 +49,7 @@ console.log("Block info from all nodes:", result);`;
       <h1 style={pageStyles.h1}>Getting Chain RPC URLs</h1>
 
       <GreyBoarderWhiteBgContainer>
-        <h2 style={pageStyles.h2}>Overview</h2>
+        <h2 style={pageStyles.h2}>Intro</h2>
         <p style={pageStyles.p}>
           The <code>getRpcUrl()</code> function allows your Lit Actions to
           interact with blockchain networks by providing access to RPC endpoints
