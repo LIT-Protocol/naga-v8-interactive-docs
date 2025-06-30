@@ -5,6 +5,8 @@
  * Includes ETH/Wei conversions, time formatting, transaction status checking, and validation.
  */
 
+import { getAddress } from 'viem';
+
 // ETH to Wei conversion utilities
 export const ETH_TO_WEI = 10n ** 18n;
 
@@ -15,15 +17,15 @@ export const ETH_TO_WEI = 10n ** 18n;
  */
 export function ethToWei(ethAmount: string): bigint {
   if (!ethAmount || ethAmount === "0") return 0n;
-  
+
   // Handle decimal places properly
   const [whole, decimal = ""] = ethAmount.split(".");
   const wholePart = BigInt(whole || "0");
-  
+
   // Pad decimal part to 18 digits
   const decimalPart = decimal.padEnd(18, "0").slice(0, 18);
   const decimalBigInt = BigInt(decimalPart);
-  
+
   return wholePart * ETH_TO_WEI + decimalBigInt;
 }
 
@@ -35,22 +37,22 @@ export function ethToWei(ethAmount: string): bigint {
  */
 export function weiToEth(weiAmount: bigint, decimals: number = 6): string {
   if (weiAmount === 0n) return "0";
-  
+
   const wholePart = weiAmount / ETH_TO_WEI;
   const decimalPart = weiAmount % ETH_TO_WEI;
-  
+
   if (decimalPart === 0n) {
     return wholePart.toString();
   }
-  
+
   // Convert decimal part to string with proper padding
   const decimalStr = decimalPart.toString().padStart(18, "0");
   const truncatedDecimal = decimalStr.slice(0, decimals).replace(/0+$/, "");
-  
+
   if (truncatedDecimal === "") {
     return wholePart.toString();
   }
-  
+
   return `${wholePart}.${truncatedDecimal}`;
 }
 
@@ -61,19 +63,19 @@ export function weiToEth(weiAmount: bigint, decimals: number = 6): string {
  */
 export function formatTimeDuration(seconds: string | number): string {
   const secs = typeof seconds === "string" ? parseInt(seconds) : seconds;
-  
+
   if (secs <= 0) return "0s";
-  
+
   const hours = Math.floor(secs / 3600);
   const minutes = Math.floor((secs % 3600) / 60);
   const remainingSeconds = secs % 60;
-  
+
   const parts: string[] = [];
-  
+
   if (hours > 0) parts.push(`${hours}h`);
   if (minutes > 0) parts.push(`${minutes}m`);
   if (remainingSeconds > 0 || parts.length === 0) parts.push(`${remainingSeconds}s`);
-  
+
   return parts.join(" ");
 }
 
@@ -88,17 +90,35 @@ export function formatTimestamp(timestamp: string | number): string {
 }
 
 /**
- * Check if an Ethereum address is valid
+ * Check if an Ethereum address is valid and properly checksummed
  * @param address Ethereum address to validate
  * @returns true if valid, false otherwise
  */
 export function isValidEthereumAddress(address: string): boolean {
   if (!address) return false;
-  
-  // Check if it starts with 0x and has 42 characters total
-  if (!/^0x[a-fA-F0-9]{40}$/.test(address)) return false;
-  
-  return true;
+
+  try {
+    // Use viem's getAddress to validate and checksum
+    getAddress(address);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Convert an address to proper checksum format
+ * @param address Ethereum address to convert
+ * @returns checksummed address or null if invalid
+ */
+export function toChecksumAddress(address: string): string | null {
+  if (!address) return null;
+
+  try {
+    return getAddress(address);
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -110,27 +130,27 @@ export function validateEthAmount(amount: string): { isValid: boolean; error?: s
   if (!amount || amount.trim() === "") {
     return { isValid: false, error: "Amount is required" };
   }
-  
+
   const numAmount = parseFloat(amount);
-  
+
   if (isNaN(numAmount)) {
     return { isValid: false, error: "Invalid amount format" };
   }
-  
+
   if (numAmount <= 0) {
     return { isValid: false, error: "Amount must be greater than 0" };
   }
-  
+
   if (numAmount > 1000) {
     return { isValid: false, error: "Amount too large (max: 1000 ETH)" };
   }
-  
+
   // Check for too many decimal places
   const decimalPlaces = (amount.split(".")[1] || "").length;
   if (decimalPlaces > 18) {
     return { isValid: false, error: "Too many decimal places (max: 18)" };
   }
-  
+
   return { isValid: true };
 }
 
@@ -143,7 +163,7 @@ export function validateEthAmount(amount: string): { isValid: boolean; error?: s
  */
 export function truncateHash(hash: string, startLength: number = 6, endLength: number = 6): string {
   if (!hash || hash.length <= startLength + endLength) return hash;
-  
+
   return `${hash.slice(0, startLength)}...${hash.slice(-endLength)}`;
 }
 
@@ -188,7 +208,7 @@ export function getWithdrawExecutionStatus(canExecuteInfo: {
   return {
     canExecute: canExecuteInfo.canExecute,
     timeRemaining: formatTimeDuration(canExecuteInfo.timeRemaining),
-    message: canExecuteInfo.canExecute 
+    message: canExecuteInfo.canExecute
       ? "✅ Ready to execute withdrawal"
       : `⏱️ ${formatTimeDuration(canExecuteInfo.timeRemaining)} remaining`
   };
@@ -204,10 +224,10 @@ export function formatWithdrawDelayInfo(delayInfo: {
   delaySeconds: string;
 }) {
   const hours = parseInt(delayInfo.delayHours);
-  const message = hours === 1 
+  const message = hours === 1
     ? "All withdrawals have a 1-hour security delay"
     : `All withdrawals have a ${hours}-hour security delay`;
-  
+
   return {
     message,
     hours: delayInfo.delayHours,
@@ -238,28 +258,28 @@ export function formatPaymentResult(result: { hash: string; receipt?: any }) {
  */
 export function formatPaymentError(error: any): string {
   if (typeof error === "string") return error;
-  
+
   if (error?.message) {
     // Handle common error patterns
     if (error.message.includes("insufficient funds")) {
       return "Insufficient funds for this transaction";
     }
-    
+
     if (error.message.includes("user rejected")) {
       return "Transaction was rejected by user";
     }
-    
+
     if (error.message.includes("network")) {
       return "Network error occurred. Please try again.";
     }
-    
+
     return error.message;
   }
-  
+
   if (error?.reason) {
     return error.reason;
   }
-  
+
   return "An unexpected error occurred";
 }
 
@@ -270,15 +290,15 @@ export const PAYMENT_CONSTANTS = {
   // Default amounts for demo purposes
   DEFAULT_DEPOSIT_AMOUNT: "0.01",
   DEFAULT_WITHDRAW_AMOUNT: "0.01",
-  
+
   // Limits
   MIN_AMOUNT: "0.001",
   MAX_AMOUNT: "1000",
-  
+
   // Timing
   REFRESH_INTERVAL: 10000, // 10 seconds
   TX_CONFIRMATION_DELAY: 2000, // 2 seconds
-  
+
   // UI
   TRUNCATE_HASH_LENGTH: 8,
   BALANCE_DECIMALS: 6,
