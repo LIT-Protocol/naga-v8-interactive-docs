@@ -415,42 +415,12 @@ const HomePageTab: React.FC = () => {
               color: "#4b5563",
             }}
           >
-            Have an idea for a project or currently building one? Check out
-            Lit's{" "}
-            <LinkExt href="https://github.com/LIT-Protocol/Ecosystem-Ideas">
-              Ecosystem RFPs
-            </LinkExt>{" "}
-            and{" "}
-            <LinkExt href="https://github.com/LIT-Protocol/LitGrants">
-              Grant program
-            </LinkExt>
-            .
-          </p>
-          <p
-            style={{
-              marginBottom: "16px",
-              color: "#4b5563",
-            }}
-          >
             Stay informed by following Lit on{" "}
             <LinkExt href="https://x.com/LitProtocol">X</LinkExt>, and by
             reading the Lit{" "}
             <LinkExt href="https://spark.litprotocol.com/">blog</LinkExt> for
             new product announcements, integrations, ecosystem updates, and
             insights into cryptography and Web3.
-          </p>
-          <p
-            style={{
-              marginBottom: "16px",
-              color: "#4b5563",
-            }}
-          >
-            Subscribe to Lit's{" "}
-            <LinkExt href="https://calendar.google.com/calendar/u/5?cid=Y19hMnVxZDNjaHVqZ2Q0a3FqbGlvcDdxY2JhMEBncm91cC5jYWxlbmRhci5nb29nbGUuY29t">
-              community calendar
-            </LinkExt>{" "}
-            to stay updated on sponsored events, hackathons, office hours, and
-            other opportunities to engage with the Lit development team.
           </p>
         </GreyBoarderWhiteBgContainer>
       </div>
