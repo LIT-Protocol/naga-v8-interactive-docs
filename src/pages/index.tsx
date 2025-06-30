@@ -472,6 +472,18 @@ const ACTIONS: NavigationItem[] = [
     category: "Building With Lit",
     type: "primary",
   },
+
+  // Payment Management
+  {
+    id: "payment-manager",
+    path: "/payment-manager",
+    name: "Payment Manager",
+    description:
+      "Manage deposits, withdrawals, and balance queries on the Ledger Contract",
+    category: "Payment Management",
+    type: "primary",
+  },
+
   // {
   //   id: "network-configuration",
   //   path: "/network-configuration",
@@ -920,33 +932,6 @@ const ACTIONS: NavigationItem[] = [
     category: "Private Compute - Lit Actions",
     type: "primary",
   },
-  // {
-  //   id: "encryption",
-  //   name: "Encryption",
-  //   description: "Guide to encrypting and decrypting data",
-  //   category: "Encryption & Access Control",
-  //   type: "primary",
-  //   children: [
-  //     {
-  //       id: "encryption-overview",
-  //       path: "/encryption/overview",
-  //       name: "Overview",
-  //     },
-  //   ],
-  // },
-
-  // Payment Management
-  {
-    id: "payment-manager",
-    path: "/payment-manager",
-    name: "Payment Manager",
-    description:
-      "Manage deposits, withdrawals, and balance queries on the Ledger Contract",
-    category: "Payment Management",
-    type: "primary",
-  },
-
-  // More authentication methods will be added here
 ];
 
 export const HomePage = () => {

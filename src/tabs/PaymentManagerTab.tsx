@@ -13,17 +13,21 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
-import { useAccount, useWalletClient } from "wagmi";
+import { useWalletClient } from "wagmi";
 import { DisplayCode } from "../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgContainer";
 import AccountMethodSelector, {
   AccountMethod,
   CREATE_ACCOUNT_PRIVATE_KEY_CODE,
-  CREATE_ACCOUNT_WALLET_CLIENT_CODE
+  CREATE_ACCOUNT_WALLET_CLIENT_CODE,
 } from "../components/common/AccountMethodSelector";
 import { useAppContext } from "../router";
-
-const OPERATION_NAME = "Payment Manager";
+import { pageStyles } from "../styles/pageStyles";
+import {
+  isValidEthereumAddress,
+  validateEthAmount,
+  toChecksumAddress,
+} from "../utils/paymentHelpers";
 
 // Code snippets for documentation
 const SETUP_CODE = `
@@ -38,40 +42,40 @@ const paymentManager = await litClient.getPaymentManager({
   account: yourAccount // viem account instance
 });`;
 
-const DEPOSIT_CODE = `
+const getDepositCode = (amount: string) => `
 // Deposit funds to your own account
-const result = await paymentManager.deposit({ amountInEth: "0.1" });
+const result = await paymentManager.deposit({ amountInEth: "${amount}" });
 console.log(\`Deposit successful: \${result.hash}\`);
 // Returns: { hash: string, receipt: object }`;
 
-const DEPOSIT_FOR_USER_CODE = `
+const getDepositForUserCode = (address: string, amount: string) => `
 // Deposit funds for another user's account
 const result = await paymentManager.depositForUser({ 
-  userAddress: "0x742d35Cc6638Cb49f4E7c9ce71E02ef18C53E1d5",
-  amountInEth: "0.05"
+  userAddress: "${address}",
+  amountInEth: "${amount}"
 });
 // Returns: { hash: string, receipt: object }`;
 
-const BALANCE_CODE = `
+const getBalanceCode = (address: string) => `
 // Get complete balance information for a user
 const balance = await paymentManager.getBalance({ 
-  userAddress: "0x742d35Cc6638Cb49f4E7c9ce71E02ef18C53E1d5" 
+  userAddress: "${address}" 
 });
 
 console.log(\`Total: \${balance.totalBalance} ETH\`);        // "0.1"
 console.log(\`Available: \${balance.availableBalance} ETH\`); // "0.08" (excludes pending withdrawals)
 console.log(balance.raw.totalBalance);                     // 100000000000000000n (Wei bigint)`;
 
-const WITHDRAWAL_REQUEST_CODE = `
+const getWithdrawalRequestCode = (amount: string) => `
 // Request a withdrawal (starts the delay period)
-const result = await paymentManager.requestWithdraw({ amountInEth: "0.05" });
+const result = await paymentManager.requestWithdraw({ amountInEth: "${amount}" });
 console.log(\`Withdrawal requested: \${result.hash}\`);
 // Returns: { hash: string, receipt: object }`;
 
-const WITHDRAWAL_STATUS_CODE = `
+const getWithdrawalStatusCode = (address: string) => `
 // Get withdrawal request status and details
 const withdrawInfo = await paymentManager.getWithdrawRequest({ 
-  userAddress: "0x742d35Cc6638Cb49f4E7c9ce71E02ef18C53E1d5" 
+  userAddress: "${address}" 
 });
 
 if (withdrawInfo.isPending) {
@@ -81,7 +85,7 @@ if (withdrawInfo.isPending) {
 
 // Check if withdrawal can be executed
 const canExecute = await paymentManager.canExecuteWithdraw({ 
-  userAddress: account.address 
+  userAddress: "${address}" 
 });
 
 if (canExecute.canExecute) {
@@ -90,9 +94,9 @@ if (canExecute.canExecute) {
   console.log(\`⏱️ Wait \${canExecute.timeRemaining} more seconds\`);
 }`;
 
-const WITHDRAWAL_EXECUTE_CODE = `
+const getWithdrawalExecuteCode = (amount: string) => `
 // Execute withdrawal after delay period has passed
-const result = await paymentManager.withdraw({ amountInEth: "0.05" });
+const result = await paymentManager.withdraw({ amountInEth: "${amount}" });
 console.log(\`Withdrawal executed: \${result.hash}\`);
 // Returns: { hash: string, receipt: object }`;
 
@@ -144,19 +148,27 @@ export default function PaymentManagerTab() {
   const [loading, setLoading] = useState(false);
   const [balanceInfo, setBalanceInfo] = useState<BalanceInfo | null>(null);
   const [withdrawInfo, setWithdrawInfo] = useState<WithdrawInfo | null>(null);
-  const [withdrawDelay, setWithdrawDelay] = useState<WithdrawDelayInfo | null>(null);
-  const [canExecuteInfo, setCanExecuteInfo] = useState<CanExecuteInfo | null>(null);
-  
+  const [withdrawDelay, setWithdrawDelay] = useState<WithdrawDelayInfo | null>(
+    null
+  );
+  const [canExecuteInfo, setCanExecuteInfo] = useState<CanExecuteInfo | null>(
+    null
+  );
+
   // Account management
-  const [accountMethod, setAccountMethod] = useState<AccountMethod>("walletClient");
+  const [accountMethod, setAccountMethod] =
+    useState<AccountMethod>("walletClient");
   const [account, setAccount] = useState<any>(null);
-  
+
   // Form states
   const [depositAmount, setDepositAmount] = useState("0.01");
   const [depositForUserAmount, setDepositForUserAmount] = useState("0.01");
   const [depositForUserAddress, setDepositForUserAddress] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("0.01");
-  
+  const [balanceCheckAddress, setBalanceCheckAddress] = useState("");
+  const [withdrawStatusAddress, setWithdrawStatusAddress] = useState("");
+  const [executeWithdrawAmount, setExecuteWithdrawAmount] = useState("0.01");
+
   // Transaction states
   const [isDepositing, setIsDepositing] = useState(false);
   const [isDepositingForUser, setIsDepositingForUser] = useState(false);
@@ -195,12 +207,11 @@ export default function PaymentManagerTab() {
     try {
       clearError?.();
       setLoading(true);
-      
+
       const { litClient } = assertDependenciesLoaded();
-      
+
       const pm = await litClient.getPaymentManager({ account });
       setPaymentManager(pm);
-      
     } catch (error: any) {
       console.error("Failed to initialize PaymentManager:", error);
       showError?.(`Failed to initialize PaymentManager: ${error.message}`);
@@ -221,7 +232,7 @@ export default function PaymentManagerTab() {
     const hours = Math.floor(secs / 3600);
     const minutes = Math.floor((secs % 3600) / 60);
     const remainingSeconds = secs % 60;
-    
+
     if (hours > 0) {
       return `${hours}h ${minutes}m ${remainingSeconds}s`;
     } else if (minutes > 0) {
@@ -239,10 +250,11 @@ export default function PaymentManagerTab() {
       setIsDepositing(true);
       clearError?.();
 
-      const result = await paymentManager.deposit({ amountInEth: depositAmount });
+      const result = await paymentManager.deposit({
+        amountInEth: depositAmount,
+      });
       setLastTxHash(result.hash);
       showSuccess("deposit");
-      
     } catch (error: any) {
       console.error("Deposit failed:", error);
       showError?.(`Deposit failed: ${error.message}`);
@@ -253,19 +265,39 @@ export default function PaymentManagerTab() {
 
   // Handle deposit for user
   const handleDepositForUser = async () => {
-    if (!paymentManager || !depositForUserAmount || !depositForUserAddress) return;
+    if (!paymentManager || !depositForUserAmount || !depositForUserAddress)
+      return;
 
     try {
       setIsDepositingForUser(true);
       clearError?.();
 
+      // Validate and convert to checksum address
+      const checksummedAddress = toChecksumAddress(
+        depositForUserAddress.trim()
+      );
+      if (!checksummedAddress) {
+        throw new Error(
+          "Invalid Ethereum address. Please enter a valid address starting with 0x followed by 40 hexadecimal characters."
+        );
+      }
+
+      // Validate amount
+      const amountValidation = validateEthAmount(depositForUserAmount);
+      if (!amountValidation.isValid) {
+        throw new Error(amountValidation.error || "Invalid amount");
+      }
+
       const result = await paymentManager.depositForUser({
-        userAddress: depositForUserAddress,
-        amountInEth: depositForUserAmount
+        userAddress: checksummedAddress,
+        amountInEth: depositForUserAmount,
       });
       setLastTxHash(result.hash);
       showSuccess("deposit-for-user");
-      
+
+      // Clear form after successful transaction
+      setDepositForUserAmount("0.01");
+      setDepositForUserAddress("");
     } catch (error: any) {
       console.error("Deposit for user failed:", error);
       showError?.(`Deposit for user failed: ${error.message}`);
@@ -277,16 +309,30 @@ export default function PaymentManagerTab() {
   // Handle balance check
   const handleCheckBalance = async () => {
     const accountAddress = account?.address || account?.account?.address;
-    if (!paymentManager || !accountAddress) return;
+
+    // Use input address if provided, otherwise use account address
+    let addressToCheck = balanceCheckAddress.trim();
+    if (!addressToCheck) {
+      addressToCheck = accountAddress;
+    }
+
+    if (!paymentManager || !addressToCheck) return;
 
     try {
       setIsCheckingBalance(true);
       clearError?.();
 
-      const balance = await paymentManager.getBalance({ userAddress: accountAddress });
+      // Validate the address
+      const checksummedAddress = toChecksumAddress(addressToCheck);
+      if (!checksummedAddress) {
+        throw new Error("Invalid Ethereum address format");
+      }
+
+      const balance = await paymentManager.getBalance({
+        userAddress: checksummedAddress,
+      });
       setBalanceInfo(balance);
       showSuccess("check-balance");
-      
     } catch (error: any) {
       console.error("Balance check failed:", error);
       showError?.(`Balance check failed: ${error.message}`);
@@ -303,10 +349,11 @@ export default function PaymentManagerTab() {
       setIsRequestingWithdraw(true);
       clearError?.();
 
-      const result = await paymentManager.requestWithdraw({ amountInEth: withdrawAmount });
+      const result = await paymentManager.requestWithdraw({
+        amountInEth: withdrawAmount,
+      });
       setLastTxHash(result.hash);
       showSuccess("request-withdraw");
-      
     } catch (error: any) {
       console.error("Withdrawal request failed:", error);
       showError?.(`Withdrawal request failed: ${error.message}`);
@@ -318,24 +365,40 @@ export default function PaymentManagerTab() {
   // Handle withdrawal status check
   const handleCheckWithdrawStatus = async () => {
     const accountAddress = account?.address || account?.account?.address;
-    if (!paymentManager || !accountAddress) return;
+
+    // Use input address if provided, otherwise use account address
+    let addressToCheck = withdrawStatusAddress.trim();
+    if (!addressToCheck) {
+      addressToCheck = accountAddress;
+    }
+
+    if (!paymentManager || !addressToCheck) return;
 
     try {
       setIsCheckingWithdraw(true);
       clearError?.();
 
-      const withdraw = await paymentManager.getWithdrawRequest({ userAddress: accountAddress });
+      // Validate the address
+      const checksummedAddress = toChecksumAddress(addressToCheck);
+      if (!checksummedAddress) {
+        throw new Error("Invalid Ethereum address format");
+      }
+
+      const withdraw = await paymentManager.getWithdrawRequest({
+        userAddress: checksummedAddress,
+      });
       setWithdrawInfo(withdraw);
 
       if (withdraw.isPending) {
-        const canExecute = await paymentManager.canExecuteWithdraw({ userAddress: accountAddress });
+        const canExecute = await paymentManager.canExecuteWithdraw({
+          userAddress: checksummedAddress,
+        });
         setCanExecuteInfo(canExecute);
       } else {
         setCanExecuteInfo(null);
       }
-      
+
       showSuccess("check-withdraw-status");
-      
     } catch (error: any) {
       console.error("Withdrawal status check failed:", error);
       showError?.(`Withdrawal status check failed: ${error.message}`);
@@ -346,20 +409,33 @@ export default function PaymentManagerTab() {
 
   // Handle withdrawal execution
   const handleExecuteWithdraw = async () => {
-    if (!paymentManager || !withdrawInfo) return;
+    if (!paymentManager) return;
+
+    // Use input amount if provided, otherwise use withdrawInfo amount
+    const amountToWithdraw = executeWithdrawAmount || withdrawInfo?.amount;
+    if (!amountToWithdraw) return;
 
     try {
       setIsExecutingWithdraw(true);
       clearError?.();
 
-      const result = await paymentManager.withdraw({ amountInEth: withdrawInfo.amount });
+      // Validate amount
+      const amountValidation = validateEthAmount(amountToWithdraw);
+      if (!amountValidation.isValid) {
+        throw new Error(amountValidation.error || "Invalid amount");
+      }
+      console.log(paymentManager);
+
+      const result = await paymentManager.withdraw({
+        amountInEth: amountToWithdraw,
+      });
       setLastTxHash(result.hash);
       showSuccess("execute-withdraw");
-      
+
       // Clear withdraw info after successful execution
       setWithdrawInfo(null);
       setCanExecuteInfo(null);
-      
+      setExecuteWithdrawAmount("0.01");
     } catch (error: any) {
       console.error("Withdrawal execution failed:", error);
       showError?.(`Withdrawal execution failed: ${error.message}`);
@@ -379,7 +455,6 @@ export default function PaymentManagerTab() {
       const delay = await paymentManager.getWithdrawDelay();
       setWithdrawDelay(delay);
       showSuccess("check-withdraw-delay");
-      
     } catch (error: any) {
       console.error("Withdrawal delay check failed:", error);
       showError?.(`Withdrawal delay check failed: ${error.message}`);
@@ -390,21 +465,39 @@ export default function PaymentManagerTab() {
 
   return (
     <div className="tab-content">
-      <h2>{OPERATION_NAME}</h2>
-      <p>
-        The Payment Manager demonstrates Lit Protocol's payment system - a billing system for decentralised 
-        cryptographic services. Users pay for compute resources on the Lit network to access core services like:
-      </p>
-      <ul style={{ marginLeft: "20px", marginBottom: "15px", color: "#495057" }}>
-        <li><strong>Encryption/Decryption</strong> - Secure data with programmable access control</li>
-        <li><strong>PKP Signing</strong> - Cryptographic keys that can sign transactions based on conditions</li>
-        <li><strong>Lit Actions</strong> - Serverless functions with cryptographic capabilities</li>
-      </ul>
-      <p>
-        Similar to how you pay AWS for cloud computing, this system ensures the decentralised network can 
-        sustain itself and pay node operators. You can deposit funds, request withdrawals with security delays, 
-        and manage balances for yourself or other users (enabling applications to sponsor their users' costs for better UX).
-      </p>
+      <h1 style={pageStyles.h1}>Lit Payment Manager</h1>
+
+      <GreyBoarderWhiteBgContainer>
+        <h2 style={pageStyles.h2}>Intro</h2>
+        <p>
+          The Payment Manager demonstrates Lit Protocol's payment system - a
+          billing system for decentralised cryptographic services. Users pay for
+          compute resources on the Lit network to access core services like:
+        </p>
+        <ul
+          style={{ marginLeft: "20px", marginBottom: "15px", color: "#495057" }}
+        >
+          <li>
+            <strong>Encryption/Decryption</strong> - Secure data with
+            programmable access control
+          </li>
+          <li>
+            <strong>PKP Signing</strong> - Cryptographic keys that can sign
+            transactions based on conditions
+          </li>
+          <li>
+            <strong>Lit Actions</strong> - Serverless functions with
+            cryptographic capabilities
+          </li>
+        </ul>
+        <p>
+          Similar to how you pay AWS for cloud computing, this system ensures
+          the decentralised network can sustain itself and pay node operators.
+          You can deposit funds, request withdrawals with security delays, and
+          manage balances for yourself or other users (enabling applications to
+          sponsor their users' costs for better UX).
+        </p>
+      </GreyBoarderWhiteBgContainer>
 
       <GreyBoarderWhiteBgContainer>
         {/* ================================================ */}
@@ -469,10 +562,7 @@ export default function PaymentManagerTab() {
         {/* Setup Instructions */}
         <div style={{ marginTop: "20px" }}>
           <h4>💰 Payment Manager Setup</h4>
-          <DisplayCode
-            code={SETUP_CODE}
-            language="typescript"
-          />
+          <DisplayCode code={SETUP_CODE} language="typescript" />
         </div>
       </GreyBoarderWhiteBgContainer>
 
@@ -530,16 +620,23 @@ export default function PaymentManagerTab() {
           )}
         </h3>
         <p>
-          Deposit funds to your own account. This adds ETH to your balance in the Ledger Contract.
+          Deposit funds to your own account. This adds ETH to your balance in
+          the Ledger Contract.
         </p>
 
         <DisplayCode
-          code={DEPOSIT_CODE}
+          code={getDepositCode(depositAmount || "0.1")}
           language="typescript"
           renderComponent={
             <div>
               <div style={{ marginBottom: "15px" }}>
-                <label style={{ display: "block", marginBottom: "5px", fontWeight: "500" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontWeight: "500",
+                  }}
+                >
                   Amount (ETH):
                 </label>
                 <input
@@ -556,48 +653,84 @@ export default function PaymentManagerTab() {
                     borderRadius: "4px",
                     fontSize: "14px",
                     backgroundColor: !account ? "#f8f9fa" : "white",
-                    color: "black"
+                    color: "black",
                   }}
                 />
               </div>
               <button
                 onClick={handleDeposit}
-                disabled={isDepositing || !paymentManager || !depositAmount || !account}
+                disabled={
+                  isDepositing || !paymentManager || !depositAmount || !account
+                }
                 style={{
                   padding: "10px 15px",
-                  backgroundColor: (!account || !paymentManager || isDepositing) ? "#cccccc" : "#007bff",
+                  backgroundColor:
+                    !account || !paymentManager || isDepositing
+                      ? "#cccccc"
+                      : "#007bff",
                   color: "white",
                   border: "none",
                   borderRadius: "4px",
-                  cursor: (!account || !paymentManager || isDepositing) ? "not-allowed" : "pointer",
+                  cursor:
+                    !account || !paymentManager || isDepositing
+                      ? "not-allowed"
+                      : "pointer",
                   fontWeight: "500",
                 }}
               >
-                {isDepositing 
-                  ? "Depositing..." 
-                  : successActions.has("deposit") 
-                  ? "✓ Deposited" 
-                  : !account 
+                {isDepositing
+                  ? "Depositing..."
+                  : successActions.has("deposit")
+                  ? "✓ Deposited"
+                  : !account
                   ? "💰 Create Account First"
                   : !paymentManager
                   ? "💰 PaymentManager Loading..."
                   : !depositAmount
                   ? "💰 Enter Amount"
-                  : "💰 Deposit Funds"
-                }
+                  : "💰 Deposit Funds"}
               </button>
-              
+
               {/* Debug info */}
               {(!account || !paymentManager) && (
-                <div style={{ marginTop: "10px", padding: "8px", backgroundColor: "#fff3cd", border: "1px solid #ffeaa7", borderRadius: "4px", fontSize: "12px" }}>
+                <div
+                  style={{
+                    marginTop: "10px",
+                    padding: "8px",
+                    backgroundColor: "#fff3cd",
+                    border: "1px solid #ffeaa7",
+                    borderRadius: "4px",
+                    fontSize: "12px",
+                  }}
+                >
                   <strong>Debug Info:</strong>
-                  <div>Account: {account ? `✓ ${account.address || account.account?.address || 'No address'}` : '✗ Missing'}</div>
-                  <div>PaymentManager: {paymentManager ? '✓ Ready' : loading ? '⏳ Loading...' : '✗ Failed to load'}</div>
+                  <div>
+                    Account:{" "}
+                    {account
+                      ? `✓ ${
+                          account.address ||
+                          account.account?.address ||
+                          "No address"
+                        }`
+                      : "✗ Missing"}
+                  </div>
+                  <div>
+                    PaymentManager:{" "}
+                    {paymentManager
+                      ? "✓ Ready"
+                      : loading
+                      ? "⏳ Loading..."
+                      : "✗ Failed to load"}
+                  </div>
                 </div>
               )}
             </div>
           }
-          resultData={lastTxHash && successActions.has("deposit") ? { transactionHash: lastTxHash } : null}
+          resultData={
+            lastTxHash && successActions.has("deposit")
+              ? { transactionHash: lastTxHash }
+              : null
+          }
           resultLabel="Deposit Transaction"
           useSideBySide={true}
           theme="dracula"
@@ -614,16 +747,58 @@ export default function PaymentManagerTab() {
           )}
         </h3>
         <p>
-          Deposit funds for another user's account. This allows you to fund someone else's balance.
+          Deposit funds for another user's account. This allows you to fund
+          someone else's balance.
         </p>
 
+        {/* Example address for testing */}
+        <div
+          style={{
+            marginBottom: "15px",
+            padding: "10px",
+            backgroundColor: "#e8f4fd",
+            borderRadius: "4px",
+            border: "1px solid #b3d9ff",
+            fontSize: "14px",
+          }}
+        >
+          <strong>💡 For Testing:</strong> You can use this example address:{" "}
+          <code
+            style={{
+              backgroundColor: "#f8f9fa",
+              padding: "2px 6px",
+              borderRadius: "3px",
+              cursor: "pointer",
+              border: "1px solid #ddd",
+            }}
+            onClick={() =>
+              setDepositForUserAddress(
+                "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+              )
+            }
+            title="Click to use this address"
+          >
+            0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+          </code>
+        </div>
+
         <DisplayCode
-          code={DEPOSIT_FOR_USER_CODE}
+          code={getDepositForUserCode(
+            depositForUserAddress ||
+              "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+            depositForUserAmount || "0.01"
+          )}
           language="typescript"
           renderComponent={
             <div>
               <div style={{ marginBottom: "15px" }}>
-                <label style={{ display: "block", marginBottom: "5px", fontWeight: "500" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontWeight: "500",
+                  }}
+                >
                   User Address:
                 </label>
                 <input
@@ -635,15 +810,45 @@ export default function PaymentManagerTab() {
                   style={{
                     width: "100%",
                     padding: "8px 12px",
-                    border: "1px solid #ddd",
+                    border: `1px solid ${
+                      !account
+                        ? "#ddd"
+                        : depositForUserAddress &&
+                          !isValidEthereumAddress(depositForUserAddress.trim())
+                        ? "#dc3545"
+                        : depositForUserAddress &&
+                          isValidEthereumAddress(depositForUserAddress.trim())
+                        ? "#28a745"
+                        : "#ddd"
+                    }`,
                     borderRadius: "4px",
                     fontSize: "14px",
                     marginBottom: "10px",
                     backgroundColor: !account ? "#f8f9fa" : "white",
-                    color: "black"
+                    color: "black",
                   }}
                 />
-                <label style={{ display: "block", marginBottom: "5px", fontWeight: "500" }}>
+                {depositForUserAddress &&
+                  !isValidEthereumAddress(depositForUserAddress.trim()) && (
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        color: "#dc3545",
+                        marginTop: "-8px",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      ⚠️ Please enter a valid Ethereum address (0x followed by
+                      40 hex characters)
+                    </div>
+                  )}
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontWeight: "500",
+                  }}
+                >
                   Amount (ETH):
                 </label>
                 <input
@@ -656,54 +861,140 @@ export default function PaymentManagerTab() {
                   style={{
                     width: "100%",
                     padding: "8px 12px",
-                    border: "1px solid #ddd",
+                    border: `1px solid ${
+                      !account
+                        ? "#ddd"
+                        : depositForUserAmount &&
+                          !validateEthAmount(depositForUserAmount).isValid
+                        ? "#dc3545"
+                        : depositForUserAmount &&
+                          validateEthAmount(depositForUserAmount).isValid
+                        ? "#28a745"
+                        : "#ddd"
+                    }`,
                     borderRadius: "4px",
                     fontSize: "14px",
                     backgroundColor: !account ? "#f8f9fa" : "white",
-                    color: "black"
+                    color: "black",
                   }}
                 />
+                {depositForUserAmount &&
+                  !validateEthAmount(depositForUserAmount).isValid && (
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        color: "#dc3545",
+                        marginTop: "4px",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      ⚠️ {validateEthAmount(depositForUserAmount).error}
+                    </div>
+                  )}
               </div>
               <button
                 onClick={handleDepositForUser}
-                disabled={isDepositingForUser || !paymentManager || !depositForUserAmount || !depositForUserAddress || !account}
+                disabled={
+                  isDepositingForUser ||
+                  !paymentManager ||
+                  !depositForUserAmount ||
+                  !depositForUserAddress ||
+                  !account ||
+                  !isValidEthereumAddress(depositForUserAddress.trim()) ||
+                  !validateEthAmount(depositForUserAmount).isValid
+                }
                 style={{
                   padding: "10px 15px",
-                  backgroundColor: (!account || !paymentManager || isDepositingForUser) ? "#cccccc" : "#17a2b8",
+                  backgroundColor:
+                    !account ||
+                    !paymentManager ||
+                    isDepositingForUser ||
+                    (depositForUserAddress &&
+                      !isValidEthereumAddress(depositForUserAddress.trim())) ||
+                    (depositForUserAmount &&
+                      !validateEthAmount(depositForUserAmount).isValid)
+                      ? "#cccccc"
+                      : "#17a2b8",
                   color: "white",
                   border: "none",
                   borderRadius: "4px",
-                  cursor: (!account || !paymentManager || isDepositingForUser) ? "not-allowed" : "pointer",
+                  cursor:
+                    !account ||
+                    !paymentManager ||
+                    isDepositingForUser ||
+                    (depositForUserAddress &&
+                      !isValidEthereumAddress(depositForUserAddress.trim())) ||
+                    (depositForUserAmount &&
+                      !validateEthAmount(depositForUserAmount).isValid)
+                      ? "not-allowed"
+                      : "pointer",
                   fontWeight: "500",
                 }}
               >
-                {isDepositingForUser 
-                  ? "Depositing..." 
-                  : successActions.has("deposit-for-user") 
-                  ? "✓ Deposited for User" 
-                  : !account 
+                {isDepositingForUser
+                  ? "Depositing..."
+                  : successActions.has("deposit-for-user")
+                  ? "✓ Deposited for User"
+                  : !account
                   ? "👥 Create Account First"
                   : !paymentManager
                   ? "👥 PaymentManager Loading..."
                   : !depositForUserAddress
                   ? "👥 Enter User Address"
+                  : depositForUserAddress &&
+                    !isValidEthereumAddress(depositForUserAddress.trim())
+                  ? "👥 Invalid Address Format"
                   : !depositForUserAmount
                   ? "👥 Enter Amount"
-                  : "👥 Deposit for User"
-                }
+                  : depositForUserAmount &&
+                    !validateEthAmount(depositForUserAmount).isValid
+                  ? "👥 Invalid Amount"
+                  : "👥 Deposit for User"}
               </button>
-              
+
               {/* Debug info */}
               {(!account || !paymentManager) && (
-                <div style={{ marginTop: "10px", padding: "8px", backgroundColor: "#fff3cd", border: "1px solid #ffeaa7", borderRadius: "4px", fontSize: "12px" }}>
+                <div
+                  style={{
+                    marginTop: "10px",
+                    padding: "8px",
+                    backgroundColor: "#fff3cd",
+                    border: "1px solid #ffeaa7",
+                    borderRadius: "4px",
+                    fontSize: "12px",
+                  }}
+                >
                   <strong>Debug Info:</strong>
-                  <div>Account: {account ? `✓ ${account.address || account.account?.address || 'No address'}` : '✗ Missing'}</div>
-                  <div>PaymentManager: {paymentManager ? '✓ Ready' : loading ? '⏳ Loading...' : '✗ Failed to load'}</div>
+                  <div>
+                    Account:{" "}
+                    {account
+                      ? `✓ ${
+                          account.address ||
+                          account.account?.address ||
+                          "No address"
+                        }`
+                      : "✗ Missing"}
+                  </div>
+                  <div>
+                    PaymentManager:{" "}
+                    {paymentManager
+                      ? "✓ Ready"
+                      : loading
+                      ? "⏳ Loading..."
+                      : "✗ Failed to load"}
+                  </div>
                 </div>
               )}
             </div>
           }
-          resultData={lastTxHash && successActions.has("deposit-for-user") ? { transactionHash: lastTxHash, userAddress: depositForUserAddress } : null}
+          resultData={
+            lastTxHash || successActions.has("deposit-for-user")
+              ? {
+                  transactionHash: lastTxHash,
+                  userAddress: depositForUserAddress,
+                }
+              : null
+          }
           resultLabel="Deposit for User Transaction"
           useSideBySide={true}
           theme="dracula"
@@ -720,50 +1011,177 @@ export default function PaymentManagerTab() {
           )}
         </h3>
         <p>
-          Get complete balance information for your account, including total balance and available balance (excludes pending withdrawals).
+          Get complete balance information for any account. Leave address blank
+          to check your own account balance.
         </p>
 
         <DisplayCode
-          code={BALANCE_CODE}
+          code={getBalanceCode(
+            balanceCheckAddress.trim() ||
+              account?.address ||
+              account?.account?.address ||
+              "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+          )}
           language="typescript"
           renderComponent={
             <div>
+              <div style={{ marginBottom: "15px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontWeight: "500",
+                  }}
+                >
+                  Address to Check (optional):
+                </label>
+                <input
+                  type="text"
+                  placeholder={`Enter address or leave blank for your account${
+                    account?.address
+                      ? ` (${account.address.slice(0, 8)}...)`
+                      : ""
+                  }`}
+                  value={balanceCheckAddress}
+                  onChange={(e) => setBalanceCheckAddress(e.target.value)}
+                  disabled={!account}
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    border: `1px solid ${
+                      !account
+                        ? "#ddd"
+                        : balanceCheckAddress &&
+                          !isValidEthereumAddress(balanceCheckAddress.trim())
+                        ? "#dc3545"
+                        : balanceCheckAddress &&
+                          isValidEthereumAddress(balanceCheckAddress.trim())
+                        ? "#28a745"
+                        : "#ddd"
+                    }`,
+                    borderRadius: "4px",
+                    fontSize: "14px",
+                    fontFamily: "monospace",
+                    backgroundColor: !account ? "#f8f9fa" : "white",
+                    color: "black",
+                  }}
+                />
+                {balanceCheckAddress &&
+                  !isValidEthereumAddress(balanceCheckAddress.trim()) && (
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        color: "#dc3545",
+                        marginTop: "4px",
+                      }}
+                    >
+                      ⚠️ Please enter a valid Ethereum address
+                    </div>
+                  )}
+              </div>
               <button
                 onClick={handleCheckBalance}
-                disabled={isCheckingBalance || !paymentManager || !account}
+                disabled={
+                  isCheckingBalance ||
+                  !paymentManager ||
+                  !account ||
+                  (balanceCheckAddress.length > 0 &&
+                    !isValidEthereumAddress(balanceCheckAddress.trim()))
+                }
                 style={{
                   padding: "10px 15px",
-                  backgroundColor: (!account || !paymentManager || isCheckingBalance) ? "#cccccc" : "#28a745",
+                  backgroundColor:
+                    !account ||
+                    !paymentManager ||
+                    isCheckingBalance ||
+                    (balanceCheckAddress.length > 0 &&
+                      !isValidEthereumAddress(balanceCheckAddress.trim()))
+                      ? "#cccccc"
+                      : "#28a745",
                   color: "white",
                   border: "none",
                   borderRadius: "4px",
-                  cursor: (!account || !paymentManager || isCheckingBalance) ? "not-allowed" : "pointer",
+                  cursor:
+                    !account ||
+                    !paymentManager ||
+                    isCheckingBalance ||
+                    (balanceCheckAddress.length > 0 &&
+                      !isValidEthereumAddress(balanceCheckAddress.trim()))
+                      ? "not-allowed"
+                      : "pointer",
                   fontWeight: "500",
-                  marginBottom: "15px"
+                  marginBottom: "15px",
                 }}
               >
-                {isCheckingBalance ? "Checking..." : successActions.has("check-balance") ? "✓ Balance Checked" : "📊 Check Balance"}
+                {isCheckingBalance
+                  ? "Checking..."
+                  : successActions.has("check-balance")
+                  ? "✓ Balance Checked"
+                  : balanceCheckAddress.length > 0 &&
+                    !isValidEthereumAddress(balanceCheckAddress.trim())
+                  ? "❌ Invalid Address"
+                  : balanceCheckAddress.trim().length > 0
+                  ? "📊 Check Address Balance"
+                  : "📊 Check My Balance"}
               </button>
 
               {balanceInfo && (
-                <div style={{ padding: "15px", backgroundColor: "#f8f9fa", borderRadius: "4px", border: "1px solid #e9ecef" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "15px" }}>
+                <div
+                  style={{
+                    padding: "15px",
+                    backgroundColor: "#f8f9fa",
+                    borderRadius: "4px",
+                    border: "1px solid #e9ecef",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fit, minmax(150px, 1fr))",
+                      gap: "15px",
+                    }}
+                  >
                     <div>
                       <strong>Total Balance:</strong>
-                      <div style={{ fontSize: "16px", fontWeight: "bold", color: "#007bff" }}>
+                      <div
+                        style={{
+                          fontSize: "16px",
+                          fontWeight: "bold",
+                          color: "#007bff",
+                        }}
+                      >
                         {balanceInfo.totalBalance} ETH
                       </div>
-                      <div style={{ fontSize: "12px", color: "#6c757d", fontFamily: "monospace" }}>
+                      <div
+                        style={{
+                          fontSize: "12px",
+                          color: "#6c757d",
+                          fontFamily: "monospace",
+                        }}
+                      >
                         {balanceInfo.raw.totalBalance.toString()} Wei
                       </div>
                     </div>
-                    
+
                     <div>
                       <strong>Available Balance:</strong>
-                      <div style={{ fontSize: "16px", fontWeight: "bold", color: "#28a745" }}>
+                      <div
+                        style={{
+                          fontSize: "16px",
+                          fontWeight: "bold",
+                          color: "#28a745",
+                        }}
+                      >
                         {balanceInfo.availableBalance} ETH
                       </div>
-                      <div style={{ fontSize: "12px", color: "#6c757d", fontFamily: "monospace" }}>
+                      <div
+                        style={{
+                          fontSize: "12px",
+                          color: "#6c757d",
+                          fontFamily: "monospace",
+                        }}
+                      >
                         {balanceInfo.raw.availableBalance.toString()} Wei
                       </div>
                     </div>
@@ -789,16 +1207,23 @@ export default function PaymentManagerTab() {
           )}
         </h3>
         <p>
-          Request a withdrawal from your account. This starts the security delay period before the withdrawal can be executed.
+          Request a withdrawal from your account. This starts the security delay
+          period before the withdrawal can be executed.
         </p>
 
         <DisplayCode
-          code={WITHDRAWAL_REQUEST_CODE}
+          code={getWithdrawalRequestCode(withdrawAmount || "0.01")}
           language="typescript"
           renderComponent={
             <div>
               <div style={{ marginBottom: "15px" }}>
-                <label style={{ display: "block", marginBottom: "5px", fontWeight: "500" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontWeight: "500",
+                  }}
+                >
                   Amount (ETH):
                 </label>
                 <input
@@ -815,28 +1240,50 @@ export default function PaymentManagerTab() {
                     borderRadius: "4px",
                     fontSize: "14px",
                     backgroundColor: !account ? "#f8f9fa" : "white",
-                    color: "black"
+                    color: "black",
                   }}
                 />
               </div>
               <button
                 onClick={handleRequestWithdraw}
-                disabled={isRequestingWithdraw || !paymentManager || !withdrawAmount || !account}
+                disabled={
+                  isRequestingWithdraw ||
+                  !paymentManager ||
+                  !withdrawAmount ||
+                  !account
+                }
                 style={{
                   padding: "10px 15px",
-                  backgroundColor: (!account || !paymentManager || isRequestingWithdraw) ? "#cccccc" : "#ffc107",
-                  color: (!account || !paymentManager || isRequestingWithdraw) ? "white" : "black",
+                  backgroundColor:
+                    !account || !paymentManager || isRequestingWithdraw
+                      ? "#cccccc"
+                      : "#ffc107",
+                  color:
+                    !account || !paymentManager || isRequestingWithdraw
+                      ? "white"
+                      : "black",
                   border: "none",
                   borderRadius: "4px",
-                  cursor: (!account || !paymentManager || isRequestingWithdraw) ? "not-allowed" : "pointer",
+                  cursor:
+                    !account || !paymentManager || isRequestingWithdraw
+                      ? "not-allowed"
+                      : "pointer",
                   fontWeight: "500",
                 }}
               >
-                {isRequestingWithdraw ? "Requesting..." : successActions.has("request-withdraw") ? "✓ Withdrawal Requested" : "🔄 Request Withdrawal"}
+                {isRequestingWithdraw
+                  ? "Requesting..."
+                  : successActions.has("request-withdraw")
+                  ? "✓ Withdrawal Requested"
+                  : "🔄 Request Withdrawal"}
               </button>
             </div>
           }
-          resultData={lastTxHash && successActions.has("request-withdraw") ? { transactionHash: lastTxHash, amount: withdrawAmount } : null}
+          resultData={
+            lastTxHash || successActions.has("request-withdraw")
+              ? { transactionHash: lastTxHash, amount: withdrawAmount }
+              : null
+          }
           resultLabel="Withdrawal Request Transaction"
           useSideBySide={true}
           theme="dracula"
@@ -853,50 +1300,174 @@ export default function PaymentManagerTab() {
           )}
         </h3>
         <p>
-          Check the status of your withdrawal request and see if it can be executed.
+          Check the status of any withdrawal request. Leave address blank to
+          check your own withdrawal status.
         </p>
 
         <DisplayCode
-          code={WITHDRAWAL_STATUS_CODE}
+          code={getWithdrawalStatusCode(
+            withdrawStatusAddress.trim() ||
+              account?.address ||
+              account?.account?.address ||
+              "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+          )}
           language="typescript"
           renderComponent={
             <div>
+              <div style={{ marginBottom: "15px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontWeight: "500",
+                  }}
+                >
+                  Address to Check (optional):
+                </label>
+                <input
+                  type="text"
+                  placeholder={`Enter address or leave blank for your account${
+                    account?.address
+                      ? ` (${account.address.slice(0, 8)}...)`
+                      : ""
+                  }`}
+                  value={withdrawStatusAddress}
+                  onChange={(e) => setWithdrawStatusAddress(e.target.value)}
+                  disabled={!account}
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    border: `1px solid ${
+                      !account
+                        ? "#ddd"
+                        : withdrawStatusAddress.length > 0 &&
+                          !isValidEthereumAddress(withdrawStatusAddress.trim())
+                        ? "#dc3545"
+                        : withdrawStatusAddress.length > 0 &&
+                          isValidEthereumAddress(withdrawStatusAddress.trim())
+                        ? "#28a745"
+                        : "#ddd"
+                    }`,
+                    borderRadius: "4px",
+                    fontSize: "14px",
+                    fontFamily: "monospace",
+                    backgroundColor: !account ? "#f8f9fa" : "white",
+                    color: "black",
+                  }}
+                />
+                {withdrawStatusAddress.length > 0 &&
+                  !isValidEthereumAddress(withdrawStatusAddress.trim()) && (
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        color: "#dc3545",
+                        marginTop: "4px",
+                      }}
+                    >
+                      ⚠️ Please enter a valid Ethereum address
+                    </div>
+                  )}
+              </div>
               <button
                 onClick={handleCheckWithdrawStatus}
-                disabled={isCheckingWithdraw || !paymentManager || !account}
+                disabled={
+                  isCheckingWithdraw ||
+                  !paymentManager ||
+                  !account ||
+                  (withdrawStatusAddress.length > 0 &&
+                    !isValidEthereumAddress(withdrawStatusAddress.trim()))
+                }
                 style={{
                   padding: "10px 15px",
-                  backgroundColor: (!account || !paymentManager || isCheckingWithdraw) ? "#cccccc" : "#6f42c1",
+                  backgroundColor:
+                    !account ||
+                    !paymentManager ||
+                    isCheckingWithdraw ||
+                    (withdrawStatusAddress.length > 0 &&
+                      !isValidEthereumAddress(withdrawStatusAddress.trim()))
+                      ? "#cccccc"
+                      : "#6f42c1",
                   color: "white",
                   border: "none",
                   borderRadius: "4px",
-                  cursor: (!account || !paymentManager || isCheckingWithdraw) ? "not-allowed" : "pointer",
+                  cursor:
+                    !account ||
+                    !paymentManager ||
+                    isCheckingWithdraw ||
+                    (withdrawStatusAddress.length > 0 &&
+                      !isValidEthereumAddress(withdrawStatusAddress.trim()))
+                      ? "not-allowed"
+                      : "pointer",
                   fontWeight: "500",
-                  marginBottom: "15px"
+                  marginBottom: "15px",
                 }}
               >
-                {isCheckingWithdraw ? "Checking..." : successActions.has("check-withdraw-status") ? "✓ Status Checked" : "🔍 Check Withdrawal Status"}
+                {isCheckingWithdraw
+                  ? "Checking..."
+                  : successActions.has("check-withdraw-status")
+                  ? "✓ Status Checked"
+                  : withdrawStatusAddress.length > 0 &&
+                    !isValidEthereumAddress(withdrawStatusAddress.trim())
+                  ? "❌ Invalid Address"
+                  : withdrawStatusAddress.trim().length > 0
+                  ? "🔍 Check Address Status"
+                  : "🔍 Check My Status"}
               </button>
 
               {withdrawInfo && (
-                <div style={{ padding: "15px", backgroundColor: withdrawInfo.isPending ? "#fff3cd" : "#d4edda", borderRadius: "4px", border: `1px solid ${withdrawInfo.isPending ? "#ffeaa7" : "#c3e6cb"}` }}>
+                <div
+                  style={{
+                    padding: "15px",
+                    backgroundColor: withdrawInfo.isPending
+                      ? "#fff3cd"
+                      : "#d4edda",
+                    borderRadius: "4px",
+                    border: `1px solid ${
+                      withdrawInfo.isPending ? "#ffeaa7" : "#c3e6cb"
+                    }`,
+                  }}
+                >
                   <h4 style={{ margin: "0 0 10px 0" }}>
-                    {withdrawInfo.isPending ? "🕐 Pending Withdrawal" : "✅ No Pending Withdrawal"}
+                    {withdrawInfo.isPending
+                      ? "🕐 Pending Withdrawal"
+                      : "✅ No Pending Withdrawal"}
                   </h4>
-                  
+
                   {withdrawInfo.isPending && (
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "10px", marginBottom: "15px" }}>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                          "repeat(auto-fit, minmax(150px, 1fr))",
+                        gap: "10px",
+                        marginBottom: "15px",
+                      }}
+                    >
                       <div>
                         <strong>Amount:</strong> {withdrawInfo.amount} ETH
                       </div>
                       <div>
-                        <strong>Requested:</strong> {new Date(Number(withdrawInfo.timestamp) * 1000).toLocaleString()}
+                        <strong>Requested:</strong>{" "}
+                        {new Date(
+                          Number(withdrawInfo.timestamp) * 1000
+                        ).toLocaleString()}
                       </div>
                       {canExecuteInfo && (
                         <div>
-                          <strong>Status:</strong> 
-                          <span style={{ color: canExecuteInfo.canExecute ? "green" : "orange", marginLeft: "5px" }}>
-                            {canExecuteInfo.canExecute ? "✅ Ready to execute" : `⏱️ ${formatTimeRemaining(canExecuteInfo.timeRemaining)} remaining`}
+                          <strong>Status:</strong>
+                          <span
+                            style={{
+                              color: canExecuteInfo.canExecute
+                                ? "green"
+                                : "orange",
+                              marginLeft: "5px",
+                            }}
+                          >
+                            {canExecuteInfo.canExecute
+                              ? "✅ Ready to execute"
+                              : `⏱️ ${formatTimeRemaining(
+                                  canExecuteInfo.timeRemaining
+                                )} remaining`}
                           </span>
                         </div>
                       )}
@@ -913,10 +1484,12 @@ export default function PaymentManagerTab() {
                         backgroundColor: "#28a745",
                         color: "white",
                         borderRadius: "4px",
-                        cursor: isExecutingWithdraw ? "not-allowed" : "pointer"
+                        cursor: isExecutingWithdraw ? "not-allowed" : "pointer",
                       }}
                     >
-                      {isExecutingWithdraw ? "Executing..." : "💸 Execute Withdrawal"}
+                      {isExecutingWithdraw
+                        ? "Executing..."
+                        : "💸 Execute Withdrawal"}
                     </button>
                   )}
                 </div>
@@ -939,9 +1512,7 @@ export default function PaymentManagerTab() {
             <span style={{ color: "orange" }}> (Create account first)</span>
           )}
         </h3>
-        <p>
-          Get information about the withdrawal delay period for security.
-        </p>
+        <p>Get information about the withdrawal delay period for security.</p>
 
         <DisplayCode
           code={WITHDRAWAL_DELAY_CODE}
@@ -953,37 +1524,78 @@ export default function PaymentManagerTab() {
                 disabled={isCheckingDelay || !paymentManager}
                 style={{
                   padding: "10px 15px",
-                  backgroundColor: (!paymentManager || isCheckingDelay) ? "#cccccc" : "#dc3545",
+                  backgroundColor:
+                    !paymentManager || isCheckingDelay ? "#cccccc" : "#dc3545",
                   color: "white",
                   border: "none",
                   borderRadius: "4px",
-                  cursor: (!paymentManager || isCheckingDelay) ? "not-allowed" : "pointer",
+                  cursor:
+                    !paymentManager || isCheckingDelay
+                      ? "not-allowed"
+                      : "pointer",
                   fontWeight: "500",
-                  marginBottom: "15px"
+                  marginBottom: "15px",
                 }}
               >
-                {isCheckingDelay ? "Checking..." : successActions.has("check-withdraw-delay") ? "✓ Delay Checked" : "⏳ Check Withdrawal Delay"}
+                {isCheckingDelay
+                  ? "Checking..."
+                  : successActions.has("check-withdraw-delay")
+                  ? "✓ Delay Checked"
+                  : "⏳ Check Withdrawal Delay"}
               </button>
 
               {withdrawDelay && (
-                <div style={{ padding: "15px", backgroundColor: "#fff3cd", borderRadius: "4px", border: "1px solid #ffeaa7" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "15px" }}>
+                <div
+                  style={{
+                    padding: "15px",
+                    backgroundColor: "#fff3cd",
+                    borderRadius: "4px",
+                    border: "1px solid #ffeaa7",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fit, minmax(150px, 1fr))",
+                      gap: "15px",
+                    }}
+                  >
                     <div>
                       <strong>Delay Hours:</strong>
-                      <div style={{ fontSize: "16px", fontWeight: "bold", color: "#856404" }}>
+                      <div
+                        style={{
+                          fontSize: "16px",
+                          fontWeight: "bold",
+                          color: "#856404",
+                        }}
+                      >
                         {withdrawDelay.delayHours} hours
                       </div>
                     </div>
-                    
+
                     <div>
                       <strong>Delay Seconds:</strong>
-                      <div style={{ fontSize: "16px", fontWeight: "bold", color: "#856404" }}>
+                      <div
+                        style={{
+                          fontSize: "16px",
+                          fontWeight: "bold",
+                          color: "#856404",
+                        }}
+                      >
                         {withdrawDelay.delaySeconds} seconds
                       </div>
                     </div>
                   </div>
-                  <div style={{ marginTop: "10px", fontSize: "14px", color: "#856404" }}>
-                    All withdrawals have a {withdrawDelay.delayHours}-hour security delay before they can be executed.
+                  <div
+                    style={{
+                      marginTop: "10px",
+                      fontSize: "14px",
+                      color: "#856404",
+                    }}
+                  >
+                    All withdrawals have a {withdrawDelay.delayHours}-hour
+                    security delay before they can be executed.
                   </div>
                 </div>
               )}
@@ -1006,45 +1618,158 @@ export default function PaymentManagerTab() {
           )}
         </h3>
         <p>
-          Execute a withdrawal after the delay period has passed. This completes the withdrawal process.
+          Execute a withdrawal after the delay period has passed. Enter amount
+          or use existing withdrawal amount.
         </p>
 
         <DisplayCode
-          code={WITHDRAWAL_EXECUTE_CODE}
+          code={getWithdrawalExecuteCode(
+            executeWithdrawAmount || withdrawInfo?.amount || "0.01"
+          )}
           language="typescript"
           renderComponent={
             <div>
+              <div style={{ marginBottom: "15px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontWeight: "500",
+                  }}
+                >
+                  Amount (ETH) - Leave blank to use pending withdrawal amount:
+                </label>
+                <input
+                  type="number"
+                  step="0.001"
+                  min="0"
+                  placeholder={withdrawInfo?.amount || "0.01"}
+                  value={executeWithdrawAmount}
+                  onChange={(e) => setExecuteWithdrawAmount(e.target.value)}
+                  disabled={
+                    isExecutingWithdraw ||
+                    !paymentManager ||
+                    !account ||
+                    (executeWithdrawAmount.length > 0 &&
+                      !validateEthAmount(executeWithdrawAmount).isValid)
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    border: `1px solid ${
+                      !account
+                        ? "#ddd"
+                        : executeWithdrawAmount.length > 0 &&
+                          !validateEthAmount(executeWithdrawAmount).isValid
+                        ? "#dc3545"
+                        : executeWithdrawAmount.length > 0 &&
+                          validateEthAmount(executeWithdrawAmount).isValid
+                        ? "#28a745"
+                        : "#ddd"
+                    }`,
+                    borderRadius: "4px",
+                    fontSize: "14px",
+                    backgroundColor: !account ? "#f8f9fa" : "white",
+                    color: "black",
+                  }}
+                />
+                {executeWithdrawAmount &&
+                  !validateEthAmount(executeWithdrawAmount).isValid && (
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        color: "#dc3545",
+                        marginTop: "4px",
+                      }}
+                    >
+                      ⚠️ {validateEthAmount(executeWithdrawAmount).error}
+                    </div>
+                  )}
+              </div>
               <button
                 onClick={handleExecuteWithdraw}
-                disabled={isExecutingWithdraw || !paymentManager || !withdrawInfo?.isPending || !canExecuteInfo?.canExecute}
+                disabled={
+                  isExecutingWithdraw ||
+                  !paymentManager ||
+                  !account ||
+                  (executeWithdrawAmount.length > 0 &&
+                    !validateEthAmount(executeWithdrawAmount).isValid)
+                }
                 style={{
                   padding: "10px 15px",
-                  backgroundColor: (!paymentManager || isExecutingWithdraw || !withdrawInfo?.isPending || !canExecuteInfo?.canExecute) ? "#cccccc" : "#28a745",
+                  backgroundColor:
+                    !paymentManager ||
+                    isExecutingWithdraw ||
+                    !account ||
+                    (executeWithdrawAmount.length > 0 &&
+                      !validateEthAmount(executeWithdrawAmount).isValid)
+                      ? "#cccccc"
+                      : "#28a745",
                   color: "white",
                   border: "none",
                   borderRadius: "4px",
-                  cursor: (!paymentManager || isExecutingWithdraw || !withdrawInfo?.isPending || !canExecuteInfo?.canExecute) ? "not-allowed" : "pointer",
+                  cursor:
+                    !paymentManager ||
+                    isExecutingWithdraw ||
+                    !account ||
+                    (executeWithdrawAmount.length > 0 &&
+                      !validateEthAmount(executeWithdrawAmount).isValid)
+                      ? "not-allowed"
+                      : "pointer",
                   fontWeight: "500",
-                  marginBottom: "15px"
+                  marginBottom: "15px",
                 }}
               >
-                {isExecutingWithdraw ? "Executing..." : successActions.has("execute-withdraw") ? "✓ Withdrawal Executed" : "💸 Execute Withdrawal"}
+                {isExecutingWithdraw
+                  ? "Executing..."
+                  : successActions.has("execute-withdraw")
+                  ? "✓ Withdrawal Executed"
+                  : executeWithdrawAmount.length > 0 &&
+                    !validateEthAmount(executeWithdrawAmount).isValid
+                  ? "❌ Invalid Amount"
+                  : "💸 Execute Withdrawal"}
               </button>
 
               {!withdrawInfo?.isPending && (
-                <div style={{ padding: "10px", backgroundColor: "#f8f9fa", borderRadius: "4px", border: "1px solid #e9ecef", fontSize: "14px", color: "#6c757d" }}>
-                  No pending withdrawal to execute. Request a withdrawal first and wait for the delay period.
+                <div
+                  style={{
+                    padding: "10px",
+                    backgroundColor: "#f8f9fa",
+                    borderRadius: "4px",
+                    border: "1px solid #e9ecef",
+                    fontSize: "14px",
+                    color: "#6c757d",
+                  }}
+                >
+                  No pending withdrawal to execute. Request a withdrawal first
+                  and wait for the delay period.
                 </div>
               )}
 
-              {withdrawInfo?.isPending && !canExecuteInfo?.canExecute && canExecuteInfo && (
-                <div style={{ padding: "10px", backgroundColor: "#fff3cd", borderRadius: "4px", border: "1px solid #ffeaa7", fontSize: "14px", color: "#856404" }}>
-                  Withdrawal cannot be executed yet. Wait {formatTimeRemaining(canExecuteInfo.timeRemaining)} more.
-                </div>
-              )}
+              {withdrawInfo?.isPending &&
+                !canExecuteInfo?.canExecute &&
+                canExecuteInfo && (
+                  <div
+                    style={{
+                      padding: "10px",
+                      backgroundColor: "#fff3cd",
+                      borderRadius: "4px",
+                      border: "1px solid #ffeaa7",
+                      fontSize: "14px",
+                      color: "#856404",
+                    }}
+                  >
+                    Withdrawal cannot be executed yet. Wait{" "}
+                    {formatTimeRemaining(canExecuteInfo.timeRemaining)} more.
+                  </div>
+                )}
             </div>
           }
-          resultData={lastTxHash && successActions.has("execute-withdraw") ? { transactionHash: lastTxHash } : null}
+          resultData={
+            lastTxHash && successActions.has("execute-withdraw")
+              ? { transactionHash: lastTxHash }
+              : null
+          }
           resultLabel="Withdrawal Execution Transaction"
           useSideBySide={true}
           theme="dracula"
