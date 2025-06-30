@@ -67,6 +67,7 @@ import LitActionsOverview from "./tabs/LitActions/Overview";
 import LitActionsDeploying from "./tabs/LitActions/Deploying";
 import LitActionsFetch from "./tabs/LitActions/Fetch";
 import LitActionsRunOnce from "./tabs/LitActions/RunOnce";
+import LitActionsGetRpcUrl from "./tabs/LitActions/GetRpcUrl";
 
 // Create a type for the context
 type ContextType = {
@@ -381,6 +382,10 @@ export const router = createBrowserRouter([
       {
         path: "lit-actions/run-once",
         element: <LitActionsRunOnce />,
+      },
+      {
+        path: "lit-actions/get-rpc-url",
+        element: <LitActionsGetRpcUrl />,
       },
     ],
   },

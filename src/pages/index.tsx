@@ -864,6 +864,14 @@ const ACTIONS: NavigationItem[] = [
     category: "Private Compute - Lit Actions",
     type: "primary",
   },
+  {
+    id: "lit-actions-get-rpc-url",
+    path: "/lit-actions/get-rpc-url",
+    name: "Get RPC URLs",
+    description: "Get the RPC URL for a given chain",
+    category: "Private Compute - Lit Actions",
+    type: "primary",
+  },
   // {
   //   id: "encryption",
   //   name: "Encryption",
