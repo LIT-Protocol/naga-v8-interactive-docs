@@ -41,47 +41,6 @@ const result = await litClient.executeJs({
 
 console.log("Median temperature from all nodes:", result);`;
 
-  const aggregationExample = `const _litActionCode = async () => {
-  // Each node fetches a different data point
-  const apiUrl = "https://api.coindesk.com/v1/bpi/currentprice.json";
-  const response = await fetch(apiUrl);
-  const data = await response.json();
-  const price = parseFloat(data.bpi.USD.rate.replace(',', ''));
-
-  // Collect all price responses
-  const prices = await Lit.Actions.broadcastAndCollect({
-    name: "btcPrice",
-    value: price,
-  });
-
-  // Calculate statistics
-  const average = prices.reduce((sum, p) => sum + p, 0) / prices.length;
-  const min = Math.min(...prices);
-  const max = Math.max(...prices);
-  const variance = prices.reduce((sum, p) => sum + Math.pow(p - average, 2), 0) / prices.length;
-
-  Lit.Actions.setResponse({
-    response: {
-      prices: prices,
-      statistics: {
-        average: average.toFixed(2),
-        min: min.toFixed(2),
-        max: max.toFixed(2),
-        variance: variance.toFixed(2),
-        nodeCount: prices.length
-      }
-    }
-  });
-};
-
-const litActionCode = \`(\${_litActionCode.toString()})();\`;
-
-const result = await litClient.executeJs({
-  code: litActionCode,
-  authContext: authContext,
-  jsParams: {},
-});`;
-
   return (
     <div className="tab-content">
       <h1 style={pageStyles.h1}>Broadcast and Collect</h1>

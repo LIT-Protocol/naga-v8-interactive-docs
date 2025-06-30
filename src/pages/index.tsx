@@ -865,6 +865,14 @@ const ACTIONS: NavigationItem[] = [
     type: "primary",
   },
   {
+    id: "lit-actions-decrypting",
+    path: "/lit-actions/decrypting",
+    name: "Decrypting Data",
+    description: "Decrypting data within a Lit Action",
+    category: "Private Compute - Lit Actions",
+    type: "primary",
+  },
+  {
     id: "lit-actions-get-rpc-url",
     path: "/lit-actions/get-rpc-url",
     name: "Get RPC URLs",
