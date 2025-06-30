@@ -185,7 +185,7 @@ const LitActionsOverview: React.FC = () => {
               icon: "🤝",
             },
             {
-              title: "Programmable Execution",
+              title: "Fully Programmable",
               description:
                 "Lit Actions can be used to automate signing and encryption/decryption operations without requiring a human in the loop.",
               icon: "⚙️",
