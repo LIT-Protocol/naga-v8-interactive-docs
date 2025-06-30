@@ -872,6 +872,14 @@ const ACTIONS: NavigationItem[] = [
     category: "Private Compute - Lit Actions",
     type: "primary",
   },
+  {
+    id: "lit-actions-broadcast-and-collect",
+    path: "/lit-actions/broadcast-and-collect",
+    name: "Aggregate Node Responses",
+    description: "Aggregate responses from all nodes in the network",
+    category: "Private Compute - Lit Actions",
+    type: "primary",
+  },
   // {
   //   id: "encryption",
   //   name: "Encryption",
