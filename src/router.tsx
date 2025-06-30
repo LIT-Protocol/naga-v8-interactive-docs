@@ -70,6 +70,7 @@ import LitActionsRunOnce from "./tabs/LitActions/RunOnce";
 import LitActionsGetRpcUrl from "./tabs/LitActions/GetRpcUrl";
 import LitActionsBroadcastAndCollect from "./tabs/LitActions/BroadcastAndCollect";
 import LitActionsConditionalExecution from "./tabs/LitActions/ConditionalExecution";
+import LitActionsPKPSigning from "./tabs/LitActions/PKPSigning";
 
 // Create a type for the context
 type ContextType = {
@@ -396,6 +397,10 @@ export const router = createBrowserRouter([
       {
         path: "lit-actions/conditional-execution",
         element: <LitActionsConditionalExecution />,
+      },
+      {
+        path: "lit-actions/pkp-signing",
+        element: <LitActionsPKPSigning />,
       },
     ],
   },
