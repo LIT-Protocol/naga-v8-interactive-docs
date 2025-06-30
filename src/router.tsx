@@ -73,6 +73,7 @@ import LitActionsConditionalExecution from "./tabs/LitActions/ConditionalExecuti
 import LitActionsPKPSigning from "./tabs/LitActions/PKPSigning";
 import LitActionsPKPSigningEIP191 from "./tabs/LitActions/PKPSigningEIP191";
 import LitActionsDecrypting from "./tabs/LitActions/Decrypting";
+import LitActionsQuickStart from "./tabs/LitActions/QuickStart";
 
 // Create a type for the context
 type ContextType = {
@@ -375,6 +376,10 @@ export const router = createBrowserRouter([
       {
         path: "lit-actions/overview",
         element: <LitActionsOverview />,
+      },
+      {
+        path: "lit-actions/quick-start",
+        element: <LitActionsQuickStart />,
       },
       {
         path: "lit-actions/deploying",

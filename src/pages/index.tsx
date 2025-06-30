@@ -841,6 +841,14 @@ const ACTIONS: NavigationItem[] = [
     type: "primary",
   },
   {
+    id: "lit-actions-quick-start",
+    path: "/lit-actions/quick-start",
+    name: "Quick Start",
+    description: "Quick start guide to Lit Actions",
+    category: "Private Compute - Lit Actions",
+    type: "primary",
+  },
+  {
     id: "lit-actions-deploying",
     path: "/lit-actions/deploying",
     name: "Deploying",
