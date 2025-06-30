@@ -3,6 +3,7 @@ import { CSSProperties } from 'react';
 export interface PageStyles {
     h1: CSSProperties;
     h2: CSSProperties;
+    h3: CSSProperties;
     p: CSSProperties;
     label: CSSProperties;
     input: CSSProperties;
@@ -27,6 +28,12 @@ export const pageStyles: PageStyles = {
         marginBottom: "16px",
         borderBottom: "1px solid #e5e7eb",
         paddingBottom: "8px",
+    },
+    h3: {
+        fontSize: "1.5rem",
+        fontWeight: "600",
+        color: "#1f2937",
+        marginBottom: "12px",
     },
     p: {
         fontSize: "1rem",

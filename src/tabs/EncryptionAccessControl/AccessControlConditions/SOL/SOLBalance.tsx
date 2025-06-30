@@ -5,145 +5,112 @@ import GreyBoarderWhiteBgContainer from "../../../../components/layout/Greyboard
 import { pageStyles } from "../../../../styles/pageStyles";
 import { NoteCallout } from "../../../../components/common";
 import { Link } from "react-router-dom";
-import EVMChainsSelector from "../../../../components/EVMChainsSelector";
 
-interface EVMChain {
-  name: string;
-  chainId: number | string;
-  symbol: string;
-  decimals: number;
-  rpcUrls: string[];
-  blockExplorerUrls?: string[];
-  vmType?: string;
-  nativeCurrency?: {
-    name: string;
-    symbol: string;
-    decimals: number;
-  };
-}
-
-const ERC20Balance: React.FC = () => {
+const SOLBalance: React.FC = () => {
   const [selectedExample, setSelectedExample] =
     useState<string>("greater-equal");
-  const [selectedChain, setSelectedChain] = useState<string>("ethereum");
-  const [selectedChainInfo, setSelectedChainInfo] = useState<EVMChain | null>(
-    null
-  );
   const [includeWalletOwnership, setIncludeWalletOwnership] =
     useState<boolean>(false);
   const [walletAddress, setWalletAddress] = useState<string>("");
-  const [tokenAddress, setTokenAddress] = useState<string>(
-    "0xA0b86a33E6441c8C4dC2e8B0E4E5D8E6dAeF5E5C"
-  );
   const [builtConditions, setBuiltConditions] = useState<
     unknown[] | { error: string } | null
   >(null);
 
-  const handleChainSelect = (chainKey: string, chainInfo: EVMChain) => {
-    setSelectedChain(chainKey);
-    setSelectedChainInfo(chainInfo);
-    // Update default token address based on chain
-    if (chainKey === "polygon") {
-      setTokenAddress("0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"); // USDC on Polygon
-    } else if (chainKey === "ethereum") {
-      setTokenAddress("0xA0b86a33E6441c8C4dC2e8B0E4E5D8E6dAeF5E5C"); // USDC on Ethereum
-    } else {
-      setTokenAddress("0x123..."); // Generic placeholder
-    }
+  // Convert SOL to lamports (1 SOL = 1,000,000,000 lamports)
+  const solToLamports = (sol: string): string => {
+    const solNumber = parseFloat(sol);
+    if (isNaN(solNumber)) return "0";
+    return Math.floor(solNumber * 1000000000).toString();
   };
 
-  // Example templates for the four comparison operators
-  const getExamples = (
-    chainKey: string,
-    includeWallet: boolean,
-    address: string,
-    contractAddress: string
-  ) => {
+  // Example templates for the five comparison operators
+  const getExamples = (includeWallet: boolean, address: string) => {
+    // Calculate amounts in lamports
+    const pointOneSOL = solToLamports("0.1"); // 0.1 SOL
+    const oneSOL = solToLamports("1"); // 1 SOL
+    const fiveSOL = solToLamports("5"); // 5 SOL
+    const tenSOL = solToLamports("10"); // 10 SOL
+
     const walletOwnershipSection = includeWallet
-      ? `.requireWalletOwnership('${address}')
-  .on('${chainKey}')
+      ? `.requireSolWalletOwnership('${address}')
+  .on('solana')
   .and()
   `
       : "";
 
-    const tokenBalanceDescription = includeWallet
-      ? ` AND hold the specified token balance`
+    const solBalanceDescription = includeWallet
+      ? ` AND hold the specified SOL balance`
       : "";
 
     const combinedDescription = includeWallet
-      ? `Require wallet ownership${tokenBalanceDescription}`
-      : `Require users to hold the specified token balance of`;
+      ? `Require wallet ownership${solBalanceDescription}`
+      : `Require users to hold the specified SOL balance`;
 
     return {
       "greater-equal": {
         title: `>= (Greater Than or Equal)`,
-        description: `${combinedDescription} at least 1 token`,
+        description: `${combinedDescription} (at least 0.1 SOL)`,
         builderCode: `import { createAccBuilder } from '@lit-protocol/access-control-conditions';
 
 const accs = createAccBuilder()
-  ${walletOwnershipSection}.requireTokenBalance('${contractAddress}', '1000000000000000000', '>=') // At least 1 token
-  .on('${chainKey}')
+  ${walletOwnershipSection}.requireSolBalance('${pointOneSOL}', '>=') // 0.1 SOL in lamports
+  .on('solana')
   .build();`,
-        amount: "100",
+        amount: pointOneSOL,
         comparator: ">=" as const,
       },
       "greater-than": {
         title: `> (Greater Than)`,
-        description: `${combinedDescription} more than 1 token`,
+        description: `${combinedDescription} (more than 1 SOL)`,
         builderCode: `import { createAccBuilder } from '@lit-protocol/access-control-conditions';
 
 const accs = createAccBuilder()
-  ${walletOwnershipSection}.requireTokenBalance('${contractAddress}', '1000000', '>') // More than 1 token
-  .on('${chainKey}')
+  ${walletOwnershipSection}.requireSolBalance('${oneSOL}', '>') // More than 1 SOL in lamports
+  .on('solana')
   .build();`,
-        amount: "1000",
+        amount: oneSOL,
         comparator: ">" as const,
       },
       "equal-to": {
         title: `= (Equal To)`,
-        description: `${combinedDescription} exactly 1 token`,
+        description: `${combinedDescription} (exactly 5 SOL)`,
         builderCode: `import { createAccBuilder } from '@lit-protocol/access-control-conditions';
 
 const accs = createAccBuilder()
-  ${walletOwnershipSection}.requireTokenBalance('${contractAddress}', '1000000', '=') // Exactly 1 token
-  .on('${chainKey}')
+  ${walletOwnershipSection}.requireSolBalance('${fiveSOL}', '=') // Exactly 5 SOL in lamports
+  .on('solana')
   .build();`,
-        amount: "500",
+        amount: fiveSOL,
         comparator: "=" as const,
       },
       "less-equal": {
         title: `<= (Less Than or Equal)`,
-        description: `${combinedDescription} at most 1 token`,
+        description: `${combinedDescription} (at most 10 SOL)`,
         builderCode: `import { createAccBuilder } from '@lit-protocol/access-control-conditions';
 
 const accs = createAccBuilder()
-  ${walletOwnershipSection}.requireTokenBalance('${contractAddress}', '1000000', '<=') // Max 1 token
-  .on('${chainKey}')
+  ${walletOwnershipSection}.requireSolBalance('${tenSOL}', '<=') // Max 10 SOL in lamports
+  .on('solana')
   .build();`,
-        amount: "5000",
+        amount: tenSOL,
         comparator: "<=" as const,
       },
       "less-than": {
         title: `< (Less Than)`,
-        description: `${combinedDescription} less than 1 token`,
+        description: `${combinedDescription} (less than 5 SOL)`,
         builderCode: `import { createAccBuilder } from '@lit-protocol/access-control-conditions';
 
 const accs = createAccBuilder()
-  ${walletOwnershipSection}.requireTokenBalance('${contractAddress}', '1000000', '<') // Less than 1 token
-  .on('${chainKey}')
+  ${walletOwnershipSection}.requireSolBalance('${fiveSOL}', '<') // Less than 5 SOL in lamports
+  .on('solana')
   .build();`,
-        amount: "500",
+        amount: fiveSOL,
         comparator: "<" as const,
       },
     };
   };
 
-  const examples = getExamples(
-    selectedChain,
-    includeWalletOwnership,
-    walletAddress,
-    tokenAddress
-  );
+  const examples = getExamples(includeWalletOwnership, walletAddress);
 
   const buildConditions = () => {
     try {
@@ -156,17 +123,17 @@ const accs = createAccBuilder()
       // Add wallet ownership requirement if enabled
       if (includeWalletOwnership) {
         builder = builder
-          .requireWalletOwnership(walletAddress)
+          .requireSolWalletOwnership(walletAddress)
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .on(selectedChain as any)
+          .on("solana" as any)
           .and();
       }
 
-      // Add token balance requirement
+      // Add SOL balance requirement
       builder = builder
-        .requireTokenBalance(tokenAddress, example.amount, example.comparator)
+        .requireSolBalance(example.amount, example.comparator)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .on(selectedChain as any);
+        .on("solana" as any);
 
       const conditions = builder.build();
       setBuiltConditions(conditions);
@@ -178,35 +145,28 @@ const accs = createAccBuilder()
 
   return (
     <div className="tab-content">
-      <h1 style={pageStyles.h1}>
-        ERC20 Token Balance Access Control Conditions
-      </h1>
+      <h1 style={pageStyles.h1}>SOL Balance Access Control Conditions</h1>
 
       <GreyBoarderWhiteBgContainer>
         <h2 style={pageStyles.h2}>Introduction</h2>
         <p style={pageStyles.p}>
-          The <code>requireTokenBalance</code> control condition lets you
-          control access based on how much of a specific ERC20 token a user
-          holds on any of the{" "}
-          <Link
-            to="/encryption/access-control/evm/supported-chains"
-            style={{ color: "#007bff", textDecoration: "underline" }}
-          >
-            supported EVM-based blockchains
-          </Link>
-          .
+          The <code>requireSolBalance</code> control condition lets you control
+          access based on the SOL balance in a user's Solana wallet. This is
+          useful for creating conditions that require users to hold a minimum,
+          maximum, or exact amount of SOL before they can access encrypted
+          content.
         </p>
         <p style={pageStyles.p}>
           In the examples below, you'll see how to use the{" "}
-          <code>requireTokenBalance()</code> method to create balance checks
-          using different chains, token contracts, amounts,{" "}
+          <code>requireSolBalance()</code> method to create SOL balance checks
+          that can be combined with other conditions using{" "}
           <Link
             to="/encryption/access-control/boolean-logic"
             style={{ color: "#007bff", textDecoration: "underline" }}
           >
             Boolean Logic
-          </Link>{" "}
-          , and{" "}
+          </Link>
+          and{" "}
           <Link
             to="/encryption/access-control/comparison-operators"
             style={{ color: "#007bff", textDecoration: "underline" }}
@@ -218,82 +178,74 @@ const accs = createAccBuilder()
       </GreyBoarderWhiteBgContainer>
 
       <GreyBoarderWhiteBgContainer>
-        <h2 style={pageStyles.h2}>Token Balance Scenarios</h2>
+        <h2 style={pageStyles.h2}>SOL Balance Scenarios</h2>
 
         <p style={pageStyles.p}>
-          Token balance conditions can be configured in several ways depending
-          on your access control needs:
+          SOL balance conditions can be configured in several ways depending on
+          your access control needs:
         </p>
 
         {(() => {
           const scenarios = [
             {
-              title: "Minimum Token Balance",
+              title: "Minimum SOL Balance",
               description:
-                "Require users to hold at least a specific amount of tokens",
-              example: `.requireTokenBalance(
-  contractAddress,
-  '1000000000000000000',
+                "Require users to hold at least a specific amount of SOL",
+              example: `.requireSolBalance(
+  '100000000',
   '>='
 )`,
             },
             {
-              title: "Maximum Token Balance",
+              title: "Maximum SOL Balance",
               description: "Limit access to users with smaller balances",
-              example: `.requireTokenBalance(
-  contractAddress,
-  '5000000000000000000',
+              example: `.requireSolBalance(
+  '5000000000',
   '<='
 )`,
             },
             {
-              title: "Exact Token Balance",
+              title: "Exact SOL Balance",
               description:
-                "Require users to have exactly the specified amount of tokens",
-              example: `.requireTokenBalance(
-  contractAddress,
-  '1000000000000000000',
+                "Require users to have exactly the specified amount of SOL",
+              example: `.requireSolBalance(
+  '1000000000',
   '='
 )`,
             },
             {
-              title: "Exclusive Token Access",
+              title: "Exclusive SOL Access",
               description: "Exclude users with over the threshold amount",
-              example: `.requireTokenBalance(
-  contractAddress,
-  '1000000000000000000',
+              example: `.requireSolBalance(
+  '1000000000',
   '<'
 )`,
             },
             {
-              title: "Token Balance Range",
+              title: "SOL Balance Range",
               description:
-                "Require token balance to fall within a specific range",
-              example: `.requireTokenBalance(
-  contractAddress,
-  '1000000000000000000',
+                "Require SOL balance to fall within a specific range",
+              example: `.requireSolBalance(
+  '100000000',
   '>='
 )
 .and()
-.requireTokenBalance(
-  contractAddress,
-  '10000000000000000000',
+.requireSolBalance(
+  '10000000000',
   '<='
 )`,
             },
             {
-              title: "Multiple Token Tiers",
+              title: "Multiple SOL Tiers",
               description:
-                "Accept multiple token balance thresholds with OR logic",
-              example: `.requireTokenBalance(
-  contractAddress,
-  '1000000000000000000',
+                "Accept multiple SOL balance thresholds with OR logic",
+              example: `.requireSolBalance(
+  '100000000',
   '>='
 )
 .or()
-.requireTokenBalance(
-  contractAddress,
-  '5000000000000000000',
+.requireSolBalance(
+  '5000000000',
   '>='
 )`,
             },
@@ -354,28 +306,20 @@ const accs = createAccBuilder()
         })()}
 
         <NoteCallout
-          title="Token Decimals and Amounts"
+          title="Lamports vs SOL"
           message={
             <>
               <p style={pageStyles.p}>
-                When specifying token amounts, use the token's{" "}
-                <strong>smallest unit</strong> accounting for its number of
-                decimals.
+                All amounts must be specified in <strong>lamports</strong>, the{" "}
+                <strong>smallest unit of SOL</strong>. 1 SOL = 1,000,000,000
+                lamports.
               </p>
               <p style={pageStyles.p}>
-                For example, a token with 18 decimals requires{" "}
-                <code>1000000000000000000</code> to represent 1 full token, but
-                a token with 6 decimals requires <code>1000000</code> to
-                represent 1 full token.
-              </p>
-              <p style={pageStyles.p}>
+                Convert SOL amounts to lamports before using them:
                 <DisplayCode
                   style={{ marginTop: "10px" }}
-                  code={`// For 18 decimal tokens, 1 token = 1000000000000000000
-.requireTokenBalance('0x123...', '1000000000000000000')
-
-// For 6 decimal tokens, 1 token = 1000000
-.requireTokenBalance('0x123...', '100000000')`}
+                  code={`// Convert SOL to lamports
+const lamports = Math.floor(1.5 * 1000000000).toString(); // 1.5 SOL`}
                   language="typescript"
                   theme="dracula"
                 />
@@ -390,8 +334,7 @@ const accs = createAccBuilder()
       <GreyBoarderWhiteBgContainer>
         <h2 style={pageStyles.h2}>Interactive Examples</h2>
         <p style={pageStyles.p}>
-          Select a chain, provide a token contract address, and choose a
-          comparison operator to explore ERC20 token balance conditions:
+          Select a comparison operator to explore SOL balance conditions:
         </p>
 
         {/* Selected Example Display */}
@@ -468,11 +411,9 @@ const accs = createAccBuilder()
                             <p style={pageStyles.p}>
                               When enabling the wallet ownership requirement,
                               you must include <code>.on(chain)</code> after the
-                              wallet ownership check to enable chaining with
-                              <code>.and()</code>, however, the chain specified
-                              by <code>.on(chain)</code> has no affect on the
-                              validation process and should always be set to{" "}
-                              <code>ethereum</code>.
+                              wallet ownership check to enable chaining with{" "}
+                              <code>.and()</code>. For Solana wallet ownership,
+                              the chain should be set to <code>solana</code>.
                             </p>
                           </>
                         }
@@ -495,7 +436,7 @@ const accs = createAccBuilder()
                         </label>
                         <input
                           type="text"
-                          placeholder="Enter wallet address (0x...)"
+                          placeholder="Enter Solana wallet address"
                           value={walletAddress}
                           onChange={(e) => setWalletAddress(e.target.value)}
                           style={{
@@ -518,43 +459,6 @@ const accs = createAccBuilder()
                         </p>
                       </div>
                     )}
-
-                    {/* Token Contract Address Input */}
-                    <div style={{ marginBottom: "20px" }}>
-                      <label
-                        style={{
-                          display: "block",
-                          marginBottom: "8px",
-                          fontWeight: "500",
-                        }}
-                      >
-                        Token Contract Address:
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Enter ERC20 token contract address (0x...)"
-                        value={tokenAddress}
-                        onChange={(e) => setTokenAddress(e.target.value)}
-                        style={{
-                          padding: "8px 12px",
-                          borderRadius: "4px",
-                          border: "1px solid #d1d5db",
-                          fontSize: "14px",
-                          width: "100%",
-                          fontFamily: "monospace",
-                        }}
-                      />
-                      <p
-                        style={{
-                          fontSize: "0.8rem",
-                          color: "#6b7280",
-                          margin: "5px 0 0 0",
-                        }}
-                      >
-                        The contract address of the ERC20 token you want to
-                        check
-                      </p>
-                    </div>
 
                     {/* Comparison Operator Selector */}
                     <div style={{ marginBottom: "20px" }}>
@@ -586,60 +490,20 @@ const accs = createAccBuilder()
                       </select>
                     </div>
 
-                    {/* Chain Selector */}
-                    <div style={{ marginBottom: "20px" }}>
-                      <label
-                        style={{
-                          display: "block",
-                          marginBottom: "8px",
-                          fontWeight: "500",
-                        }}
-                      >
-                        Select Chain:
-                      </label>
-                      <EVMChainsSelector
-                        variant="compact"
-                        showSearch={true}
-                        onChainSelect={handleChainSelect}
-                        selectedChain={selectedChain}
-                      />
-                      {selectedChainInfo && (
-                        <div
-                          style={{
-                            marginTop: "10px",
-                            padding: "10px",
-                            backgroundColor: "#f0f9ff",
-                            borderRadius: "6px",
-                            border: "1px solid #007bff",
-                            fontSize: "0.9rem",
-                          }}
-                        >
-                          <strong>{selectedChainInfo.name}</strong> •{" "}
-                          {selectedChainInfo.symbol} • Chain ID:{" "}
-                          {selectedChainInfo.chainId}
-                        </div>
-                      )}
-                    </div>
-
                     <button
                       onClick={buildConditions}
-                      disabled={
-                        (includeWalletOwnership && !walletAddress.trim()) ||
-                        !tokenAddress.trim()
-                      }
+                      disabled={includeWalletOwnership && !walletAddress.trim()}
                       style={{
                         padding: "10px 15px",
                         backgroundColor:
-                          (includeWalletOwnership && !walletAddress.trim()) ||
-                          !tokenAddress.trim()
+                          includeWalletOwnership && !walletAddress.trim()
                             ? "#6b7280"
                             : "#007bff",
                         color: "white",
                         border: "none",
                         borderRadius: "4px",
                         cursor:
-                          (includeWalletOwnership && !walletAddress.trim()) ||
-                          !tokenAddress.trim()
+                          includeWalletOwnership && !walletAddress.trim()
                             ? "not-allowed"
                             : "pointer",
                         fontWeight: "500",
@@ -665,4 +529,4 @@ const accs = createAccBuilder()
   );
 };
 
-export default ERC20Balance;
+export default SOLBalance;

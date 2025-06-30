@@ -187,39 +187,6 @@ const EncryptionAccessControlOverview: React.FC = () => {
     },
   ];
 
-  const features = [
-    {
-      title: "Multi-Chain Support",
-      description:
-        "Define access conditions using blockchain state from major networks like EVM chains, Cosmos, and Solana.",
-      icon: "🌐",
-    },
-    {
-      title: "Boolean Logic",
-      description:
-        "Build complex access rules with AND and OR operators to combine multiple conditions.",
-      icon: "🔗",
-    },
-    {
-      title: "Lit Action Conditions",
-      description:
-        "Use dynamic, real-world inputs as conditions including smart contract results, API responses, or off-chain data.",
-      icon: "⚙️",
-    },
-    {
-      title: "Storage Flexibility",
-      description:
-        "Encrypt once, store anywhere. Because encrypted data is just text, you can store it wherever you prefer, whether that's decentralized platforms like IPFS, Arweave, and Ceramic, or traditional providers like AWS.",
-      icon: "💾",
-    },
-    {
-      title: "Client-Side Encryption",
-      description:
-        "Encryption is entirely a client-side operation, with only one round of network interactivity required for decryption.",
-      icon: "🔒",
-    },
-  ];
-
   const examples = [
     {
       title: "Wallet Ownership",
@@ -284,27 +251,27 @@ const EncryptionAccessControlOverview: React.FC = () => {
       <GreyBoarderWhiteBgContainer>
         <h2 style={pageStyles.h2}>Introduction</h2>
         <p style={pageStyles.p}>
-          Lit enables secure encryption of private data for storage on the open
-          web. At the core of Lit’s encryption model is an{" "}
-          <strong>identity-based encryption scheme</strong>, which restricts
-          decryption to users who meet specific, pre-defined identity
-          conditions.
+          Lit Protocol's encryption and access control system enables developers
+          to store data privately while maintaining granular control over who
+          can access it. Using an identity-based encryption scheme, the Lit
+          network ensures that decryption is only permitted to users who satisfy
+          predetermined{" "}
+          <Link
+            to="/encryption/access-control/boolean-logic"
+            style={{ color: "#007bff", textDecoration: "underline" }}
+          >
+            Access Control Conditions
+          </Link>
+          .
         </p>
         <p style={pageStyles.p}>
-          The Lit Network is powered by a distributed set of nodes, each holding
-          a share of a shared BLS key. When a user requests decryption, the
-          network produces a collective BLS signature that serves as the
-          decryption key. Signature shares are only returned if the user can
-          prove they satisfy the associated{" "}
-          <strong>Access Control Conditions</strong> the encrypted data was
-          created with.
-        </p>
-        <p style={pageStyles.p}>
-          Encryption is performed entirely on the client side, keeping private
-          data off the network. Decryption requires just one round of
-          interaction with the Lit nodes to collect signature shares and
-          reconstruct the decryption key, making the process both efficient and
-          secure.
+          The system leverages a distributed BLS (Boneh-Lynn-Shacham) key shared
+          across all Lit nodes, where each node holds a share of the key. When
+          access conditions are met, the network produces signature shares that
+          combine to form a decryption key. This approach enables highly
+          efficient decryption operations that only require a single round of
+          network interactivity, while encryption operations are performed
+          entirely client-side.
         </p>
         <p style={pageStyles.p}>
           To prevent decryption keys from being reused across different pieces
@@ -386,12 +353,43 @@ const EncryptionAccessControlOverview: React.FC = () => {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
             gap: "20px",
             marginTop: "24px",
           }}
         >
-          {features.map((feature, index) => (
+          {[
+            {
+              title: "Distributed Key Management",
+              description:
+                "The BLS key used for encryption is distributed across the entire Lit network, with each node holding only a share. This eliminates single points of failure and ensures that no individual node can decrypt data without network consensus on the access control conditions.",
+              icon: "🌐",
+            },
+            {
+              title: "Client-Side Encryption",
+              description:
+                "The encryption process occurs entirely client-side, ensuring that your sensitive data never leaves your control during the encryption process. Only the encrypted ciphertext and access conditions are stored publicly, maintaining complete privacy for sensitive information.",
+              icon: "🔒",
+            },
+            {
+              title: "Flexible Access Control Conditions",
+              description:
+                "Create sophisticated access control logic using on-chain and off-chain data sources. Support for boolean operators (AND/OR) allows you to combine multiple conditions, creating complex access policies that can respond to real-world events and blockchain data.",
+              icon: "⚙️",
+            },
+            {
+              title: "Storage Agnostic",
+              description:
+                "Works seamlessly with any storage provider, whether decentralized (IPFS, Arweave, Ceramic) or centralized (AWS, Google Cloud). You maintain full control over where your encrypted data is stored while Lit handles the access control layer.",
+              icon: "💾",
+            },
+            {
+              title: "Multi-Chain Support",
+              description:
+                "Access conditions can reference state from most EVM chains, Cosmos, and Solana networks. Don't see your chain? Submit a chain request form to expand support.",
+              icon: "🔗",
+            },
+          ].map((feature, index) => (
             <div
               key={index}
               style={{
@@ -423,6 +421,79 @@ const EncryptionAccessControlOverview: React.FC = () => {
                 }}
               >
                 {feature.description}
+              </p>
+            </div>
+          ))}
+        </div>
+      </GreyBoarderWhiteBgContainer>
+
+      <GreyBoarderWhiteBgContainer style={{ marginTop: "32px" }}>
+        <h2 style={pageStyles.h2}>Use Cases</h2>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gap: "20px",
+            marginTop: "24px",
+          }}
+        >
+          {[
+            {
+              title: "Token-Gated Content",
+              description:
+                "Create exclusive content accessible only to holders of specific NFTs or tokens. Perfect for premium memberships, exclusive communities, and creator monetization strategies.",
+              icon: "🎫",
+            },
+            {
+              title: "Private Data Sharing",
+              description:
+                "Share sensitive information securely with specific individuals or groups based on their on-chain identity or credentials. Ideal for confidential business documents, personal records, and selective information disclosure.",
+              icon: "🤝",
+            },
+            {
+              title: "Conditional File Access",
+              description:
+                "Implement time-based releases, geographic restrictions, or complex multi-factor access requirements for digital content. Enable sophisticated content distribution strategies and regulatory compliance.",
+              icon: "⏰",
+            },
+            {
+              title: "DAO Governance Documents",
+              description:
+                "Secure governance proposals, financial records, and strategic documents with member-only access based on DAO participation, token holdings, or voting power.",
+              icon: "🏛️",
+            },
+          ].map((useCase, index) => (
+            <div
+              key={index}
+              style={{
+                padding: "20px",
+                backgroundColor: "#f8fafc",
+                borderRadius: "8px",
+                border: "1px solid #e2e8f0",
+              }}
+            >
+              <div style={{ fontSize: "2rem", marginBottom: "12px" }}>
+                {useCase.icon}
+              </div>
+              <h3
+                style={{
+                  margin: "0 0 8px 0",
+                  fontSize: "1.2rem",
+                  fontWeight: "600",
+                  color: "#1f2937",
+                }}
+              >
+                {useCase.title}
+              </h3>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "0.9rem",
+                  color: "#6b7280",
+                  lineHeight: "1.5",
+                }}
+              >
+                {useCase.description}
               </p>
             </div>
           ))}

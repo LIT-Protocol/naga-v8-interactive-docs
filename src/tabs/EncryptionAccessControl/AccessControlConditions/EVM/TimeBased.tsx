@@ -262,6 +262,13 @@ const accs = createAccBuilder()
           >
             Boolean Logic
           </Link>
+          , and{" "}
+          <Link
+            to="/encryption/access-control/comparison-operators"
+            style={{ color: "#007bff", textDecoration: "underline" }}
+          >
+            Comparison Operators
+          </Link>
           .
         </p>
       </GreyBoarderWhiteBgContainer>
