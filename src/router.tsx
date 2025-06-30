@@ -65,6 +65,7 @@ import CosmosBalance from "./tabs/EncryptionAccessControl/AccessControlCondition
 import LitAction from "./tabs/EncryptionAccessControl/AccessControlConditions/LitAction";
 import LitActionsOverview from "./tabs/LitActions/Overview";
 import LitActionsDeploying from "./tabs/LitActions/Deploying";
+import LitActionsFetch from "./tabs/LitActions/Fetch";
 
 // Create a type for the context
 type ContextType = {
@@ -371,6 +372,10 @@ export const router = createBrowserRouter([
       {
         path: "lit-actions/deploying",
         element: <LitActionsDeploying />,
+      },
+      {
+        path: "lit-actions/fetch",
+        element: <LitActionsFetch />,
       },
     ],
   },

@@ -848,6 +848,14 @@ const ACTIONS: NavigationItem[] = [
     category: "Private Compute - Lit Actions",
     type: "primary",
   },
+  {
+    id: "lit-actions-fetch",
+    path: "/lit-actions/fetch",
+    name: "Fetching Data",
+    description: "Fetching data from the web",
+    category: "Private Compute - Lit Actions",
+    type: "primary",
+  },
   // {
   //   id: "encryption",
   //   name: "Encryption",
