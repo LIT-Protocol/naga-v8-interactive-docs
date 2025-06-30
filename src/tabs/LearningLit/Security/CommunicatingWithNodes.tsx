@@ -202,7 +202,7 @@ const CommunicatingWithNodes: React.FC = () => {
         <p style={pageStyles.p}>
           The Naga node operator set will be selected via a staking contest
           following the Lit TGE. Any party interested in running a node will be
-          able to participate and the top 10 node operators based on "
+          able to participate, and the top 10 node operators based on "
           <a
             href="https://github.com/LIT-Protocol/LITKEY-Token-Paper-v1/blob/main/%24LITKEY%20Whitepaper%20-%20v1.pdf"
             target="_blank"
