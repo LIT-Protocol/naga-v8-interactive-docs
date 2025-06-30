@@ -4,6 +4,7 @@ export interface PageStyles {
     h1: CSSProperties;
     h2: CSSProperties;
     h3: CSSProperties;
+    h4: CSSProperties;
     p: CSSProperties;
     label: CSSProperties;
     input: CSSProperties;
@@ -33,6 +34,13 @@ export const pageStyles: PageStyles = {
         fontSize: "1.5rem",
         fontWeight: "600",
         color: "#1f2937",
+        marginBottom: "12px",
+    },
+    h4: {
+        fontSize: "1.25rem",
+        fontWeight: "600",
+        color: "#374151",
+        marginTop: "24px",
         marginBottom: "12px",
     },
     p: {

@@ -63,6 +63,17 @@ import SOLWalletOwnership from "./tabs/EncryptionAccessControl/AccessControlCond
 import CosmosWalletOwnership from "./tabs/EncryptionAccessControl/AccessControlConditions/Cosmos/WalletOwnership";
 import CosmosBalance from "./tabs/EncryptionAccessControl/AccessControlConditions/Cosmos/CosmosBalance";
 import LitAction from "./tabs/EncryptionAccessControl/AccessControlConditions/LitAction";
+import LitActionsOverview from "./tabs/LitActions/Overview";
+import LitActionsDeploying from "./tabs/LitActions/Deploying";
+import LitActionsFetch from "./tabs/LitActions/Fetch";
+import LitActionsRunOnce from "./tabs/LitActions/RunOnce";
+import LitActionsGetRpcUrl from "./tabs/LitActions/GetRpcUrl";
+import LitActionsBroadcastAndCollect from "./tabs/LitActions/BroadcastAndCollect";
+import LitActionsConditionalExecution from "./tabs/LitActions/ConditionalExecution";
+import LitActionsPKPSigning from "./tabs/LitActions/PKPSigning";
+import LitActionsPKPSigningEIP191 from "./tabs/LitActions/PKPSigningEIP191";
+import LitActionsDecrypting from "./tabs/LitActions/Decrypting";
+import LitActionsQuickStart from "./tabs/LitActions/QuickStart";
 
 // Create a type for the context
 type ContextType = {
@@ -360,6 +371,51 @@ export const router = createBrowserRouter([
       {
         path: "encryption/access-control/cosmos/cosmos-balance",
         element: <CosmosBalance />,
+      },
+      // Lit Actions
+      {
+        path: "lit-actions/overview",
+        element: <LitActionsOverview />,
+      },
+      {
+        path: "lit-actions/quick-start",
+        element: <LitActionsQuickStart />,
+      },
+      {
+        path: "lit-actions/deploying",
+        element: <LitActionsDeploying />,
+      },
+      {
+        path: "lit-actions/fetch",
+        element: <LitActionsFetch />,
+      },
+      {
+        path: "lit-actions/run-once",
+        element: <LitActionsRunOnce />,
+      },
+      {
+        path: "lit-actions/get-rpc-url",
+        element: <LitActionsGetRpcUrl />,
+      },
+      {
+        path: "lit-actions/broadcast-and-collect",
+        element: <LitActionsBroadcastAndCollect />,
+      },
+      {
+        path: "lit-actions/conditional-execution",
+        element: <LitActionsConditionalExecution />,
+      },
+      {
+        path: "lit-actions/pkp-signing",
+        element: <LitActionsPKPSigning />,
+      },
+      {
+        path: "lit-actions/pkp-signing-eip191",
+        element: <LitActionsPKPSigningEIP191 />,
+      },
+      {
+        path: "lit-actions/decrypting",
+        element: <LitActionsDecrypting />,
       },
     ],
   },
