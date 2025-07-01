@@ -14,20 +14,20 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useWalletClient } from "wagmi";
-import { DisplayCode } from "../components/DisplayCode";
-import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgContainer";
+import { DisplayCode } from "../../../components/DisplayCode";
+import GreyBoarderWhiteBgContainer from "../../../components/layout/GreyboardWhiteBgContainer";
 import AccountMethodSelector, {
   AccountMethod,
   CREATE_ACCOUNT_PRIVATE_KEY_CODE,
   CREATE_ACCOUNT_WALLET_CLIENT_CODE,
-} from "../components/common/AccountMethodSelector";
-import { useAppContext } from "../router";
-import { pageStyles } from "../styles/pageStyles";
+} from "../../../components/common/AccountMethodSelector";
+import { useAppContext } from "../../../router";
+import { pageStyles } from "../../../styles/pageStyles";
 import {
   isValidEthereumAddress,
   validateEthAmount,
   toChecksumAddress,
-} from "../utils/paymentHelpers";
+} from "../../../utils/paymentHelpers";
 
 // Code snippets for documentation
 const SETUP_CODE = `
