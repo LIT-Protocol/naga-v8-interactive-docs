@@ -429,8 +429,7 @@ const PayingForLitOverview: React.FC = () => {
               <>
                 <p>
                   Depositing <code>$LITKEY</code> on behalf of someone else
-                  gives them complete control over the <code>$LITKEY</code>, and
-                  removing your control.
+                  gives them complete control over the <code>$LITKEY</code>.
                 </p>
                 <p>
                   You will not be able to reclaim the deposited{" "}

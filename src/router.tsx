@@ -77,6 +77,7 @@ import LitActionsQuickStart from "./tabs/LitActions/QuickStart";
 import PayingForLitOverview from "./tabs/PayingForLit/Overview";
 import PaymentManagerDepositing from "./tabs/PayingForLit/PaymentManager/Depositing";
 import SetupPaymentManager from "./tabs/PayingForLit/PaymentManager/SetupPaymentManager";
+import PaymentManagerDelegating from "./tabs/PayingForLit/PaymentManager/Delegating";
 
 // Create a type for the context
 type ContextType = {
@@ -220,6 +221,10 @@ export const router = createBrowserRouter([
       {
         path: "paying-for-lit/payment-manager/depositing",
         element: <PaymentManagerDepositing />,
+      },
+      {
+        path: "paying-for-lit/payment-manager/delegating",
+        element: <PaymentManagerDelegating />,
       },
 
       // Programmable Keys

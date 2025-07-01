@@ -510,8 +510,16 @@ const ACTIONS: NavigationItem[] = [
       {
         id: "paying-for-lit-payment-manager-depositing",
         path: "/paying-for-lit/payment-manager/depositing",
-        name: "Depositing $LITKEY",
+        name: "Depositing",
         description: "Depositing $LITKEY tokens to the Ledger Contract",
+        category: "Paying for Lit",
+        type: "secondary",
+      },
+      {
+        id: "paying-for-lit-payment-manager-delegating",
+        path: "/paying-for-lit/payment-manager/delegating",
+        name: "Delegating",
+        description: "Delegating $LITKEY tokens to the Ledger Contract",
         category: "Paying for Lit",
         type: "secondary",
       },
