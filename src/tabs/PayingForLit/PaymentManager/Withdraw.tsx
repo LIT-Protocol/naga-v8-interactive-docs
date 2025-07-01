@@ -72,7 +72,7 @@ console.log(\`New available balance: \${balance.availableBalance} $LITKEY\`);`;
         <p style={pageStyles.p}>
           Withdrawing <code>$LITKEY</code> tokens from the Ledger smart contract
           follows a two-step process designed for security and health of the
-          network. You first request a withdraw, wait for a mandatory delay
+          network. You must first request a withdraw, wait for a mandatory delay
           period, and then execute the withdraw to receive your tokens back to
           your wallet.
         </p>
@@ -159,12 +159,11 @@ console.log(\`New available balance: \${balance.availableBalance} $LITKEY\`);`;
       </GreyBoarderWhiteBgContainer>
 
       <GreyBoarderWhiteBgContainer style={{ marginTop: "32px" }}>
-        <h2 style={pageStyles.h2}>Step 1: Request Withdraw</h2>
+        <h2 style={pageStyles.h2}>Step 1: Request a Withdraw</h2>
 
         <p style={pageStyles.p}>
-          Begin the withdraw process by requesting a withdraw of the desired
-          amount. This submits a withdraw request to the Ledger contract and
-          starts the delay period.
+          Begin the withdraw process by requesting your desired amount of tokens
+          to be withdrawn from the Ledger payment contract:
         </p>
 
         <DisplayCode code={requestWithdrawExample} language="typescript" />

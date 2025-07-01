@@ -2,6 +2,7 @@ import React from "react";
 import GreyBoarderWhiteBgContainer from "../../components/layout/GreyboardWhiteBgContainer";
 import { pageStyles } from "../../styles/pageStyles";
 import NoteCallout from "../../components/common/NoteCallout";
+import { Link } from "react-router-dom";
 
 interface PaymentRequirement {
   requestType: string;
@@ -265,24 +266,20 @@ const PayingForLitOverview: React.FC = () => {
             by calling the Ledger contract directly.
           </p>
           <p>
-            After your deposit transaction is confirmed, you can immediately
-            start using your balance to pay for Lit network requests.
+            After your deposit is confirmed, you can immediately start using
+            your balance to pay for requests.
           </p>
         </>
       ),
       stepNumber: 1,
     },
     {
-      title: "Use the Lit Network",
+      title: "Pay for Usage",
       description: (
         <>
           <p>
-            You are now setup to make requests to the Lit network that require
-            payment.
-          </p>
-          <p>
-            The Lit nodes will handle deducting from your balance automatically
-            as you make requests to the Lit network.
+            You are now ready to use the Lit network. Your balance will
+            automatically be deducted according to your usage.
           </p>
         </>
       ),
@@ -297,19 +294,41 @@ const PayingForLitOverview: React.FC = () => {
       description: (
         <>
           <p>
-            At any point in time you can submit a request to withdraw your
-            <code>$LITKEY</code> from the Ledger contract using the Payment
-            Manager or by calling the Ledger contract directly.
+            You can request to withdraw your <code>$LITKEY</code> from the
+            Ledger contract at any time, either through the Payment Manager or
+            by interacting with the Ledger contract directly.
           </p>
           <p>
-            Once your withdraw transaction is confirmed by the network, a time
-            delay before you can complete your withdraw to your wallet begins.
+            Once your withdraw request is submitted and confirmed on-chain,
+            there will be a time delay before the withdraw can be finalized, and
+            the tokens are transferred to your wallet.
           </p>
-          <p>
-            Using the Payment Manager, or by calling the Ledger contract
-            directly, you can view the current withdraw delay, as well as how
-            long your withdraw request has until it can be completed.
-          </p>
+          <NoteCallout
+            title="Withdraw Delays"
+            message={
+              <>
+                <p>
+                  The withdrawal delay is configurable by the Lit network
+                  administrators and is used to prevent abuse of the withdraw
+                  functionality and maintain the health of the network.
+                </p>
+                <p>
+                  The current withdrawal delay can be queried along with the
+                  status of your withdraw request using the Payment Manager or
+                  by calling the Ledger contract directly. Learn more about the
+                  withdraw process{" "}
+                  <Link
+                    to="/docs/ledger/withdraw"
+                    style={{ color: "#0ea5e9", textDecoration: "underline" }}
+                  >
+                    here
+                  </Link>
+                  .
+                </p>
+              </>
+            }
+            variant="note"
+          />
         </>
       ),
       stepNumber: 3,
@@ -397,10 +416,9 @@ const PayingForLitOverview: React.FC = () => {
             payment.
           </p>
           <p>
-            The Lit nodes will automatically handle deducting from your
-            deposited <code>$LITKEY</code>, and update the tracking for any
-            payment restrictions you've set, as the delegatee makes requests to
-            the Lit network that require payment.
+            Your <code>$LITKEY</code> balance will automatically be deducted as
+            the delegatee uses the Lit network according to the payment
+            restrictions you've set.
           </p>
         </>
       ),
@@ -453,9 +471,8 @@ const PayingForLitOverview: React.FC = () => {
             require payment.
           </p>
           <p>
-            The Lit nodes will automatically handle deducting from the user's{" "}
-            <code>$LITKEY</code> balance when making requests to the Lit network
-            that require payment.
+            The user's <code>$LITKEY</code> balance will automatically be
+            deducted as they make requests to the Lit network.
           </p>
         </>
       ),
@@ -493,15 +510,15 @@ const PayingForLitOverview: React.FC = () => {
       <GreyBoarderWhiteBgContainer>
         <h2 style={pageStyles.h2}>Introduction</h2>
         <p style={pageStyles.p}>
-          Like other decentralized networks, Lit requires payment for the
-          operations done on your behalf by the node operators.
+          Similar to other blockchains and distributed systems, Lit requires you
+          to pay for the operations executed by Lit's decentralized set of node
+          operators.
         </p>
         <p style={pageStyles.p}>
-          Payment for various requests such as PKP signing, decryption, and Lit
-          Action execution is done by depositing the <code>$LITKEY</code> token
-          into the Ledger smart contract where the Lit nodes will automatically
-          deduct from your deposited amount as you make requests to the Lit
-          network.
+          You can pay for various network requests (i.e. signing, decryption,
+          Lit Action execution) by depositing <code>$LITKEY</code> tokens into
+          Lit's Ledger payment contract. Your balance will be deducted
+          automatically according to your usage and the restrictions you set.
         </p>
         <p style={pageStyles.p}>
           This system provides a unified payment infrastructure that enables
