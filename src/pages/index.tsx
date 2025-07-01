@@ -473,14 +473,53 @@ const ACTIONS: NavigationItem[] = [
     type: "primary",
   },
 
-  // Payment Management
+  // Paying for Lit
   {
-    id: "payment-manager",
-    path: "/payment-manager",
-    name: "Payment Manager",
-    description:
-      "Manage deposits, withdrawals, and balance queries on the Ledger Contract",
-    category: "Payment Management",
+    id: "paying-for-lit-overview",
+    path: "/paying-for-lit/overview",
+    name: "Overview",
+    description: "Overview of paying for Lit",
+    category: "Paying for Lit",
+    type: "primary",
+  },
+  {
+    id: "paying-for-lit-payment-manager-quickstart",
+    path: "/paying-for-lit/payment-manager/quickstart",
+    name: "Quickstart",
+    description: "Quickstart guide to using the Payment Manager",
+    category: "Paying for Lit",
+    type: "primary",
+  },
+  {
+    id: "paying-for-lit-payment-manager-setup-payment-manager",
+    path: "/paying-for-lit/payment-manager/setup-payment-manager",
+    name: "Setup Payment Manager",
+    description: "Setup the Payment Manager",
+    category: "Paying for Lit",
+    type: "primary",
+  },
+  {
+    id: "paying-for-lit-payment-manager-depositing",
+    path: "/paying-for-lit/payment-manager/depositing",
+    name: "Depositing",
+    description: "Depositing $LITKEY tokens to the Ledger Contract",
+    category: "Paying for Lit",
+    type: "primary",
+  },
+  {
+    id: "paying-for-lit-payment-manager-delegating",
+    path: "/paying-for-lit/payment-manager/delegating",
+    name: "Delegating",
+    description: "Delegating $LITKEY tokens to the Ledger Contract",
+    category: "Paying for Lit",
+    type: "primary",
+  },
+  {
+    id: "paying-for-lit-payment-manager-withdrawing",
+    path: "/paying-for-lit/payment-manager/withdrawing",
+    name: "Withdrawing",
+    description: "Withdrawing $LITKEY tokens from the Ledger Contract",
+    category: "Paying for Lit",
     type: "primary",
   },
 

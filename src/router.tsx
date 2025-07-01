@@ -23,7 +23,7 @@ import SetupAuthServicesTab from "./tabs/BuildingWithLit/SetupAuthServicesTab";
 import EoaNativeTab from "./tabs/EoaNativeTab";
 import StoragePluginsTab from "./tabs/GettingStarted/StoragePluginsTab";
 import StytchTotpAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/AuthMethodProviders/2fa/StytchTotpAuthTab";
-import PaymentManagerTab from "./tabs/PaymentManagerTab";
+import PaymentManagerQuickStart from "./tabs/PayingForLit/PaymentManager/QuickStart";
 import HomePageTab from "./tabs/HomePageTab";
 import WhatIsLitTab from "./tabs/LearningLit/WhatIsLitTab";
 import HowItWorksTab from "./tabs/LearningLit/HowItWorksTab";
@@ -74,6 +74,11 @@ import LitActionsPKPSigning from "./tabs/LitActions/PKPSigning";
 import LitActionsPKPSigningEIP191 from "./tabs/LitActions/PKPSigningEIP191";
 import LitActionsDecrypting from "./tabs/LitActions/Decrypting";
 import LitActionsQuickStart from "./tabs/LitActions/QuickStart";
+import PayingForLitOverview from "./tabs/PayingForLit/Overview";
+import PaymentManagerDepositing from "./tabs/PayingForLit/PaymentManager/Depositing";
+import SetupPaymentManager from "./tabs/PayingForLit/PaymentManager/SetupPaymentManager";
+import PaymentManagerDelegating from "./tabs/PayingForLit/PaymentManager/Delegating";
+import PaymentManagerWithdraw from "./tabs/PayingForLit/PaymentManager/Withdraw";
 
 // Create a type for the context
 type ContextType = {
@@ -201,6 +206,32 @@ export const router = createBrowserRouter([
         element: <StoragePluginsTab />,
       },
 
+      // Paying for Lit
+      {
+        path: "paying-for-lit/overview",
+        element: <PayingForLitOverview />,
+      },
+      {
+        path: "paying-for-lit/payment-manager/quickstart",
+        element: <PaymentManagerQuickStart />,
+      },
+      {
+        path: "paying-for-lit/payment-manager/setup-payment-manager",
+        element: <SetupPaymentManager />,
+      },
+      {
+        path: "paying-for-lit/payment-manager/depositing",
+        element: <PaymentManagerDepositing />,
+      },
+      {
+        path: "paying-for-lit/payment-manager/delegating",
+        element: <PaymentManagerDelegating />,
+      },
+      {
+        path: "paying-for-lit/payment-manager/withdrawing",
+        element: <PaymentManagerWithdraw />,
+      },
+
       // Programmable Keys
       {
         path: "programmable-keys/overview",
@@ -250,10 +281,6 @@ export const router = createBrowserRouter([
       {
         path: "programmable-keys/pkps/auth-methods/custom-auth",
         element: <CustomAuthTab />,
-      },
-      {
-        path: "payment-manager",
-        element: <PaymentManagerTab />,
       },
       // PKP View Methods
       {

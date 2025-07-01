@@ -1,6 +1,7 @@
 import { CSSProperties } from 'react';
 
 export interface PageStyles {
+    container: CSSProperties;
     h1: CSSProperties;
     h2: CSSProperties;
     h3: CSSProperties;
@@ -13,9 +14,17 @@ export interface PageStyles {
     ul: CSSProperties;
     ol: CSSProperties;
     li: CSSProperties;
+    table: CSSProperties;
+    th: CSSProperties;
+    td: CSSProperties;
 }
 
 export const pageStyles: PageStyles = {
+    container: {
+        maxWidth: "1000px",
+        margin: "0 auto",
+        padding: "20px",
+    },
     h1: {
         fontSize: "2.5rem",
         fontWeight: "700",
@@ -90,6 +99,24 @@ export const pageStyles: PageStyles = {
     },
     li: {
         marginBottom: "8px",
+        color: "#4b5563",
+    },
+    table: {
+        width: "100%",
+        borderCollapse: "collapse" as const,
+        marginBottom: "24px",
+    },
+    th: {
+        backgroundColor: "#f8fafc",
+        padding: "12px",
+        textAlign: "left" as const,
+        borderBottom: "2px solid #e2e8f0",
+        fontWeight: "600",
+        color: "#1f2937",
+    },
+    td: {
+        padding: "12px",
+        borderBottom: "1px solid #e2e8f0",
         color: "#4b5563",
     },
 }; 
