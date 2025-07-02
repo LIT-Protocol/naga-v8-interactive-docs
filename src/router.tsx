@@ -80,6 +80,7 @@ import MakingYourFirstRequestOverview from "./tabs/BuildingWithLit/MakingYourFir
 import SetupLitClient from "./tabs/BuildingWithLit/MakingYourFirstRequest/Prerequisites/SetupLitClient";
 import SetupAuthManager from "./tabs/BuildingWithLit/MakingYourFirstRequest/Prerequisites/SetupAuthManager";
 import CreatingAuthContext from "./tabs/BuildingWithLit/MakingYourFirstRequest/Prerequisites/CreatingAuthContext";
+import EncryptionAndAccessControl from "./tabs/BuildingWithLit/MakingYourFirstRequest/EncryptionAndAccessControl";
 
 // Create a type for the context
 type ContextType = {
@@ -201,6 +202,10 @@ export const router = createBrowserRouter([
       {
         path: "building-with-lit/first-request/prerequisites/creating-auth-context",
         element: <CreatingAuthContext />,
+      },
+      {
+        path: "building-with-lit/first-request/encryption-and-access-control",
+        element: <EncryptionAndAccessControl />,
       },
       {
         path: "building-with-lit/setup-auth-services",

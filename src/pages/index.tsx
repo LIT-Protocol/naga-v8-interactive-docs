@@ -490,6 +490,14 @@ const ACTIONS: NavigationItem[] = [
           },
         ],
       },
+      {
+        id: "building-with-lit-first-request-encryption-and-access-control",
+        path: "/building-with-lit/first-request/encryption-and-access-control",
+        name: "Encryption and Access Control",
+        description: "Encryption and Access Control",
+        category: "Building With Lit",
+        type: "secondary",
+      },
     ],
   },
   // TODO Improve

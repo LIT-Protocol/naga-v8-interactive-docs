@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import GreyBoarderWhiteBgContainer from "../../../components/layout/GreyboardWhiteBgContainer";
+import { pageStyles } from "../../../styles/pageStyles";
 
 interface LitCapabilityProps {
   title: string;
@@ -54,41 +55,6 @@ const LitCapability: React.FC<LitCapabilityProps> = ({
 );
 
 const MakingYourFirstRequestOverview: React.FC = () => {
-  const pageStyles = {
-    container: {
-      maxWidth: "1000px",
-      margin: "0 auto",
-      padding: "20px",
-    },
-    h1: {
-      fontSize: "2.5rem",
-      fontWeight: "700",
-      color: "#1f2937",
-      marginBottom: "24px",
-    },
-    h2: {
-      fontSize: "2rem",
-      fontWeight: "600",
-      color: "#1f2937",
-      marginBottom: "16px",
-      borderBottom: "1px solid #e5e7eb",
-      paddingBottom: "8px",
-    },
-    h3: {
-      fontSize: "1.5rem",
-      fontWeight: "600",
-      color: "#374151",
-      marginTop: "24px",
-      marginBottom: "12px",
-    },
-    p: {
-      fontSize: "1rem",
-      lineHeight: "1.6",
-      color: "#4b5563",
-      marginBottom: "16px",
-    },
-  };
-
   const litCapabilities = [
     {
       title: "Encryption & Access Control",
