@@ -5,3 +5,4 @@ export { default as WarningCallout } from './WarningCallout';
 export { default as CollapsibleSection } from './CollapsibleSection';
 export { default as RequiredPackages } from './RequiredPackages';
 export { default as PkpSelectionComponentSimplified } from './PkpSelectionComponentSimplified';
+export { default as LinkExternal } from './LinkExternal';

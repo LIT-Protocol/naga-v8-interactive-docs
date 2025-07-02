@@ -368,6 +368,8 @@ const ACTIONS: NavigationItem[] = [
     category: "Home",
     type: "primary",
   },
+
+  // Learning Lit
   {
     id: "what-is-lit",
     path: "/learning-lit/what-is-lit",
@@ -381,6 +383,14 @@ const ACTIONS: NavigationItem[] = [
     path: "/learning-lit/how-it-works",
     name: "How It Works",
     description: "An overview of how Lit Protocol works.",
+    category: "Learning Lit",
+    type: "primary",
+  },
+  {
+    id: "chronicle-yellowstone",
+    path: "/learning-lit/chronicle-yellowstone",
+    name: "Chronicle Yellowstone",
+    description: "Chronicle Yellowstone",
     category: "Learning Lit",
     type: "primary",
   },
