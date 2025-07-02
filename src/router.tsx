@@ -81,6 +81,7 @@ import SetupLitClient from "./tabs/BuildingWithLit/MakingYourFirstRequest/Prereq
 import SetupAuthManager from "./tabs/BuildingWithLit/MakingYourFirstRequest/Prerequisites/SetupAuthManager";
 import CreatingAuthContext from "./tabs/BuildingWithLit/MakingYourFirstRequest/Prerequisites/CreatingAuthContext";
 import EncryptionAndAccessControl from "./tabs/BuildingWithLit/MakingYourFirstRequest/EncryptionAndAccessControl";
+import PKPSigning from "./tabs/BuildingWithLit/MakingYourFirstRequest/PKPSigning";
 
 // Create a type for the context
 type ContextType = {
@@ -206,6 +207,10 @@ export const router = createBrowserRouter([
       {
         path: "building-with-lit/first-request/encryption-and-access-control",
         element: <EncryptionAndAccessControl />,
+      },
+      {
+        path: "building-with-lit/first-request/pkp-signing",
+        element: <PKPSigning />,
       },
       {
         path: "building-with-lit/setup-auth-services",

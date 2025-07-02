@@ -987,7 +987,7 @@ const decrypted = await litClient.decrypt({
               {
                 title: "Access Control Conditions",
                 description:
-                  "Not that you've seen the basics of encryption and access control, you can learn more about how to create more complex access control conditions in the Access Control Conditions section",
+                  "Now that you've seen the basics of encryption and access control, you can learn more about how to create more complex access control conditions in the Access Control Conditions section",
                 path: "/encryption/overview",
                 color: "#3b82f6",
               },

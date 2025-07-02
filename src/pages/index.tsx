@@ -498,6 +498,14 @@ const ACTIONS: NavigationItem[] = [
         category: "Building With Lit",
         type: "secondary",
       },
+      {
+        id: "building-with-lit-first-request-pkp-signing",
+        path: "/building-with-lit/first-request/pkp-signing",
+        name: "PKP Signing",
+        description: "PKP Signing",
+        category: "Building With Lit",
+        type: "secondary",
+      },
     ],
   },
   // TODO Improve
