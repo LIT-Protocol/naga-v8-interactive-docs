@@ -262,21 +262,21 @@ const MakingYourFirstRequestOverview: React.FC = () => {
               title: "Encryption & Access Control",
               description:
                 "Learn to encrypt data and create access control conditions",
-              path: "/encryption-access-control/overview",
+              path: "/building-with-lit/first-request/encryption-and-access-control",
               color: "#3b82f6",
             },
             {
               title: "Programmable Key Pairs (PKPs)",
               description:
                 "Create and manage blockchain accounts with programmable conditions",
-              path: "/programmable-keys/overview",
+              path: "/building-with-lit/first-request/pkp-signing",
               color: "#8b5cf6",
             },
             {
               title: "Lit Actions",
               description:
                 "Build serverless functions with access to on-chain and off-chain data",
-              path: "/lit-actions/overview",
+              path: "/building-with-lit/first-request/lit-action-execution",
               color: "#f59e0b",
             },
           ].map((next, index) => (

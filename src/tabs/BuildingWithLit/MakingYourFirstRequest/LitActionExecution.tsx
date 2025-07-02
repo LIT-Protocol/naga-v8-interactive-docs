@@ -1,53 +1,45 @@
 /**
- * PKPSigning.tsx
+ * LitActionExecution.tsx
  *
- * A beginner-friendly guide to PKP signing with Lit Protocol.
+ * A beginner-friendly guide to executing Lit Actions with Lit Protocol.
  * Part of the "Making Your First Request" tutorial series.
  */
 
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { sepolia } from "viem/chains";
 import GreyBoarderWhiteBgContainer from "../../../components/layout/GreyboardWhiteBgContainer";
 import { DisplayCode } from "../../../components/DisplayCode";
-import { NoteCallout, RequiredPackages } from "../../../components/common";
+import { RequiredPackages } from "../../../components/common";
 import AccountMethodSelector, {
   AccountMethod,
   CREATE_ACCOUNT_PRIVATE_KEY_CODE,
   CREATE_ACCOUNT_WALLET_CLIENT_CODE,
 } from "../../../components/common/AccountMethodSelector";
-import SimplePkpSelection from "../../../components/common/PkpSelectionComponentSimplified";
 import { pageStyles } from "../../../styles/pageStyles";
 import { useAppContext } from "../../../router";
 
-const PKPSigning: React.FC = () => {
+const LitActionExecution: React.FC = () => {
   const { areDependenciesLoaded, assertDependenciesLoaded, showError } =
     useAppContext();
 
-  // State for authentication
+  // State for user account
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [userAccount, setUserAccount] = useState<any>(null);
   const [accountMethod, setAccountMethod] =
     useState<AccountMethod>("walletClient");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [authData, setAuthData] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [authContext, setAuthContext] = useState<any>(null);
 
-  // State for PKP
+  // State for Lit Action execution
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [pkpInfo, setPkpInfo] = useState<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [pkpAuthContext, setPkpAuthContext] = useState<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [pkpViemAccount, setPkpViemAccount] = useState<any>(null);
-
-  // State for signing
-  const [transactionHash, setTransactionHash] = useState<string>("");
+  const [actionResult, setActionResult] = useState<any>(null);
 
   // State for loading states
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [isCreatingAuthContext, setIsCreatingAuthContext] = useState(false);
-  const [isCreatingViemAccount, setIsCreatingViemAccount] = useState(false);
-  const [isSigningTransaction, setIsSigningTransaction] = useState(false);
+  const [isExecutingAction, setIsExecutingAction] = useState(false);
 
   const [currentStep, setCurrentStep] = useState(1);
 
@@ -102,20 +94,8 @@ const PKPSigning: React.FC = () => {
     }
   };
 
-  interface PKPInfo {
-    tokenId: string;
-    publicKey: string;
-    ethAddress: string;
-    pubkey?: string;
-  }
-
-  const handlePkpSelected = (pkpInfo: PKPInfo) => {
-    setPkpInfo(pkpInfo);
-    setCurrentStep(4);
-  };
-
-  const createPKPAuthContext = async () => {
-    if (!authData || !pkpInfo) {
+  const createAuthContext = async () => {
+    if (!userAccount || !authData) {
       showError?.("Please complete previous steps first");
       return;
     }
@@ -129,34 +109,31 @@ const PKPSigning: React.FC = () => {
     try {
       const { authManager, litClient } = assertDependenciesLoaded();
 
-      const authContext = await authManager.createPkpAuthContext({
-        authData: authData,
-        pkpPublicKey: pkpInfo.pubkey || pkpInfo.publicKey,
+      const authContext = await authManager.createEoaAuthContext({
+        config: {
+          account: userAccount,
+        },
         authConfig: {
-          resources: [
-            ["pkp-signing", "*"],
-            ["lit-action-execution", "*"],
-          ],
-          capabilityAuthSigs: [],
-          expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
-          statement: "Sign transactions with my PKP",
           domain: window.location.host,
+          statement: "Execute Lit Action with Lit Protocol",
+          expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
+          resources: [["lit-action-execution", "*"]],
         },
         litClient,
       });
 
-      setPkpAuthContext(authContext);
-      setCurrentStep(5);
+      setAuthContext(authContext);
+      setCurrentStep(4);
     } catch (error) {
-      showError?.(`Failed to create PKP auth context: ${error}`);
+      showError?.(`Failed to create authentication context: ${error}`);
     } finally {
       setIsCreatingAuthContext(false);
     }
   };
 
-  const createPKPViemAccount = async () => {
-    if (!pkpAuthContext) {
-      showError?.("Please complete previous steps first");
+  const executeLitAction = async () => {
+    if (!authContext) {
+      showError?.("Please complete all previous steps first");
       return;
     }
 
@@ -165,52 +142,65 @@ const PKPSigning: React.FC = () => {
       return;
     }
 
-    setIsCreatingViemAccount(true);
+    setIsExecutingAction(true);
     try {
       const { litClient } = assertDependenciesLoaded();
 
-      const viemAccount = await litClient.getPkpViemAccount({
-        pkpPublicKey: pkpAuthContext.pkpPublicKey,
-        authContext: pkpAuthContext,
-        chainConfig: sepolia,
+      // ETH balance check Lit Action
+      const { createAccBuilder } = await import(
+        "@lit-protocol/access-control-conditions"
+      );
+
+      const _litActionCode = async () => {
+        try {
+          // Check if the user has at least 0.001 ETH
+          const testResult = await Lit.Actions.checkConditions({
+            conditions: jsParams.conditions,
+            authSig: jsParams.authSig,
+            chain: "ethereum",
+          });
+
+          if (!testResult) {
+            return Lit.Actions.setResponse({
+              response:
+                "❌ Access denied: You need at least 0.001 ETH to proceed",
+            });
+          }
+
+          return Lit.Actions.setResponse({
+            response: "✅ Access granted! You have sufficient ETH balance",
+          });
+        } catch (error) {
+          const err = error as Error;
+          Lit.Actions.setResponse({
+            response: `Error: ${err.message}`,
+          });
+        }
+      };
+
+      const litActionCode = `(${_litActionCode.toString()})();`;
+
+      const jsParams = {
+        conditions: createAccBuilder()
+          .requireEthBalance("1000000000000000", ">=") // 0.001 ETH
+          .on("sepolia")
+          .build(),
+        authSig: authContext.authSig,
+      };
+
+      console.log("Executing Lit Action:", litActionCode);
+
+      const result = await litClient.executeJs({
+        code: litActionCode,
+        authContext: authContext,
+        jsParams: jsParams,
       });
 
-      setPkpViemAccount(viemAccount);
-      setCurrentStep(6);
+      setActionResult(result);
     } catch (error) {
-      showError?.(`Failed to create PKP viem account: ${error}`);
+      showError?.(`Failed to execute Lit Action: ${error}`);
     } finally {
-      setIsCreatingViemAccount(false);
-    }
-  };
-
-  const signTransaction = async () => {
-    if (!pkpViemAccount) {
-      showError?.("Please complete all previous steps first");
-      return;
-    }
-
-    setIsSigningTransaction(true);
-    try {
-      const { createWalletClient, http, parseEther } = await import("viem");
-
-      const walletClient = createWalletClient({
-        account: pkpViemAccount,
-        chain: sepolia,
-        transport: http(),
-      });
-
-      const hash = await walletClient.sendTransaction({
-        account: pkpViemAccount,
-        to: pkpViemAccount.address, // Self-transfer
-        value: parseEther("0.001"),
-      });
-
-      setTransactionHash(hash);
-    } catch (error) {
-      showError?.(`Failed to sign transaction: ${error}`);
-    } finally {
-      setIsSigningTransaction(false);
+      setIsExecutingAction(false);
     }
   };
 
@@ -230,85 +220,86 @@ const authData = await ViemAccountAuthenticator.authenticate(userAccount);`
 // Authenticate the user account (wallet client)
 const authData = await WalletClientAuthenticator.authenticate(walletClient);`;
 
-  const mintCode = `// PKP Selection Component - can either select existing or mint new
-<SimplePkpSelection
-  authData={authData}
-  onPkpSelected={(pkpInfo) => {
-    // Handle selected PKP
-    console.log("Selected PKP:", pkpInfo);
-  }}
-  setStatus={setStatus}
-  assertDependenciesLoaded={assertDependenciesLoaded}
-  showError={showError}
-  authMethodName="EOA Auth"
-  disabled={!authData}
-/>`;
-
-  const authContextCode = `// Create PKP authentication context
-const authContext = await authManager.createPkpAuthContext({
-  authData: authData,
-  pkpPublicKey: pkpInfo.pubkey,
+  const authContextCode = `// Create authentication context for Lit Action execution
+const authContext = await authManager.createEoaAuthContext({
+  config: {
+    account: userAccount,
+  },
   authConfig: {
+    domain: window.location.host,
+    statement: 'Execute Lit Action with Lit Protocol',
+    expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
     resources: [
-      ['pkp-signing', '*'],
       ['lit-action-execution', '*'],
     ],
-    capabilityAuthSigs: [],
-    expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
-    statement: 'Sign transactions with my PKP',
-    domain: window.location.host,
   },
   litClient,
 });`;
 
-  const viemAccountCode = `import { sepolia } from "viem/chains";
+  const getActionCode = () => {
+    return `import { createAccBuilder } from "@lit-protocol/access-control-conditions";
 
-// Create a viem-compatible account from the PKP
-const pkpViemAccount = await litClient.getPkpViemAccount({
-  pkpPublicKey: authContext.pkpPublicKey,
+// Lit Action code for ETH balance check
+const _litActionCode = async () => {
+  try {
+    // Check if user has at least 0.001 ETH
+    const testResult = await Lit.Actions.checkConditions({
+      conditions: jsParams.conditions,
+      authSig: jsParams.authSig,
+      chain: "ethereum",
+    });
+
+    if (!testResult) {
+      return LitActions.setResponse({
+        response: "❌ Access denied: You need at least 0.001 ETH"
+      });
+    }
+
+    return LitActions.setResponse({
+      response: "✅ Access granted! Sufficient ETH balance"
+    });
+  } catch (error) {
+    LitActions.setResponse({ response: error.message });
+  }
+};
+
+const litActionCode = \`(\${_litActionCode.toString()})();\`;
+
+// Execute the Lit Action
+const result = await litClient.executeJs({
+  code: litActionCode,
   authContext: authContext,
-  chainConfig: sepolia,
-});
-
-console.log("PKP Address:", pkpViemAccount.address);`;
-
-  const transactionCode = `import { createWalletClient, http, parseEther } from "viem";
-
-// Create a wallet client with the PKP account
-const walletClient = createWalletClient({
-  account: pkpViemAccount,
-  chain: sepolia,
-  transport: http(),
-});
-
-// Send a transaction using the PKP
-const hash = await walletClient.sendTransaction({
-  account: pkpViemAccount,
-  to: pkpViemAccount.address, // Self-transfer
-  value: parseEther("0.001"),
+  jsParams: {
+    conditions: createAccBuilder()
+      .requireEthBalance("1000000000000000", ">=") // 0.001 ETH
+      .on("sepolia")
+      .build(),
+    authSig: authContext.authSig,
+  },
 });`;
+  };
 
   return (
     <div className="tab-content">
-      <h1 style={pageStyles.h1}>PKP Signing</h1>
+      <h1 style={pageStyles.h1}>Lit Action Execution</h1>
 
       <GreyBoarderWhiteBgContainer>
         <h2 style={pageStyles.h2}>Intro</h2>
         <p style={pageStyles.p}>
-          In this guide, you'll learn how to create and use Programmable Key
-          Pairs (PKPs) to sign transactions on Ethereum. PKPs are non-custodial
-          blockchain accounts that support social login and can be programmed to
-          sign based on custom conditions to support automated or delegated
-          workflows.
+          Lit Actions are decentralized JavaScript functions that are executed
+          by the node in the Lit network. Lit Actions let you write custom logic
+          that can securely interact with on-chain and off-chain data, perform
+          computations, and even trigger programmable signing, all without
+          relying on a centralized server.
         </p>
 
         <p style={pageStyles.p}>
-          You can learn more about PKPs in the{" "}
+          You can learn more about Lit Actions in the{" "}
           <Link
-            to="/programmable-keys/overview"
+            to="/lit-actions/overview"
             style={{ color: "#3b82f6", textDecoration: "underline" }}
           >
-            Programmable Keys
+            Lit Actions
           </Link>{" "}
           section, but here's what makes them powerful:
         </p>
@@ -330,7 +321,7 @@ const hash = await walletClient.sendTransaction({
             }}
           >
             <h4 style={{ margin: "0 0 12px 0", color: "#1f2937" }}>
-              🔑 Non-Custodial Accounts
+              ⚙️ JavaScript-Based
             </h4>
             <p
               style={{
@@ -340,11 +331,10 @@ const hash = await walletClient.sendTransaction({
                 color: "#4b5563",
               }}
             >
-              Programmable Key Pairs (PKPs) are fully functional blockchain
-              accounts with addresses and the ability to sign transactions, just
-              like traditional wallets. But unlike traditional accounts, they're
-              controlled by programmable rules instead of user-held private
-              keys.
+              Lit Actions are written in JavaScript and can import third-party
+              libraries. They run in a secure Deno environment with access to
+              built-in Lit SDK functions for signing, encryption, and external
+              API calls.
             </p>
           </div>
 
@@ -358,7 +348,7 @@ const hash = await walletClient.sendTransaction({
             }}
           >
             <h4 style={{ margin: "0 0 12px 0", color: "#1f2937" }}>
-              🤖 Programmable Signing
+              🛡️ Confidential Execution
             </h4>
             <p
               style={{
@@ -368,9 +358,10 @@ const hash = await walletClient.sendTransaction({
                 color: "#4b5563",
               }}
             >
-              Define custom logic for when and how transactions should be
-              signed. Enable automation, multi-party approval workflows, or
-              conditional signing based on on-chain or off-chain data.
+              All Lit Actions execute within Trusted Execution Environments
+              (TEEs) on each Lit node, ensuring your code and data remain
+              confidential and protected from external access, even from node
+              operators.
             </p>
           </div>
 
@@ -384,7 +375,7 @@ const hash = await walletClient.sendTransaction({
             }}
           >
             <h4 style={{ margin: "0 0 12px 0", color: "#1f2937" }}>
-              🔗 Multi-Chain Support
+              🌐 Chain & Platform Agnostic
             </h4>
             <p
               style={{
@@ -394,20 +385,18 @@ const hash = await walletClient.sendTransaction({
                 color: "#4b5563",
               }}
             >
-              A single PKP can sign transactions on multiple blockchains,
-              providing a unified account across different networks without
-              needing separate private keys.
+              Unlike smart contracts, Lit Actions aren't limited to a single
+              chain or environment. They can make HTTP requests, read from
+              multiple blockchains, and combine on and off-chain data all within
+              a single decentralized execution.
             </p>
           </div>
         </div>
 
         <p style={pageStyles.p}>
-          The result is a flexible and powerful way to manage blockchain
-          accounts controlled by your application logic. With PKPs, there's no
-          need to manage or expose private keys, and users can even create
-          accounts using familiar Web2 login methods like Google or Discord,
-          simplifying onboarding and making secure, programmable signing
-          accessible to anyone.
+          This results in a powerful compute platform that enables complex
+          workflows, cross-chain operations, and programmable access control
+          that goes far beyond what traditional smart contracts can achieve.
         </p>
       </GreyBoarderWhiteBgContainer>
 
@@ -535,12 +524,17 @@ const hash = await walletClient.sendTransaction({
           {
             name: "@lit-protocol/auth",
             description:
-              "Provides authentication methods and the Auth Manager for creating authentication contexts.",
+              "Provides the Auth Manager and authentication methods for creating Auth Contexts.",
           },
           {
             name: "@lit-protocol/lit-client",
             description:
-              "The Lit Client needed to communicate with the Lit network and manage PKPs.",
+              "The Lit Client needed to communicate with the Lit network and execute Lit Actions.",
+          },
+          {
+            name: "@lit-protocol/access-control-conditions",
+            description:
+              "Provides utilities for building access control conditions that can be used within Lit Actions.",
           },
           {
             name: "viem",
@@ -548,7 +542,7 @@ const hash = await walletClient.sendTransaction({
               "Modern Ethereum library for building wallets, dApps and other Ethereum powered tools with TypeScript support.",
           },
         ]}
-        installationCode="npm install @lit-protocol/auth @lit-protocol/lit-client viem"
+        installationCode="npm install @lit-protocol/auth @lit-protocol/lit-client @lit-protocol/access-control-conditions viem"
       />
 
       {/* Step 1: Create User Account */}
@@ -561,8 +555,8 @@ const hash = await walletClient.sendTransaction({
         </h2>
         <p style={pageStyles.p}>
           {accountMethod === "privateKey"
-            ? "Convert your private key to a viem account object that can be used to authenticate and mint a PKP."
-            : "Use your connected wallet account to authenticate and mint a PKP."}
+            ? "Convert your private key to a viem account object that can be used to authenticate and execute Lit Actions."
+            : "Use your connected wallet account to authenticate and execute Lit Actions."}
         </p>
 
         <DisplayCode
@@ -576,8 +570,8 @@ const hash = await walletClient.sendTransaction({
               showError={showError}
               showSuccess={showSuccess}
               successActionIds={{
-                createAccount: "pkp-create-account",
-                getWalletAccount: "pkp-get-wallet-account",
+                createAccount: "lit-action-create-account",
+                getWalletAccount: "lit-action-get-wallet-account",
               }}
               successActions={successActions}
             />
@@ -587,8 +581,8 @@ const hash = await walletClient.sendTransaction({
           useSideBySide={true}
           theme="dracula"
           isSuccess={
-            successActions.has("pkp-create-account") ||
-            successActions.has("pkp-get-wallet-account")
+            successActions.has("lit-action-create-account") ||
+            successActions.has("lit-action-get-wallet-account")
           }
         />
       </GreyBoarderWhiteBgContainer>
@@ -602,8 +596,7 @@ const hash = await walletClient.sendTransaction({
           )}
         </h2>
         <p style={pageStyles.p}>
-          Next, we'll authenticate the user account to prove ownership - This
-          authentication data will be used to mint and control the PKP.
+          Next, we'll authenticate the user account to prove ownership.
         </p>
 
         <DisplayCode
@@ -656,91 +649,19 @@ const hash = await walletClient.sendTransaction({
         />
       </GreyBoarderWhiteBgContainer>
 
-      {/* Step 3: Mint PKP */}
+      {/* Step 3: Create Auth Context */}
       <GreyBoarderWhiteBgContainer>
         <h2 style={pageStyles.h2}>
-          Step 3: Mint PKP
+          Step 3: Create Auth Context
           {currentStep >= 4 && (
             <span style={{ color: "green", marginLeft: "10px" }}>✓</span>
           )}
         </h2>
         <p style={pageStyles.p}>
-          Now we'll mint a new PKP using the authentication data - The PKP will
-          be associated with the user account and only the authenticated user
-          will be able to make signing requests using the PKP.
-        </p>
-
-        <NoteCallout
-          message={
-            <>
-              <p style={pageStyles.p}>
-                PKP minting requires <code>$LITKEY</code> test tokens to pay for
-                minting the PKP and gas fees.
-              </p>
-
-              <p style={pageStyles.p}>
-                For the Naga-dev network, you can get <code>$LITKEY</code> test
-                tokens from the{" "}
-                <a
-                  href="https://chronicle-yellowstone-faucet.getlit.dev/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: "#007bff", textDecoration: "underline" }}
-                >
-                  Yellowstone Faucet
-                </a>
-                .
-              </p>
-
-              {userAccount && (userAccount.account || userAccount.address) && (
-                <>
-                  <p style={pageStyles.p}>
-                    <strong>User Address:</strong>{" "}
-                    {userAccount.account?.address || userAccount.address}
-                  </p>
-                </>
-              )}
-            </>
-          }
-          variant="note"
-          title="Tip"
-          style={{ marginTop: "16px" }}
-        />
-
-        <DisplayCode
-          code={mintCode}
-          language="javascript"
-          renderComponent={
-            <SimplePkpSelection
-              authData={authData}
-              onPkpSelected={handlePkpSelected}
-              setStatus={() => {}} // Status is handled by the component internally
-              assertDependenciesLoaded={assertDependenciesLoaded}
-              showError={showError}
-              authMethodName="EOA Auth"
-              disabled={!authData}
-            />
-          }
-          resultData={pkpInfo}
-          resultLabel="PKP Information"
-          useSideBySide={true}
-          theme="dracula"
-          isSuccess={currentStep >= 4}
-        />
-      </GreyBoarderWhiteBgContainer>
-
-      {/* Step 4: Create PKP Auth Context */}
-      <GreyBoarderWhiteBgContainer>
-        <h2 style={pageStyles.h2}>
-          Step 4: Create PKP Auth Context
-          {currentStep >= 5 && (
-            <span style={{ color: "green", marginLeft: "10px" }}>✓</span>
-          )}
-        </h2>
-        <p style={pageStyles.p}>
-          Next, we'll create an Auth Context for the PKP, allowing us to
-          interact with the Lit network and making signing requests using the
-          PKP.
+          Then we'll create an Auth Context that will be used to execute Lit
+          Actions - This context includes the necessary{" "}
+          <code>lit-action-execution</code> permissions to permit our Session to
+          execute Lit Actions.
         </p>
 
         <DisplayCode
@@ -749,22 +670,22 @@ const hash = await walletClient.sendTransaction({
           renderComponent={
             <div>
               <button
-                onClick={createPKPAuthContext}
-                disabled={isCreatingAuthContext || !pkpInfo}
+                onClick={createAuthContext}
+                disabled={isCreatingAuthContext || !authData}
                 style={{
                   padding: "12px 20px",
                   backgroundColor: isCreatingAuthContext
                     ? "#f8fafc"
-                    : currentStep >= 5
+                    : currentStep >= 4
                     ? "#22c55e"
-                    : !pkpInfo
+                    : !authData
                     ? "#9ca3af"
                     : "#3b82f6",
                   color: isCreatingAuthContext ? "#374151" : "white",
                   border: isCreatingAuthContext ? "1px solid #d1d5db" : "none",
                   borderRadius: "6px",
                   cursor:
-                    isCreatingAuthContext || !pkpInfo
+                    isCreatingAuthContext || !authData
                       ? "not-allowed"
                       : "pointer",
                   fontWeight: "500",
@@ -773,184 +694,76 @@ const hash = await walletClient.sendTransaction({
               >
                 {isCreatingAuthContext
                   ? "Creating Auth Context..."
-                  : currentStep >= 5
+                  : currentStep >= 4
                   ? "✓ Auth Context Created"
-                  : "Create PKP Auth Context"}
+                  : "Create Auth Context"}
               </button>
 
-              {pkpAuthContext && (
+              {authContext && (
                 <div style={{ marginTop: "15px", fontSize: "14px" }}>
-                  <strong>✓ PKP auth context created successfully</strong>
+                  <strong>✓ Auth context created successfully</strong>
                 </div>
               )}
             </div>
           }
-          resultData={pkpAuthContext}
-          resultLabel="PKP Auth Context"
+          resultData={authContext}
+          resultLabel="Auth Context"
           useSideBySide={true}
           theme="dracula"
-          isSuccess={currentStep >= 5}
+          isSuccess={currentStep >= 4}
         />
       </GreyBoarderWhiteBgContainer>
 
-      {/* Step 5: Create PKP Viem Account */}
+      {/* Step 4: Execute Lit Action */}
       <GreyBoarderWhiteBgContainer>
         <h2 style={pageStyles.h2}>
-          Step 5: Create PKP Viem Account
-          {currentStep >= 6 && (
+          Step 4: Execute Lit Action
+          {actionResult && (
             <span style={{ color: "green", marginLeft: "10px" }}>✓</span>
           )}
         </h2>
         <p style={pageStyles.p}>
-          Using the <code>getPkpViemAccount</code> method, we can create a Viem
-          compatible account using the PKP as the signer. This account can be
-          used with standard Ethereum tooling and libraries like Viem to sign
-          transactions like a regular EOA wallet.
+          Now we'll execute a Lit Action that checks if your account has at
+          least <code>0.001 ETH</code> on Ethereum Sepolia using Access Control
+          Conditions.
         </p>
 
         <DisplayCode
-          code={viemAccountCode}
+          code={getActionCode()}
           language="typescript"
           renderComponent={
             <div>
               <button
-                onClick={createPKPViemAccount}
-                disabled={isCreatingViemAccount || !pkpAuthContext}
+                onClick={executeLitAction}
+                disabled={isExecutingAction || !authContext}
                 style={{
                   padding: "12px 20px",
-                  backgroundColor: isCreatingViemAccount
+                  backgroundColor: isExecutingAction
                     ? "#f8fafc"
-                    : currentStep >= 6
+                    : actionResult
                     ? "#22c55e"
-                    : !pkpAuthContext
+                    : !authContext
                     ? "#9ca3af"
                     : "#3b82f6",
-                  color: isCreatingViemAccount ? "#374151" : "white",
-                  border: isCreatingViemAccount ? "1px solid #d1d5db" : "none",
+                  color: isExecutingAction ? "#374151" : "white",
+                  border: isExecutingAction ? "1px solid #d1d5db" : "none",
                   borderRadius: "6px",
                   cursor:
-                    isCreatingViemAccount || !pkpAuthContext
+                    isExecutingAction || !authContext
                       ? "not-allowed"
                       : "pointer",
                   fontWeight: "500",
                   fontSize: "14px",
                 }}
               >
-                {isCreatingViemAccount
-                  ? "Creating Viem Account..."
-                  : currentStep >= 6
-                  ? "✓ Viem Account Created"
-                  : "Create PKP Viem Account"}
+                {isExecutingAction
+                  ? "Executing Lit Action..."
+                  : actionResult
+                  ? "✓ Lit Action Executed"
+                  : "Execute Balance Check Action"}
               </button>
 
-              {pkpViemAccount && (
-                <div style={{ marginTop: "15px", fontSize: "14px" }}>
-                  <div>
-                    <strong>PKP Address:</strong> {pkpViemAccount.address}
-                  </div>
-                  <div>
-                    <strong>Account Type:</strong> {pkpViemAccount.type}
-                  </div>
-                </div>
-              )}
-            </div>
-          }
-          resultData={
-            pkpViemAccount
-              ? {
-                  address: pkpViemAccount.address,
-                  type: pkpViemAccount.type,
-                }
-              : null
-          }
-          resultLabel="PKP Viem Account"
-          useSideBySide={true}
-          theme="dracula"
-          isSuccess={currentStep >= 6}
-        />
-      </GreyBoarderWhiteBgContainer>
-
-      {/* Step 6: Sign Transaction */}
-      <GreyBoarderWhiteBgContainer>
-        <h2 style={pageStyles.h2}>
-          Step 6: Sign Transaction
-          {transactionHash && (
-            <span style={{ color: "green", marginLeft: "10px" }}>✓</span>
-          )}
-        </h2>
-        <p style={pageStyles.p}>
-          Finally, we'll use the Viem PKP account to sign and send a transaction
-          on the Ethereum Sepolia testnet.
-        </p>
-
-        <NoteCallout
-          variant="info"
-          message={
-            <>
-              <p style={pageStyles.p}>
-                This example sends a transaction on Sepolia testnet, make sure
-                the PKP has enough Sepolia ETH to pay for the transaction before
-                signing and sending it.
-              </p>
-              {pkpViemAccount && pkpViemAccount.address && (
-                <>
-                  <p style={pageStyles.p}>
-                    <strong>PKP Address:</strong> {pkpViemAccount.address}
-                  </p>
-                </>
-              )}
-              <p style={pageStyles.p}>
-                You can get test ETH from a{" "}
-                <a
-                  href="https://cloud.google.com/application/web3/faucet/ethereum/sepolia"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: "#3b82f6", textDecoration: "underline" }}
-                >
-                  Sepolia faucet
-                </a>
-                .
-              </p>
-            </>
-          }
-        />
-
-        <DisplayCode
-          code={transactionCode}
-          language="typescript"
-          renderComponent={
-            <div>
-              <button
-                onClick={signTransaction}
-                disabled={isSigningTransaction || !pkpViemAccount}
-                style={{
-                  padding: "12px 20px",
-                  backgroundColor: isSigningTransaction
-                    ? "#f8fafc"
-                    : transactionHash
-                    ? "#22c55e"
-                    : !pkpViemAccount
-                    ? "#9ca3af"
-                    : "#3b82f6",
-                  color: isSigningTransaction ? "#374151" : "white",
-                  border: isSigningTransaction ? "1px solid #d1d5db" : "none",
-                  borderRadius: "6px",
-                  cursor:
-                    isSigningTransaction || !pkpViemAccount
-                      ? "not-allowed"
-                      : "pointer",
-                  fontWeight: "500",
-                  fontSize: "14px",
-                }}
-              >
-                {isSigningTransaction
-                  ? "Signing Transaction..."
-                  : transactionHash
-                  ? "✓ Transaction Signed"
-                  : "Sign & Send Transaction"}
-              </button>
-
-              {transactionHash && (
+              {actionResult && (
                 <div
                   style={{
                     marginTop: "15px",
@@ -961,44 +774,40 @@ const hash = await walletClient.sendTransaction({
                     fontSize: "14px",
                   }}
                 >
-                  <div>
-                    <strong>🎉 Transaction sent successfully!</strong>
-                  </div>
-                  <div style={{ marginTop: "8px", wordBreak: "break-all" }}>
-                    <strong>Hash:</strong> {transactionHash}
-                  </div>
-                  <div style={{ marginTop: "8px" }}>
-                    <a
-                      href={`https://sepolia.etherscan.io/tx/${transactionHash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        color: "#3b82f6",
-                        textDecoration: "underline",
-                      }}
-                    >
-                      View on Etherscan →
-                    </a>
-                  </div>
+                  <strong>🎉 Lit Action Result:</strong>
+                  <pre
+                    style={{
+                      marginTop: "8px",
+                      fontSize: "12px",
+                      backgroundColor: "#ffffff",
+                      padding: "10px",
+                      borderRadius: "4px",
+                      overflow: "auto",
+                      whiteSpace: "pre-wrap",
+                    }}
+                  >
+                    {typeof actionResult.response === "string"
+                      ? actionResult.response
+                      : JSON.stringify(actionResult, null, 2)}
+                  </pre>
                 </div>
               )}
             </div>
           }
-          resultData={transactionHash || null}
-          resultLabel="Transaction Result"
+          resultData={actionResult}
+          resultLabel="Lit Action Result"
           useSideBySide={true}
           theme="dracula"
-          isSuccess={!!transactionHash}
+          isSuccess={!!actionResult}
         />
       </GreyBoarderWhiteBgContainer>
 
       {/* Summary */}
-      {transactionHash && (
+      {actionResult && (
         <GreyBoarderWhiteBgContainer>
           <h2 style={pageStyles.h2}>🎉 Congratulations!</h2>
           <p style={pageStyles.p}>
-            You've successfully completed the full PKP signing flow with Lit
-            Protocol!
+            You've successfully executed a Lit Action on the Lit Network!
           </p>
           <p style={pageStyles.p}>Here's what happened:</p>
           <ol style={pageStyles.ol}>
@@ -1006,23 +815,20 @@ const hash = await walletClient.sendTransaction({
               Created a user account and authenticated with the Lit network
             </li>
             <li style={pageStyles.li}>
-              Minted or used an existing PKP controlled by the user account
+              Created an Auth Context with permissions for Lit Action execution
             </li>
             <li style={pageStyles.li}>
-              Created an Auth Context for the PKP with signing permissions
+              Executed a Lit Action that checked your ETH balance using access
+              control conditions
             </li>
             <li style={pageStyles.li}>
-              Generated a Viem compatible account from the PKP
-            </li>
-            <li style={pageStyles.li}>
-              Used the Viem account to sign and send a transaction on Ethereum
-              Sepolia
+              Received the execution result from the distributed Lit Network
             </li>
           </ol>
         </GreyBoarderWhiteBgContainer>
       )}
 
-      {transactionHash && (
+      {actionResult && (
         <GreyBoarderWhiteBgContainer>
           <h2 style={pageStyles.h2}>What's Next?</h2>
           <div
@@ -1035,23 +841,23 @@ const hash = await walletClient.sendTransaction({
           >
             {[
               {
-                title: "Advanced PKP Features",
+                title: "Advanced Lit Actions",
                 description:
-                  "Explore advanced PKP capabilities like conditional signing, multi-party approval, and cross-chain operations in the PKP guides.",
-                path: "/programmable-keys/pkps/getting-started",
-                color: "#8b5cf6",
+                  "Explore advanced Lit Action capabilities like cross-chain operations, external API calls, and complex workflows in the Lit Actions guides.",
+                path: "/lit-actions/overview",
+                color: "#f59e0b",
               },
               {
-                title: "Lit Actions",
+                title: "Programmable Key Pairs (PKPs)",
                 description:
-                  "Continue learning and checkout the Lit Actions guide to learn how to build serverless functions with access to on-chain and off-chain data",
-                path: "/building-with-lit/first-request/lit-action-execution",
-                color: "#f59e0b",
+                  "Continue learning and explore how to create and manage blockchain accounts with programmable conditions",
+                path: "/building-with-lit/first-request/pkp-signing",
+                color: "#8b5cf6",
               },
               {
                 title: "Encryption & Access Control",
                 description:
-                  "Learn to encrypt data and create access control conditions",
+                  "Learn to encrypt data and create access control conditions that can be used with Lit Actions",
                 path: "/building-with-lit/first-request/encryption-and-access-control",
                 color: "#3b82f6",
               },
@@ -1105,4 +911,4 @@ const hash = await walletClient.sendTransaction({
   );
 };
 
-export default PKPSigning;
+export default LitActionExecution;

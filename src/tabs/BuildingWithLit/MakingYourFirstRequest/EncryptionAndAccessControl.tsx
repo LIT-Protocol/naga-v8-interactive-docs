@@ -995,14 +995,14 @@ const decrypted = await litClient.decrypt({
                 title: "Programmable Key Pairs (PKPs)",
                 description:
                   "Continue learning and checkout the Programmable Key Pairs guide to learn how to create and manage blockchain accounts with programmable conditions",
-                path: "/programmable-keys/overview",
+                path: "/building-with-lit/first-request/pkp-signing",
                 color: "#8b5cf6",
               },
               {
                 title: "Lit Actions",
                 description:
                   "Continue learning and checkout the Lit Actions guide to learn how to build serverless functions with access to on-chain and off-chain data",
-                path: "/lit-actions/overview",
+                path: "/building-with-lit/first-request/lit-action-execution",
                 color: "#f59e0b",
               },
             ].map((next, index) => (

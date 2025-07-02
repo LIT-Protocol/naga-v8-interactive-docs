@@ -506,6 +506,14 @@ const ACTIONS: NavigationItem[] = [
         category: "Building With Lit",
         type: "secondary",
       },
+      {
+        id: "building-with-lit-first-request-lit-action-execution",
+        path: "/building-with-lit/first-request/lit-action-execution",
+        name: "Lit Action Execution",
+        description: "Lit Action Execution",
+        category: "Building With Lit",
+        type: "secondary",
+      },
     ],
   },
   // TODO Improve
