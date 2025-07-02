@@ -17,8 +17,6 @@ import StytchWhatsAppOtpAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/A
 import CustomAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/CustomAuthTab";
 import LitAuthProviderDemoTab from "./tabs/LearningLit/LitAuthProviderDemoTab";
 import EncryptionQuickStart from "./tabs/EncryptionAccessControl/QuickStart";
-import SetupLitClientTab from "./tabs/BuildingWithLit/SetupLitClientTab";
-import SetupAuthManagerTab from "./tabs/BuildingWithLit/SetupAuthManagerTab";
 import SetupAuthServicesTab from "./tabs/BuildingWithLit/SetupAuthServicesTab";
 import EoaNativeTab from "./tabs/EoaNativeTab";
 import StoragePluginsTab from "./tabs/GettingStarted/StoragePluginsTab";
@@ -27,7 +25,6 @@ import PaymentManagerQuickStart from "./tabs/PayingForLit/PaymentManager/QuickSt
 import HomePageTab from "./tabs/HomePageTab";
 import WhatIsLitTab from "./tabs/LearningLit/WhatIsLitTab";
 import HowItWorksTab from "./tabs/LearningLit/HowItWorksTab";
-import GettingStartedTab from "./tabs/BuildingWithLit/GettingStartedTab";
 import ProgrammableKeysOverview from "./tabs/ProgrammableKeys/Overview";
 import PkpGettingStarted from "./tabs/ProgrammableKeys/PKPs/GettingStarted";
 import SecurityOverviewTab from "./tabs/LearningLit/Security/Overview";
@@ -79,6 +76,13 @@ import PaymentManagerDepositing from "./tabs/PayingForLit/PaymentManager/Deposit
 import SetupPaymentManager from "./tabs/PayingForLit/PaymentManager/SetupPaymentManager";
 import PaymentManagerDelegating from "./tabs/PayingForLit/PaymentManager/Delegating";
 import PaymentManagerWithdraw from "./tabs/PayingForLit/PaymentManager/Withdraw";
+import MakingYourFirstRequestOverview from "./tabs/BuildingWithLit/MakingYourFirstRequest/Overview";
+import SetupLitClient from "./tabs/BuildingWithLit/MakingYourFirstRequest/Prerequisites/SetupLitClient";
+import SetupAuthManager from "./tabs/BuildingWithLit/MakingYourFirstRequest/Prerequisites/SetupAuthManager";
+import CreatingAuthContext from "./tabs/BuildingWithLit/MakingYourFirstRequest/Prerequisites/CreatingAuthContext";
+import EncryptionAndAccessControl from "./tabs/BuildingWithLit/MakingYourFirstRequest/EncryptionAndAccessControl";
+import PKPSigning from "./tabs/BuildingWithLit/MakingYourFirstRequest/PKPSigning";
+import LitActionExecution from "./tabs/BuildingWithLit/MakingYourFirstRequest/LitActionExecution";
 
 // Create a type for the context
 type ContextType = {
@@ -186,23 +190,39 @@ export const router = createBrowserRouter([
 
       // Building With Lit
       {
-        path: "building-with-lit/setup-lit-client",
-        element: <SetupLitClientTab />,
+        path: "building-with-lit/first-request/overview",
+        element: <MakingYourFirstRequestOverview />,
       },
       {
-        path: "building-with-lit/setup-auth-manager",
-        element: <SetupAuthManagerTab />,
+        path: "building-with-lit/first-request/prerequisites/setup-lit-client",
+        element: <SetupLitClient />,
+      },
+      {
+        path: "building-with-lit/first-request/prerequisites/setup-auth-manager",
+        element: <SetupAuthManager />,
+      },
+      {
+        path: "building-with-lit/first-request/prerequisites/creating-auth-context",
+        element: <CreatingAuthContext />,
+      },
+      {
+        path: "building-with-lit/first-request/encryption-and-access-control",
+        element: <EncryptionAndAccessControl />,
+      },
+      {
+        path: "building-with-lit/first-request/pkp-signing",
+        element: <PKPSigning />,
+      },
+      {
+        path: "building-with-lit/first-request/lit-action-execution",
+        element: <LitActionExecution />,
       },
       {
         path: "building-with-lit/setup-auth-services",
         element: <SetupAuthServicesTab />,
       },
       {
-        path: "building-with-lit/getting-started",
-        element: <GettingStartedTab />,
-      },
-      {
-        path: "storage-plugins",
+        path: "building-with-lit/storage-plugins",
         element: <StoragePluginsTab />,
       },
 
