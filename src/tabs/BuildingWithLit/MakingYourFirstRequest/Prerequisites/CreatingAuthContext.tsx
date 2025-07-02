@@ -12,9 +12,11 @@ import {
   privateKeyToAccount,
   type PrivateKeyAccount,
 } from "viem/accounts";
+import { GoogleAuthenticator } from "@lit-protocol/auth";
 import GreyBoarderWhiteBgContainer from "../../../../components/layout/GreyboardWhiteBgContainer";
 import { RequiredPackages, NoteCallout } from "../../../../components/common";
 import { DisplayCode } from "../../../../components/DisplayCode";
+import { PkpSelectionComponentSimplified } from "../../../../components/common";
 import { pageStyles } from "../../../../styles/pageStyles";
 import { useAppContext } from "../../../../router";
 
@@ -61,6 +63,22 @@ interface AuthMethod {
   code: string;
 }
 
+interface GoogleAuthData {
+  authMethodType: number | bigint;
+  accessToken: string;
+  authMethodId: string;
+  publicKey?: string;
+  metadata?: unknown;
+}
+
+// Use PKPInfo from PkpSelectionComponent
+interface PKPInfo {
+  tokenId: string;
+  publicKey: string;
+  ethAddress: string;
+  pubkey?: string; // Alternative naming
+}
+
 const CreatingAuthContext: React.FC = () => {
   const { areDependenciesLoaded, assertDependenciesLoaded, showError } =
     useAppContext();
@@ -75,6 +93,13 @@ const CreatingAuthContext: React.FC = () => {
   const [userAccount, setUserAccount] = useState<PrivateKeyAccount | null>(
     null
   );
+
+  // PKP-specific state
+  const [isSigningInWithGoogle, setIsSigningInWithGoogle] = useState(false);
+  const [googleAuthData, setGoogleAuthData] = useState<GoogleAuthData | null>(
+    null
+  );
+  const [pkpInfo, setPkpInfo] = useState<PKPInfo | null>(null);
 
   const authMethods: Record<string, AuthMethod> = {
     eoa: {
@@ -286,55 +311,131 @@ const customAuthContext = await authManager.createCustomAuthContext({
   };
 
   const handleCreateAuthContext = async () => {
-    // Only handle EOA method for now
-    if (selectedMethod !== "eoa") {
-      setAuthStatus("❌ Only EOA Auth Context is currently supported");
-      return;
-    }
+    if (selectedMethod === "eoa") {
+      if (!userAccount) {
+        setAuthStatus("❌ Please create a user account first");
+        return;
+      }
 
-    if (!userAccount) {
-      setAuthStatus("❌ Please create a user account first");
-      return;
-    }
+      if (!areDependenciesLoaded()) {
+        setAuthStatus(
+          "❌ Lit Protocol not initialized. Please check the Dependencies tab."
+        );
+        return;
+      }
 
-    if (!areDependenciesLoaded()) {
+      setIsCreating(true);
+      try {
+        setAuthStatus("Creating EOA Auth Context...");
+        setAuthResult(null);
+
+        const { authManager, litClient } = assertDependenciesLoaded();
+
+        const authContext = await authManager.createEoaAuthContext({
+          config: {
+            account: userAccount,
+          },
+          authConfig: {
+            domain: "example.com",
+            statement:
+              "I authorize the Lit Protocol to execute this Lit Action.",
+            expiration: new Date(Date.now() + 1000 * 60 * 15).toISOString(),
+            resources: [
+              ["lit-action-execution", "*"],
+              ["pkp-signing", "*"],
+              ["access-control-condition-decryption", "*"],
+            ],
+          },
+          litClient,
+        });
+
+        console.log("✅ Auth Context created:", authContext);
+        setAuthStatus(`✅ EOA Auth Context created for ${userAccount.address}`);
+        setAuthResult(authContext);
+      } catch (error) {
+        console.error("Error creating EOA Auth Context:", error);
+        const errorMessage = formatErrorMessage(
+          "Failed to create EOA Auth Context: ",
+          error
+        );
+        setAuthStatus(`❌ ${errorMessage}`);
+        setAuthResult({
+          success: false,
+          error: errorMessage,
+          timestamp: new Date().toISOString(),
+        });
+        showError?.(errorMessage);
+      } finally {
+        setIsCreating(false);
+      }
+    } else if (selectedMethod === "pkp") {
+      await createPkpAuthContext();
+    } else {
+      setAuthStatus("❌ Custom Auth Context is not yet implemented");
+    }
+  };
+
+  const signInWithGoogle = async () => {
+    try {
+      setIsSigningInWithGoogle(true);
+
+      const authData = await GoogleAuthenticator.authenticate(
+        "https://login.litgateway.com"
+      );
+
+      setGoogleAuthData(authData);
+      setAuthStatus("✅ Successfully signed in with Google");
+    } catch (error) {
+      console.error("Error signing in with Google:", error);
+      const errorMessage = formatErrorMessage(
+        "Failed to sign in with Google: ",
+        error
+      );
+      setAuthStatus(`❌ ${errorMessage}`);
+      showError?.(errorMessage);
+    } finally {
+      setIsSigningInWithGoogle(false);
+    }
+  };
+
+  const createPkpAuthContext = async () => {
+    if (!areDependenciesLoaded() || !googleAuthData || !pkpInfo) {
       setAuthStatus(
-        "❌ Lit Protocol not initialized. Please check the Dependencies tab."
+        "❌ Please complete Google sign-in and PKP selection first"
       );
       return;
     }
 
-    setIsCreating(true);
     try {
-      setAuthStatus("Creating EOA Auth Context...");
+      setIsCreating(true);
+      setAuthStatus("Creating PKP Auth Context...");
       setAuthResult(null);
 
       const { authManager, litClient } = assertDependenciesLoaded();
 
-      const authContext = await authManager.createEoaAuthContext({
-        config: {
-          account: userAccount,
-        },
+      const pkpAuthContext = await authManager.createPkpAuthContext({
+        authData: googleAuthData,
+        pkpPublicKey: pkpInfo.pubkey || pkpInfo.publicKey,
         authConfig: {
-          domain: "example.com",
-          statement: "I authorize the Lit Protocol to execute this Lit Action.",
-          expiration: new Date(Date.now() + 1000 * 60 * 15).toISOString(),
           resources: [
-            ["lit-action-execution", "*"],
             ["pkp-signing", "*"],
-            ["access-control-condition-decryption", "*"],
+            ["lit-action-execution", "*"],
           ],
+          capabilityAuthSigs: [],
+          expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
+          statement: "I authorize the Lit Protocol to execute this Lit Action.",
+          domain: window.location.origin,
         },
-        litClient,
+        litClient: litClient,
       });
 
-      console.log("✅ Auth Context created:", authContext);
-      setAuthStatus(`✅ EOA Auth Context created for ${userAccount.address}`);
-      setAuthResult(authContext);
+      console.log("✅ PKP Auth Context created:", pkpAuthContext);
+      setAuthStatus(`✅ PKP Auth Context created for ${pkpInfo.ethAddress}`);
+      setAuthResult(pkpAuthContext);
     } catch (error) {
-      console.error("Error creating EOA Auth Context:", error);
+      console.error("Error creating PKP auth context:", error);
       const errorMessage = formatErrorMessage(
-        "Failed to create EOA Auth Context: ",
+        "Failed to create PKP auth context: ",
         error
       );
       setAuthStatus(`❌ ${errorMessage}`);
@@ -802,6 +903,114 @@ const customAuthContext = await authManager.createCustomAuthContext({
                 </div>
               )}
 
+              {/* PKP Method Flow - only show for PKP method */}
+              {selectedMethod === "pkp" && (
+                <div style={{ marginBottom: "20px" }}>
+                  {/* Step 1: Google Sign-in */}
+                  <div
+                    style={{
+                      padding: "16px",
+                      backgroundColor: "#f8fafc",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "8px",
+                      marginBottom: "12px",
+                    }}
+                  >
+                    <h5
+                      style={{
+                        margin: "0 0 8px 0",
+                        color: "#374151",
+                        fontSize: "0.9rem",
+                      }}
+                    >
+                      1. Google Authentication
+                    </h5>
+                    {googleAuthData ? (
+                      <div>
+                        <p
+                          style={{
+                            margin: "0 0 8px 0",
+                            fontSize: "0.8rem",
+                            color: "#16a34a",
+                          }}
+                        >
+                          ✅ Successfully signed in with Google
+                        </p>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={signInWithGoogle}
+                        disabled={isSigningInWithGoogle}
+                        style={{
+                          padding: "8px 16px",
+                          backgroundColor: isSigningInWithGoogle
+                            ? "#9ca3af"
+                            : "#4285f4",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "6px",
+                          fontSize: "0.9rem",
+                          fontWeight: "500",
+                          cursor: isSigningInWithGoogle
+                            ? "not-allowed"
+                            : "pointer",
+                          width: "100%",
+                        }}
+                      >
+                        {isSigningInWithGoogle
+                          ? "🔄 Signing in..."
+                          : "🔑 Sign in with Google"}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Step 2: PKP Selection/Minting using PkpSelectionComponent */}
+                  {googleAuthData && (
+                    <div
+                      style={{
+                        padding: "16px",
+                        backgroundColor: "#f8fafc",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: "8px",
+                        marginBottom: "12px",
+                      }}
+                    >
+                      <h5
+                        style={{
+                          margin: "0 0 8px 0",
+                          color: "#374151",
+                          fontSize: "0.9rem",
+                        }}
+                      >
+                        2. PKP Selection
+                      </h5>
+                      <PkpSelectionComponentSimplified
+                        authData={googleAuthData}
+                        onPkpSelected={(pkpInfo) => {
+                          setPkpInfo(pkpInfo);
+                          setAuthStatus(
+                            `✅ PKP selected: ${pkpInfo.ethAddress}`
+                          );
+                          // Clear any existing auth context result
+                          setAuthResult(null);
+                        }}
+                        onSelectionModeChange={() => {
+                          // Clear PKP selection and auth context result when switching modes
+                          setPkpInfo(null);
+                          setAuthResult(null);
+                          setAuthStatus("Not initialized");
+                        }}
+                        setStatus={setAuthStatus}
+                        assertDependenciesLoaded={assertDependenciesLoaded}
+                        showError={showError}
+                        authMethodName="Google Auth"
+                        disabled={false}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Custom Lit Action Button - only show when custom is selected */}
               {selectedMethod === "custom" && (
                 <div style={{ marginBottom: "20px" }}>
@@ -880,16 +1089,30 @@ const customAuthContext = await authManager.createCustomAuthContext({
 
               <button
                 onClick={handleCreateAuthContext}
-                disabled={isCreating}
+                disabled={
+                  isCreating ||
+                  (selectedMethod === "eoa" && !userAccount) ||
+                  (selectedMethod === "pkp" && (!googleAuthData || !pkpInfo))
+                }
                 style={{
                   padding: "14px 24px",
-                  backgroundColor: isCreating ? "#6b7280" : "#3b82f6",
+                  backgroundColor:
+                    isCreating ||
+                    (selectedMethod === "eoa" && !userAccount) ||
+                    (selectedMethod === "pkp" && (!googleAuthData || !pkpInfo))
+                      ? "#6b7280"
+                      : "#3b82f6",
                   color: "white",
                   border: "none",
                   borderRadius: "8px",
                   fontSize: "1rem",
                   fontWeight: "600",
-                  cursor: isCreating ? "not-allowed" : "pointer",
+                  cursor:
+                    isCreating ||
+                    (selectedMethod === "eoa" && !userAccount) ||
+                    (selectedMethod === "pkp" && (!googleAuthData || !pkpInfo))
+                      ? "not-allowed"
+                      : "pointer",
                   transition: "background-color 0.2s",
                   width: "100%",
                 }}
