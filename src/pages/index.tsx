@@ -395,6 +395,14 @@ const ACTIONS: NavigationItem[] = [
     type: "primary",
   },
   {
+    id: "lit-networks",
+    path: "/learning-lit/lit-networks",
+    name: "Lit Networks",
+    description: "Lit Networks",
+    category: "Learning Lit",
+    type: "primary",
+  },
+  {
     id: "security",
     name: "Security",
     description: "An overview of Lit Protocol security.",

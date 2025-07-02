@@ -21,7 +21,7 @@ const ChronicleYellowstone: React.FC = () => {
   ];
 
   return (
-    <div className="tab-content" style={pageStyles.container}>
+    <div className="tab-content">
       <h1 style={pageStyles.h1}>Chronicle Yellowstone</h1>
 
       <GreyBoarderWhiteBgContainer>
