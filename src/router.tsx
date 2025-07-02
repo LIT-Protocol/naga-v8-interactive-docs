@@ -17,7 +17,6 @@ import StytchWhatsAppOtpAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/A
 import CustomAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/CustomAuthTab";
 import LitAuthProviderDemoTab from "./tabs/LearningLit/LitAuthProviderDemoTab";
 import EncryptionQuickStart from "./tabs/EncryptionAccessControl/QuickStart";
-import SetupLitClientTab from "./tabs/BuildingWithLit/SetupLitClientTab";
 import SetupAuthManagerTab from "./tabs/BuildingWithLit/SetupAuthManagerTab";
 import SetupAuthServicesTab from "./tabs/BuildingWithLit/SetupAuthServicesTab";
 import EoaNativeTab from "./tabs/EoaNativeTab";
@@ -79,6 +78,9 @@ import PaymentManagerDepositing from "./tabs/PayingForLit/PaymentManager/Deposit
 import SetupPaymentManager from "./tabs/PayingForLit/PaymentManager/SetupPaymentManager";
 import PaymentManagerDelegating from "./tabs/PayingForLit/PaymentManager/Delegating";
 import PaymentManagerWithdraw from "./tabs/PayingForLit/PaymentManager/Withdraw";
+import MakingYourFirstRequestOverview from "./tabs/BuildingWithLit/MakingYourFirstRequest/Overview";
+import SetupLitClient from "./tabs/BuildingWithLit/MakingYourFirstRequest/Prerequisites/SetupLitClient";
+import SetupAuthManager from "./tabs/BuildingWithLit/MakingYourFirstRequest/Prerequisites/SetupAuthManager";
 
 // Create a type for the context
 type ContextType = {
@@ -186,8 +188,20 @@ export const router = createBrowserRouter([
 
       // Building With Lit
       {
-        path: "building-with-lit/setup-lit-client",
-        element: <SetupLitClientTab />,
+        path: "building-with-lit/getting-started",
+        element: <GettingStartedTab />,
+      },
+      {
+        path: "building-with-lit/first-request/overview",
+        element: <MakingYourFirstRequestOverview />,
+      },
+      {
+        path: "building-with-lit/first-request/prerequisites/setup-lit-client",
+        element: <SetupLitClient />,
+      },
+      {
+        path: "building-with-lit/first-request/prerequisites/setup-auth-manager",
+        element: <SetupAuthManager />,
       },
       {
         path: "building-with-lit/setup-auth-manager",
@@ -198,11 +212,7 @@ export const router = createBrowserRouter([
         element: <SetupAuthServicesTab />,
       },
       {
-        path: "building-with-lit/getting-started",
-        element: <GettingStartedTab />,
-      },
-      {
-        path: "storage-plugins",
+        path: "building-with-lit/storage-plugins",
         element: <StoragePluginsTab />,
       },
 

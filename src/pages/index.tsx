@@ -449,12 +449,39 @@ const ACTIONS: NavigationItem[] = [
     type: "primary",
   },
   {
-    id: "setup-lit-client",
-    path: "/building-with-lit/setup-lit-client",
-    name: "Setup Lit Client",
-    description: "Create and configure your Lit Protocol client instance",
+    id: "building-with-lit-first-request-overview",
+    path: "/building-with-lit/first-request/overview",
+    name: "Making Your First Request",
+    description: "Overview of making your first request with Lit Protocol",
     category: "Building With Lit",
     type: "primary",
+  },
+  {
+    id: "building-with-lit-first-request-prerequisites",
+    path: "/building-with-lit/first-request/prerequisites",
+    name: "Prerequisites",
+    description:
+      "Prerequisites for making your first request with Lit Protocol",
+    category: "Building With Lit",
+    type: "primary",
+    children: [
+      {
+        id: "building-with-lit-first-request-prerequisites-setup-lit-client",
+        path: "/building-with-lit/first-request/prerequisites/setup-lit-client",
+        name: "Setup Lit Client",
+        description: "Setup the Lit Client",
+        category: "Building With Lit",
+        type: "secondary",
+      },
+      {
+        id: "building-with-lit-first-request-prerequisites-setup-auth-manager",
+        path: "/building-with-lit/first-request/prerequisites/setup-auth-manager",
+        name: "Setup Auth Manager",
+        description: "Setup the Auth Manager",
+        category: "Building With Lit",
+        type: "secondary",
+      },
+    ],
   },
   {
     id: "setup-auth-manager",
@@ -464,6 +491,15 @@ const ACTIONS: NavigationItem[] = [
     category: "Building With Lit",
     type: "primary",
   },
+  // TODO Improve
+  // {
+  //   id: "storage-plugins",
+  //   path: "/building-with-lit/storage-plugins",
+  //   name: "Storage Plugins",
+  //   description: "Configure localStorage and other storage options",
+  //   category: "Building With Lit",
+  //   type: "primary",
+  // },
   {
     id: "setup-auth-services",
     path: "/building-with-lit/setup-auth-services",
