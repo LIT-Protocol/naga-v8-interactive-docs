@@ -1345,53 +1345,125 @@ const customAuthContext = await authManager.createCustomAuthContext({
       </GreyBoarderWhiteBgContainer>
 
       {/* Next Steps */}
-      <div
-        style={{
-          backgroundColor: "#f0f9ff",
-          border: "2px solid #3b82f6",
-          borderRadius: "12px",
-          padding: "24px",
-          marginTop: "32px",
-        }}
-      >
-        <h3
+      <GreyBoarderWhiteBgContainer style={{ marginTop: "32px" }}>
+        <h2 style={pageStyles.h2}>
+          Next Step: Start Building with Lit Protocol
+        </h2>
+        <p style={pageStyles.p}>
+          Congratulations! You now have everything needed to use Lit Protocol: a
+          Lit Client, an Auth Manager, and an Auth Context.
+        </p>
+
+        <p style={pageStyles.p}>
+          Next checkout the guides below to try out the different features of
+          Lit:
+        </p>
+
+        <div
           style={{
-            margin: "0 0 12px 0",
-            color: "#1e40af",
-            fontSize: "1.3rem",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+            gap: "24px",
+            marginTop: "24px",
           }}
         >
-          🎯 You're Ready to Use Lit Protocol!
-        </h3>
-        <p
-          style={{ margin: "0 0 16px 0", color: "#1e3a8a", lineHeight: "1.6" }}
-        >
-          Congratulations! You now have everything needed to use Lit Protocol: a
-          Lit Client, Auth Manager, and Auth Context. You're ready to start
-          encrypting data, working with PKPs, or running Lit Actions.
-        </p>
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <Link
-            to="/building-with-lit/making-your-first-request/overview"
-            style={{
-              display: "inline-block",
-              padding: "12px 24px",
-              backgroundColor: "#3b82f6",
-              color: "white",
-              textDecoration: "none",
-              borderRadius: "8px",
-              fontWeight: "600",
-              fontSize: "1rem",
-              transition: "background-color 0.2s",
-            }}
-          >
-            Continue to Making Your First Request →
-          </Link>
+          {[
+            {
+              title: "Encryption & Access Control",
+              description:
+                "Learn to encrypt sensitive data and control who can decrypt it using flexible access control conditions.",
+              icon: "🔒",
+              path: "/encryption/quickstart",
+              color: "#3b82f6",
+            },
+            {
+              title: "PKP Signing",
+              description:
+                "Discover how to use your PKPs to sign transactions and messages across multiple blockchain networks.",
+              icon: "🔑",
+              path: "/programmable-keys/pkps/signing/eth",
+              color: "#8b5cf6",
+            },
+            {
+              title: "Lit Actions",
+              description:
+                "Explore serverless JavaScript functions that can access both on-chain and off-chain data for automated workflows.",
+              icon: "⚙️",
+              path: "/lit-actions/quick-start",
+              color: "#f59e0b",
+            },
+          ].map((guide, index) => (
+            <div
+              key={index}
+              style={{
+                backgroundColor: "#ffffff",
+                borderRadius: "12px",
+                border: `2px solid ${guide.color}20`,
+                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                padding: "24px",
+                transition: "transform 0.2s, box-shadow 0.2s",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  marginBottom: "16px",
+                }}
+              >
+                <div style={{ fontSize: "2rem" }}>{guide.icon}</div>
+                <h3
+                  style={{
+                    margin: 0,
+                    color: guide.color,
+                    fontSize: "1.3rem",
+                    fontWeight: "600",
+                  }}
+                >
+                  {guide.title}
+                </h3>
+              </div>
+              <p
+                style={{
+                  fontSize: "0.95rem",
+                  lineHeight: "1.5",
+                  color: "#6b7280",
+                  marginBottom: "16px",
+                }}
+              >
+                {guide.description}
+              </p>
+              <Link
+                to={guide.path}
+                style={{
+                  display: "inline-block",
+                  padding: "12px 24px",
+                  backgroundColor: guide.color,
+                  color: "white",
+                  textDecoration: "none",
+                  borderRadius: "8px",
+                  fontWeight: "600",
+                  fontSize: "0.95rem",
+                  transition: "background-color 0.2s",
+                  width: "100%",
+                  textAlign: "center",
+                  boxSizing: "border-box",
+                }}
+                onMouseEnter={(e) => {
+                  (e.target as HTMLElement).style.backgroundColor =
+                    guide.color + "dd";
+                }}
+                onMouseLeave={(e) => {
+                  (e.target as HTMLElement).style.backgroundColor = guide.color;
+                }}
+              >
+                {guide.title} Guide →
+              </Link>
+            </div>
+          ))}
         </div>
-      </div>
+      </GreyBoarderWhiteBgContainer>
 
       {/* Custom Lit Action Modal */}
       {showLitActionModal && (

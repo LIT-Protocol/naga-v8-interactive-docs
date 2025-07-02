@@ -25,7 +25,6 @@ import PaymentManagerQuickStart from "./tabs/PayingForLit/PaymentManager/QuickSt
 import HomePageTab from "./tabs/HomePageTab";
 import WhatIsLitTab from "./tabs/LearningLit/WhatIsLitTab";
 import HowItWorksTab from "./tabs/LearningLit/HowItWorksTab";
-import GettingStartedTab from "./tabs/BuildingWithLit/GettingStartedTab";
 import ProgrammableKeysOverview from "./tabs/ProgrammableKeys/Overview";
 import PkpGettingStarted from "./tabs/ProgrammableKeys/PKPs/GettingStarted";
 import SecurityOverviewTab from "./tabs/LearningLit/Security/Overview";
@@ -187,10 +186,6 @@ export const router = createBrowserRouter([
       },
 
       // Building With Lit
-      {
-        path: "building-with-lit/getting-started",
-        element: <GettingStartedTab />,
-      },
       {
         path: "building-with-lit/first-request/overview",
         element: <MakingYourFirstRequestOverview />,

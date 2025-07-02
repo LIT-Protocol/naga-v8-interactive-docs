@@ -805,7 +805,7 @@ const authManager = createAuthManager({
         </p>
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
           <Link
-            to="/building-with-lit/making-your-first-request/overview"
+            to="/building-with-lit/first-request/prerequisites/creating-auth-context"
             style={{
               display: "inline-block",
               padding: "12px 24px",
@@ -818,7 +818,7 @@ const authManager = createAuthManager({
               transition: "background-color 0.2s",
             }}
           >
-            Continue to Making Your First Request →
+            Continue to Creating Auth Context →
           </Link>
         </div>
       </div>

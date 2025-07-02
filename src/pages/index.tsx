@@ -440,54 +440,55 @@ const ACTIONS: NavigationItem[] = [
 
   // Building With Lit
   {
-    id: "building-getting-started",
-    path: "/building-with-lit/getting-started",
-    name: "Getting Started",
-    description:
-      "Introduction to building with Lit Protocol and setup overview",
-    category: "Building With Lit",
-    type: "primary",
-  },
-  {
-    id: "building-with-lit-first-request-overview",
-    path: "/building-with-lit/first-request/overview",
+    id: "building-with-lit-first-request",
+    path: "/building-with-lit/first-request",
     name: "Making Your First Request",
-    description: "Overview of making your first request with Lit Protocol",
-    category: "Building With Lit",
-    type: "primary",
-  },
-  {
-    id: "building-with-lit-first-request-prerequisites",
-    path: "/building-with-lit/first-request/prerequisites",
-    name: "Prerequisites",
-    description:
-      "Prerequisites for making your first request with Lit Protocol",
+    description: "Making your first request with Lit Protocol",
     category: "Building With Lit",
     type: "primary",
     children: [
       {
-        id: "building-with-lit-first-request-prerequisites-setup-lit-client",
-        path: "/building-with-lit/first-request/prerequisites/setup-lit-client",
-        name: "Setup Lit Client",
-        description: "Setup the Lit Client",
+        id: "building-with-lit-first-request-overview",
+        path: "/building-with-lit/first-request/overview",
+        name: "Overview",
+        description: "Overview of making your first request with Lit Protocol",
         category: "Building With Lit",
-        type: "secondary",
+        type: "primary",
       },
       {
-        id: "building-with-lit-first-request-prerequisites-setup-auth-manager",
-        path: "/building-with-lit/first-request/prerequisites/setup-auth-manager",
-        name: "Setup Auth Manager",
-        description: "Setup the Auth Manager",
+        id: "building-with-lit-first-request-prerequisites",
+        path: "/building-with-lit/first-request/prerequisites",
+        name: "Prerequisites",
+        description:
+          "Prerequisites for making your first request with Lit Protocol",
         category: "Building With Lit",
-        type: "secondary",
-      },
-      {
-        id: "building-with-lit-first-request-prerequisites-creating-auth-context",
-        path: "/building-with-lit/first-request/prerequisites/creating-auth-context",
-        name: "Creating Auth Context",
-        description: "Creating an Auth Context",
-        category: "Building With Lit",
-        type: "secondary",
+        type: "primary",
+        children: [
+          {
+            id: "building-with-lit-first-request-prerequisites-setup-lit-client",
+            path: "/building-with-lit/first-request/prerequisites/setup-lit-client",
+            name: "1. Setup Lit Client",
+            description: "Setup the Lit Client",
+            category: "Building With Lit",
+            type: "secondary",
+          },
+          {
+            id: "building-with-lit-first-request-prerequisites-setup-auth-manager",
+            path: "/building-with-lit/first-request/prerequisites/setup-auth-manager",
+            name: "2. Setup Auth Manager",
+            description: "Setup the Auth Manager",
+            category: "Building With Lit",
+            type: "secondary",
+          },
+          {
+            id: "building-with-lit-first-request-prerequisites-creating-auth-context",
+            path: "/building-with-lit/first-request/prerequisites/creating-auth-context",
+            name: "3. Creating Auth Context",
+            description: "Creating an Auth Context",
+            category: "Building With Lit",
+            type: "secondary",
+          },
+        ],
       },
     ],
   },
@@ -1056,16 +1057,54 @@ export const HomePage = () => {
     return [...new Set(categories)]; // Remove duplicates
   };
 
-  // Get expanded categories based on current path
+  // Get expanded categories and navigation items based on current path
   const getExpandedCategoriesForPath = (
     path: string
   ): { [key: string]: boolean } => {
     const defaultExpanded: { [key: string]: boolean } = {
       "Learning Lit": true,
       "Building With Lit": true,
+      "Making Your First Request": true,
+      // Expand nested navigation items by default
+      "building-with-lit-first-request": true, // "Making Your First Request" parent
     };
 
-    // Always expand categories for the current path
+    // Function to find and expand all parent navigation items for a given path
+    const findAndExpandParents = (
+      actions: NavigationItem[],
+      targetPath: string,
+      parentIds: string[] = []
+    ): boolean => {
+      for (const action of actions) {
+        const currentPath = [...parentIds, action.id];
+
+        if (action.path === targetPath) {
+          // Found the target - expand all parents
+          parentIds.forEach((parentId) => {
+            defaultExpanded[parentId] = true;
+          });
+          // Also expand categories
+          if (action.category) {
+            defaultExpanded[action.category] = true;
+          }
+          return true;
+        }
+
+        if (action.children) {
+          if (findAndExpandParents(action.children, targetPath, currentPath)) {
+            // If found in children, expand this parent
+            defaultExpanded[action.id] = true;
+            if (action.category) {
+              defaultExpanded[action.category] = true;
+            }
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+
+    // Always expand categories and navigation items for the current path
     const currentPathCategories = findCategoriesForPath(path);
     console.log(
       "Current path:",
@@ -1073,9 +1112,14 @@ export const HomePage = () => {
       "Found categories:",
       currentPathCategories
     );
+
+    // Expand categories
     currentPathCategories.forEach((category) => {
       defaultExpanded[category] = true;
     });
+
+    // Expand parent navigation items
+    findAndExpandParents(ACTIONS, path);
 
     console.log("Final expanded categories:", defaultExpanded);
     return defaultExpanded;
