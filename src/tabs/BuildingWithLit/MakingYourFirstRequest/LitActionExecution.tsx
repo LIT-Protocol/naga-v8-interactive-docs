@@ -287,10 +287,10 @@ const result = await litClient.executeJs({
         <h2 style={pageStyles.h2}>Intro</h2>
         <p style={pageStyles.p}>
           Lit Actions are decentralized JavaScript functions that are executed
-          by the node in the Lit network. Lit Actions let you write custom logic
-          that can securely interact with on-chain and off-chain data, perform
-          computations, and even trigger programmable signing, all without
-          relying on a centralized server.
+          collectively by the nodes in the Lit network. Lit Actions let you
+          write custom logic to govern signing and encryption operations,
+          interact with on and off-chain data, perform generalized compute, and
+          more.
         </p>
 
         <p style={pageStyles.p}>

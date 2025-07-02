@@ -335,7 +335,7 @@ const decrypted = await litClient.decrypt({
             }}
           >
             <h4 style={{ margin: "0 0 12px 0", color: "#1f2937" }}>
-              🔐 Client-Side Privacy
+              🔐 Client-Side Execution
             </h4>
             <p
               style={{
@@ -390,7 +390,7 @@ const decrypted = await litClient.decrypt({
             }}
           >
             <h4 style={{ margin: "0 0 12px 0", color: "#1f2937" }}>
-              🔓 Distributed Decryption
+              🔓 Decentralized Decryption
             </h4>
             <p
               style={{
