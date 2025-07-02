@@ -141,9 +141,7 @@ import { ${networkImport} } from "@lit-protocol/networks";
 // Create Lit Client for ${network.name}
 const litClient = await createLitClient({ 
   network: ${networkImport} 
-});
-
-console.log("${network.name} client ready:", litClient);`;
+});`;
   };
 
   return (

@@ -17,7 +17,6 @@ import StytchWhatsAppOtpAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/A
 import CustomAuthTab from "./tabs/ProgrammableKeys/PKPs/AuthMethods/CustomAuthTab";
 import LitAuthProviderDemoTab from "./tabs/LearningLit/LitAuthProviderDemoTab";
 import EncryptionQuickStart from "./tabs/EncryptionAccessControl/QuickStart";
-import SetupAuthManagerTab from "./tabs/BuildingWithLit/SetupAuthManagerTab";
 import SetupAuthServicesTab from "./tabs/BuildingWithLit/SetupAuthServicesTab";
 import EoaNativeTab from "./tabs/EoaNativeTab";
 import StoragePluginsTab from "./tabs/GettingStarted/StoragePluginsTab";
@@ -81,6 +80,7 @@ import PaymentManagerWithdraw from "./tabs/PayingForLit/PaymentManager/Withdraw"
 import MakingYourFirstRequestOverview from "./tabs/BuildingWithLit/MakingYourFirstRequest/Overview";
 import SetupLitClient from "./tabs/BuildingWithLit/MakingYourFirstRequest/Prerequisites/SetupLitClient";
 import SetupAuthManager from "./tabs/BuildingWithLit/MakingYourFirstRequest/Prerequisites/SetupAuthManager";
+import CreatingAuthContext from "./tabs/BuildingWithLit/MakingYourFirstRequest/Prerequisites/CreatingAuthContext";
 
 // Create a type for the context
 type ContextType = {
@@ -204,8 +204,8 @@ export const router = createBrowserRouter([
         element: <SetupAuthManager />,
       },
       {
-        path: "building-with-lit/setup-auth-manager",
-        element: <SetupAuthManagerTab />,
+        path: "building-with-lit/first-request/prerequisites/creating-auth-context",
+        element: <CreatingAuthContext />,
       },
       {
         path: "building-with-lit/setup-auth-services",

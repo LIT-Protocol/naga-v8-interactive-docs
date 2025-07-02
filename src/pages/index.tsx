@@ -481,15 +481,15 @@ const ACTIONS: NavigationItem[] = [
         category: "Building With Lit",
         type: "secondary",
       },
+      {
+        id: "building-with-lit-first-request-prerequisites-creating-auth-context",
+        path: "/building-with-lit/first-request/prerequisites/creating-auth-context",
+        name: "Creating Auth Context",
+        description: "Creating an Auth Context",
+        category: "Building With Lit",
+        type: "secondary",
+      },
     ],
-  },
-  {
-    id: "setup-auth-manager",
-    path: "/building-with-lit/setup-auth-manager",
-    name: "Setup Auth Manager",
-    description: "Create and configure authentication manager with storage",
-    category: "Building With Lit",
-    type: "primary",
   },
   // TODO Improve
   // {

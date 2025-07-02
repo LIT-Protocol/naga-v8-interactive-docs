@@ -686,14 +686,6 @@ const authManager = createAuthManager({
                     width: "100%",
                     transition: "all 0.2s",
                   }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.backgroundColor = "#3b82f6";
-                    e.currentTarget.style.color = "white";
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.backgroundColor = "#ffffff";
-                    e.currentTarget.style.color = "#3b82f6";
-                  }}
                 >
                   📋 View Singleton Pattern (Advanced)
                 </button>
