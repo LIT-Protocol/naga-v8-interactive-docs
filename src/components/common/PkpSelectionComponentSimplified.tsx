@@ -1,37 +1,12 @@
-/**
- * SimplePkpSelection.tsx
- *
- * A simplified PKP selection component for the CreatingAuthContext page.
- * Allows users to either select existing PKPs or mint new ones, with
- * code examples shown in modals instead of embedded.
- */
-
 import { useState, useEffect } from "react";
+import { privateKeyToAccount } from "viem/accounts";
 
 // Configuration constants
 const DEFAULT_PAGE_SIZE = 5;
 
-// Code snippets for modals
-const VIEW_PKPS_CODE = `import { storagePlugins } from '@lit-protocol/auth';
-
-// Get PKPs with pagination and caching
-const result = await litClient.viewPKPsByAuthData({
-  authData: {
-    authMethodType: authData.authMethodType,
-    authMethodId: authData.authMethodId,
-  },
-  pagination: {
-    limit: 5,
-    offset: 0,
-  },
-});`;
-
-const MINT_PKP_CODE = `// Mint new PKP with Google authentication data
-const mintResult = await litClient.authService.mintWithAuth({
-  authData: authData,
-});
-
-console.log('PKP Info:', mintResult.pkpInfo);`;
+// Site owner private key for minting PKPs (provided for demo)
+const SITE_OWNER_PRIVATE_KEY =
+  "0x65b80901b185bd7bd9c07178c8e3b2bfae62472feeeb86d3dd834e5b14c2d5f8";
 
 interface PKPInfo {
   tokenId: string;
@@ -79,11 +54,6 @@ export default function SimplePkpSelection({
 
   // Minting state
   const [isMinting, setIsMinting] = useState(false);
-
-  // Modal state
-  const [showCodeModal, setShowCodeModal] = useState(false);
-  const [modalCode, setModalCode] = useState("");
-  const [modalTitle, setModalTitle] = useState("");
 
   // Utility function to format error messages
   const formatErrorMessage = (prefix: string, error: unknown): string => {
@@ -199,16 +169,54 @@ export default function SimplePkpSelection({
 
       const { litClient } = assertDependenciesLoaded();
 
+      // Check if this is custom auth (based on authMethodName or authMethodType)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const mintResult = await (litClient as any).authService.mintWithAuth({
-        authData: authData,
-      });
+      const authDataObj = authData as any;
+      const isCustomAuth =
+        authMethodName === "Custom Auth" ||
+        (authDataObj.authMethodType &&
+          typeof authDataObj.authMethodType === "bigint");
+
+      let mintResult;
+
+      if (isCustomAuth) {
+        // For custom auth, we need to use account-based minting with site owner account
+        const siteOwnerAccount = privateKeyToAccount(
+          SITE_OWNER_PRIVATE_KEY as `0x${string}`
+        );
+
+        // For custom auth, keep authMethodType as bigint (don't serialize to string)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        mintResult = await (litClient as any).mintWithCustomAuth({
+          account: siteOwnerAccount,
+          authData: authDataObj, // Pass authData directly with bigint
+          scope: "sign-anything",
+          validationIpfsCid: "QmYLeVmwJPVs7Uebk85YdVPivMyrvoeKR6X37kyVRZUXW4", // Default validation CID
+        });
+      } else {
+        // For other auth methods (like Google), use the standard approach
+        const serializedAuthData = {
+          ...authDataObj,
+          authMethodType:
+            typeof authDataObj.authMethodType === "bigint"
+              ? authDataObj.authMethodType.toString()
+              : authDataObj.authMethodType,
+        };
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        mintResult = await (litClient as any).authService.mintWithAuth({
+          authData: serializedAuthData,
+        });
+      }
+
+      // Handle different result structures for different auth types
+      const pkpData = isCustomAuth ? mintResult.pkpData : mintResult;
 
       const mintedPkpInfo: PKPInfo = {
-        tokenId: mintResult.data.tokenId,
-        publicKey: mintResult.data.pubkey,
-        ethAddress: mintResult.data.ethAddress,
-        pubkey: mintResult.data.pubkey,
+        tokenId: pkpData.data.tokenId,
+        publicKey: pkpData.data.pubkey,
+        ethAddress: pkpData.data.ethAddress,
+        pubkey: pkpData.data.pubkey,
       };
 
       onPkpSelected(mintedPkpInfo);
@@ -229,13 +237,6 @@ export default function SimplePkpSelection({
     } finally {
       setIsMinting(false);
     }
-  };
-
-  // Show code modal
-  const showCodeExample = (code: string, title: string) => {
-    setModalCode(code);
-    setModalTitle(title);
-    setShowCodeModal(true);
   };
 
   // Load existing PKPs when component mounts or auth data changes
@@ -327,24 +328,6 @@ export default function SimplePkpSelection({
             >
               {isLoadingPkps ? "Loading..." : "Load My PKPs"}
               {!authData && " (Authenticate first)"}
-            </button>
-
-            <button
-              onClick={() =>
-                showCodeExample(VIEW_PKPS_CODE, "View PKPs by Auth Data")
-              }
-              style={{
-                padding: "8px 12px",
-                backgroundColor: "#ffffff",
-                color: "#3b82f6",
-                border: "2px solid #3b82f6",
-                borderRadius: "4px",
-                fontSize: "0.85rem",
-                fontWeight: "500",
-                cursor: "pointer",
-              }}
-            >
-              📋 View Code
             </button>
           </div>
 
@@ -487,102 +470,6 @@ export default function SimplePkpSelection({
                 : `Mint New PKP with ${authMethodName}`}
               {!authData && " (Authenticate first)"}
             </button>
-
-            <button
-              onClick={() =>
-                showCodeExample(MINT_PKP_CODE, "Mint PKP with Google Auth")
-              }
-              style={{
-                padding: "8px 12px",
-                backgroundColor: "#ffffff",
-                color: "#3b82f6",
-                border: "2px solid #3b82f6",
-                borderRadius: "4px",
-                fontSize: "0.85rem",
-                fontWeight: "500",
-                cursor: "pointer",
-              }}
-            >
-              📋 View Code
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Code Modal */}
-      {showCodeModal && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.75)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 1000,
-            padding: "20px",
-          }}
-          onClick={() => setShowCodeModal(false)}
-        >
-          <div
-            style={{
-              backgroundColor: "white",
-              borderRadius: "12px",
-              maxWidth: "800px",
-              maxHeight: "80vh",
-              width: "100%",
-              overflow: "auto",
-              padding: "24px",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "20px",
-              }}
-            >
-              <h3
-                style={{
-                  margin: 0,
-                  color: "#1f2937",
-                  fontSize: "1.2rem",
-                }}
-              >
-                {modalTitle}
-              </h3>
-              <button
-                onClick={() => setShowCodeModal(false)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  fontSize: "1.5rem",
-                  cursor: "pointer",
-                  color: "#6b7280",
-                }}
-              >
-                ✕
-              </button>
-            </div>
-            <pre
-              style={{
-                backgroundColor: "#f8fafc",
-                padding: "16px",
-                borderRadius: "8px",
-                border: "1px solid #e2e8f0",
-                fontSize: "14px",
-                lineHeight: "1.5",
-                overflow: "auto",
-                color: "#374151",
-              }}
-            >
-              <code>{modalCode}</code>
-            </pre>
           </div>
         </div>
       )}

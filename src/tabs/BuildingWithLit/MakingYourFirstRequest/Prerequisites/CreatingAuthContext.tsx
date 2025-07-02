@@ -13,6 +13,7 @@ import {
   type PrivateKeyAccount,
 } from "viem/accounts";
 import { GoogleAuthenticator } from "@lit-protocol/auth";
+import { utils as litUtils } from "@lit-protocol/lit-client";
 import GreyBoarderWhiteBgContainer from "../../../../components/layout/GreyboardWhiteBgContainer";
 import { RequiredPackages, NoteCallout } from "../../../../components/common";
 import { DisplayCode } from "../../../../components/DisplayCode";
@@ -64,7 +65,7 @@ interface AuthMethod {
 }
 
 interface GoogleAuthData {
-  authMethodType: number | bigint;
+  authMethodType: bigint;
   accessToken: string;
   authMethodId: string;
   publicKey?: string;
@@ -93,6 +94,7 @@ const CreatingAuthContext: React.FC = () => {
   const [userAccount, setUserAccount] = useState<PrivateKeyAccount | null>(
     null
   );
+  const [userPrivateKey, setUserPrivateKey] = useState<string | null>(null);
 
   // PKP-specific state
   const [isSigningInWithGoogle, setIsSigningInWithGoogle] = useState(false);
@@ -101,24 +103,38 @@ const CreatingAuthContext: React.FC = () => {
   );
   const [pkpInfo, setPkpInfo] = useState<PKPInfo | null>(null);
 
-  const authMethods: Record<string, AuthMethod> = {
-    eoa: {
-      key: "eoa",
-      name: "EOA Auth Context",
-      description: "Authenticate using an Ethereum wallet like MetaMask",
-      detailedDescription: (
-        <>
-          Creates an Auth Context using an{" "}
-          <strong>Externally Owned Account</strong> (EOA) - a regular Ethereum
-          wallet like MetaMask, WalletConnect, or Coinbase Wallet. This is the
-          most common method for web applications where users already have
-          crypto wallets.
-        </>
-      ),
-      icon: "🦊",
-      code: `import { createAuthManager, storagePlugins } from "@lit-protocol/auth";
+  // Custom auth PKP state
+  const [customPkpInfo, setCustomPkpInfo] = useState<PKPInfo | null>(null);
+  const [customAuthData, setCustomAuthData] = useState<{
+    authMethodType: bigint;
+    authMethodId: string;
+  } | null>(null);
+
+  // Function to get updated code examples with actual PKP public keys
+  const getAuthMethods = (): Record<string, AuthMethod> => {
+    const pkpPublicKey = pkpInfo?.pubkey || pkpInfo?.publicKey || "0x...";
+    const customPkpPublicKey =
+      customPkpInfo?.pubkey || customPkpInfo?.publicKey || "0x...";
+
+    return {
+      eoa: {
+        key: "eoa",
+        name: "EOA Auth Context",
+        description: "Authenticate using an Ethereum wallet like MetaMask",
+        detailedDescription: (
+          <>
+            Creates an Auth Context using an{" "}
+            <strong>Externally Owned Account</strong> (EOA) - a regular Ethereum
+            wallet like MetaMask, WalletConnect, or Coinbase Wallet. This is the
+            most common method for web applications where users already have
+            crypto wallets.
+          </>
+        ),
+        icon: "🦊",
+        code: `import { createAuthManager, storagePlugins } from "@lit-protocol/auth";
 import { createLitClient } from "@lit-protocol/lit-client";
 import { nagaDev } from "@lit-protocol/networks";
+import { privateKeyToAccount } from "viem/accounts";
 
 const litClient = await createLitClient({
   network: nagaDev
@@ -131,7 +147,9 @@ const authManager = createAuthManager({
   }),
 });
 
-const myAccount = privateKeyToAccount(process.env.PRIVATE_KEY as \`0x\${string}\`);
+const myAccount = privateKeyToAccount("${
+          userPrivateKey || "YOUR_PRIVATE_KEY_HERE"
+        }" as \`0x\${string}\`);
 
 const eoaAuthContext = await authManager.createEoaAuthContext({
   config: {
@@ -150,25 +168,25 @@ const eoaAuthContext = await authManager.createEoaAuthContext({
     },
   litClient,
 });`,
-    },
-    pkp: {
-      key: "pkp",
-      name: "PKP Auth Context",
-      description: "Authenticate using a Programmable Key Pair",
-      detailedDescription: (
-        <>
+      },
+      pkp: {
+        key: "pkp",
+        name: "PKP Auth Context",
+        description: "Authenticate using a Programmable Key Pair",
+        detailedDescription: (
           <>
-            Authenticate using a <strong>Programmable Key Pair</strong> (PKP) —
-            a blockchain account that's controlled by code, not a user-managed
-            private key. PKPs can be created from familiar auth methods like
-            Google, Discord, GitHub, email, or phone numbers, making them
-            perfect for onboarding users without requiring wallets or seed
-            phrases.
+            <>
+              Authenticate using a <strong>Programmable Key Pair</strong> (PKP)
+              — a blockchain account that's controlled by code, not a
+              user-managed private key. PKPs can be created from familiar auth
+              methods like Google, Discord, GitHub, email, or phone numbers,
+              making them perfect for onboarding users without requiring wallets
+              or seed phrases.
+            </>
           </>
-        </>
-      ),
-      icon: "🔑",
-      code: `import { createAuthManager, GoogleAuthenticator, storagePlugins } from "@lit-protocol/auth";
+        ),
+        icon: "🔑",
+        code: `import { createAuthManager, GoogleAuthenticator, storagePlugins } from "@lit-protocol/auth";
 import { createLitClient } from "@lit-protocol/lit-client";
 import { nagaDev } from "@lit-protocol/networks";
 
@@ -190,7 +208,7 @@ const authData = await GoogleAuthenticator.authenticate(
 
 const pkpAuthContext = await authManager.createPkpAuthContext({
   authData,
-  pkpPublicKey: "0x...",
+  pkpPublicKey: "${pkpPublicKey}",
   authConfig: {
       statement: 'I authorize the Lit Protocol to execute this Lit Action.',
       domain: 'example.com',
@@ -204,29 +222,29 @@ const pkpAuthContext = await authManager.createPkpAuthContext({
     },
   litClient,
 });`,
-    },
-    custom: {
-      key: "custom",
-      name: "Custom Auth Context",
-      description: "Create custom authentication using Lit Actions",
-      detailedDescription: (
-        <>
-          <p>
-            Creates an Auth Context using a custom <strong>Lit Action</strong> -
-            a JavaScript function that runs on Lit nodes to define your own
-            authentication logic.
-          </p>
-          <p>
-            The Lit Action determines <em>when</em> a PKP is allowed to sign to
-            authorize the Session Key to act on the behalf of the authenticated
-            identity. This is the most flexible option, ideal for custom auth
-            flows, additional social login providers, or app-specific
-            conditions.
-          </p>
-        </>
-      ),
-      icon: "⚙️",
-      code: `import { createAuthManager, storagePlugins } from "@lit-protocol/auth";
+      },
+      custom: {
+        key: "custom",
+        name: "Custom Auth Context",
+        description: "Create custom authentication using Lit Actions",
+        detailedDescription: (
+          <>
+            <p>
+              Creates an Auth Context using a custom <strong>Lit Action</strong>{" "}
+              - a JavaScript function that runs on Lit nodes to define your own
+              authentication logic.
+            </p>
+            <p>
+              The Lit Action determines <em>when</em> a PKP is allowed to sign
+              to authorize the Session Key to act on the behalf of the
+              authenticated identity. This is the most flexible option, ideal
+              for custom auth flows, additional social login providers, or
+              app-specific conditions.
+            </p>
+          </>
+        ),
+        icon: "⚙️",
+        code: `import { createAuthManager, storagePlugins } from "@lit-protocol/auth";
 import { createLitClient, utils as litUtils } from "@lit-protocol/lit-client";
 import { nagaDev } from "@lit-protocol/networks";
 
@@ -249,7 +267,7 @@ const authData = litUtils.generateAuthData({
 });
 
 const customAuthContext = await authManager.createCustomAuthContext({
-  pkpPublicKey: "0x...",
+  pkpPublicKey: "${customPkpPublicKey}",
   authConfig: {
     statement: 'I authorize the Lit Protocol to execute this Lit Action.',
     domain: 'example.com',
@@ -265,14 +283,15 @@ const customAuthContext = await authManager.createCustomAuthContext({
   customAuthParams: {
     litActionIpfsId: 'QmYLeVmwJPVs7Uebk85YdVPivMyrvoeKR6X37kyVRZUXW4',
     jsParams: {
-      pkpPublicKey: "0x...", // Same PKP public key
+      pkpPublicKey: "${customPkpPublicKey}", // Same PKP public key
       username: 'alice',
       password: 'lit',
       authMethodId: authData.authMethodId, // Generated using Lit utilities
     },
   },
 });`,
-    },
+      },
+    };
   };
 
   const formatErrorMessage = (prefix: string, error: unknown): string => {
@@ -280,7 +299,18 @@ const customAuthContext = await authManager.createCustomAuthContext({
     if (error instanceof Error) {
       errorMessage += error.message;
     } else if (typeof error === "object" && error !== null) {
-      errorMessage += JSON.stringify(error, null, 2);
+      try {
+        // Handle BigInt serialization by converting to string
+        errorMessage += JSON.stringify(
+          error,
+          (key, value) =>
+            typeof value === "bigint" ? value.toString() : value,
+          2
+        );
+      } catch (serializationError) {
+        // Fallback if JSON.stringify still fails
+        errorMessage += String(error);
+      }
     } else {
       errorMessage += String(error);
     }
@@ -292,6 +322,7 @@ const customAuthContext = await authManager.createCustomAuthContext({
       const newPrivateKey = generatePrivateKey();
       const account = privateKeyToAccount(newPrivateKey);
       setUserAccount(account);
+      setUserPrivateKey(newPrivateKey);
       setAuthStatus(`Account created: ${account.address}`);
       setAuthResult(null);
     } catch (error) {
@@ -308,6 +339,22 @@ const customAuthContext = await authManager.createCustomAuthContext({
     setSelectedMethod(methodKey);
     setAuthResult(null);
     setAuthStatus("Not initialized");
+
+    // Generate authData for custom method
+    if (methodKey === "custom") {
+      const authData = litUtils.generateAuthData({
+        uniqueDappName: "my-supa-dupa-app-name",
+        uniqueAuthMethodType: BigInt(
+          "0x22b562b86d5d467a9f06c3f20137b37ed13981f63bd5dbdf6fc1e0fb97015401"
+        ),
+        userId: "alice",
+      });
+
+      // Keep the original authData with bigint for PKP selection component
+      setCustomAuthData(authData);
+    } else {
+      setCustomAuthData(null);
+    }
   };
 
   const handleCreateAuthContext = async () => {
@@ -370,8 +417,10 @@ const customAuthContext = await authManager.createCustomAuthContext({
       }
     } else if (selectedMethod === "pkp") {
       await createPkpAuthContext();
+    } else if (selectedMethod === "custom") {
+      await createCustomAuthContext();
     } else {
-      setAuthStatus("❌ Custom Auth Context is not yet implemented");
+      setAuthStatus("❌ Unknown authentication method selected");
     }
   };
 
@@ -383,7 +432,16 @@ const customAuthContext = await authManager.createCustomAuthContext({
         "https://login.litgateway.com"
       );
 
-      setGoogleAuthData(authData);
+      // Ensure authMethodType is bigint for consistency
+      const normalizedAuthData = {
+        ...authData,
+        authMethodType:
+          typeof authData.authMethodType === "number"
+            ? BigInt(authData.authMethodType)
+            : authData.authMethodType,
+      };
+
+      setGoogleAuthData(normalizedAuthData);
       setAuthStatus("✅ Successfully signed in with Google");
     } catch (error) {
       console.error("Error signing in with Google:", error);
@@ -413,8 +471,14 @@ const customAuthContext = await authManager.createCustomAuthContext({
 
       const { authManager, litClient } = assertDependenciesLoaded();
 
+      // Convert BigInt to number for SDK compatibility
+      const authDataForSDK = {
+        ...googleAuthData,
+        authMethodType: Number(googleAuthData.authMethodType),
+      };
+
       const pkpAuthContext = await authManager.createPkpAuthContext({
-        authData: googleAuthData,
+        authData: authDataForSDK,
         pkpPublicKey: pkpInfo.pubkey || pkpInfo.publicKey,
         authConfig: {
           resources: [
@@ -429,13 +493,90 @@ const customAuthContext = await authManager.createCustomAuthContext({
         litClient: litClient,
       });
 
-      console.log("✅ PKP Auth Context created:", pkpAuthContext);
+      console.log("✅ PKP Auth Context created successfully");
       setAuthStatus(`✅ PKP Auth Context created for ${pkpInfo.ethAddress}`);
-      setAuthResult(pkpAuthContext);
+
+      // Serialize BigInt values in the result before setting state
+      const serializedResult = JSON.parse(
+        JSON.stringify(pkpAuthContext, (key, value) =>
+          typeof value === "bigint" ? value.toString() : value
+        )
+      );
+      setAuthResult(serializedResult);
     } catch (error) {
-      console.error("Error creating PKP auth context:", error);
+      console.error("Error creating PKP auth context");
+
+      // Safely extract error message without BigInt serialization issues
+      let safeErrorMessage = "Failed to create PKP auth context: ";
+      try {
+        if (error instanceof Error) {
+          safeErrorMessage += error.message;
+        } else {
+          safeErrorMessage += "Unknown error occurred";
+        }
+      } catch (serializationError) {
+        safeErrorMessage += "Error occurred (details could not be serialized)";
+      }
+
+      setAuthStatus(`❌ ${safeErrorMessage}`);
+      setAuthResult({
+        success: false,
+        error: safeErrorMessage,
+        timestamp: new Date().toISOString(),
+      });
+      showError?.(safeErrorMessage);
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const createCustomAuthContext = async () => {
+    if (!areDependenciesLoaded() || !customPkpInfo || !customAuthData) {
+      setAuthStatus(
+        "❌ Please select a PKP first, then Lit Protocol dependencies must be loaded."
+      );
+      return;
+    }
+
+    try {
+      setIsCreating(true);
+      setAuthStatus("Creating Custom Auth Context...");
+      setAuthResult(null);
+
+      const { authManager, litClient } = assertDependenciesLoaded();
+
+      const customAuthContext = await authManager.createCustomAuthContext({
+        pkpPublicKey: customPkpInfo.pubkey || customPkpInfo.publicKey,
+        authConfig: {
+          statement: "I authorize the Lit Protocol to execute this Lit Action.",
+          domain: "example.com",
+          resources: [
+            ["lit-action-execution", "*"],
+            ["pkp-signing", "*"],
+            ["access-control-condition-decryption", "*"],
+          ],
+          capabilityAuthSigs: [],
+          expiration: new Date(Date.now() + 1000 * 60 * 15).toISOString(),
+        },
+        litClient,
+        customAuthParams: {
+          litActionIpfsId: "QmYLeVmwJPVs7Uebk85YdVPivMyrvoeKR6X37kyVRZUXW4",
+          jsParams: {
+            pkpPublicKey: customPkpInfo.pubkey || customPkpInfo.publicKey,
+            username: "alice",
+            password: "lit",
+            authMethodId: customAuthData.authMethodId,
+          },
+        },
+      });
+
+      console.log("✅ Custom Auth Context created:", customAuthContext);
+      setAuthStatus("✅ Custom Auth Context created successfully");
+      setAuthResult(customAuthContext);
+    } catch (error) {
+      console.error("Error creating custom auth context:", error);
       const errorMessage = formatErrorMessage(
-        "Failed to create PKP auth context: ",
+        "Failed to create custom auth context: ",
         error
       );
       setAuthStatus(`❌ ${errorMessage}`);
@@ -631,7 +772,7 @@ const customAuthContext = await authManager.createCustomAuthContext({
             marginBottom: "24px",
           }}
         >
-          {Object.entries(authMethods).map(([key, method]) => (
+          {Object.entries(getAuthMethods()).map(([key, method]) => (
             <div
               key={key}
               style={{
@@ -721,7 +862,7 @@ const customAuthContext = await authManager.createCustomAuthContext({
         </p>
 
         <DisplayCode
-          code={authMethods[selectedMethod].code}
+          code={getAuthMethods()[selectedMethod].code}
           language="typescript"
           useSideBySide={true}
           renderComponent={
@@ -754,7 +895,7 @@ const customAuthContext = await authManager.createCustomAuthContext({
                   marginBottom: "24px",
                 }}
               >
-                {Object.entries(authMethods).map(([key, method]) => (
+                {Object.entries(getAuthMethods()).map(([key, method]) => (
                   <button
                     key={key}
                     onClick={() => handleMethodSelect(key)}
@@ -1011,6 +1152,71 @@ const customAuthContext = await authManager.createCustomAuthContext({
                 </div>
               )}
 
+              {/* Custom Auth PKP Selection - only show when custom is selected */}
+              {selectedMethod === "custom" && (
+                <div style={{ marginBottom: "20px" }}>
+                  <div
+                    style={{
+                      padding: "16px",
+                      backgroundColor: "#f8fafc",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "8px",
+                      marginBottom: "12px",
+                    }}
+                  >
+                    <h5
+                      style={{
+                        margin: "0 0 8px 0",
+                        color: "#374151",
+                        fontSize: "0.9rem",
+                      }}
+                    >
+                      🔑 PKP Selection for Custom Auth
+                    </h5>
+                    <p
+                      style={{
+                        margin: "0 0 12px 0",
+                        fontSize: "0.8rem",
+                        color: "#6b7280",
+                        lineHeight: "1.4",
+                      }}
+                    >
+                      Custom Auth Context requires a PKP to validate the Lit
+                      Action. Select or mint a PKP to continue.
+                    </p>
+                    <PkpSelectionComponentSimplified
+                      authData={customAuthData}
+                      setStatus={(status) => setAuthStatus(status)}
+                      assertDependenciesLoaded={assertDependenciesLoaded}
+                      authMethodName="Custom Auth"
+                      onPkpSelected={(pkpInfo) => {
+                        setCustomPkpInfo(pkpInfo);
+                        setAuthResult(null);
+                        setAuthStatus("PKP selected for custom auth");
+                      }}
+                      onSelectionModeChange={() => {
+                        setCustomPkpInfo(null);
+                        setAuthResult(null);
+                        setAuthStatus("Not initialized");
+                      }}
+                    />
+                    {customPkpInfo && (
+                      <div style={{ marginTop: "12px" }}>
+                        <p
+                          style={{
+                            margin: "0 0 4px 0",
+                            fontSize: "0.8rem",
+                            color: "#16a34a",
+                          }}
+                        >
+                          ✅ PKP Selected: {customPkpInfo.ethAddress}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Custom Lit Action Button - only show when custom is selected */}
               {selectedMethod === "custom" && (
                 <div style={{ marginBottom: "20px" }}>
@@ -1092,14 +1298,19 @@ const customAuthContext = await authManager.createCustomAuthContext({
                 disabled={
                   isCreating ||
                   (selectedMethod === "eoa" && !userAccount) ||
-                  (selectedMethod === "pkp" && (!googleAuthData || !pkpInfo))
+                  (selectedMethod === "pkp" && (!googleAuthData || !pkpInfo)) ||
+                  (selectedMethod === "custom" &&
+                    (!customPkpInfo || !customAuthData))
                 }
                 style={{
                   padding: "14px 24px",
                   backgroundColor:
                     isCreating ||
                     (selectedMethod === "eoa" && !userAccount) ||
-                    (selectedMethod === "pkp" && (!googleAuthData || !pkpInfo))
+                    (selectedMethod === "pkp" &&
+                      (!googleAuthData || !pkpInfo)) ||
+                    (selectedMethod === "custom" &&
+                      (!customPkpInfo || !customAuthData))
                       ? "#6b7280"
                       : "#3b82f6",
                   color: "white",
@@ -1110,7 +1321,10 @@ const customAuthContext = await authManager.createCustomAuthContext({
                   cursor:
                     isCreating ||
                     (selectedMethod === "eoa" && !userAccount) ||
-                    (selectedMethod === "pkp" && (!googleAuthData || !pkpInfo))
+                    (selectedMethod === "pkp" &&
+                      (!googleAuthData || !pkpInfo)) ||
+                    (selectedMethod === "custom" &&
+                      (!customPkpInfo || !customAuthData))
                       ? "not-allowed"
                       : "pointer",
                   transition: "background-color 0.2s",
@@ -1119,7 +1333,7 @@ const customAuthContext = await authManager.createCustomAuthContext({
               >
                 {isCreating
                   ? "Creating Auth Context..."
-                  : `🚀 Create ${authMethods[selectedMethod].name}`}
+                  : `🚀 Create ${getAuthMethods()[selectedMethod].name}`}
               </button>
             </div>
           }
