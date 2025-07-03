@@ -1,8 +1,8 @@
 // Buffer polyfill - must be imported before other modules
-import { Buffer } from 'buffer';
-if (typeof window !== 'undefined') {
+import { Buffer } from "buffer";
+if (typeof window !== "undefined") {
   window.Buffer = Buffer;
-  (globalThis as any).Buffer = Buffer;
+  (globalThis as unknown as { Buffer: typeof Buffer }).Buffer = Buffer;
 }
 
 import React from "react";
@@ -15,17 +15,16 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
 import { RouterProvider } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
-import { mainnet, sepolia, base, arbitrum } from "wagmi/chains";
+import { mainnet } from "wagmi/chains";
 import { connectorsForWallets } from "@rainbow-me/rainbowkit";
 import {
   injectedWallet,
-  rainbowWallet,
   metaMaskWallet,
   coinbaseWallet,
   walletConnectWallet,
 } from "@rainbow-me/rainbowkit/wallets";
 import { createConfig } from "wagmi";
-import { APP_INFO, NETWORKS, THEME, WALLET_CONNECT, WALLETS } from "./_config";
+import { THEME } from "./_config";
 import { router } from "./router";
 
 const queryClient = new QueryClient();
@@ -33,14 +32,17 @@ const queryClient = new QueryClient();
 // Define the Chronicle Testnet (nagaDev)
 const chronicleTestnet = {
   id: 175188,
-  name: 'Chronicle Testnet',
-  nativeCurrency: { name: 'Test Lit Token', symbol: 'tLIT', decimals: 18 },
+  name: "Chronicle Testnet",
+  nativeCurrency: { name: "Test Lit Token", symbol: "tLIT", decimals: 18 },
   rpcUrls: {
-    default: { http: ['https://chain-rpc.litprotocol.com/http'] },
-    public: { http: ['https://chain-rpc.litprotocol.com/http'] },
+    default: { http: ["https://yellowstone-rpc.litprotocol.com/"] },
+    public: { http: ["https://yellowstone-rpc.litprotocol.com/"] },
   },
   blockExplorers: {
-    default: { name: 'Chronicle Explorer', url: 'https://chain.litprotocol.com' },
+    default: {
+      name: "Chronicle Explorer",
+      url: "https://yellowstone-rpc.litprotocol.com/",
+    },
   },
   testnet: true,
 };
@@ -52,6 +54,24 @@ const chronicleTestnet = {
 // } as any; // Type cast to avoid chain type errors
 
 // Configure custom RainbowKit theme with Lit Protocol branding
+// Configure wallet connectors
+const connectors = connectorsForWallets(
+  [
+    {
+      groupName: "Recommended",
+      wallets: [metaMaskWallet, coinbaseWallet],
+    },
+    {
+      groupName: "Other",
+      wallets: [injectedWallet],
+    },
+  ],
+  {
+    appName: "Lit Explorer",
+    projectId: "a9f92ae968d9a25744b5ab72d9564806",
+  }
+);
+
 const litTheme = darkTheme({
   accentColor: THEME.rainbowKit.accentColor,
   accentColorForeground: THEME.rainbowKit.accentColorForeground,
@@ -62,9 +82,10 @@ const litTheme = darkTheme({
 
 const defaultConfig = createConfig({
   chains: [mainnet, chronicleTestnet],
+  connectors,
   transports: {
     [mainnet.id]: http(),
-    [chronicleTestnet.id]: http(),
+    [chronicleTestnet.id]: http("https://yellowstone-rpc.litprotocol.com/"),
   },
 });
 

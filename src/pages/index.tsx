@@ -368,6 +368,14 @@ const ACTIONS: NavigationItem[] = [
     category: "Home",
     type: "primary",
   },
+  {
+    id: "lit-explorer",
+    path: "/lit-explorer",
+    name: "Lit Explorer",
+    description: "Lit Explorer",
+    category: "Home",
+    type: "primary",
+  },
 
   // Learning Lit
   {
