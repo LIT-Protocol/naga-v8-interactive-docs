@@ -8,11 +8,26 @@ const DEFAULT_PAGE_SIZE = 5;
 const SITE_OWNER_PRIVATE_KEY =
   "0x65b80901b185bd7bd9c07178c8e3b2bfae62472feeeb86d3dd834e5b14c2d5f8";
 
+// Chain configuration for balance fetching
+const SUPPORTED_CHAINS = {
+  yellowstone: {
+    id: 2888,
+    name: "Chronicle Yellowstone",
+    symbol: "tLit",
+    rpcUrl: "https://yellowstone-rpc.litprotocol.com/",
+    explorerUrl: "https://yellowstone-explorer.litprotocol.com",
+    testnet: true,
+  },
+};
+
 interface PKPInfo {
   tokenId: string;
   publicKey: string;
   ethAddress: string;
   pubkey?: string;
+  balance?: string;
+  balanceSymbol?: string;
+  isLoadingBalance?: boolean;
 }
 
 interface SimplePkpSelectionProps {
@@ -45,6 +60,7 @@ export default function SimplePkpSelection({
   const [existingPkps, setExistingPkps] = useState<PKPInfo[]>([]);
   const [isLoadingPkps, setIsLoadingPkps] = useState(false);
   const [selectedPkpIndex, setSelectedPkpIndex] = useState<number | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({
     offset: 0,
     limit: DEFAULT_PAGE_SIZE,
@@ -68,11 +84,144 @@ export default function SimplePkpSelection({
     return errorMessage;
   };
 
+  // Balance fetching function
+  const fetchPkpBalance = async (
+    pkp: PKPInfo,
+    chainKey: string = "yellowstone"
+  ): Promise<{ balance: string; symbol: string } | null> => {
+    console.log(
+      `💰 [BALANCE] Fetching balance for PKP ${pkp.tokenId?.slice(
+        -8
+      )} at address ${pkp.ethAddress}`
+    );
+    try {
+      const chainInfo =
+        SUPPORTED_CHAINS[chainKey as keyof typeof SUPPORTED_CHAINS];
+      if (!chainInfo || !pkp.ethAddress) {
+        console.warn(
+          `💰 [BALANCE] Missing chain info or address for PKP ${pkp.tokenId?.slice(
+            -8
+          )}`
+        );
+        return null;
+      }
+
+      console.log(
+        `💰 [BALANCE] Using chain: ${chainInfo.name} (${chainInfo.symbol}) RPC: ${chainInfo.rpcUrl}`
+      );
+
+      // Import viem for balance fetching
+      const { createPublicClient, http } = await import("viem");
+
+      // Create chain config for viem
+      const chainConfig = {
+        id: chainInfo.id,
+        name: chainInfo.name,
+        network: chainInfo.name.toLowerCase().replace(/\s+/g, "-"),
+        nativeCurrency: {
+          name: chainInfo.name,
+          symbol: chainInfo.symbol,
+          decimals: 18,
+        },
+        rpcUrls: {
+          default: { http: [chainInfo.rpcUrl] },
+          public: { http: [chainInfo.rpcUrl] },
+        },
+      };
+
+      const client = createPublicClient({
+        chain: chainConfig,
+        transport: http(chainInfo.rpcUrl),
+      });
+
+      console.log(
+        `💰 [BALANCE] Making balance request for ${pkp.ethAddress}...`
+      );
+      const balance = await client.getBalance({
+        address: pkp.ethAddress as `0x${string}`,
+      });
+
+      const formattedBalance = (Number(balance) / 1e18).toFixed(6);
+      console.log(
+        `💰 [BALANCE] ✅ Success! PKP ${pkp.tokenId?.slice(
+          -8
+        )} balance: ${formattedBalance} ${chainInfo.symbol}`
+      );
+
+      return {
+        balance: formattedBalance,
+        symbol: chainInfo.symbol,
+      };
+    } catch (error) {
+      console.error(
+        `💰 [BALANCE] ❌ Failed to fetch balance for PKP ${pkp.tokenId?.slice(
+          -8
+        )}:`,
+        error
+      );
+      return null;
+    }
+  };
+
+  // Load balances for all PKPs
+  const loadBalancesForPkps = async (pkpsToLoad: PKPInfo[]) => {
+    console.log(
+      `💰 [BALANCE_BATCH] Starting balance loading for ${pkpsToLoad.length} PKPs:`,
+      pkpsToLoad.map((p) => p.tokenId?.slice(-8))
+    );
+    const updatedPkps = [...pkpsToLoad];
+
+    // Set loading state for all PKPs
+    updatedPkps.forEach((pkp) => {
+      pkp.isLoadingBalance = true;
+    });
+    console.log(`💰 [BALANCE_BATCH] Set loading state for all PKPs`);
+    setExistingPkps([...updatedPkps]);
+
+    // Fetch balances in parallel
+    const balancePromises = pkpsToLoad.map(async (pkp, index) => {
+      const balanceInfo = await fetchPkpBalance(pkp);
+      return { index, balanceInfo };
+    });
+
+    console.log(
+      `💰 [BALANCE_BATCH] Waiting for ${balancePromises.length} balance requests...`
+    );
+    const results = await Promise.allSettled(balancePromises);
+
+    // Update PKPs with balance results
+    results.forEach((result, idx) => {
+      if (result.status === "fulfilled" && result.value.balanceInfo) {
+        const { balance, symbol } = result.value.balanceInfo;
+        updatedPkps[idx].balance = balance;
+        updatedPkps[idx].balanceSymbol = symbol;
+        console.log(
+          `💰 [BALANCE_BATCH] ✅ PKP ${updatedPkps[idx].tokenId?.slice(
+            -8
+          )} balance updated: ${balance} ${symbol}`
+        );
+      } else {
+        updatedPkps[idx].balance = "N/A";
+        updatedPkps[idx].balanceSymbol = "tLit";
+        console.log(
+          `💰 [BALANCE_BATCH] ❌ PKP ${updatedPkps[idx].tokenId?.slice(
+            -8
+          )} balance failed, set to N/A`
+        );
+      }
+      updatedPkps[idx].isLoadingBalance = false;
+    });
+
+    console.log(
+      `💰 [BALANCE_BATCH] Updating PKP state with balance results...`
+    );
+    setExistingPkps([...updatedPkps]);
+    console.log(`💰 [BALANCE_BATCH] ✅ Balance loading complete!`);
+  };
+
   // Load existing PKPs
-  const loadExistingPkps = async (
-    offset: number = 0,
-    append: boolean = false
-  ) => {
+  const loadExistingPkps = async (page: number = 1) => {
+    const offset = (page - 1) * DEFAULT_PAGE_SIZE;
     if (!authData) {
       setStatus("No authentication data available. Please authenticate first.");
       return;
@@ -80,7 +229,7 @@ export default function SimplePkpSelection({
 
     try {
       setIsLoadingPkps(true);
-      setStatus("Loading your existing PKPs...");
+      setStatus(`Loading PKPs (page ${page})...`);
 
       const { litClient } = assertDependenciesLoaded();
 
@@ -106,11 +255,8 @@ export default function SimplePkpSelection({
         pubkey: pkp.publicKey,
       }));
 
-      if (append) {
-        setExistingPkps((prev) => [...prev, ...pkps]);
-      } else {
-        setExistingPkps(pkps);
-      }
+      setExistingPkps(pkps);
+      setCurrentPage(page);
 
       setPagination({
         offset: offset,
@@ -125,8 +271,21 @@ export default function SimplePkpSelection({
         setStatus(
           `Found ${result.pagination.total} PKP${
             result.pagination.total === 1 ? "" : "s"
-          } associated with your account.`
+          } associated with your account. Loading balances...`
         );
+
+        // Load balances for all PKPs
+        setTimeout(() => {
+          loadBalancesForPkps(pkps).then(() => {
+            setStatus(
+              `Found ${result.pagination.total} PKP${
+                result.pagination.total === 1 ? "" : "s"
+              } associated with your account. (Page ${page} of ${Math.ceil(
+                result.pagination.total / DEFAULT_PAGE_SIZE
+              )})`
+            );
+          });
+        }, 100); // Small delay to let UI update first
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
@@ -142,10 +301,18 @@ export default function SimplePkpSelection({
     }
   };
 
-  // Load more PKPs (pagination)
-  const loadMorePkps = async () => {
+  // Navigate to next page
+  const goToNextPage = async () => {
     if (!pagination.hasMore || isLoadingPkps) return;
-    await loadExistingPkps(pagination.offset + pagination.limit, true);
+    const nextPage = currentPage + 1;
+    await loadExistingPkps(nextPage);
+  };
+
+  // Navigate to previous page
+  const goToPreviousPage = async () => {
+    if (currentPage <= 1 || isLoadingPkps) return;
+    const prevPage = currentPage - 1;
+    await loadExistingPkps(prevPage);
   };
 
   // Select an existing PKP
@@ -223,7 +390,7 @@ export default function SimplePkpSelection({
       setStatus(`✅ PKP minted successfully via ${authMethodName}!`);
 
       if (selectionMode === "existing") {
-        await loadExistingPkps(0, false);
+        await loadExistingPkps(1);
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
@@ -242,13 +409,17 @@ export default function SimplePkpSelection({
   // Load existing PKPs when component mounts or auth data changes
   useEffect(() => {
     if (authData && selectionMode === "existing") {
-      loadExistingPkps();
+      setCurrentPage(1);
+      loadExistingPkps(1);
     }
   }, [authData, selectionMode]);
 
   // Reset selection when switching modes
   useEffect(() => {
     setSelectedPkpIndex(null);
+    if (selectionMode === "existing") {
+      setCurrentPage(1);
+    }
   }, [selectionMode]);
 
   return (
@@ -308,7 +479,7 @@ export default function SimplePkpSelection({
             }}
           >
             <button
-              onClick={() => loadExistingPkps(0, false)}
+              onClick={() => loadExistingPkps(1)}
               disabled={isLoadingPkps || !authData || disabled}
               style={{
                 padding: "8px 12px",
@@ -335,7 +506,9 @@ export default function SimplePkpSelection({
             <div
               style={{ fontSize: "14px", color: "#666", marginBottom: "10px" }}
             >
-              Showing {existingPkps.length} of {pagination.total} PKPs
+              Showing {existingPkps.length} PKPs on page {currentPage} of{" "}
+              {Math.ceil(pagination.total / DEFAULT_PAGE_SIZE)} (Total:{" "}
+              {pagination.total} PKPs)
             </div>
           )}
 
@@ -399,6 +572,38 @@ export default function SimplePkpSelection({
                         <div style={{ fontSize: "13px", fontWeight: "500" }}>
                           ETH Address: {pkp.ethAddress}
                         </div>
+                        <div
+                          style={{
+                            fontSize: "12px",
+                            color: "#059669",
+                            fontWeight: "500",
+                            marginTop: "4px",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                          }}
+                        >
+                          {pkp.isLoadingBalance ? (
+                            <>
+                              <div
+                                style={{
+                                  width: "12px",
+                                  height: "12px",
+                                  border: "2px solid #e5e7eb",
+                                  borderTop: "2px solid #059669",
+                                  borderRadius: "50%",
+                                  animation: "spin 1s linear infinite",
+                                }}
+                              />
+                              Loading balance...
+                            </>
+                          ) : (
+                            <>
+                              Balance: {pkp.balance || "N/A"}{" "}
+                              {pkp.balanceSymbol || "tLit"}
+                            </>
+                          )}
+                        </div>
                       </div>
                       {selectedPkpIndex === index && (
                         <div
@@ -416,28 +621,77 @@ export default function SimplePkpSelection({
                 ))}
               </div>
 
-              {/* Load More Button */}
-              {pagination.hasMore && (
-                <button
-                  onClick={loadMorePkps}
-                  disabled={isLoadingPkps}
+              {/* Page Navigation */}
+              {pagination.total > DEFAULT_PAGE_SIZE && (
+                <div
                   style={{
-                    padding: "8px 15px",
-                    backgroundColor: isLoadingPkps ? "#cccccc" : "#28a745",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "4px",
-                    cursor: isLoadingPkps ? "not-allowed" : "pointer",
-                    fontSize: "14px",
-                    marginTop: "10px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginTop: "15px",
+                    padding: "10px",
+                    backgroundColor: "#f8f9fa",
+                    borderRadius: "6px",
+                    border: "1px solid #e9ecef",
                   }}
                 >
-                  {isLoadingPkps
-                    ? "Loading..."
-                    : `Load More (${
-                        pagination.total - existingPkps.length
-                      } remaining)`}
-                </button>
+                  <button
+                    onClick={goToPreviousPage}
+                    disabled={currentPage <= 1 || isLoadingPkps}
+                    style={{
+                      padding: "8px 15px",
+                      backgroundColor:
+                        currentPage <= 1 || isLoadingPkps
+                          ? "#cccccc"
+                          : "#007bff",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "4px",
+                      cursor:
+                        currentPage <= 1 || isLoadingPkps
+                          ? "not-allowed"
+                          : "pointer",
+                      fontSize: "14px",
+                      fontWeight: "500",
+                    }}
+                  >
+                    ← Previous
+                  </button>
+
+                  <span
+                    style={{
+                      fontSize: "14px",
+                      color: "#495057",
+                      fontWeight: "500",
+                    }}
+                  >
+                    Page {currentPage} of{" "}
+                    {Math.ceil(pagination.total / DEFAULT_PAGE_SIZE)}
+                  </span>
+
+                  <button
+                    onClick={goToNextPage}
+                    disabled={!pagination.hasMore || isLoadingPkps}
+                    style={{
+                      padding: "8px 15px",
+                      backgroundColor:
+                        !pagination.hasMore || isLoadingPkps
+                          ? "#cccccc"
+                          : "#007bff",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "4px",
+                      cursor:
+                        !pagination.hasMore || isLoadingPkps
+                          ? "not-allowed"
+                          : "pointer",
+                      fontSize: "14px",
+                      fontWeight: "500",
+                    }}
+                  >
+                    Next →
+                  </button>
+                </div>
               )}
             </div>
           )}
@@ -473,6 +727,14 @@ export default function SimplePkpSelection({
           </div>
         </div>
       )}
+
+      {/* CSS Animation for loading spinners */}
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }

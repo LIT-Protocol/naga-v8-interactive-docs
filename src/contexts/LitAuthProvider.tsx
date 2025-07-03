@@ -266,9 +266,14 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
   // Auto-initialize services when user exists but services aren't ready
   useEffect(() => {
     if (user && !isServicesReady && !isInitializing) {
-      console.log("🔄 User exists but services not ready - initializing services...");
+      console.log(
+        "🔄 User exists but services not ready - initializing services..."
+      );
       setupServices().catch((error) => {
-        console.error("Failed to auto-initialize services for existing user:", error);
+        console.error(
+          "Failed to auto-initialize services for existing user:",
+          error
+        );
         // Don't logout the user automatically, but log the error
         // The user can try to use functionality and it will show appropriate error messages
       });
@@ -278,30 +283,42 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
   // Recreate authContext when services become ready for existing user
   useEffect(() => {
     const recreateAuthContext = async () => {
-      if (user && user.authData && user.pkpInfo && isServicesReady && services) {
+      if (
+        user &&
+        user.authData &&
+        user.pkpInfo &&
+        isServicesReady &&
+        services
+      ) {
         // Check if authContext is missing methods (indicates it was loaded from localStorage)
-        const needsRecreation = !user.authContext?.authNeededCallback || 
-                               typeof user.authContext?.authNeededCallback !== 'function';
-        
+        const needsRecreation =
+          !user.authContext?.authNeededCallback ||
+          typeof user.authContext?.authNeededCallback !== "function";
+
         if (needsRecreation) {
-          console.log("🔧 Recreating authContext for user loaded from localStorage...");
+          console.log(
+            "🔧 Recreating authContext for user loaded from localStorage..."
+          );
           try {
-            const newAuthContext = await services.authManager.createPkpAuthContext({
-              authData: user.authData,
-              pkpPublicKey: user.pkpInfo.pubkey || user.pkpInfo.publicKey,
-              authConfig: {
-                capabilityAuthSigs: [],
-                expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
-                statement: "",
-                domain: "",
-                resources: [
-                  ["pkp-signing", "*"],
-                  ["lit-action-execution", "*"],
-                  ["access-control-condition-decryption", "*"],
-                ],
-              },
-              litClient: services.litClient,
-            });
+            const newAuthContext =
+              await services.authManager.createPkpAuthContext({
+                authData: user.authData,
+                pkpPublicKey: user.pkpInfo.pubkey || user.pkpInfo.publicKey,
+                authConfig: {
+                  capabilityAuthSigs: [],
+                  expiration: new Date(
+                    Date.now() + 1000 * 60 * 60 * 24
+                  ).toISOString(),
+                  statement: "",
+                  domain: "",
+                  resources: [
+                    ["pkp-signing", "*"],
+                    ["lit-action-execution", "*"],
+                    ["access-control-condition-decryption", "*"],
+                  ],
+                },
+                litClient: services.litClient,
+              });
 
             // Update user with new authContext
             const updatedUser = {
@@ -427,27 +444,9 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
     try {
       setIsAuthenticating(true);
 
-      // Create auth context for the selected PKP
-      const authContext = await services.authManager.createPkpAuthContext({
-        authData: tempAuthData,
-        pkpPublicKey: pkpInfo.pubkey || pkpInfo.publicKey,
-        authConfig: {
-          capabilityAuthSigs: [],
-          expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
-          statement: "",
-          domain: "",
-          resources: [
-            ["pkp-signing", "*"],
-            ["lit-action-execution", "*"],
-            ['access-control-condition-decryption', '*'],
-          ],
-        },
-        litClient: services.litClient,
-      });
-
-      // Create complete user object
+      // Create user object without auth context first (like Explorer page does)
       const userData: AuthUser = {
-        authContext,
+        authContext: null, // Will be created later when needed
         pkpInfo,
         method: tempMethod,
         timestamp: Date.now(),
@@ -462,9 +461,42 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
       setTimeout(() => {
         resetModalState();
       }, 800);
+
+      // Try to create auth context in background (optional)
+      try {
+        const authContext = await services.authManager.createPkpAuthContext({
+          authData: tempAuthData,
+          pkpPublicKey: pkpInfo.pubkey || pkpInfo.publicKey,
+          authConfig: {
+            capabilityAuthSigs: [],
+            expiration: new Date(
+              Date.now() + 1000 * 60 * 60 * 24
+            ).toISOString(),
+            statement: "",
+            domain: "",
+            resources: [
+              ["pkp-signing", "*"],
+              ["lit-action-execution", "*"],
+              ["access-control-condition-decryption", "*"],
+            ],
+          },
+          litClient: services.litClient,
+        });
+
+        // Update user with auth context if successful
+        const updatedUserData = { ...userData, authContext };
+        setUser(updatedUserData);
+        localStorage.setItem(storageKey, JSON.stringify(updatedUserData));
+      } catch (authError) {
+        console.warn(
+          "Could not create auth context immediately, will retry later:",
+          authError
+        );
+        // User can still proceed without auth context - it will be created when needed
+      }
     } catch (error) {
-      console.error("Failed to create auth context for selected PKP:", error);
-      handleError(error, "Failed to create auth context for selected PKP");
+      console.error("Failed to select PKP:", error);
+      handleError(error, "Failed to select PKP");
     } finally {
       setIsAuthenticating(false);
     }

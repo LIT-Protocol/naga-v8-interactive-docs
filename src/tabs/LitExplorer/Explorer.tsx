@@ -16,6 +16,9 @@ interface PKPInfo {
   publicKey: string;
   ethAddress: string;
   pubkey?: string;
+  balance?: string;
+  balanceSymbol?: string;
+  isLoadingBalance?: boolean;
 }
 
 interface ExplorerProps {
@@ -24,10 +27,10 @@ interface ExplorerProps {
   onSignOut: () => void;
 }
 
-const Explorer: React.FC<ExplorerProps> = ({ user, onBack, onSignOut }) => {
-  const [status, setStatus] = useState<string>("");
+const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
   const [error, setError] = useState<string | null>(null);
   const [selectedPkp, setSelectedPkp] = useState<PKPInfo | null>(null);
+  const [showPkpSelection, setShowPkpSelection] = useState<boolean>(true);
 
   // Setup Lit Protocol services
   const {
@@ -59,7 +62,12 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onBack, onSignOut }) => {
 
   const handlePkpSelected = (pkpInfo: PKPInfo) => {
     setSelectedPkp(pkpInfo);
-    setStatus(`Selected PKP: ${pkpInfo.ethAddress}`);
+    setShowPkpSelection(false);
+  };
+
+  const handleChangePkp = () => {
+    setShowPkpSelection(true);
+    setSelectedPkp(null);
   };
 
   const formatUserAddress = () => {
@@ -272,151 +280,176 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onBack, onSignOut }) => {
             color: "#111827",
           }}
         >
-          Your PKPs
+          {selectedPkp && !showPkpSelection
+            ? "Your Selected PKP"
+            : "Your Available PKPs"}
         </h2>
-        <p
-          style={{
-            margin: "0 0 1.5rem 0",
-            fontSize: "14px",
-            color: "#6b7280",
-            lineHeight: "1.5",
-          }}
-        >
-          View and manage PKPs associated with your authentication method. You
-          can select an existing PKP or mint a new one.
-        </p>
 
-        {isServicesReady && services && user.authData ? (
-          <PkpSelectionComponentSimplified
-            authData={user.authData}
-            onPkpSelected={handlePkpSelected}
-            setStatus={setStatus}
-            assertDependenciesLoaded={assertDependenciesLoaded}
-            showError={showError}
-            authMethodName={`${user.method} Auth`}
-            disabled={!isServicesReady}
-          />
-        ) : (
-          <div
-            style={{
-              padding: "2rem",
-              textAlign: "center",
-              backgroundColor: "#f9fafb",
-              borderRadius: "8px",
-              border: "1px solid #e5e7eb",
-            }}
-          >
-            {!isServicesReady ? (
-              <div>
-                <div
-                  style={{
-                    width: "32px",
-                    height: "32px",
-                    border: "3px solid #e5e7eb",
-                    borderTop: "3px solid #3b82f6",
-                    borderRadius: "50%",
-                    animation: "spin 1s linear infinite",
-                    margin: "0 auto 16px",
-                  }}
-                />
-                <p style={{ color: "#6b7280", margin: 0 }}>
-                  Waiting for Lit services to initialize...
-                </p>
+        {selectedPkp && !showPkpSelection ? (
+          /* Selected PKP Display */
+          <div>
+            <div
+              style={{
+                backgroundColor: "#f8f9fa",
+                border: "1px solid #e9ecef",
+                borderRadius: "8px",
+                padding: "1.5rem",
+                marginBottom: "1rem",
+              }}
+            >
+              <div style={{ display: "grid", gap: "1rem", fontSize: "14px" }}>
+                <div>
+                  <strong style={{ color: "#374151" }}>Token ID:</strong>
+                  <div
+                    style={{
+                      fontFamily: "monospace",
+                      fontSize: "12px",
+                      color: "#6b7280",
+                      wordBreak: "break-all",
+                      marginTop: "4px",
+                    }}
+                  >
+                    {selectedPkp.tokenId}
+                  </div>
+                </div>
+
+                <div>
+                  <strong style={{ color: "#374151" }}>ETH Address:</strong>
+                  <div
+                    style={{
+                      fontFamily: "monospace",
+                      fontSize: "12px",
+                      color: "#6b7280",
+                      marginTop: "4px",
+                    }}
+                  >
+                    {selectedPkp.ethAddress}
+                  </div>
+                </div>
+
+                <div>
+                  <strong style={{ color: "#374151" }}>Public Key:</strong>
+                  <div
+                    style={{
+                      fontFamily: "monospace",
+                      fontSize: "12px",
+                      color: "#6b7280",
+                      wordBreak: "break-all",
+                      marginTop: "4px",
+                    }}
+                  >
+                    {selectedPkp.publicKey}
+                  </div>
+                </div>
+
+                <div>
+                  <strong style={{ color: "#374151" }}>Balance:</strong>
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      color: "#059669",
+                      fontWeight: "600",
+                      marginTop: "4px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    {selectedPkp.isLoadingBalance ? (
+                      <>
+                        <div
+                          style={{
+                            width: "14px",
+                            height: "14px",
+                            border: "2px solid #e5e7eb",
+                            borderTop: "2px solid #059669",
+                            borderRadius: "50%",
+                            animation: "spin 1s linear infinite",
+                          }}
+                        />
+                        Loading balance...
+                      </>
+                    ) : (
+                      <>
+                        {selectedPkp.balance || "0.000000"}{" "}
+                        {selectedPkp.balanceSymbol || "tLit"}{" "}
+                        <span style={{ color: "#6b7280", fontWeight: "400" }}>
+                          (Chain ID: 175188)
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
+            </div>
+
+            <button
+              onClick={handleChangePkp}
+              style={{
+                padding: "12px 20px",
+                backgroundColor: "#3b82f6",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                fontSize: "14px",
+                fontWeight: "600",
+                cursor: "pointer",
+                transition: "all 0.2s",
+              }}
+            >
+              Change PKP
+            </button>
+          </div>
+        ) : (
+          /* PKP Selection Component */
+          <div>
+            {isServicesReady && services && user.authData ? (
+              <PkpSelectionComponentSimplified
+                authData={user.authData}
+                onPkpSelected={handlePkpSelected}
+                setStatus={() => {}}
+                assertDependenciesLoaded={assertDependenciesLoaded}
+                showError={showError}
+                authMethodName={`${user.method} Auth`}
+                disabled={!isServicesReady}
+              />
             ) : (
-              <p style={{ color: "#6b7280", margin: 0 }}>
-                No authentication data available.
-              </p>
+              <div
+                style={{
+                  padding: "2rem",
+                  textAlign: "center",
+                  backgroundColor: "#f9fafb",
+                  borderRadius: "8px",
+                  border: "1px solid #e5e7eb",
+                }}
+              >
+                {!isServicesReady ? (
+                  <div>
+                    <div
+                      style={{
+                        width: "32px",
+                        height: "32px",
+                        border: "3px solid #e5e7eb",
+                        borderTop: "3px solid #3b82f6",
+                        borderRadius: "50%",
+                        animation: "spin 1s linear infinite",
+                        margin: "0 auto 16px",
+                      }}
+                    />
+                    <p style={{ color: "#6b7280", margin: 0 }}>
+                      Waiting for Lit services to initialize...
+                    </p>
+                  </div>
+                ) : (
+                  <p style={{ color: "#6b7280", margin: 0 }}>
+                    No authentication data available.
+                  </p>
+                )}
+              </div>
             )}
           </div>
         )}
       </div>
-
-      {/* Selected PKP Info */}
-      {selectedPkp && (
-        <div
-          style={{
-            backgroundColor: "#f0f9ff",
-            border: "1px solid #bfdbfe",
-            borderRadius: "12px",
-            padding: "1.5rem",
-            marginTop: "1.5rem",
-          }}
-        >
-          <h3
-            style={{
-              margin: "0 0 1rem 0",
-              fontSize: "1.125rem",
-              fontWeight: "600",
-              color: "#1e40af",
-            }}
-          >
-            ✅ Selected PKP
-          </h3>
-          <div style={{ display: "grid", gap: "0.5rem", fontSize: "14px" }}>
-            <div>
-              <strong>Token ID:</strong>{" "}
-              <code
-                style={{
-                  backgroundColor: "#e0f2fe",
-                  padding: "2px 6px",
-                  borderRadius: "4px",
-                }}
-              >
-                {selectedPkp.tokenId}
-              </code>
-            </div>
-            <div>
-              <strong>Public Key:</strong>{" "}
-              <code
-                style={{
-                  backgroundColor: "#e0f2fe",
-                  padding: "2px 6px",
-                  borderRadius: "4px",
-                  wordBreak: "break-all",
-                }}
-              >
-                {selectedPkp.publicKey}
-              </code>
-            </div>
-            <div>
-              <strong>ETH Address:</strong>{" "}
-              <code
-                style={{
-                  backgroundColor: "#e0f2fe",
-                  padding: "2px 6px",
-                  borderRadius: "4px",
-                }}
-              >
-                {selectedPkp.ethAddress}
-              </code>
-            </div>
-          </div>
-
-          <div
-            style={{
-              marginTop: "1rem",
-              padding: "12px",
-              backgroundColor: "#ecfdf5",
-              borderRadius: "6px",
-              border: "1px solid #a7f3d0",
-            }}
-          >
-            <p
-              style={{
-                margin: 0,
-                fontSize: "13px",
-                color: "#065f46",
-                lineHeight: "1.4",
-              }}
-            >
-              🎉 <strong>PKP Selected!</strong> You can now use this PKP for
-              signing transactions, executing Lit Actions, and accessing
-              encrypted data. More PKP management features coming soon!
-            </p>
-          </div>
-        </div>
-      )}
 
       <style>{`
         @keyframes spin {
