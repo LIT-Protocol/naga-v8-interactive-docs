@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import { useLitServiceSetup } from "../../hooks/useLitServiceSetup";
-import PkpSelectionComponentSimplified from "../../components/common/PkpSelectionComponentSimplified";
+import PkpSelectionComponent from "../../components/common/PkpSelectionComponent";
 import PKPManagement from "./PKPManagement";
 import { useAppContext } from "../../router";
 
 interface AuthUser {
-  authContext: any;
-  pkpInfo: any;
+  authContext: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  pkpInfo: any; // eslint-disable-line @typescript-eslint/no-explicit-any
   method: string;
   timestamp: number;
-  authData?: any;
+  authData?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
   accountMethod?: string;
 }
 
@@ -555,14 +555,20 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
           /* PKP Selection Component */
           <div>
             {isServicesReady && services && user.authData ? (
-              <PkpSelectionComponentSimplified
+              <PkpSelectionComponent
                 authData={user.authData}
+                account={user.authData?.account}
+                walletClient={user.authData?.walletClient}
+                accountMethod={
+                  user.accountMethod as "privateKey" | "walletClient"
+                }
                 onPkpSelected={handlePkpSelected}
                 setStatus={() => {}}
                 assertDependenciesLoaded={assertDependenciesLoaded}
                 showError={showError}
                 authMethodName={user.accountMethod!}
                 disabled={!isServicesReady}
+                showDisplayCode={false}
               />
             ) : (
               <div

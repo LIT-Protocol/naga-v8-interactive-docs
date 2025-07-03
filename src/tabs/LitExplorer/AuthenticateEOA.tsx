@@ -1,11 +1,11 @@
 import React, { useState } from "react";
+import { useWalletClient } from "wagmi";
 import { useLitServiceSetup } from "../../hooks/useLitServiceSetup";
 import AccountMethodSelector, {
   AccountMethod,
 } from "../../components/common/AccountMethodSelector";
 
 // Configuration constants
-const FAUCET_URL = "https://chronicle-yellowstone-faucet.getlit.dev/";
 
 interface AuthenticateEOAProps {
   onBack: () => void;
@@ -25,12 +25,12 @@ const AuthenticateEOA: React.FC<AuthenticateEOAProps> = ({
   onBack,
   onAuthSuccess,
 }) => {
+  const { data: walletClient } = useWalletClient();
+
   // Setup Lit Protocol services
   const {
-    services,
     isInitializing,
     error: setupError,
-    setupServices,
     isReady: isServicesReady,
   } = useLitServiceSetup({
     appName: "lit-explorer",
@@ -47,7 +47,6 @@ const AuthenticateEOA: React.FC<AuthenticateEOAProps> = ({
   const [account, setAccount] = useState<any>(null);
   const [accountMethod, setAccountMethod] =
     useState<AccountMethod>("walletClient");
-  const [authData, setAuthData] = useState<any>(null);
 
   // Success feedback state
   const [successActions, setSuccessActions] = useState<Set<string>>(new Set());
@@ -96,10 +95,14 @@ const AuthenticateEOA: React.FC<AuthenticateEOAProps> = ({
         const { WalletClientAuthenticator } = await import(
           "@lit-protocol/auth"
         );
-        authData = await WalletClientAuthenticator.authenticate(account);
+        if (!walletClient) {
+          throw new Error(
+            "No wallet client available. Please connect your wallet."
+          );
+        }
+        authData = await WalletClientAuthenticator.authenticate(walletClient);
       }
 
-      setAuthData(authData);
       setStatus("🎉 Authentication successful! Redirecting to Explorer...");
       showSuccess("eoa-authenticate");
 
@@ -112,6 +115,7 @@ const AuthenticateEOA: React.FC<AuthenticateEOAProps> = ({
         authData: {
           ...authData,
           account: account,
+          walletClient: walletClient,
         },
         accountMethod,
       };

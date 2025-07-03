@@ -1,6 +1,6 @@
 import { createAuthManager, storagePlugins } from "@lit-protocol/auth";
 import { createLitClient } from "@lit-protocol/lit-client";
-import { nagaDev } from "@lit-protocol/networks";
+import { nagaDev, nagaTest } from "@lit-protocol/networks";
 import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { MainLayout } from "../layouts/MainLayout";
@@ -15,7 +15,7 @@ let authManagerInstance: AuthManager | null = null;
 const getLitClient = async (): Promise<LitClient> => {
   if (!litClientInstance) {
     console.log("Creating new LitClient instance (should happen only once)");
-    litClientInstance = await createLitClient({ network: nagaDev });
+    litClientInstance = await createLitClient({ network: nagaTest });
   }
   return litClientInstance;
 };
@@ -26,7 +26,7 @@ const getAuthManager = (): AuthManager => {
     authManagerInstance = createAuthManager({
       storage: storagePlugins.localStorage({
         appName: "my-app",
-        networkName: "naga-dev",
+        networkName: "naga-test",
       }),
     });
   }

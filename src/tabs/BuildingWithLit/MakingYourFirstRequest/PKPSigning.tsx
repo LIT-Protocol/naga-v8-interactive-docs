@@ -8,6 +8,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { sepolia } from "viem/chains";
+import { useWalletClient } from "wagmi";
 import GreyBoarderWhiteBgContainer from "../../../components/layout/GreyboardWhiteBgContainer";
 import { DisplayCode } from "../../../components/DisplayCode";
 import { NoteCallout, RequiredPackages } from "../../../components/common";
@@ -16,11 +17,12 @@ import AccountMethodSelector, {
   CREATE_ACCOUNT_PRIVATE_KEY_CODE,
   CREATE_ACCOUNT_WALLET_CLIENT_CODE,
 } from "../../../components/common/AccountMethodSelector";
-import SimplePkpSelection from "../../../components/common/PkpSelectionComponentSimplified";
+import PkpSelectionComponent from "../../../components/common/PkpSelectionComponent";
 import { pageStyles } from "../../../styles/pageStyles";
 import { useAppContext } from "../../../router";
 
 const PKPSigning: React.FC = () => {
+  const { data: walletClient } = useWalletClient();
   const { areDependenciesLoaded, assertDependenciesLoaded, showError } =
     useAppContext();
 
@@ -229,20 +231,6 @@ const authData = await ViemAccountAuthenticator.authenticate(userAccount);`
 
 // Authenticate the user account (wallet client)
 const authData = await WalletClientAuthenticator.authenticate(walletClient);`;
-
-  const mintCode = `// PKP Selection Component - can either select existing or mint new
-<SimplePkpSelection
-  authData={authData}
-  onPkpSelected={(pkpInfo) => {
-    // Handle selected PKP
-    console.log("Selected PKP:", pkpInfo);
-  }}
-  setStatus={setStatus}
-  assertDependenciesLoaded={assertDependenciesLoaded}
-  showError={showError}
-  authMethodName="EOA Auth"
-  disabled={!authData}
-/>`;
 
   const authContextCode = `// Create PKP authentication context
 const authContext = await authManager.createPkpAuthContext({
@@ -707,25 +695,18 @@ const hash = await walletClient.sendTransaction({
           style={{ marginTop: "16px" }}
         />
 
-        <DisplayCode
-          code={mintCode}
-          language="javascript"
-          renderComponent={
-            <SimplePkpSelection
-              authData={authData}
-              onPkpSelected={handlePkpSelected}
-              setStatus={() => {}} // Status is handled by the component internally
-              assertDependenciesLoaded={assertDependenciesLoaded}
-              showError={showError}
-              authMethodName="EOA Auth"
-              disabled={!authData}
-            />
-          }
-          resultData={pkpInfo}
-          resultLabel="PKP Information"
-          useSideBySide={true}
-          theme="dracula"
-          isSuccess={currentStep >= 4}
+        <PkpSelectionComponent
+          authData={authData}
+          account={userAccount}
+          walletClient={walletClient}
+          accountMethod={accountMethod}
+          onPkpSelected={handlePkpSelected}
+          setStatus={() => {}} // Status is handled by the component internally
+          assertDependenciesLoaded={assertDependenciesLoaded}
+          showError={showError}
+          authMethodName="EOA Auth"
+          disabled={!authData}
+          showDisplayCode={true}
         />
       </GreyBoarderWhiteBgContainer>
 
