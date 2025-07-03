@@ -346,6 +346,10 @@ export default function SimplePkpSelection({
 
       let mintResult;
 
+      console.log("authMethodName", authMethodName);
+      console.log("authDataObj", authDataObj);
+      console.log("authData", authData);
+
       if (isCustomAuth) {
         // For custom auth, we need to use account-based minting with site owner account
         const siteOwnerAccount = privateKeyToAccount(
@@ -360,8 +364,35 @@ export default function SimplePkpSelection({
           scope: "sign-anything",
           validationIpfsCid: "QmYLeVmwJPVs7Uebk85YdVPivMyrvoeKR6X37kyVRZUXW4", // Default validation CID
         });
+      } else if (
+        authMethodName === "eoa Auth" ||
+        authDataObj.authMethodType === 1
+      ) {
+        // For EOA auth, we need to handle different account methods
+        const account = authDataObj.account;
+        const accountMethod = authDataObj.accountMethod || "privateKey"; // Default to privateKey for backward compatibility
+
+        if (accountMethod === "privateKey" && account) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          mintResult = await (litClient as any).mintWithAuth({
+            account: account,
+            authData: authDataObj,
+            scopes: ["sign-anything"],
+          });
+        } else if (accountMethod === "walletClient" && account) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          mintResult = await (litClient as any).mintWithAuth({
+            account: account,
+            authData: authDataObj,
+            scopes: ["sign-anything"],
+          });
+        } else {
+          throw new Error(
+            "EOA authentication requires valid account information"
+          );
+        }
       } else {
-        // For other auth methods (like Google), use the standard approach
+        // Fallback for other auth methods (like Google)
         const serializedAuthData = {
           ...authDataObj,
           authMethodType:
@@ -480,18 +511,35 @@ export default function SimplePkpSelection({
           >
             <button
               onClick={() => loadExistingPkps(1)}
-              disabled={isLoadingPkps || !authData || disabled}
+              disabled={
+                isLoadingPkps ||
+                !authData ||
+                disabled ||
+                (pagination.total === 0 &&
+                  existingPkps.length === 0 &&
+                  !isLoadingPkps)
+              }
               style={{
                 padding: "8px 12px",
                 backgroundColor:
-                  isLoadingPkps || !authData || disabled
+                  isLoadingPkps ||
+                  !authData ||
+                  disabled ||
+                  (pagination.total === 0 &&
+                    existingPkps.length === 0 &&
+                    !isLoadingPkps)
                     ? "#cccccc"
                     : "#ffffff",
                 color: "#3b82f6",
                 border: "2px solid #3b82f6",
                 borderRadius: "4px",
                 cursor:
-                  isLoadingPkps || !authData || disabled
+                  isLoadingPkps ||
+                  !authData ||
+                  disabled ||
+                  (pagination.total === 0 &&
+                    existingPkps.length === 0 &&
+                    !isLoadingPkps)
                     ? "not-allowed"
                     : "pointer",
                 fontWeight: "500",
@@ -695,6 +743,50 @@ export default function SimplePkpSelection({
               )}
             </div>
           )}
+
+          {/* No PKPs Message */}
+          {pagination.total === 0 &&
+            existingPkps.length === 0 &&
+            !isLoadingPkps &&
+            authData && (
+              <div
+                style={{
+                  padding: "20px",
+                  backgroundColor: "#f8f9fa",
+                  borderRadius: "8px",
+                  border: "1px solid #e9ecef",
+                  marginBottom: "15px",
+                  textAlign: "center",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "16px",
+                    color: "#6c757d",
+                    marginBottom: "8px",
+                  }}
+                >
+                  No PKPs Found
+                </div>
+                <div
+                  style={{
+                    fontSize: "14px",
+                    color: "#495057",
+                    marginBottom: "12px",
+                  }}
+                >
+                  {`You don't have any PKPs associated with your ${authMethodName} account.`}
+                </div>
+                <div
+                  style={{
+                    fontSize: "13px",
+                    color: "#6c757d",
+                  }}
+                >
+                  Switch to "Mint New PKP" mode to create your first PKP wallet.
+                </div>
+              </div>
+            )}
         </div>
       )}
 

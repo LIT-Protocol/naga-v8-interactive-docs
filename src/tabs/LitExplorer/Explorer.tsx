@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useLitServiceSetup } from "../../hooks/useLitServiceSetup";
 import PkpSelectionComponentSimplified from "../../components/common/PkpSelectionComponentSimplified";
+import PKPManagement from "./PKPManagement";
+import { useAppContext } from "../../router";
 
 interface AuthUser {
   authContext: any;
@@ -31,6 +33,10 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
   const [error, setError] = useState<string | null>(null);
   const [selectedPkp, setSelectedPkp] = useState<PKPInfo | null>(null);
   const [showPkpSelection, setShowPkpSelection] = useState<boolean>(true);
+  const [isCreatingAuthContext, setIsCreatingAuthContext] =
+    useState<boolean>(false);
+  const [userWithAuthContext, setUserWithAuthContext] =
+    useState<AuthUser | null>(null);
 
   // Setup Lit Protocol services
   const {
@@ -43,22 +49,24 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
     autoSetup: true,
   });
 
-  const assertDependenciesLoaded = () => {
-    if (!isServicesReady || !services) {
-      throw new Error(
-        "Lit services not ready. Please wait for initialization."
-      );
-    }
-    return {
-      litClient: services.litClient,
-      authManager: services.authManager,
-    };
-  };
+  //   const assertDependenciesLoaded = () => {
+  //     if (!isServicesReady || !services) {
+  //       throw new Error(
+  //         "Lit services not ready. Please wait for initialization."
+  //       );
+  //     }
+  //     return {
+  //       litClient: services.litClient,
+  //       authManager: services.authManager,
+  //     };
+  //   };
 
-  const showError = (errorMessage: string) => {
-    setError(errorMessage);
-    setTimeout(() => setError(null), 5000);
-  };
+  const { assertDependenciesLoaded, showError } = useAppContext();
+
+  //   const showError = (errorMessage: string) => {
+  //     setError(errorMessage);
+  //     setTimeout(() => setError(null), 5000);
+  //   };
 
   const handlePkpSelected = (pkpInfo: PKPInfo) => {
     setSelectedPkp(pkpInfo);
@@ -68,6 +76,61 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
   const handleChangePkp = () => {
     setShowPkpSelection(true);
     setSelectedPkp(null);
+    setUserWithAuthContext(null); // Reset auth context when changing PKP
+  };
+
+  const createAuthContext = async () => {
+    if (
+      !selectedPkp ||
+      !user.authData ||
+      !services?.authManager ||
+      !services?.litClient
+    ) {
+      showError?.("Missing required data to create authentication context");
+      return;
+    }
+
+    setIsCreatingAuthContext(true);
+    setError(null);
+
+    try {
+      console.log("🔧 Creating authentication context for PKP permissions...");
+
+      const { authManager, litClient } = assertDependenciesLoaded();
+
+      const authContext = await authManager.createPkpAuthContext({
+        authData: user.authData,
+        pkpPublicKey: (selectedPkp.publicKey || selectedPkp.pubkey) as string,
+        authConfig: {
+          capabilityAuthSigs: [],
+          expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
+          statement: "",
+          domain: "",
+          resources: [
+            ["pkp-signing", "*"],
+            ["lit-action-execution", "*"],
+            ["access-control-condition-decryption", "*"],
+          ],
+        },
+        litClient: litClient,
+      });
+
+      // Create user object with auth context
+      const updatedUser: AuthUser = {
+        ...user,
+        authContext: authContext,
+      };
+
+      setUserWithAuthContext(updatedUser);
+      console.log("✅ Authentication context created successfully!");
+    } catch (error: any) {
+      console.error("Failed to create authentication context:", error);
+      showError?.(
+        `Failed to create authentication context: ${error.message || error}`
+      );
+    } finally {
+      setIsCreatingAuthContext(false);
+    }
   };
 
   const formatUserAddress = () => {
@@ -383,22 +446,110 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
               </div>
             </div>
 
-            <button
-              onClick={handleChangePkp}
+            <div
               style={{
-                padding: "12px 20px",
-                backgroundColor: "#3b82f6",
-                color: "white",
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "14px",
-                fontWeight: "600",
-                cursor: "pointer",
-                transition: "all 0.2s",
+                display: "flex",
+                gap: "12px",
+                flexWrap: "wrap",
+                justifyContent: "center",
               }}
             >
-              Change PKP
-            </button>
+              <button
+                onClick={handleChangePkp}
+                style={{
+                  padding: "12px 20px",
+                  backgroundColor: "#6b7280",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                }}
+              >
+                Change PKP
+              </button>
+
+              {!userWithAuthContext && (
+                <button
+                  onClick={createAuthContext}
+                  disabled={isCreatingAuthContext || !isServicesReady}
+                  style={{
+                    padding: "12px 20px",
+                    backgroundColor:
+                      isCreatingAuthContext || !isServicesReady
+                        ? "#9ca3af"
+                        : "#3b82f6",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    cursor:
+                      isCreatingAuthContext || !isServicesReady
+                        ? "not-allowed"
+                        : "pointer",
+                    transition: "all 0.2s",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
+                  {isCreatingAuthContext && (
+                    <div
+                      style={{
+                        width: "16px",
+                        height: "16px",
+                        border: "2px solid #ffffff40",
+                        borderTop: "2px solid #ffffff",
+                        borderRadius: "50%",
+                        animation: "spin 1s linear infinite",
+                      }}
+                    />
+                  )}
+                  {isCreatingAuthContext
+                    ? "Creating..."
+                    : "🔑 Generate Auth Context"}
+                </button>
+              )}
+
+              {userWithAuthContext && (
+                <div
+                  style={{
+                    padding: "12px 20px",
+                    backgroundColor: "#dcfce7",
+                    color: "#166534",
+                    border: "1px solid #bbf7d0",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
+                  ✅ Auth Context Ready
+                </div>
+              )}
+            </div>
+
+            {!userWithAuthContext && (
+              <div
+                style={{
+                  marginTop: "16px",
+                  padding: "12px",
+                  backgroundColor: "#fef3c7",
+                  border: "1px solid #f59e0b",
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  color: "#92400e",
+                }}
+              >
+                <strong>📋 Next Step:</strong> Generate an Auth Context to
+                manage PKP permissions and perform operations.
+              </div>
+            )}
           </div>
         ) : (
           /* PKP Selection Component */
@@ -410,7 +561,7 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
                 setStatus={() => {}}
                 assertDependenciesLoaded={assertDependenciesLoaded}
                 showError={showError}
-                authMethodName={`${user.method} Auth`}
+                authMethodName={user.accountMethod!}
                 disabled={!isServicesReady}
               />
             ) : (
@@ -450,6 +601,18 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
           </div>
         )}
       </div>
+
+      {/* PKP Management Section - Only show when PKP is selected, not in selection mode, and auth context is ready */}
+      {selectedPkp && !showPkpSelection && userWithAuthContext && (
+        <div style={{ marginTop: "20px" }}>
+          <PKPManagement
+            user={userWithAuthContext}
+            services={services}
+            selectedPkp={selectedPkp}
+            isServicesReady={isServicesReady}
+          />
+        </div>
+      )}
 
       <style>{`
         @keyframes spin {
