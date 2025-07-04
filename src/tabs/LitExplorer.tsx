@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import AuthenticateEOA from "./LitExplorer/AuthenticateEOA";
 import Explorer from "./LitExplorer/Explorer";
+import Search from "./LitExplorer/Search";
 
 // Import icon assets (same as in LitAuthProvider)
 import tfaIcon from "../assets/2fa.svg";
@@ -320,7 +321,7 @@ const LitExplorer: React.FC = () => {
 
   // Main authentication method selection page
   return (
-    <div style={{ padding: "2rem", maxWidth: "600px", margin: "0 auto" }}>
+    <div style={{ padding: "2rem", maxWidth: "1200px", margin: "0 auto" }}>
       {/* Header */}
       <div style={{ textAlign: "center", marginBottom: "2rem" }}>
         <h1
@@ -340,143 +341,175 @@ const LitExplorer: React.FC = () => {
             margin: "0",
           }}
         >
-          Sign in to get started.
+          Search the Lit Protocol network or sign in to get started.
         </p>
       </div>
 
-      {/* Authentication Methods */}
-      <div
-        style={{
-          backgroundColor: "white",
-          border: "1px solid #e5e7eb",
-          borderRadius: "12px",
-          padding: "2rem",
-          boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
-        }}
-      >
-        <h3
-          style={{
-            fontSize: "1.25rem",
-            fontWeight: "600",
-            color: "#111827",
-            marginBottom: "1.5rem",
-            textAlign: "center",
-          }}
-        >
-          Choose Authentication Method
-        </h3>
-
-        <div style={{ display: "grid", gap: "0.75rem" }}>
-          {authMethods.map((method) => (
-            <button
-              key={method.id}
-              onClick={() => handleAuthMethodSelect(method.id)}
-              disabled={!method.available || isAuthenticating}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "1rem",
-                padding: "1rem",
-                backgroundColor:
-                  method.available && !isAuthenticating ? "white" : "#f9fafb",
-                border: "1px solid #d1d5db",
-                borderRadius: "8px",
-                cursor:
-                  method.available && !isAuthenticating
-                    ? "pointer"
-                    : "not-allowed",
-                opacity: method.available && !isAuthenticating ? 1 : 0.6,
-                fontSize: "14px",
-                fontWeight: "500",
-                color: "#374151",
-                transition: "all 0.2s",
-                textAlign: "left",
-                minHeight: "60px",
-                position: "relative",
-              }}
-            >
-              {/* Icon */}
-              <div
-                style={{
-                  width: "40px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                <img
-                  src={method.icon}
-                  alt={method.name}
-                  style={{
-                    width: "24px",
-                    height: "24px",
-                    objectFit: "contain",
-                  }}
-                />
-              </div>
-
-              {/* Content */}
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: "600", marginBottom: "2px" }}>
-                  {method.name}
-                  {method.comingSoon && (
-                    <span
-                      style={{
-                        fontSize: "12px",
-                        color: "#6b7280",
-                        fontWeight: "400",
-                        marginLeft: "8px",
-                      }}
-                    >
-                      (Coming Soon)
-                    </span>
-                  )}
-                </div>
-                <div style={{ fontSize: "12px", color: "#6b7280" }}>
-                  {method.description}
-                </div>
-              </div>
-
-              {/* Loading indicator */}
-              {isAuthenticating && selectedMethod === method.id && (
-                <div
-                  style={{
-                    width: "20px",
-                    height: "20px",
-                    border: "2px solid #e5e7eb",
-                    borderTop: "2px solid #3b82f6",
-                    borderRadius: "50%",
-                    animation: "spin 1s linear infinite",
-                    flexShrink: 0,
-                  }}
-                />
-              )}
-            </button>
-          ))}
-        </div>
-
-        {isAuthenticating && (
-          <div
-            style={{
-              textAlign: "center",
-              marginTop: "1rem",
-              color: "#6b7280",
-              fontSize: "14px",
-            }}
-          >
-            Authenticating with {selectedMethod}...
-          </div>
-        )}
+      {/* Search Component */}
+      <div style={{ marginBottom: "3rem" }}>
+        <Search />
       </div>
 
-      {/* Keyframe animation for spinner */}
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
+      {/* Divider */}
+      <div style={{ textAlign: "center", marginBottom: "2rem" }}>
+        <div
+          style={{
+            height: "1px",
+            backgroundColor: "#e5e7eb",
+            margin: "0 auto",
+            position: "relative",
+          }}
+        />
+        <div
+          style={{
+            backgroundColor: "white",
+            color: "#6b7280",
+            padding: "0 1rem",
+            fontSize: "14px",
+            position: "relative",
+            top: "-10px",
+            display: "inline-block",
+          }}
+        >
+          OR
+        </div>
+      </div>
+
+      {/* Authentication Methods */}
+      <div style={{ maxWidth: "600px", margin: "0 auto" }}>
+        <div
+          style={{
+            backgroundColor: "white",
+            border: "1px solid #e5e7eb",
+            borderRadius: "12px",
+            padding: "2rem",
+            boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+          }}
+        >
+          <h3
+            style={{
+              fontSize: "1.25rem",
+              fontWeight: "600",
+              color: "#111827",
+              marginBottom: "1.5rem",
+              textAlign: "center",
+            }}
+          >
+            Choose Authentication Method
+          </h3>
+
+          <div style={{ display: "grid", gap: "0.75rem" }}>
+            {authMethods.map((method) => (
+              <button
+                key={method.id}
+                onClick={() => handleAuthMethodSelect(method.id)}
+                disabled={!method.available || isAuthenticating}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "1rem",
+                  padding: "1rem",
+                  backgroundColor:
+                    method.available && !isAuthenticating ? "white" : "#f9fafb",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "8px",
+                  cursor:
+                    method.available && !isAuthenticating
+                      ? "pointer"
+                      : "not-allowed",
+                  opacity: method.available && !isAuthenticating ? 1 : 0.6,
+                  fontSize: "14px",
+                  fontWeight: "500",
+                  color: "#374151",
+                  transition: "all 0.2s",
+                  textAlign: "left",
+                  minHeight: "60px",
+                  position: "relative",
+                }}
+              >
+                {/* Icon */}
+                <div
+                  style={{
+                    width: "40px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <img
+                    src={method.icon}
+                    alt={method.name}
+                    style={{
+                      width: "24px",
+                      height: "24px",
+                      objectFit: "contain",
+                    }}
+                  />
+                </div>
+
+                {/* Content */}
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: "600", marginBottom: "2px" }}>
+                    {method.name}
+                    {method.comingSoon && (
+                      <span
+                        style={{
+                          fontSize: "12px",
+                          color: "#6b7280",
+                          fontWeight: "400",
+                          marginLeft: "8px",
+                        }}
+                      >
+                        (Coming Soon)
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "#6b7280" }}>
+                    {method.description}
+                  </div>
+                </div>
+
+                {/* Loading indicator */}
+                {isAuthenticating && selectedMethod === method.id && (
+                  <div
+                    style={{
+                      width: "20px",
+                      height: "20px",
+                      border: "2px solid #e5e7eb",
+                      borderTop: "2px solid #3b82f6",
+                      borderRadius: "50%",
+                      animation: "spin 1s linear infinite",
+                      flexShrink: 0,
+                    }}
+                  />
+                )}
+              </button>
+            ))}
+          </div>
+
+          {isAuthenticating && (
+            <div
+              style={{
+                textAlign: "center",
+                marginTop: "1rem",
+                color: "#6b7280",
+                fontSize: "14px",
+              }}
+            >
+              Authenticating with {selectedMethod}...
+            </div>
+          )}
+        </div>
+
+        {/* Keyframe animation for spinner */}
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
     </div>
   );
 };

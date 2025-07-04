@@ -3,6 +3,7 @@ import { useLitServiceSetup } from "../../hooks/useLitServiceSetup";
 import PkpSelectionComponent from "../../components/common/PkpSelectionComponent";
 import PKPManagement from "./PKPManagement";
 import PaymentManager from "./PaymentManager";
+import Search from "./Search";
 import { useAppContext } from "../../router";
 import { chronicleTestnet } from "../../main";
 import { DEFAULT_NETWORK_NAME } from "../../pages";
@@ -41,7 +42,7 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
   const [userWithAuthContext, setUserWithAuthContext] =
     useState<AuthUser | null>(null);
   const [activeTab, setActiveTab] = useState<
-    "pkp-management" | "payment-manager"
+    "pkp-management" | "payment-manager" | "search"
   >("pkp-management");
 
   // Setup Lit Protocol services
@@ -716,7 +717,7 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
                     activeTab === "payment-manager" ? "#3b82f6" : "transparent",
                   color: activeTab === "payment-manager" ? "white" : "#6b7280",
                   border: "none",
-                  borderRadius: "0 12px 0 0",
+                  borderRadius: "0",
                   fontSize: "16px",
                   fontWeight: "600",
                   cursor: "pointer",
@@ -728,6 +729,28 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
                 }}
               >
                 💰 Payment Manager
+              </button>
+              <button
+                onClick={() => setActiveTab("search")}
+                style={{
+                  flex: 1,
+                  padding: "16px 20px",
+                  backgroundColor:
+                    activeTab === "search" ? "#3b82f6" : "transparent",
+                  color: activeTab === "search" ? "white" : "#6b7280",
+                  border: "none",
+                  borderRadius: "0 12px 0 0",
+                  fontSize: "16px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                }}
+              >
+                🔍 Search
               </button>
             </div>
           </div>
@@ -750,7 +773,7 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
                 selectedPkp={selectedPkp}
                 isServicesReady={isServicesReady}
               />
-            ) : (
+            ) : activeTab === "payment-manager" ? (
               <PaymentManager
                 user={userWithAuthContext}
                 services={services}
@@ -758,6 +781,8 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
                 isServicesReady={isServicesReady}
                 onBalanceChange={refreshPkpBalance}
               />
+            ) : (
+              <Search user={userWithAuthContext} />
             )}
           </div>
         </div>

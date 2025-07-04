@@ -227,7 +227,7 @@ a:hover {
 .content {
   flex: 1;
   padding: 24px;
-  max-width: 96rem; /* max-w-3xl */
+  max-width: 120rem; /* max-w-3xl */
   margin: 0 auto; /* mx-auto */
   width: 100%;
   display: flex;
