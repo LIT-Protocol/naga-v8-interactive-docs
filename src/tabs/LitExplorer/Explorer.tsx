@@ -3,6 +3,8 @@ import { useLitServiceSetup } from "../../hooks/useLitServiceSetup";
 import PkpSelectionComponent from "../../components/common/PkpSelectionComponent";
 import PKPManagement from "./PKPManagement";
 import { useAppContext } from "../../router";
+import { chronicleTestnet } from "../../main";
+import { DEFAULT_NETWORK_NAME } from "../../pages";
 
 interface AuthUser {
   authContext: any; // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -45,32 +47,74 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
     error: setupError,
   } = useLitServiceSetup({
     appName: "lit-explorer",
-    networkName: "naga-dev",
+    networkName: DEFAULT_NETWORK_NAME,
     autoSetup: true,
   });
 
-  //   const assertDependenciesLoaded = () => {
-  //     if (!isServicesReady || !services) {
-  //       throw new Error(
-  //         "Lit services not ready. Please wait for initialization."
-  //       );
-  //     }
-  //     return {
-  //       litClient: services.litClient,
-  //       authManager: services.authManager,
-  //     };
-  //   };
-
   const { assertDependenciesLoaded, showError } = useAppContext();
 
-  //   const showError = (errorMessage: string) => {
-  //     setError(errorMessage);
-  //     setTimeout(() => setError(null), 5000);
-  //   };
+  // Load balance function
+  const loadBalance = async (pkp: PKPInfo) => {
+    if (!pkp?.ethAddress || !services?.litClient) return pkp;
+
+    // Prevent loading if already has balance (but allow if loading state is true)
+    if (pkp.balance) return pkp;
+
+    try {
+      const { createPublicClient, http } = await import("viem");
+
+      const chainConfig = {
+        id: chronicleTestnet.id,
+        name: chronicleTestnet.name,
+        nativeCurrency: {
+          name: chronicleTestnet.name,
+          symbol: chronicleTestnet.nativeCurrency.symbol,
+          decimals: 18,
+        },
+        rpcUrls: {
+          default: { http: [chronicleTestnet.rpcUrls.default.http[0]] },
+          public: { http: [chronicleTestnet.rpcUrls.default.http[0]] },
+        },
+      };
+
+      const client = createPublicClient({
+        chain: chainConfig,
+        transport: http(chronicleTestnet.rpcUrls.default.http[0]),
+      });
+
+      const balance = await client.getBalance({
+        address: pkp.ethAddress as `0x${string}`,
+      });
+
+      const updatedPkp = {
+        ...pkp,
+        balance: (Number(balance) / 1e18).toFixed(6),
+        balanceSymbol: chronicleTestnet.nativeCurrency.symbol,
+        isLoadingBalance: false,
+      };
+
+      setSelectedPkp(updatedPkp);
+      return updatedPkp;
+    } catch (error) {
+      console.error("Failed to load balance:", error);
+      const updatedPkp = {
+        ...pkp,
+        balance: "0.000000",
+        balanceSymbol: "tLit",
+        isLoadingBalance: false,
+      };
+      setSelectedPkp(updatedPkp);
+      return updatedPkp;
+    }
+  };
 
   const handlePkpSelected = (pkpInfo: PKPInfo) => {
-    setSelectedPkp(pkpInfo);
+    // Add loading state and load balance
+    const pkpWithLoading = { ...pkpInfo, isLoadingBalance: true };
+    setSelectedPkp(pkpWithLoading);
     setShowPkpSelection(false);
+    // Load balance after selection
+    loadBalance(pkpWithLoading);
   };
 
   const handleChangePkp = () => {

@@ -5,6 +5,10 @@ import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { MainLayout } from "../layouts/MainLayout";
 
+export const DEFAULT_APP_NAME = "lit-auth-app";
+export const DEFAULT_NETWORK_NAME = "naga-test";
+export const DEFAULT_NETWORK = nagaTest;
+
 // --- Singleton instances ---
 type LitClient = Awaited<ReturnType<typeof createLitClient>>;
 type AuthManager = Awaited<ReturnType<typeof createAuthManager>>;
@@ -15,7 +19,7 @@ let authManagerInstance: AuthManager | null = null;
 const getLitClient = async (): Promise<LitClient> => {
   if (!litClientInstance) {
     console.log("Creating new LitClient instance (should happen only once)");
-    litClientInstance = await createLitClient({ network: nagaTest });
+    litClientInstance = await createLitClient({ network: DEFAULT_NETWORK });
   }
   return litClientInstance;
 };
@@ -25,8 +29,8 @@ const getAuthManager = (): AuthManager => {
     console.log("Creating new AuthManager instance (should happen only once)");
     authManagerInstance = createAuthManager({
       storage: storagePlugins.localStorage({
-        appName: "my-app",
-        networkName: "naga-test",
+        appName: DEFAULT_APP_NAME,
+        networkName: DEFAULT_NETWORK_NAME,
       }),
     });
   }

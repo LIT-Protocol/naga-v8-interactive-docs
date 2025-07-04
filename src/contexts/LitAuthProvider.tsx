@@ -28,6 +28,7 @@ import phoneIcon from "../assets/phone.svg";
 import web3WalletIcon from "../assets/web3-wallet.svg";
 import whatsappIcon from "../assets/whatsapp.svg";
 import PkpSelectionForDemo from "../components/common/PkpSelectionForDemo";
+import { DEFAULT_APP_NAME, DEFAULT_NETWORK_NAME } from "../pages";
 
 // Configuration constants
 const DEFAULT_PRIVATE_KEY =
@@ -98,8 +99,8 @@ interface AuthMethodInfo {
 
 export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
   children,
-  appName = "lit-auth-app",
-  networkName = "naga-dev",
+  appName = DEFAULT_APP_NAME,
+  networkName = DEFAULT_NETWORK_NAME,
   autoSetup = false,
   storageKey = "lit-auth-user",
 }) => {

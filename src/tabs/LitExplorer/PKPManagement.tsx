@@ -5,6 +5,8 @@ import React, {
   useCallback,
   useEffect,
 } from "react";
+import { NoteCallout } from "../../components/common";
+import { pageStyles } from "../../styles/pageStyles";
 
 interface AuthUser {
   authContext: any;
@@ -20,6 +22,9 @@ interface PKPInfo {
   publicKey: string;
   ethAddress: string;
   pubkey?: string;
+  balance?: string;
+  balanceSymbol?: string;
+  isLoadingBalance?: boolean;
 }
 
 interface PKPManagementProps {
@@ -31,7 +36,7 @@ interface PKPManagementProps {
 
 interface ExplorerPKPPermissionsContextType {
   // PKP data
-  selectedPkp: any;
+  selectedPkp: PKPInfo | null;
 
   // Permissions data
   permissionsContext: any;
@@ -81,7 +86,7 @@ const ExplorerPKPPermissionsContext = createContext<
 
 interface ExplorerPKPPermissionsProviderProps {
   children: React.ReactNode;
-  selectedPkp: any;
+  selectedPkp: PKPInfo | null;
   user: AuthUser;
   services: any;
   setStatus: (status: string) => void;
@@ -129,11 +134,14 @@ const ExplorerPKPPermissionsProvider: React.FC<
 
     // Create new permissions manager
     const chainConfig = services.litClient.getChainConfig().viemConfig;
+    console.log("chainConfig", chainConfig);
     const pkpViemAccount = await services.litClient.getPkpViemAccount({
       pkpPublicKey: selectedPkp.publicKey || selectedPkp.pubkey,
       authContext: user.authContext,
       chainConfig: chainConfig,
     });
+
+    console.log("PKP token ID for permissions manager:", selectedPkp.tokenId);
 
     const pkpPermissionsManager =
       await services.litClient.getPKPPermissionsManager({
@@ -154,9 +162,18 @@ const ExplorerPKPPermissionsProvider: React.FC<
   useEffect(() => {
     setCachedPermissionsManager(null);
     setCacheKey("");
+    // Also clear permissions context when PKP changes to force reload
+    setPermissionsContext(null);
+    setPermissionsError("");
   }, [selectedPkp?.tokenId, selectedPkp?.publicKey]);
 
   const loadPermissionsContext = useCallback(async () => {
+    console.log("🔧 loadPermissionsContext called:", {
+      selectedPkp: !!selectedPkp,
+      selectedPkpTokenId: selectedPkp?.tokenId,
+      userAuthContext: !!user?.authContext,
+    });
+
     if (!selectedPkp) {
       setPermissionsError("No PKP selected");
       return;
@@ -166,8 +183,20 @@ const ExplorerPKPPermissionsProvider: React.FC<
     setPermissionsError("");
 
     try {
+      console.log("🔧 Getting permissions manager...");
       const pkpPermissionsManager = await getPermissionsManager();
+      console.log("✅ Permissions manager created successfully");
+
+      console.log("🔧 Getting permissions context...");
       const context = await pkpPermissionsManager.getPermissionsContext();
+      console.log("✅ Permissions context retrieved:", {
+        context,
+        actions: context?.actions?.length || 0,
+        addresses: context?.addresses?.length || 0,
+        authMethods: context?.authMethods?.length || 0,
+      });
+      console.log("📋 Full permissions context object:", context);
+
       setPermissionsContext(context);
 
       console.log("✅ Permissions context loaded successfully");
@@ -179,7 +208,7 @@ const ExplorerPKPPermissionsProvider: React.FC<
     } finally {
       setIsLoadingPermissions(false);
     }
-  }, [selectedPkp, getPermissionsManager]);
+  }, [selectedPkp, getPermissionsManager, user]);
 
   const refreshPermissions = useCallback(async () => {
     await loadPermissionsContext();
@@ -187,22 +216,61 @@ const ExplorerPKPPermissionsProvider: React.FC<
 
   const addPermittedAction = useCallback(
     async (ipfsId: string, scopes: string[]) => {
-      const pkpPermissionsManager = await getPermissionsManager();
-      const result = await pkpPermissionsManager.addPermittedAction({
-        ipfsId,
-        scopes,
-      });
+      try {
+        console.log("🔧 Adding permitted action with:", {
+          selectedPkp,
+          ipfsId,
+          scopes,
+          tokenId: selectedPkp?.tokenId,
+          userAuthContext: !!user?.authContext,
+          servicesReady: !!services?.litClient,
+        });
 
-      const txHash = result?.hash || result?.transactionHash || result;
-      if (txHash) {
-        addTransactionToast("Permitted action added successfully!", txHash);
-      } else {
-        setStatus("✅ Permitted action added successfully!");
+        // Validate PKP exists
+        if (!selectedPkp?.tokenId) {
+          throw new Error("No PKP token ID available");
+        }
+
+        // Verify PKP exists on current network
+        const pkpInfo = await services.litClient.viewPKPPermissions({
+          tokenId: selectedPkp.tokenId,
+        });
+        console.log("✅ PKP exists on network:", pkpInfo);
+
+        const pkpPermissionsManager = await getPermissionsManager();
+        const result = await pkpPermissionsManager.addPermittedAction({
+          ipfsId,
+          scopes,
+        });
+
+        const txHash = result?.hash || result?.transactionHash || result;
+        if (txHash) {
+          addTransactionToast("Permitted action added successfully!", txHash);
+        } else {
+          setStatus("✅ Permitted action added successfully!");
+        }
+
+        setTimeout(refreshPermissions, 5000);
+      } catch (error: any) {
+        console.error("❌ Failed to add permitted action:", error);
+        console.error("PKP Details:", {
+          tokenId: selectedPkp?.tokenId,
+          publicKey: selectedPkp?.publicKey,
+          ethAddress: selectedPkp?.ethAddress,
+        });
+        setStatus(`❌ Failed to add action: ${error.message || error}`);
+        throw error;
       }
-
-      setTimeout(refreshPermissions, 5000);
     },
-    [getPermissionsManager, addTransactionToast, setStatus, refreshPermissions]
+    [
+      getPermissionsManager,
+      addTransactionToast,
+      setStatus,
+      refreshPermissions,
+      selectedPkp,
+      user,
+      services,
+    ]
   );
 
   const addPermittedAddress = useCallback(
@@ -457,6 +525,91 @@ const useExplorerPKPPermissions = () => {
   return context;
 };
 
+// Reusable Scope Selector Component
+const ScopeSelector: React.FC<{
+  scopes: { signAnything: boolean; personalSign: boolean };
+  onScopeChange: (scopes: {
+    signAnything: boolean;
+    personalSign: boolean;
+  }) => void;
+  disabled?: boolean;
+}> = ({ scopes, onScopeChange, disabled = false }) => {
+  return (
+    <div style={{ marginBottom: "12px" }}>
+      <div style={{ fontSize: "14px", fontWeight: "500", marginBottom: "8px" }}>
+        🎯 Scopes (select permissions):
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            cursor: disabled ? "not-allowed" : "pointer",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={scopes.signAnything}
+            onChange={(e) =>
+              onScopeChange({ ...scopes, signAnything: e.target.checked })
+            }
+            disabled={disabled}
+            style={{
+              width: "16px",
+              height: "16px",
+              accentColor: "#3b82f6",
+            }}
+          />
+          <div style={{ flex: 1 }}>
+            <div
+              style={{ fontSize: "14px", fontWeight: "500", color: "#1f2937" }}
+            >
+              Sign Anything
+            </div>
+            <div style={{ fontSize: "12px", color: "#6b7280" }}>
+              Allow signing any message or transaction
+            </div>
+          </div>
+        </label>
+
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            cursor: disabled ? "not-allowed" : "pointer",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={scopes.personalSign}
+            onChange={(e) =>
+              onScopeChange({ ...scopes, personalSign: e.target.checked })
+            }
+            disabled={disabled}
+            style={{
+              width: "16px",
+              height: "16px",
+              accentColor: "#3b82f6",
+            }}
+          />
+          <div style={{ flex: 1 }}>
+            <div
+              style={{ fontSize: "14px", fontWeight: "500", color: "#1f2937" }}
+            >
+              Personal Sign
+            </div>
+            <div style={{ fontSize: "12px", color: "#6b7280" }}>
+              Allow personal message signing only
+            </div>
+          </div>
+        </label>
+      </div>
+    </div>
+  );
+};
+
 // Simple permissions dashboard component for Explorer
 const ExplorerPermissionsDashboard: React.FC<{ disabled?: boolean }> = ({
   disabled = false,
@@ -489,6 +642,8 @@ const ExplorerPermissionsDashboard: React.FC<{ disabled?: boolean }> = ({
     loadPermissionsContext,
   ]);
 
+  console.log("selectedPkp", selectedPkp);
+
   // Simple form states
   const [newActionIpfsId, setNewActionIpfsId] = useState(
     "QmSQDKRWEXZ9CGoucSTR11Mv6fhGqaytZ1MqrfHdkuS1Vg"
@@ -499,14 +654,40 @@ const ExplorerPermissionsDashboard: React.FC<{ disabled?: boolean }> = ({
   const [isAddingAction, setIsAddingAction] = useState(false);
   const [isAddingAddress, setIsAddingAddress] = useState(false);
 
+  // Scope selection states
+  const [actionScopes, setActionScopes] = useState({
+    signAnything: true,
+    personalSign: false,
+  });
+  const [addressScopes, setAddressScopes] = useState({
+    signAnything: true,
+    personalSign: false,
+  });
+
   // Toggle state for detailed permissions view
   const [showDetailedPermissions, setShowDetailedPermissions] = useState(false);
 
+  // Helper function to convert scope selections to scope array
+  const getScopesArray = (scopes: {
+    signAnything: boolean;
+    personalSign: boolean;
+  }) => {
+    const scopesArray: string[] = [];
+    if (scopes.signAnything) scopesArray.push("sign-anything");
+    if (scopes.personalSign) scopesArray.push("personal-sign");
+    return scopesArray;
+  };
+
   const handleAddAction = async () => {
     if (!newActionIpfsId.trim()) return;
+    const scopes = getScopesArray(actionScopes);
+    if (scopes.length === 0) {
+      console.error("At least one scope must be selected");
+      return;
+    }
     setIsAddingAction(true);
     try {
-      await addPermittedAction(newActionIpfsId, ["sign-anything"]);
+      await addPermittedAction(newActionIpfsId, scopes);
       setNewActionIpfsId("");
     } catch (error) {
       console.error("Failed to add action:", error);
@@ -517,9 +698,14 @@ const ExplorerPermissionsDashboard: React.FC<{ disabled?: boolean }> = ({
 
   const handleAddAddress = async () => {
     if (!newAddress.trim()) return;
+    const scopes = getScopesArray(addressScopes);
+    if (scopes.length === 0) {
+      console.error("At least one scope must be selected");
+      return;
+    }
     setIsAddingAddress(true);
     try {
-      await addPermittedAddress(newAddress, ["sign-anything"]);
+      await addPermittedAddress(newAddress, scopes);
       setNewAddress("");
     } catch (error) {
       console.error("Failed to add address:", error);
@@ -535,9 +721,6 @@ const ExplorerPermissionsDashboard: React.FC<{ disabled?: boolean }> = ({
         style={{
           marginBottom: "20px",
           padding: "16px 20px",
-          background: "#3b82f6",
-          borderRadius: "12px",
-          color: "white",
           textAlign: "center",
         }}
       >
@@ -722,9 +905,6 @@ const ExplorerPermissionsDashboard: React.FC<{ disabled?: boolean }> = ({
                     border: "1px dashed #d1d5db",
                   }}
                 >
-                  <div style={{ fontSize: "48px", marginBottom: "12px" }}>
-                    🔓
-                  </div>
                   <div
                     style={{
                       fontSize: "16px",
@@ -833,26 +1013,8 @@ const ExplorerPermissionsDashboard: React.FC<{ disabled?: boolean }> = ({
                                     wordBreak: "break-all",
                                   }}
                                 >
-                                  <strong>IPFS ID:</strong>{" "}
-                                  {action.ipfsCid ||
-                                    action.ipfsId ||
-                                    action.id ||
-                                    "N/A"}
+                                  <strong>IPFS ID:</strong> {action || "N/A"}
                                 </div>
-                                {action.scopes && (
-                                  <div
-                                    style={{
-                                      fontSize: "12px",
-                                      color: "#6b7280",
-                                      marginTop: "4px",
-                                    }}
-                                  >
-                                    <strong>Scopes:</strong>{" "}
-                                    {Array.isArray(action.scopes)
-                                      ? action.scopes.join(", ")
-                                      : action.scopes}
-                                  </div>
-                                )}
                               </div>
                             )
                           )}
@@ -900,26 +1062,8 @@ const ExplorerPermissionsDashboard: React.FC<{ disabled?: boolean }> = ({
                                     wordBreak: "break-all",
                                   }}
                                 >
-                                  <strong>Address:</strong>{" "}
-                                  {address.address ||
-                                    address.ethAddress ||
-                                    address.id ||
-                                    "N/A"}
+                                  <strong>Address:</strong> {address || "N/A"}
                                 </div>
-                                {address.scopes && (
-                                  <div
-                                    style={{
-                                      fontSize: "12px",
-                                      color: "#6b7280",
-                                      marginTop: "4px",
-                                    }}
-                                  >
-                                    <strong>Scopes:</strong>{" "}
-                                    {Array.isArray(address.scopes)
-                                      ? address.scopes.join(", ")
-                                      : address.scopes}
-                                  </div>
-                                )}
                               </div>
                             )
                           )}
@@ -963,9 +1107,9 @@ const ExplorerPermissionsDashboard: React.FC<{ disabled?: boolean }> = ({
                                   style={{ fontSize: "12px", color: "#374151" }}
                                 >
                                   <strong>Type:</strong>{" "}
-                                  {method.authMethodType ||
-                                    method.type ||
-                                    "N/A"}
+                                  {method.authMethodType
+                                    ? method.authMethodType.toString()
+                                    : "N/A"}
                                 </div>
                                 <div
                                   style={{
@@ -976,8 +1120,7 @@ const ExplorerPermissionsDashboard: React.FC<{ disabled?: boolean }> = ({
                                     wordBreak: "break-all",
                                   }}
                                 >
-                                  <strong>ID:</strong>{" "}
-                                  {method.authMethodId || method.id || "N/A"}
+                                  <strong>ID:</strong> {method.id || "N/A"}
                                 </div>
                                 {method.scopes && (
                                   <div
@@ -989,8 +1132,11 @@ const ExplorerPermissionsDashboard: React.FC<{ disabled?: boolean }> = ({
                                   >
                                     <strong>Scopes:</strong>{" "}
                                     {Array.isArray(method.scopes)
-                                      ? method.scopes.join(", ")
-                                      : method.scopes}
+                                      ? method.scopes.length > 0
+                                        ? method.scopes.join(", ")
+                                        : "no signing scopes permitted"
+                                      : method.scopes ||
+                                        "no signing scopes permitted"}
                                   </div>
                                 )}
                               </div>
@@ -1018,6 +1164,54 @@ const ExplorerPermissionsDashboard: React.FC<{ disabled?: boolean }> = ({
           </div>
         )}
       </div>
+
+      {/* PKP Balance Warning */}
+      {selectedPkp &&
+        (selectedPkp.balance === "0" ||
+          selectedPkp.balance === "0.000000" ||
+          parseFloat(selectedPkp.balance || "0") === 0) && (
+          <NoteCallout
+            title="PKP Balance Empty"
+            variant="warning"
+            message={
+              <div>
+                <p>
+                  Your PKP wallet balance is{" "}
+                  <strong>
+                    {selectedPkp.balance} {selectedPkp.balanceSymbol || "tLit"}
+                  </strong>
+                  . <strong>Get test tokens from the faucet:</strong>{" "}
+                  <a
+                    href="https://faucet.lit.dev/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={pageStyles.link}
+                  >
+                    https://faucet.lit.dev/
+                  </a>
+                </p>
+                <p>
+                  You'll need test tokens to perform blockchain operations like
+                  adding and removing permissions.
+                </p>
+                <p>
+                  <strong>Your PKP Address:</strong>{" "}
+                  <code
+                    style={{
+                      backgroundColor: "#f3f4f6",
+                      padding: "2px 6px",
+                      borderRadius: "4px",
+                      fontSize: "12px",
+                      fontFamily: "monospace",
+                    }}
+                  >
+                    {selectedPkp.ethAddress}
+                  </code>
+                </p>
+              </div>
+            }
+          />
+        )}
 
       {/* Add Permissions Forms */}
       <div
@@ -1050,7 +1244,7 @@ const ExplorerPermissionsDashboard: React.FC<{ disabled?: boolean }> = ({
             type="text"
             value={newActionIpfsId}
             onChange={(e) => setNewActionIpfsId(e.target.value)}
-            placeholder="IPFS ID (QmSQDKRWEXZ9CGoucSTR11Mv6fhGqaytZ1MqrfHdkuS1Vg)"
+            placeholder="QmSQDKRWEXZ9CGoucSTR11Mv6fhGqaytZ1MqrfHdkuS1Vg"
             style={{
               width: "100%",
               padding: "8px 12px",
@@ -1061,6 +1255,13 @@ const ExplorerPermissionsDashboard: React.FC<{ disabled?: boolean }> = ({
               marginBottom: "12px",
             }}
           />
+
+          <ScopeSelector
+            scopes={actionScopes}
+            onScopeChange={setActionScopes}
+            disabled={disabled}
+          />
+
           <button
             onClick={handleAddAction}
             disabled={isAddingAction || !newActionIpfsId.trim() || disabled}
@@ -1070,7 +1271,7 @@ const ExplorerPermissionsDashboard: React.FC<{ disabled?: boolean }> = ({
               backgroundColor:
                 isAddingAction || !newActionIpfsId.trim() || disabled
                   ? "#9ca3af"
-                  : "#10b981",
+                  : "#22c55e",
               color: "white",
               border: "none",
               borderRadius: "6px",
@@ -1119,6 +1320,13 @@ const ExplorerPermissionsDashboard: React.FC<{ disabled?: boolean }> = ({
               marginBottom: "12px",
             }}
           />
+
+          <ScopeSelector
+            scopes={addressScopes}
+            onScopeChange={setAddressScopes}
+            disabled={disabled}
+          />
+
           <button
             onClick={handleAddAddress}
             disabled={isAddingAddress || !newAddress.trim() || disabled}
@@ -1225,17 +1433,6 @@ const PKPManagement: React.FC<PKPManagementProps> = ({
     }, 5000);
   };
 
-  // Convert PKPInfo to protectedApp PkpInfo format
-  const convertToProtectedAppPkpInfo = (pkp: PKPInfo | null) => {
-    if (!pkp) return null;
-    return {
-      tokenId: pkp.tokenId,
-      publicKey: pkp.publicKey,
-      ethAddress: pkp.ethAddress,
-      pubkey: pkp.pubkey || pkp.publicKey,
-    };
-  };
-
   // Since this component is now only rendered when authContext exists,
   // we can simplify the validation
   if (!selectedPkp || !user.authContext) {
@@ -1267,7 +1464,7 @@ const PKPManagement: React.FC<PKPManagementProps> = ({
   return (
     <div style={{ position: "relative" }}>
       <ExplorerPKPPermissionsProvider
-        selectedPkp={convertToProtectedAppPkpInfo(selectedPkp)}
+        selectedPkp={selectedPkp}
         user={user}
         services={services}
         setStatus={setStatus}

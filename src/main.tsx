@@ -30,7 +30,7 @@ import { router } from "./router";
 const queryClient = new QueryClient();
 
 // Define the Chronicle Testnet (nagaDev)
-const chronicleTestnet = {
+export const chronicleTestnet = {
   id: 175188,
   name: "Chronicle Testnet",
   nativeCurrency: { name: "Test Lit Token", symbol: "tLIT", decimals: 18 },
