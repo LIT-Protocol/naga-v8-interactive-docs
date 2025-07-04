@@ -9,7 +9,7 @@ import AccountMethodSelector, {
 
 interface AuthenticateEOAProps {
   onBack: () => void;
-  onAuthSuccess: (userData: any) => void;
+  onAuthSuccess: (userData: any) => void; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
 interface AuthUser {
@@ -35,7 +35,7 @@ const AuthenticateEOA: React.FC<AuthenticateEOAProps> = ({
   } = useLitServiceSetup({
     appName: "lit-explorer",
     networkName: "naga-dev",
-    autoSetup: true,
+    autoSetup: false, // Don't auto-setup to avoid conflicts with Explorer
   });
 
   // Authentication state
@@ -44,7 +44,7 @@ const AuthenticateEOA: React.FC<AuthenticateEOAProps> = ({
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   // Account state
-  const [account, setAccount] = useState<any>(null);
+  const [account, setAccount] = useState<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
   const [accountMethod, setAccountMethod] =
     useState<AccountMethod>("walletClient");
 
@@ -65,6 +65,7 @@ const AuthenticateEOA: React.FC<AuthenticateEOAProps> = ({
   };
 
   const formatError = (prefix: string, error: any): string => {
+    // eslint-disable-line @typescript-eslint/no-explicit-any
     if (error?.message) return `${prefix}${error.message}`;
     if (typeof error === "object")
       return `${prefix}${JSON.stringify(error, null, 2)}`;

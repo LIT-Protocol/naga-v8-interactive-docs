@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLitServiceSetup } from "../../hooks/useLitServiceSetup";
 import PkpSelectionComponent from "../../components/common/PkpSelectionComponent";
 import PKPManagement from "./PKPManagement";
@@ -50,20 +50,38 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
     services,
     isReady: isServicesReady,
     error: setupError,
+    setupServices,
   } = useLitServiceSetup({
     appName: "lit-explorer",
     networkName: DEFAULT_NETWORK_NAME,
-    autoSetup: true,
+    autoSetup: false, // Don't auto-setup to avoid conflicts
   });
 
   const { assertDependenciesLoaded, showError } = useAppContext();
 
+  // Manual setup of services when component mounts to avoid conflicts
+  useEffect(() => {
+    if (!services && !isServicesReady) {
+      console.log("🔄 Explorer: Setting up Lit Protocol services...");
+      setupServices().catch((error) => {
+        console.error("❌ Explorer: Failed to setup services:", error);
+      });
+    }
+  }, [services, isServicesReady, setupServices]);
+
   // Load balance function
   const loadBalance = async (pkp: PKPInfo, forceRefresh: boolean = false) => {
-    if (!pkp?.ethAddress || !services?.litClient) return pkp;
+    if (!pkp?.ethAddress || !services?.litClient) {
+      return pkp;
+    }
 
     // Prevent loading if already has balance (unless forcing refresh)
-    if (pkp.balance && !forceRefresh) return pkp;
+    if (pkp.balance && !forceRefresh) {
+      console.log("⏭️ loadBalance skipped - already has balance:", pkp.balance);
+      return pkp;
+    }
+
+    console.log("🔄 Starting balance loading for PKP:", pkp.ethAddress);
 
     try {
       const { createPublicClient, http } = await import("viem");
@@ -113,6 +131,61 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
     }
   };
 
+  // Handle cases where PKP info is already available (e.g., from WebAuthn registration)
+  useEffect(() => {
+    if (user.pkpInfo && !selectedPkp) {
+      console.log(
+        "🔄 PKP info already available, setting as selected PKP:",
+        user.pkpInfo
+      );
+
+      // Derive ethAddress from pubkey if not present
+      let ethAddress = user.pkpInfo.ethAddress;
+      if (!ethAddress && user.pkpInfo.pubkey && services?.litClient) {
+        try {
+          ethAddress = services.litClient.computeAddress(user.pkpInfo.pubkey);
+          console.log("🔄 Derived ethAddress from pubkey:", ethAddress);
+        } catch (error) {
+          console.error("❌ Failed to derive ethAddress from pubkey:", error);
+        }
+      }
+
+      // Convert pkpInfo to PKPInfo format
+      const pkpInfo: PKPInfo = {
+        tokenId: user.pkpInfo.tokenId,
+        publicKey: user.pkpInfo.publicKey || user.pkpInfo.pubkey,
+        ethAddress: ethAddress || "",
+        pubkey: user.pkpInfo.pubkey,
+        isLoadingBalance: true,
+      };
+
+      console.log("🔄 Converted PKP info:", pkpInfo);
+
+      if (!pkpInfo.ethAddress) {
+        console.warn(
+          "⚠️ No ethAddress available, balance loading will be skipped"
+        );
+      }
+
+      setSelectedPkp(pkpInfo);
+      setShowPkpSelection(false);
+
+      // Load balance for the PKP
+      loadBalance(pkpInfo);
+    }
+  }, [user.pkpInfo, selectedPkp, services?.litClient]);
+
+  // Retry balance loading when services become ready (handles timing issues)
+  useEffect(() => {
+    if (selectedPkp && isServicesReady && selectedPkp.isLoadingBalance) {
+      console.log(
+        "🔄 Services now ready, retrying balance loading for PKP:",
+        selectedPkp.ethAddress
+      );
+      loadBalance(selectedPkp);
+    }
+  }, [selectedPkp, isServicesReady]);
+
   const handlePkpSelected = (pkpInfo: PKPInfo) => {
     // Add loading state and load balance
     const pkpWithLoading = { ...pkpInfo, isLoadingBalance: true };
@@ -137,13 +210,34 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
   };
 
   const createAuthContext = async () => {
-    if (
-      !selectedPkp ||
-      !user.authData ||
-      !services?.authManager ||
-      !services?.litClient
-    ) {
+    if (!selectedPkp || !services?.authManager || !services?.litClient) {
       showError?.("Missing required data to create authentication context");
+      return;
+    }
+
+    // For WebAuthn registration case, we might not have authData yet
+    // In this case, we need to authenticate first
+    let authData = user.authData;
+
+    if (!authData && user.method === "webauthn") {
+      try {
+        console.log(
+          "🔐 WebAuthn registration detected, authenticating for auth context..."
+        );
+        const { WebAuthnAuthenticator } = await import("@lit-protocol/auth");
+        authData = await WebAuthnAuthenticator.authenticate();
+        console.log("✅ WebAuthn authentication successful");
+      } catch (error) {
+        console.error("WebAuthn authentication failed:", error);
+        showError?.("Failed to authenticate with WebAuthn for operations");
+        return;
+      }
+    }
+
+    if (!authData) {
+      showError?.(
+        "Missing authentication data to create authentication context"
+      );
       return;
     }
 
@@ -156,7 +250,7 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
       const { authManager, litClient } = assertDependenciesLoaded();
 
       const authContext = await authManager.createPkpAuthContext({
-        authData: user.authData,
+        authData: authData,
         pkpPublicKey: (selectedPkp.publicKey || selectedPkp.pubkey) as string,
         authConfig: {
           capabilityAuthSigs: [],
@@ -172,10 +266,11 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
         litClient: litClient,
       });
 
-      // Create user object with auth context
+      // Create user object with auth context and update authData if it was fetched
       const updatedUser: AuthUser = {
         ...user,
         authContext: authContext,
+        authData: authData, // Update authData if it was fetched during this process
       };
 
       setUserWithAuthContext(updatedUser);
@@ -744,22 +839,47 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
         ) : (
           /* PKP Selection Component */
           <div>
-            {isServicesReady && services && user.authData ? (
-              <PkpSelectionComponent
-                authData={user.authData}
-                account={user.authData?.account}
-                walletClient={user.authData?.walletClient}
-                accountMethod={
-                  user.accountMethod as "privateKey" | "walletClient"
-                }
-                onPkpSelected={handlePkpSelected}
-                setStatus={() => {}}
-                assertDependenciesLoaded={assertDependenciesLoaded}
-                showError={showError}
-                authMethodName={user.accountMethod!}
-                disabled={!isServicesReady}
-                showDisplayCode={false}
-              />
+            {isServicesReady &&
+            services &&
+            (user.authData || (user.method === "webauthn" && user.pkpInfo)) ? (
+              user.authData ? (
+                <PkpSelectionComponent
+                  authData={user.authData}
+                  account={user.authData?.account}
+                  walletClient={user.authData?.walletClient}
+                  accountMethod={
+                    user.accountMethod as "privateKey" | "walletClient"
+                  }
+                  onPkpSelected={handlePkpSelected}
+                  setStatus={() => {}}
+                  assertDependenciesLoaded={assertDependenciesLoaded}
+                  showError={showError}
+                  authMethodName={
+                    user.accountMethod || user.method || "Unknown Auth"
+                  }
+                  disabled={!isServicesReady}
+                  showDisplayCode={false}
+                />
+              ) : (
+                /* WebAuthn registration case - PKP already selected, just show message */
+                <div
+                  style={{
+                    padding: "2rem",
+                    textAlign: "center",
+                    backgroundColor: "#f0f9ff",
+                    borderRadius: "8px",
+                    border: "1px solid #bfdbfe",
+                  }}
+                >
+                  <p style={{ color: "#1e40af", margin: "0 0 16px 0" }}>
+                    🎉 Your WebAuthn PKP has been created and selected!
+                  </p>
+                  <p style={{ color: "#6b7280", margin: 0, fontSize: "14px" }}>
+                    You can now generate an Auth Context to start using your
+                    PKP.
+                  </p>
+                </div>
+              )
             ) : (
               <div
                 style={{

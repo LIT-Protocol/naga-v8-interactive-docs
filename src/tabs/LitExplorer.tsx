@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import AuthenticateEOA from "./LitExplorer/AuthenticateEOA";
+import AuthenticateWebAuthn from "./LitExplorer/AuthenticateWebAuthn";
 import Explorer from "./LitExplorer/Explorer";
 import Search from "./LitExplorer/Search";
 import { GoogleAuthenticator, DiscordAuthenticator } from "@lit-protocol/auth";
@@ -43,13 +44,39 @@ interface AuthUser {
   accountMethod?: string;
 }
 
-type ViewState = "main" | "authenticate-eoa" | "explorer";
+type ViewState =
+  | "main"
+  | "authenticate-eoa"
+  | "authenticate-webauthn"
+  | "explorer";
 
 const LitExplorer: React.FC = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<AuthMethod | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [viewState, setViewState] = useState<ViewState>("main");
+  const [isWebAuthnAvailable, setIsWebAuthnAvailable] = useState<
+    boolean | null
+  >(null);
+
+  // Check WebAuthn availability on component mount
+  useEffect(() => {
+    async function checkWebAuthnAvailability() {
+      if (window.PublicKeyCredential) {
+        try {
+          const available =
+            await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+          setIsWebAuthnAvailable(available);
+        } catch (e) {
+          console.warn("Error checking WebAuthn availability:", e);
+          setIsWebAuthnAvailable(false);
+        }
+      } else {
+        setIsWebAuthnAvailable(false);
+      }
+    }
+    checkWebAuthnAvailability();
+  }, []);
 
   // Helper function to get display name for auth method
   const getAuthMethodDisplayName = (method: AuthMethod): string => {
@@ -60,6 +87,8 @@ const LitExplorer: React.FC = () => {
         return "Discord";
       case "eoa":
         return "Web3 Wallet";
+      case "webauthn":
+        return "WebAuthn";
       default:
         return method;
     }
@@ -97,6 +126,8 @@ const LitExplorer: React.FC = () => {
       description: "Use WebAuthn/Passkey",
       available: false,
       comingSoon: true,
+      // available: isWebAuthnAvailable === true,
+      // comingSoon: isWebAuthnAvailable === false,
     },
     {
       id: "stytch-email",
@@ -154,6 +185,13 @@ const LitExplorer: React.FC = () => {
         return;
       }
 
+      if (method === "webauthn") {
+        // Navigate to WebAuthn authentication page
+        setViewState("authenticate-webauthn");
+        setIsAuthenticating(false);
+        return;
+      }
+
       if (method === "google") {
         // Handle Google authentication
         try {
@@ -189,8 +227,6 @@ const LitExplorer: React.FC = () => {
           const discordAuthData = await DiscordAuthenticator.authenticate(
             "https://login.litgateway.com"
           );
-
-          console.log("discordAuthData", discordAuthData);
 
           // Create user object with Discord auth data (no authContext yet - Explorer will create it)
           const userData: AuthUser = {
@@ -250,6 +286,16 @@ const LitExplorer: React.FC = () => {
   if (viewState === "authenticate-eoa") {
     return (
       <AuthenticateEOA
+        onBack={handleBackToMain}
+        onAuthSuccess={handleAuthSuccess}
+      />
+    );
+  }
+
+  // Show WebAuthn authentication page
+  if (viewState === "authenticate-webauthn") {
+    return (
+      <AuthenticateWebAuthn
         onBack={handleBackToMain}
         onAuthSuccess={handleAuthSuccess}
       />

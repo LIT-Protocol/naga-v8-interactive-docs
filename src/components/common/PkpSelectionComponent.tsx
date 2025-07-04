@@ -269,18 +269,33 @@ export default function PkpSelectionComponent({
           scopes: ["sign-anything"],
         });
       } else {
-        // Fallback for other auth methods (like Google)
+        // For WebAuthn and other OAuth methods, use authService.mintWithAuth
+        const authDataObj = authData as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
-        // Site owner private key for minting PKPs (provided for demo)
-        const SITE_OWNER_PRIVATE_KEY =
-          "0x65b80901b185bd7bd9c07178c8e3b2bfae62472feeeb86d3dd834e5b14c2d5f8";
+        if (
+          authDataObj &&
+          (authDataObj.authMethodType === 8 ||
+            (authMethodName &&
+              authMethodName.toLowerCase().includes("webauthn")))
+        ) {
+          // WebAuthn specific minting
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          mintResult = await (litClient as any).authService.mintWithAuth({
+            authData: authData,
+          });
+        } else {
+          // Fallback for other auth methods (like Google, Discord)
+          // Site owner private key for minting PKPs (provided for demo)
+          const SITE_OWNER_PRIVATE_KEY =
+            "0x65b80901b185bd7bd9c07178c8e3b2bfae62472feeeb86d3dd834e5b14c2d5f8";
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        mintResult = await (litClient as any).mintWithAuth({
-          account: privateKeyToAccount(SITE_OWNER_PRIVATE_KEY),
-          authData: authData,
-          scopes: ["sign-anything"],
-        });
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          mintResult = await (litClient as any).mintWithAuth({
+            account: privateKeyToAccount(SITE_OWNER_PRIVATE_KEY),
+            authData: authData,
+            scopes: ["sign-anything"],
+          });
+        }
       }
 
       const mintedPkpInfo: PKPInfo = {
