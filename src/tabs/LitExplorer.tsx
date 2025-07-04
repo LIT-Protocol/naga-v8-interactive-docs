@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import AuthenticateEOA from "./LitExplorer/AuthenticateEOA";
 import Explorer from "./LitExplorer/Explorer";
 import Search from "./LitExplorer/Search";
+import { GoogleAuthenticator, DiscordAuthenticator } from "@lit-protocol/auth";
 
 // Import icon assets (same as in LitAuthProvider)
 import tfaIcon from "../assets/2fa.svg";
@@ -34,11 +35,11 @@ interface AuthMethodInfo {
 }
 
 interface AuthUser {
-  authContext: any;
-  pkpInfo: any;
+  authContext: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  pkpInfo: any; // eslint-disable-line @typescript-eslint/no-explicit-any
   method: AuthMethod;
   timestamp: number;
-  authData?: any;
+  authData?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
   accountMethod?: string;
 }
 
@@ -50,6 +51,20 @@ const LitExplorer: React.FC = () => {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [viewState, setViewState] = useState<ViewState>("main");
 
+  // Helper function to get display name for auth method
+  const getAuthMethodDisplayName = (method: AuthMethod): string => {
+    switch (method) {
+      case "google":
+        return "Google";
+      case "discord":
+        return "Discord";
+      case "eoa":
+        return "Web3 Wallet";
+      default:
+        return method;
+    }
+  };
+
   // Available authentication methods
   const authMethods: AuthMethodInfo[] = [
     {
@@ -57,16 +72,16 @@ const LitExplorer: React.FC = () => {
       name: "Google",
       icon: googleIcon,
       description: "Continue with Google",
-      available: false,
-      comingSoon: true,
+      available: true,
+      comingSoon: false,
     },
     {
       id: "discord",
       name: "Discord",
       icon: discordIcon,
       description: "Continue with Discord",
-      available: false,
-      comingSoon: true,
+      available: true,
+      comingSoon: false,
     },
     {
       id: "eoa",
@@ -135,6 +150,66 @@ const LitExplorer: React.FC = () => {
       if (method === "eoa") {
         // Navigate to EOA authentication page
         setViewState("authenticate-eoa");
+        setIsAuthenticating(false);
+        return;
+      }
+
+      if (method === "google") {
+        // Handle Google authentication
+        try {
+          const googleAuthData = await GoogleAuthenticator.authenticate(
+            "https://login.litgateway.com"
+          );
+
+          // Create user object with Google auth data (no authContext yet - Explorer will create it)
+          const userData: AuthUser = {
+            authContext: null, // Will be created by Explorer after PKP selection
+            pkpInfo: null, // Will be set by Explorer when PKP is selected
+            method: "google",
+            timestamp: Date.now(),
+            authData: googleAuthData,
+          };
+
+          setUser(userData);
+          setViewState("explorer");
+        } catch (error: any) {
+          // eslint-disable-line @typescript-eslint/no-explicit-any
+          console.error("Google authentication failed:", error);
+          console.log(
+            `Google authentication failed: ${error.message || error}`
+          );
+        }
+        setIsAuthenticating(false);
+        return;
+      }
+
+      if (method === "discord") {
+        // Handle Discord authentication
+        try {
+          const discordAuthData = await DiscordAuthenticator.authenticate(
+            "https://login.litgateway.com"
+          );
+
+          console.log("discordAuthData", discordAuthData);
+
+          // Create user object with Discord auth data (no authContext yet - Explorer will create it)
+          const userData: AuthUser = {
+            authContext: null, // Will be created by Explorer after PKP selection
+            pkpInfo: null, // Will be set by Explorer when PKP is selected
+            method: "discord",
+            timestamp: Date.now(),
+            authData: discordAuthData,
+          };
+
+          setUser(userData);
+          setViewState("explorer");
+        } catch (error: any) {
+          // eslint-disable-line @typescript-eslint/no-explicit-any
+          console.error("Discord authentication failed:", error);
+          console.log(
+            `Discord authentication failed: ${error.message || error}`
+          );
+        }
         setIsAuthenticating(false);
         return;
       }
@@ -222,7 +297,8 @@ const LitExplorer: React.FC = () => {
               fontSize: "1rem",
             }}
           >
-            You've successfully authenticated with <strong>Web3 Wallet</strong>
+            You've successfully authenticated with{" "}
+            <strong>{getAuthMethodDisplayName(user.method)}</strong>
           </p>
 
           {/* User Details */}
@@ -259,14 +335,13 @@ const LitExplorer: React.FC = () => {
                     fontSize: "12px",
                   }}
                 >
-                  {user.pkpInfo?.pubkey?.slice(0, 20)}...
+                  {user.pkpInfo?.pubkey?.slice(0, 20) ||
+                    user.pkpInfo?.publicKey?.slice(0, 20)}
+                  ...
                 </code>
               </div>
               <div style={{ marginBottom: "0.5rem" }}>
-                <strong>Method:</strong>{" "}
-                {user.accountMethod === "privateKey"
-                  ? "Private Key"
-                  : "Connected Wallet"}
+                <strong>Method:</strong> {getAuthMethodDisplayName(user.method)}
               </div>
               <div>
                 <strong>Authenticated:</strong>{" "}

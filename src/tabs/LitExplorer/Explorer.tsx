@@ -205,6 +205,123 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
     return "No address available";
   };
 
+  // Helper function to extract account name from auth data
+  const getAuthenticatedAccountName = (): string | null => {
+    if (!user.authData) return null;
+
+    // For Google OAuth - decode JWT token
+    if (user.method === "google") {
+      // Google auth returns a JWT token, let's decode it
+      if (user.authData.accessToken) {
+        try {
+          // Decode JWT payload (second part of the token)
+          const token = user.authData.accessToken;
+          const base64Payload = token.split(".")[1];
+          const payload = JSON.parse(atob(base64Payload));
+
+          // Extract user info from JWT payload
+          if (payload.name) {
+            return payload.name;
+          }
+          if (payload.given_name && payload.family_name) {
+            return `${payload.given_name} ${payload.family_name}`;
+          }
+          if (payload.given_name) {
+            return payload.given_name;
+          }
+          if (payload.email) {
+            return payload.email;
+          }
+        } catch (error) {
+          console.error("Error decoding Google JWT:", error);
+        }
+      }
+
+      // Fallback to other possible paths in authData
+      if (user.authData.userInfo?.name) {
+        return user.authData.userInfo.name;
+      }
+      if (
+        user.authData.userInfo?.given_name &&
+        user.authData.userInfo?.family_name
+      ) {
+        return `${user.authData.userInfo.given_name} ${user.authData.userInfo.family_name}`;
+      }
+      if (user.authData.userInfo?.given_name) {
+        return user.authData.userInfo.given_name;
+      }
+      if (user.authData.userInfo?.email) {
+        return user.authData.userInfo.email;
+      }
+      // Try alternative paths
+      if (user.authData.name) {
+        return user.authData.name;
+      }
+      if (user.authData.email) {
+        return user.authData.email;
+      }
+    }
+
+    // For Discord OAuth
+    if (user.method === "discord") {
+      // Discord auth returns a token in format: user_id_base64.token_signature
+      if (user.authData.accessToken) {
+        try {
+          const token = user.authData.accessToken;
+          const parts = token.split(".");
+
+          if (parts.length >= 2) {
+            // Decode the first part to get user ID
+            const userIdBase64 = parts[0];
+            const userId = atob(userIdBase64);
+
+            console.log("Discord user ID:", userId);
+
+            // Look for user info in authData first
+            if (user.authData.userInfo) {
+              console.log("Discord user info:", user.authData.userInfo);
+
+              if (user.authData.userInfo.username) {
+                return `@${user.authData.userInfo.username}`;
+              }
+              if (user.authData.userInfo.global_name) {
+                return user.authData.userInfo.global_name;
+              }
+              if (user.authData.userInfo.display_name) {
+                return user.authData.userInfo.display_name;
+              }
+            }
+
+            // If no user info found, return the Discord user ID
+            return `Discord ID: ${userId}`;
+          }
+        } catch (error) {
+          console.error("Error parsing Discord token:", error);
+        }
+      }
+
+      // Fallback to other possible paths in authData
+      if (user.authData.userInfo?.username) {
+        return `@${user.authData.userInfo.username}`;
+      }
+      if (user.authData.userInfo?.global_name) {
+        return user.authData.userInfo.global_name;
+      }
+      if (user.authData.userInfo?.display_name) {
+        return user.authData.userInfo.display_name;
+      }
+      // Try alternative paths
+      if (user.authData.username) {
+        return `@${user.authData.username}`;
+      }
+      if (user.authData.global_name) {
+        return user.authData.global_name;
+      }
+    }
+
+    return null;
+  };
+
   return (
     <div style={{ padding: "2rem", maxWidth: "1200px", margin: "0 auto" }}>
       {/* Header */}
@@ -301,21 +418,35 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
         </h3>
         <div style={{ display: "grid", gap: "0.5rem", fontSize: "14px" }}>
           <div>
-            <strong>Method:</strong> {user.method} (
-            {user.accountMethod || "N/A"})
+            <strong>Method:</strong> {user.method}{" "}
+            {user.accountMethod ? `(${user.accountMethod})` : ""}
           </div>
-          <div>
-            <strong>Address:</strong>{" "}
-            <code
-              style={{
-                backgroundColor: "#e0f2fe",
-                padding: "2px 6px",
-                borderRadius: "4px",
-              }}
-            >
-              {formatUserAddress()}
-            </code>
-          </div>
+          {getAuthenticatedAccountName() ? (
+            <div>
+              <strong>Account:</strong>{" "}
+              <span
+                style={{
+                  color: "#1e40af",
+                  fontWeight: "500",
+                }}
+              >
+                {getAuthenticatedAccountName()}
+              </span>
+            </div>
+          ) : (
+            <div>
+              <strong>Address:</strong>{" "}
+              <code
+                style={{
+                  backgroundColor: "#e0f2fe",
+                  padding: "2px 6px",
+                  borderRadius: "4px",
+                }}
+              >
+                {formatUserAddress()}
+              </code>
+            </div>
+          )}
           <div>
             <strong>Authenticated:</strong>{" "}
             {new Date(user.timestamp).toLocaleString()}
