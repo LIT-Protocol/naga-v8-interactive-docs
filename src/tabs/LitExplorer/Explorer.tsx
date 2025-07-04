@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useLitServiceSetup } from "../../hooks/useLitServiceSetup";
 import PkpSelectionComponent from "../../components/common/PkpSelectionComponent";
 import PKPManagement from "./PKPManagement";
+import PaymentManager from "./PaymentManager";
 import { useAppContext } from "../../router";
 import { chronicleTestnet } from "../../main";
 import { DEFAULT_NETWORK_NAME } from "../../pages";
@@ -39,6 +40,9 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
     useState<boolean>(false);
   const [userWithAuthContext, setUserWithAuthContext] =
     useState<AuthUser | null>(null);
+  const [activeTab, setActiveTab] = useState<
+    "pkp-management" | "payment-manager"
+  >("pkp-management");
 
   // Setup Lit Protocol services
   const {
@@ -54,11 +58,11 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
   const { assertDependenciesLoaded, showError } = useAppContext();
 
   // Load balance function
-  const loadBalance = async (pkp: PKPInfo) => {
+  const loadBalance = async (pkp: PKPInfo, forceRefresh: boolean = false) => {
     if (!pkp?.ethAddress || !services?.litClient) return pkp;
 
-    // Prevent loading if already has balance (but allow if loading state is true)
-    if (pkp.balance) return pkp;
+    // Prevent loading if already has balance (unless forcing refresh)
+    if (pkp.balance && !forceRefresh) return pkp;
 
     try {
       const { createPublicClient, http } = await import("viem");
@@ -123,6 +127,14 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
     setUserWithAuthContext(null); // Reset auth context when changing PKP
   };
 
+  // Function to refresh PKP balance (can be called from PaymentManager)
+  const refreshPkpBalance = async () => {
+    if (selectedPkp) {
+      console.log("🔄 Refreshing PKP balance after payment operation...");
+      await loadBalance(selectedPkp, true); // Force refresh
+    }
+  };
+
   const createAuthContext = async () => {
     if (
       !selectedPkp ||
@@ -167,10 +179,12 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
 
       setUserWithAuthContext(updatedUser);
       console.log("✅ Authentication context created successfully!");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to create authentication context:", error);
       showError?.(
-        `Failed to create authentication context: ${error.message || error}`
+        `Failed to create authentication context: ${
+          error instanceof Error ? error.message : String(error)
+        }`
       );
     } finally {
       setIsCreatingAuthContext(false);
@@ -655,12 +669,97 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
       {/* PKP Management Section - Only show when PKP is selected, not in selection mode, and auth context is ready */}
       {selectedPkp && !showPkpSelection && userWithAuthContext && (
         <div style={{ marginTop: "20px" }}>
-          <PKPManagement
-            user={userWithAuthContext}
-            services={services}
-            selectedPkp={selectedPkp}
-            isServicesReady={isServicesReady}
-          />
+          {/* Tab Navigation */}
+          <div
+            style={{
+              backgroundColor: "white",
+              border: "1px solid #e5e7eb",
+              borderRadius: "12px 12px 0 0",
+              padding: "0",
+              boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                borderBottom: "1px solid #e5e7eb",
+              }}
+            >
+              <button
+                onClick={() => setActiveTab("pkp-management")}
+                style={{
+                  flex: 1,
+                  padding: "16px 20px",
+                  backgroundColor:
+                    activeTab === "pkp-management" ? "#3b82f6" : "transparent",
+                  color: activeTab === "pkp-management" ? "white" : "#6b7280",
+                  border: "none",
+                  borderRadius: "12px 0 0 0",
+                  fontSize: "16px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                }}
+              >
+                🔐 PKP Permissions
+              </button>
+              <button
+                onClick={() => setActiveTab("payment-manager")}
+                style={{
+                  flex: 1,
+                  padding: "16px 20px",
+                  backgroundColor:
+                    activeTab === "payment-manager" ? "#3b82f6" : "transparent",
+                  color: activeTab === "payment-manager" ? "white" : "#6b7280",
+                  border: "none",
+                  borderRadius: "0 12px 0 0",
+                  fontSize: "16px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                }}
+              >
+                💰 Payment Manager
+              </button>
+            </div>
+          </div>
+
+          {/* Tab Content */}
+          <div
+            style={{
+              backgroundColor: "white",
+              border: "1px solid #e5e7eb",
+              borderTop: "none",
+              borderRadius: "0 0 12px 12px",
+              padding: "2rem",
+              boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+            }}
+          >
+            {activeTab === "pkp-management" ? (
+              <PKPManagement
+                user={userWithAuthContext}
+                services={services}
+                selectedPkp={selectedPkp}
+                isServicesReady={isServicesReady}
+              />
+            ) : (
+              <PaymentManager
+                user={userWithAuthContext}
+                services={services}
+                selectedPkp={selectedPkp}
+                isServicesReady={isServicesReady}
+                onBalanceChange={refreshPkpBalance}
+              />
+            )}
+          </div>
         </div>
       )}
 

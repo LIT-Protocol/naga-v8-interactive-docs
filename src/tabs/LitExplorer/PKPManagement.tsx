@@ -108,7 +108,7 @@ const ExplorerPKPPermissionsProvider: React.FC<
   addTransactionToast,
 }) => {
   // State
-  const [permissionsContext, setPermissionsContext] = useState<any>(null);
+  const [permissionsContext, setPermissionsContext] = useState<unknown>(null);
   const [isLoadingPermissions, setIsLoadingPermissions] = useState(false);
   const [permissionsError, setPermissionsError] = useState<string>("");
   const [removingItems, setRemovingItems] = useState<Set<string>>(new Set());
@@ -116,7 +116,7 @@ const ExplorerPKPPermissionsProvider: React.FC<
 
   // Cached permissions manager to avoid repeated initialization
   const [cachedPermissionsManager, setCachedPermissionsManager] =
-    useState<any>(null);
+    useState<unknown>(null);
   const [cacheKey, setCacheKey] = useState<string>("");
 
   // Helper to get permissions manager (cached)
@@ -200,10 +200,12 @@ const ExplorerPKPPermissionsProvider: React.FC<
       setPermissionsContext(context);
 
       console.log("✅ Permissions context loaded successfully");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to load permissions context:", error);
       setPermissionsError(
-        `Failed to load permissions: ${error.message || error}`
+        `Failed to load permissions: ${
+          error instanceof Error ? error.message : String(error)
+        }`
       );
     } finally {
       setIsLoadingPermissions(false);
@@ -251,14 +253,18 @@ const ExplorerPKPPermissionsProvider: React.FC<
         }
 
         setTimeout(refreshPermissions, 5000);
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("❌ Failed to add permitted action:", error);
         console.error("PKP Details:", {
           tokenId: selectedPkp?.tokenId,
           publicKey: selectedPkp?.publicKey,
           ethAddress: selectedPkp?.ethAddress,
         });
-        setStatus(`❌ Failed to add action: ${error.message || error}`);
+        setStatus(
+          `❌ Failed to add action: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
         throw error;
       }
     },
@@ -312,15 +318,17 @@ const ExplorerPKPPermissionsProvider: React.FC<
         }
 
         await refreshPermissions();
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Failed to remove permitted action:", error);
-        if (error.message?.includes("Not PKP NFT owner")) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        if (errorMessage?.includes("Not PKP NFT owner")) {
           setPermissionsError(
             "❌ You don't own this PKP. Only PKP owners can modify permissions."
           );
         } else {
           setPermissionsError(
-            `❌ Failed to remove permitted action: ${error.message || error}`
+            `❌ Failed to remove permitted action: ${errorMessage}`
           );
         }
       } finally {
@@ -356,15 +364,17 @@ const ExplorerPKPPermissionsProvider: React.FC<
         }
 
         await refreshPermissions();
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Failed to remove permitted address:", error);
-        if (error.message?.includes("Not PKP NFT owner")) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        if (errorMessage?.includes("Not PKP NFT owner")) {
           setPermissionsError(
             "❌ You don't own this PKP. Only PKP owners can modify permissions."
           );
         } else {
           setPermissionsError(
-            `❌ Failed to remove permitted address: ${error.message || error}`
+            `❌ Failed to remove permitted address: ${errorMessage}`
           );
         }
       } finally {
@@ -398,15 +408,17 @@ const ExplorerPKPPermissionsProvider: React.FC<
         }
 
         await refreshPermissions();
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Failed to remove auth method:", error);
-        if (error.message?.includes("Not PKP NFT owner")) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        if (errorMessage?.includes("Not PKP NFT owner")) {
           setPermissionsError(
             "❌ You don't own this PKP. Only PKP owners can modify permissions."
           );
         } else {
           setPermissionsError(
-            `❌ Failed to remove auth method: ${error.message || error}`
+            `❌ Failed to remove auth method: ${errorMessage}`
           );
         }
       } finally {
@@ -445,15 +457,17 @@ const ExplorerPKPPermissionsProvider: React.FC<
       }
 
       await refreshPermissions();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to revoke all permissions:", error);
-      if (error.message?.includes("Not PKP NFT owner")) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      if (errorMessage?.includes("Not PKP NFT owner")) {
         setPermissionsError(
           "❌ You don't own this PKP. Only PKP owners can modify permissions."
         );
       } else {
         setPermissionsError(
-          `❌ Failed to revoke all permissions: ${error.message || error}`
+          `❌ Failed to revoke all permissions: ${errorMessage}`
         );
       }
     } finally {
@@ -622,8 +636,12 @@ const ExplorerPermissionsDashboard: React.FC<{ disabled?: boolean }> = ({
     selectedPkp,
     addPermittedAction,
     addPermittedAddress,
+    removePermittedAction,
+    removePermittedAddress,
+    removePermittedAuthMethod,
     revokeAllPermissions,
     isRevokingAll,
+    removingItems,
   } = useExplorerPKPPermissions();
 
   // Auto-load permissions when component mounts or PKP changes
@@ -995,7 +1013,7 @@ const ExplorerPermissionsDashboard: React.FC<{ disabled?: boolean }> = ({
                           }}
                         >
                           {permissionsContext.actions.map(
-                            (action: any, index: number) => (
+                            (action: string, index: number) => (
                               <div
                                 key={index}
                                 style={{
@@ -1003,6 +1021,10 @@ const ExplorerPermissionsDashboard: React.FC<{ disabled?: boolean }> = ({
                                   backgroundColor: "white",
                                   borderRadius: "6px",
                                   border: "1px solid #e5e7eb",
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                  gap: "12px",
                                 }}
                               >
                                 <div
@@ -1011,10 +1033,59 @@ const ExplorerPermissionsDashboard: React.FC<{ disabled?: boolean }> = ({
                                     fontFamily: "monospace",
                                     color: "#374151",
                                     wordBreak: "break-all",
+                                    flex: 1,
                                   }}
                                 >
                                   <strong>IPFS ID:</strong> {action || "N/A"}
                                 </div>
+                                <button
+                                  onClick={() => removePermittedAction(action)}
+                                  disabled={
+                                    removingItems.has(`action:${action}`) ||
+                                    disabled
+                                  }
+                                  style={{
+                                    padding: "6px 12px",
+                                    backgroundColor:
+                                      removingItems.has(`action:${action}`) ||
+                                      disabled
+                                        ? "#9ca3af"
+                                        : "#dc2626",
+                                    color: "white",
+                                    border: "none",
+                                    borderRadius: "4px",
+                                    fontSize: "12px",
+                                    fontWeight: "500",
+                                    cursor:
+                                      removingItems.has(`action:${action}`) ||
+                                      disabled
+                                        ? "not-allowed"
+                                        : "pointer",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "4px",
+                                    minWidth: "70px",
+                                    justifyContent: "center",
+                                  }}
+                                >
+                                  {removingItems.has(`action:${action}`) ? (
+                                    <>
+                                      <div
+                                        style={{
+                                          width: "12px",
+                                          height: "12px",
+                                          border: "2px solid #ffffff40",
+                                          borderTop: "2px solid #ffffff",
+                                          borderRadius: "50%",
+                                          animation: "spin 1s linear infinite",
+                                        }}
+                                      />
+                                      Removing...
+                                    </>
+                                  ) : (
+                                    <>Remove</>
+                                  )}
+                                </button>
                               </div>
                             )
                           )}
@@ -1044,7 +1115,7 @@ const ExplorerPermissionsDashboard: React.FC<{ disabled?: boolean }> = ({
                           }}
                         >
                           {permissionsContext.addresses.map(
-                            (address: any, index: number) => (
+                            (address: string, index: number) => (
                               <div
                                 key={index}
                                 style={{
@@ -1052,6 +1123,10 @@ const ExplorerPermissionsDashboard: React.FC<{ disabled?: boolean }> = ({
                                   backgroundColor: "white",
                                   borderRadius: "6px",
                                   border: "1px solid #e5e7eb",
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                  gap: "12px",
                                 }}
                               >
                                 <div
@@ -1060,10 +1135,61 @@ const ExplorerPermissionsDashboard: React.FC<{ disabled?: boolean }> = ({
                                     fontFamily: "monospace",
                                     color: "#374151",
                                     wordBreak: "break-all",
+                                    flex: 1,
                                   }}
                                 >
                                   <strong>Address:</strong> {address || "N/A"}
                                 </div>
+                                <button
+                                  onClick={() =>
+                                    removePermittedAddress(address)
+                                  }
+                                  disabled={
+                                    removingItems.has(`address:${address}`) ||
+                                    disabled
+                                  }
+                                  style={{
+                                    padding: "6px 12px",
+                                    backgroundColor:
+                                      removingItems.has(`address:${address}`) ||
+                                      disabled
+                                        ? "#9ca3af"
+                                        : "#dc2626",
+                                    color: "white",
+                                    border: "none",
+                                    borderRadius: "4px",
+                                    fontSize: "12px",
+                                    fontWeight: "500",
+                                    cursor:
+                                      removingItems.has(`address:${address}`) ||
+                                      disabled
+                                        ? "not-allowed"
+                                        : "pointer",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "4px",
+                                    minWidth: "70px",
+                                    justifyContent: "center",
+                                  }}
+                                >
+                                  {removingItems.has(`address:${address}`) ? (
+                                    <>
+                                      <div
+                                        style={{
+                                          width: "12px",
+                                          height: "12px",
+                                          border: "2px solid #ffffff40",
+                                          borderTop: "2px solid #ffffff",
+                                          borderRadius: "50%",
+                                          animation: "spin 1s linear infinite",
+                                        }}
+                                      />
+                                      Removing...
+                                    </>
+                                  ) : (
+                                    <>Remove</>
+                                  )}
+                                </button>
                               </div>
                             )
                           )}
@@ -1093,54 +1219,142 @@ const ExplorerPermissionsDashboard: React.FC<{ disabled?: boolean }> = ({
                           }}
                         >
                           {permissionsContext.authMethods.map(
-                            (method: any, index: number) => (
-                              <div
-                                key={index}
-                                style={{
-                                  padding: "12px",
-                                  backgroundColor: "white",
-                                  borderRadius: "6px",
-                                  border: "1px solid #e5e7eb",
-                                }}
-                              >
+                            (method: unknown, index: number) => {
+                              // Type guard for method object
+                              const isValidMethod = (
+                                obj: unknown
+                              ): obj is {
+                                authMethodType: number;
+                                id: string;
+                                scopes?: string[];
+                              } => {
+                                return (
+                                  typeof obj === "object" &&
+                                  obj !== null &&
+                                  "authMethodType" in obj &&
+                                  "id" in obj
+                                );
+                              };
+
+                              if (!isValidMethod(method)) return null;
+
+                              return (
                                 <div
-                                  style={{ fontSize: "12px", color: "#374151" }}
-                                >
-                                  <strong>Type:</strong>{" "}
-                                  {method.authMethodType
-                                    ? method.authMethodType.toString()
-                                    : "N/A"}
-                                </div>
-                                <div
+                                  key={index}
                                   style={{
-                                    fontSize: "12px",
-                                    fontFamily: "monospace",
-                                    color: "#374151",
-                                    marginTop: "4px",
-                                    wordBreak: "break-all",
+                                    padding: "12px",
+                                    backgroundColor: "white",
+                                    borderRadius: "6px",
+                                    border: "1px solid #e5e7eb",
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "flex-start",
+                                    gap: "12px",
                                   }}
                                 >
-                                  <strong>ID:</strong> {method.id || "N/A"}
-                                </div>
-                                {method.scopes && (
-                                  <div
+                                  <div style={{ flex: 1 }}>
+                                    <div
+                                      style={{
+                                        fontSize: "12px",
+                                        color: "#374151",
+                                      }}
+                                    >
+                                      <strong>Type:</strong>{" "}
+                                      {method.authMethodType
+                                        ? method.authMethodType.toString()
+                                        : "N/A"}
+                                    </div>
+                                    <div
+                                      style={{
+                                        fontSize: "12px",
+                                        fontFamily: "monospace",
+                                        color: "#374151",
+                                        marginTop: "4px",
+                                        wordBreak: "break-all",
+                                      }}
+                                    >
+                                      <strong>ID:</strong> {method.id || "N/A"}
+                                    </div>
+                                    {method.scopes && (
+                                      <div
+                                        style={{
+                                          fontSize: "12px",
+                                          color: "#6b7280",
+                                          marginTop: "4px",
+                                        }}
+                                      >
+                                        <strong>Scopes:</strong>{" "}
+                                        {Array.isArray(method.scopes)
+                                          ? method.scopes.length > 0
+                                            ? method.scopes.join(", ")
+                                            : "no signing scopes permitted"
+                                          : method.scopes ||
+                                            "no signing scopes permitted"}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <button
+                                    onClick={() =>
+                                      removePermittedAuthMethod(
+                                        method.authMethodType,
+                                        method.id
+                                      )
+                                    }
+                                    disabled={
+                                      removingItems.has(
+                                        `auth:${method.authMethodType}:${method.id}`
+                                      ) || disabled
+                                    }
                                     style={{
+                                      padding: "6px 12px",
+                                      backgroundColor:
+                                        removingItems.has(
+                                          `auth:${method.authMethodType}:${method.id}`
+                                        ) || disabled
+                                          ? "#9ca3af"
+                                          : "#dc2626",
+                                      color: "white",
+                                      border: "none",
+                                      borderRadius: "4px",
                                       fontSize: "12px",
-                                      color: "#6b7280",
-                                      marginTop: "4px",
+                                      fontWeight: "500",
+                                      cursor:
+                                        removingItems.has(
+                                          `auth:${method.authMethodType}:${method.id}`
+                                        ) || disabled
+                                          ? "not-allowed"
+                                          : "pointer",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: "4px",
+                                      minWidth: "70px",
+                                      justifyContent: "center",
                                     }}
                                   >
-                                    <strong>Scopes:</strong>{" "}
-                                    {Array.isArray(method.scopes)
-                                      ? method.scopes.length > 0
-                                        ? method.scopes.join(", ")
-                                        : "no signing scopes permitted"
-                                      : method.scopes ||
-                                        "no signing scopes permitted"}
-                                  </div>
-                                )}
-                              </div>
-                            )
+                                    {removingItems.has(
+                                      `auth:${method.authMethodType}:${method.id}`
+                                    ) ? (
+                                      <>
+                                        <div
+                                          style={{
+                                            width: "12px",
+                                            height: "12px",
+                                            border: "2px solid #ffffff40",
+                                            borderTop: "2px solid #ffffff",
+                                            borderRadius: "50%",
+                                            animation:
+                                              "spin 1s linear infinite",
+                                          }}
+                                        />
+                                        Removing...
+                                      </>
+                                    ) : (
+                                      <>Remove</>
+                                    )}
+                                  </button>
+                                </div>
+                              );
+                            }
                           )}
                         </div>
                       </div>
