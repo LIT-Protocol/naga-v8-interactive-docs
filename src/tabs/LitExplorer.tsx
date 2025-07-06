@@ -5,6 +5,7 @@ import AuthenticateStytchEmail from "./LitExplorer/AuthenticateStytchEmail";
 import AuthenticateStytchSms from "./LitExplorer/AuthenticateStytchSms";
 import AuthenticateStytchWhatsApp from "./LitExplorer/AuthenticateStytchWhatsApp";
 import AuthenticateStytchTotp from "./LitExplorer/AuthenticateStytchTotp";
+import AuthenticateCustomAuth from "./LitExplorer/AuthenticateCustomAuth";
 import Explorer from "./LitExplorer/Explorer";
 import Search from "./LitExplorer/Search";
 import { GoogleAuthenticator, DiscordAuthenticator } from "@lit-protocol/auth";
@@ -56,6 +57,7 @@ type ViewState =
   | "authenticate-stytch-sms"
   | "authenticate-stytch-whatsapp"
   | "authenticate-stytch-totp"
+  | "authenticate-custom-auth"
   | "explorer";
 
 const LitExplorer: React.FC = () => {
@@ -172,8 +174,8 @@ const LitExplorer: React.FC = () => {
       name: "Custom Auth",
       icon: passkeyIcon,
       description: "Test custom authentication",
-      available: false,
-      comingSoon: true,
+      available: true,
+      comingSoon: false,
     },
   ];
 
@@ -222,6 +224,13 @@ const LitExplorer: React.FC = () => {
       if (method === "stytch-totp") {
         // Navigate to Stytch TOTP authentication page
         setViewState("authenticate-stytch-totp");
+        setIsAuthenticating(false);
+        return;
+      }
+
+      if (method === "custom") {
+        // Navigate to Custom authentication page
+        setViewState("authenticate-custom-auth");
         setIsAuthenticating(false);
         return;
       }
@@ -370,6 +379,16 @@ const LitExplorer: React.FC = () => {
   if (viewState === "authenticate-stytch-totp") {
     return (
       <AuthenticateStytchTotp
+        onBack={handleBackToMain}
+        onAuthSuccess={handleAuthSuccess}
+      />
+    );
+  }
+
+  // Show Custom authentication page
+  if (viewState === "authenticate-custom-auth") {
+    return (
+      <AuthenticateCustomAuth
         onBack={handleBackToMain}
         onAuthSuccess={handleAuthSuccess}
       />
