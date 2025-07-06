@@ -97,6 +97,8 @@ export default function GoogleAuthTab() {
         "https://login.litgateway.com"
       );
 
+      console.log("authData:", authData);
+
       setAuthData(authData);
       setStatus("Successfully signed in with Google");
       showSuccess("google-signin");

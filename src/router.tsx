@@ -83,6 +83,9 @@ import CreatingAuthContext from "./tabs/BuildingWithLit/MakingYourFirstRequest/P
 import EncryptionAndAccessControl from "./tabs/BuildingWithLit/MakingYourFirstRequest/EncryptionAndAccessControl";
 import PKPSigning from "./tabs/BuildingWithLit/MakingYourFirstRequest/PKPSigning";
 import LitActionExecution from "./tabs/BuildingWithLit/MakingYourFirstRequest/LitActionExecution";
+import ChronicleYellowstone from "./tabs/ChronicleYellowstone";
+import LitNetworks from "./tabs/LearningLit/LitNetworks";
+import LitExplorer from "./tabs/LitExplorer";
 
 // Create a type for the context
 type ContextType = {
@@ -145,6 +148,10 @@ export const router = createBrowserRouter([
         index: true,
         element: <HomePageTab />,
       },
+      {
+        path: "lit-explorer",
+        element: <LitExplorer />,
+      },
 
       // Learning Lit
       {
@@ -154,6 +161,14 @@ export const router = createBrowserRouter([
       {
         path: "learning-lit/how-it-works",
         element: <HowItWorksTab />,
+      },
+      {
+        path: "learning-lit/chronicle-yellowstone",
+        element: <ChronicleYellowstone />,
+      },
+      {
+        path: "learning-lit/lit-networks",
+        element: <LitNetworks />,
       },
       {
         path: "learning-lit/security",

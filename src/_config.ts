@@ -43,7 +43,7 @@ export const THEME = {
     input: "214 32% 91%",
     ring: "264 54% 44%",
   },
-  
+
   // Direct color values for backward compatibility
   brandColors: {
     darkPurple: "#27233B",
@@ -54,13 +54,13 @@ export const THEME = {
     lightGray: "#f5f5f5",
     borderColor: "#e0e0e0",
   },
-  
+
   // Gradients
   gradients: {
     primary: "linear-gradient(to right, hsl(264 54% 44%), hsl(259 53% 36%))",
     active: "linear-gradient(-200deg, hsl(254 45% 35%), hsl(270 53% 47%))",
   },
-  
+
   // RainbowKit theme configuration
   rainbowKit: {
     accentColor: "#5732AE",
@@ -69,10 +69,10 @@ export const THEME = {
     fontStack: "system",
     overlayBlur: "small",
   },
-  
+
   // Border radius
   radius: "0.5rem",
-  
+
   // Font configuration
   fonts: {
     primary: "Space Grotesk",

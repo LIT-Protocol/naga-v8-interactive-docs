@@ -3,7 +3,7 @@ import React from "react";
 interface NoteCalloutProps {
   title?: string;
   message: React.ReactNode;
-  variant?: "note" | "info" | "tip";
+  variant?: "note" | "info" | "tip" | "warning";
   showIcon?: boolean;
   className?: string;
   style?: React.CSSProperties;
@@ -32,6 +32,13 @@ const NoteCallout: React.FC<NoteCalloutProps> = ({
           borderColor: "#3b82f6",
           textColor: "#1e40af",
           iconColor: "#2563eb",
+        };
+      case "warning":
+        return {
+          backgroundColor: "#fef2f2",
+          borderColor: "#ef4444",
+          textColor: "#991b1b",
+          iconColor: "#dc2626",
         };
       case "note":
       default:

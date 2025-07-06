@@ -5,6 +5,10 @@ import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { MainLayout } from "../layouts/MainLayout";
 
+export const DEFAULT_APP_NAME = "lit-auth-app";
+export const DEFAULT_NETWORK_NAME = "naga-dev";
+export const DEFAULT_NETWORK = nagaDev;
+
 // --- Singleton instances ---
 type LitClient = Awaited<ReturnType<typeof createLitClient>>;
 type AuthManager = Awaited<ReturnType<typeof createAuthManager>>;
@@ -15,7 +19,7 @@ let authManagerInstance: AuthManager | null = null;
 const getLitClient = async (): Promise<LitClient> => {
   if (!litClientInstance) {
     console.log("Creating new LitClient instance (should happen only once)");
-    litClientInstance = await createLitClient({ network: nagaDev });
+    litClientInstance = await createLitClient({ network: DEFAULT_NETWORK });
   }
   return litClientInstance;
 };
@@ -25,8 +29,8 @@ const getAuthManager = (): AuthManager => {
     console.log("Creating new AuthManager instance (should happen only once)");
     authManagerInstance = createAuthManager({
       storage: storagePlugins.localStorage({
-        appName: "my-app",
-        networkName: "naga-dev",
+        appName: DEFAULT_APP_NAME,
+        networkName: DEFAULT_NETWORK_NAME,
       }),
     });
   }
@@ -369,6 +373,16 @@ const ACTIONS: NavigationItem[] = [
     type: "primary",
   },
   {
+    id: "lit-explorer",
+    path: "/lit-explorer",
+    name: "Lit Explorer",
+    description: "Lit Explorer",
+    category: "Home",
+    type: "primary",
+  },
+
+  // Learning Lit
+  {
     id: "what-is-lit",
     path: "/learning-lit/what-is-lit",
     name: "What is Lit Protocol",
@@ -381,6 +395,22 @@ const ACTIONS: NavigationItem[] = [
     path: "/learning-lit/how-it-works",
     name: "How It Works",
     description: "An overview of how Lit Protocol works.",
+    category: "Learning Lit",
+    type: "primary",
+  },
+  {
+    id: "chronicle-yellowstone",
+    path: "/learning-lit/chronicle-yellowstone",
+    name: "Chronicle Yellowstone",
+    description: "Chronicle Yellowstone",
+    category: "Learning Lit",
+    type: "primary",
+  },
+  {
+    id: "lit-networks",
+    path: "/learning-lit/lit-networks",
+    name: "Lit Networks",
+    description: "Lit Networks",
     category: "Learning Lit",
     type: "primary",
   },

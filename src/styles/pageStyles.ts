@@ -17,6 +17,7 @@ export interface PageStyles {
     table: CSSProperties;
     th: CSSProperties;
     td: CSSProperties;
+    link: CSSProperties;
 }
 
 export const pageStyles: PageStyles = {
@@ -119,4 +120,8 @@ export const pageStyles: PageStyles = {
         borderBottom: "1px solid #e2e8f0",
         color: "#4b5563",
     },
-}; 
+    link: {
+        color: "#007bff",
+        textDecoration: "underline",
+    },
+};

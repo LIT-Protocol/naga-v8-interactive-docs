@@ -66,8 +66,8 @@ const CryptoeconomicSecurity: React.FC = () => {
         message={
           <>
             <p>
-              The $LITKEY token and v1 Mainnet are <strong>NOT YET LIVE</strong>
-              , but are coming soon.
+              The <code>$LITKEY</code> token and v1 Mainnet are{" "}
+              <strong>NOT YET LIVE</strong>, but are coming soon.
             </p>
             <p>
               <a

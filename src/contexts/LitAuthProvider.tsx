@@ -28,6 +28,7 @@ import phoneIcon from "../assets/phone.svg";
 import web3WalletIcon from "../assets/web3-wallet.svg";
 import whatsappIcon from "../assets/whatsapp.svg";
 import PkpSelectionForDemo from "../components/common/PkpSelectionForDemo";
+import { DEFAULT_APP_NAME, DEFAULT_NETWORK_NAME } from "../pages";
 
 // Configuration constants
 const DEFAULT_PRIVATE_KEY =
@@ -98,8 +99,8 @@ interface AuthMethodInfo {
 
 export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
   children,
-  appName = "lit-auth-app",
-  networkName = "naga-dev",
+  appName = DEFAULT_APP_NAME,
+  networkName = DEFAULT_NETWORK_NAME,
   autoSetup = false,
   storageKey = "lit-auth-user",
 }) => {
@@ -266,9 +267,14 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
   // Auto-initialize services when user exists but services aren't ready
   useEffect(() => {
     if (user && !isServicesReady && !isInitializing) {
-      console.log("🔄 User exists but services not ready - initializing services...");
+      console.log(
+        "🔄 User exists but services not ready - initializing services..."
+      );
       setupServices().catch((error) => {
-        console.error("Failed to auto-initialize services for existing user:", error);
+        console.error(
+          "Failed to auto-initialize services for existing user:",
+          error
+        );
         // Don't logout the user automatically, but log the error
         // The user can try to use functionality and it will show appropriate error messages
       });
@@ -278,30 +284,42 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
   // Recreate authContext when services become ready for existing user
   useEffect(() => {
     const recreateAuthContext = async () => {
-      if (user && user.authData && user.pkpInfo && isServicesReady && services) {
+      if (
+        user &&
+        user.authData &&
+        user.pkpInfo &&
+        isServicesReady &&
+        services
+      ) {
         // Check if authContext is missing methods (indicates it was loaded from localStorage)
-        const needsRecreation = !user.authContext?.authNeededCallback || 
-                               typeof user.authContext?.authNeededCallback !== 'function';
-        
+        const needsRecreation =
+          !user.authContext?.authNeededCallback ||
+          typeof user.authContext?.authNeededCallback !== "function";
+
         if (needsRecreation) {
-          console.log("🔧 Recreating authContext for user loaded from localStorage...");
+          console.log(
+            "🔧 Recreating authContext for user loaded from localStorage..."
+          );
           try {
-            const newAuthContext = await services.authManager.createPkpAuthContext({
-              authData: user.authData,
-              pkpPublicKey: user.pkpInfo.pubkey || user.pkpInfo.publicKey,
-              authConfig: {
-                capabilityAuthSigs: [],
-                expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
-                statement: "",
-                domain: "",
-                resources: [
-                  ["pkp-signing", "*"],
-                  ["lit-action-execution", "*"],
-                  ["access-control-condition-decryption", "*"],
-                ],
-              },
-              litClient: services.litClient,
-            });
+            const newAuthContext =
+              await services.authManager.createPkpAuthContext({
+                authData: user.authData,
+                pkpPublicKey: user.pkpInfo.pubkey || user.pkpInfo.publicKey,
+                authConfig: {
+                  capabilityAuthSigs: [],
+                  expiration: new Date(
+                    Date.now() + 1000 * 60 * 60 * 24
+                  ).toISOString(),
+                  statement: "",
+                  domain: "",
+                  resources: [
+                    ["pkp-signing", "*"],
+                    ["lit-action-execution", "*"],
+                    ["access-control-condition-decryption", "*"],
+                  ],
+                },
+                litClient: services.litClient,
+              });
 
             // Update user with new authContext
             const updatedUser = {
@@ -439,7 +457,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
           resources: [
             ["pkp-signing", "*"],
             ["lit-action-execution", "*"],
-            ['access-control-condition-decryption', '*'],
+            ["access-control-condition-decryption", "*"],
           ],
         },
         litClient: services.litClient,

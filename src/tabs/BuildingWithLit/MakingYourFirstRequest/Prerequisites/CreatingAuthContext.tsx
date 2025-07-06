@@ -17,7 +17,7 @@ import { utils as litUtils } from "@lit-protocol/lit-client";
 import GreyBoarderWhiteBgContainer from "../../../../components/layout/GreyboardWhiteBgContainer";
 import { RequiredPackages, NoteCallout } from "../../../../components/common";
 import { DisplayCode } from "../../../../components/DisplayCode";
-import { PkpSelectionComponentSimplified } from "../../../../components/common";
+import PkpSelectionComponent from "../../../../components/common/PkpSelectionComponent";
 import { pageStyles } from "../../../../styles/pageStyles";
 import { useAppContext } from "../../../../router";
 
@@ -432,16 +432,7 @@ const customAuthContext = await authManager.createCustomAuthContext({
         "https://login.litgateway.com"
       );
 
-      // Ensure authMethodType is bigint for consistency
-      const normalizedAuthData = {
-        ...authData,
-        authMethodType:
-          typeof authData.authMethodType === "number"
-            ? BigInt(authData.authMethodType)
-            : authData.authMethodType,
-      };
-
-      setGoogleAuthData(normalizedAuthData);
+      setGoogleAuthData(authData);
       setAuthStatus("✅ Successfully signed in with Google");
     } catch (error) {
       console.error("Error signing in with Google:", error);
@@ -471,14 +462,8 @@ const customAuthContext = await authManager.createCustomAuthContext({
 
       const { authManager, litClient } = assertDependenciesLoaded();
 
-      // Convert BigInt to number for SDK compatibility
-      const authDataForSDK = {
-        ...googleAuthData,
-        authMethodType: Number(googleAuthData.authMethodType),
-      };
-
       const pkpAuthContext = await authManager.createPkpAuthContext({
-        authData: authDataForSDK,
+        authData: googleAuthData,
         pkpPublicKey: pkpInfo.pubkey || pkpInfo.publicKey,
         authConfig: {
           resources: [
@@ -1125,9 +1110,10 @@ const customAuthContext = await authManager.createCustomAuthContext({
                       >
                         2. PKP Selection
                       </h5>
-                      <PkpSelectionComponentSimplified
+                      <PkpSelectionComponent
                         authData={googleAuthData}
-                        onPkpSelected={(pkpInfo) => {
+                        accountMethod={undefined}
+                        onPkpSelected={(pkpInfo: PKPInfo) => {
                           setPkpInfo(pkpInfo);
                           setAuthStatus(
                             `✅ PKP selected: ${pkpInfo.ethAddress}`
@@ -1135,17 +1121,12 @@ const customAuthContext = await authManager.createCustomAuthContext({
                           // Clear any existing auth context result
                           setAuthResult(null);
                         }}
-                        onSelectionModeChange={() => {
-                          // Clear PKP selection and auth context result when switching modes
-                          setPkpInfo(null);
-                          setAuthResult(null);
-                          setAuthStatus("Not initialized");
-                        }}
                         setStatus={setAuthStatus}
                         assertDependenciesLoaded={assertDependenciesLoaded}
                         showError={showError}
                         authMethodName="Google Auth"
                         disabled={false}
+                        showDisplayCode={false}
                       />
                     </div>
                   )}
@@ -1184,21 +1165,18 @@ const customAuthContext = await authManager.createCustomAuthContext({
                       Custom Auth Context requires a PKP to validate the Lit
                       Action. Select or mint a PKP to continue.
                     </p>
-                    <PkpSelectionComponentSimplified
+                    <PkpSelectionComponent
                       authData={customAuthData}
-                      setStatus={(status) => setAuthStatus(status)}
+                      accountMethod={undefined}
+                      setStatus={(status: string) => setAuthStatus(status)}
                       assertDependenciesLoaded={assertDependenciesLoaded}
                       authMethodName="Custom Auth"
-                      onPkpSelected={(pkpInfo) => {
+                      onPkpSelected={(pkpInfo: PKPInfo) => {
                         setCustomPkpInfo(pkpInfo);
                         setAuthResult(null);
                         setAuthStatus("PKP selected for custom auth");
                       }}
-                      onSelectionModeChange={() => {
-                        setCustomPkpInfo(null);
-                        setAuthResult(null);
-                        setAuthStatus("Not initialized");
-                      }}
+                      showDisplayCode={false}
                     />
                     {customPkpInfo && (
                       <div style={{ marginTop: "12px" }}>
