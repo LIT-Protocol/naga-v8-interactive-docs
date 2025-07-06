@@ -425,6 +425,18 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
       }
     }
 
+    // For Stytch TOTP - extract user ID from auth data
+    if (user.method === "stytch-totp") {
+      if (user.authData?.metadata?.userId) {
+        return `TOTP User ID: ${user.authData.metadata.userId}`;
+      }
+      if (user.authData?.userId) {
+        return `TOTP User ID: ${user.authData.userId}`;
+      }
+      // Fallback display
+      return "TOTP 2FA User";
+    }
+
     return null;
   };
 

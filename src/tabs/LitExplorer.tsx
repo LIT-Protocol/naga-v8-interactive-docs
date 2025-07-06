@@ -4,6 +4,7 @@ import AuthenticateWebAuthn from "./LitExplorer/AuthenticateWebAuthn";
 import AuthenticateStytchEmail from "./LitExplorer/AuthenticateStytchEmail";
 import AuthenticateStytchSms from "./LitExplorer/AuthenticateStytchSms";
 import AuthenticateStytchWhatsApp from "./LitExplorer/AuthenticateStytchWhatsApp";
+import AuthenticateStytchTotp from "./LitExplorer/AuthenticateStytchTotp";
 import Explorer from "./LitExplorer/Explorer";
 import Search from "./LitExplorer/Search";
 import { GoogleAuthenticator, DiscordAuthenticator } from "@lit-protocol/auth";
@@ -54,6 +55,7 @@ type ViewState =
   | "authenticate-stytch-email"
   | "authenticate-stytch-sms"
   | "authenticate-stytch-whatsapp"
+  | "authenticate-stytch-totp"
   | "explorer";
 
 const LitExplorer: React.FC = () => {
@@ -162,8 +164,8 @@ const LitExplorer: React.FC = () => {
       name: "Authenticator",
       icon: tfaIcon,
       description: "TOTP authenticator app",
-      available: false,
-      comingSoon: true,
+      available: true,
+      comingSoon: false,
     },
     {
       id: "custom",
@@ -213,6 +215,13 @@ const LitExplorer: React.FC = () => {
       if (method === "stytch-whatsapp") {
         // Navigate to Stytch WhatsApp authentication page
         setViewState("authenticate-stytch-whatsapp");
+        setIsAuthenticating(false);
+        return;
+      }
+
+      if (method === "stytch-totp") {
+        // Navigate to Stytch TOTP authentication page
+        setViewState("authenticate-stytch-totp");
         setIsAuthenticating(false);
         return;
       }
@@ -351,6 +360,16 @@ const LitExplorer: React.FC = () => {
   if (viewState === "authenticate-stytch-whatsapp") {
     return (
       <AuthenticateStytchWhatsApp
+        onBack={handleBackToMain}
+        onAuthSuccess={handleAuthSuccess}
+      />
+    );
+  }
+
+  // Show Stytch TOTP authentication page
+  if (viewState === "authenticate-stytch-totp") {
+    return (
+      <AuthenticateStytchTotp
         onBack={handleBackToMain}
         onAuthSuccess={handleAuthSuccess}
       />
