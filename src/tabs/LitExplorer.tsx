@@ -3,6 +3,7 @@ import AuthenticateEOA from "./LitExplorer/AuthenticateEOA";
 import AuthenticateWebAuthn from "./LitExplorer/AuthenticateWebAuthn";
 import AuthenticateStytchEmail from "./LitExplorer/AuthenticateStytchEmail";
 import AuthenticateStytchSms from "./LitExplorer/AuthenticateStytchSms";
+import AuthenticateStytchWhatsApp from "./LitExplorer/AuthenticateStytchWhatsApp";
 import Explorer from "./LitExplorer/Explorer";
 import Search from "./LitExplorer/Search";
 import { GoogleAuthenticator, DiscordAuthenticator } from "@lit-protocol/auth";
@@ -52,6 +53,7 @@ type ViewState =
   | "authenticate-webauthn"
   | "authenticate-stytch-email"
   | "authenticate-stytch-sms"
+  | "authenticate-stytch-whatsapp"
   | "explorer";
 
 const LitExplorer: React.FC = () => {
@@ -152,8 +154,8 @@ const LitExplorer: React.FC = () => {
       name: "WhatsApp",
       icon: whatsappIcon,
       description: "WhatsApp verification code",
-      available: false,
-      comingSoon: true,
+      available: true,
+      comingSoon: false,
     },
     {
       id: "stytch-totp",
@@ -204,6 +206,13 @@ const LitExplorer: React.FC = () => {
       if (method === "stytch-sms") {
         // Navigate to Stytch SMS authentication page
         setViewState("authenticate-stytch-sms");
+        setIsAuthenticating(false);
+        return;
+      }
+
+      if (method === "stytch-whatsapp") {
+        // Navigate to Stytch WhatsApp authentication page
+        setViewState("authenticate-stytch-whatsapp");
         setIsAuthenticating(false);
         return;
       }
@@ -332,6 +341,16 @@ const LitExplorer: React.FC = () => {
   if (viewState === "authenticate-stytch-sms") {
     return (
       <AuthenticateStytchSms
+        onBack={handleBackToMain}
+        onAuthSuccess={handleAuthSuccess}
+      />
+    );
+  }
+
+  // Show Stytch WhatsApp authentication page
+  if (viewState === "authenticate-stytch-whatsapp") {
+    return (
+      <AuthenticateStytchWhatsApp
         onBack={handleBackToMain}
         onAuthSuccess={handleAuthSuccess}
       />

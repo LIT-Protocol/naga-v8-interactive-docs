@@ -277,6 +277,7 @@ export default function PkpSelectionComponent({
           (authDataObj.authMethodType === 8 ||
             authDataObj.authMethodType === 6 || // Stytch Email OTP
             authDataObj.authMethodType === 7 || // Stytch SMS OTP
+            authDataObj.authMethodType === 9 || // Stytch WhatsApp OTP
             (authMethodName &&
               (authMethodName.toLowerCase().includes("webauthn") ||
                 authMethodName.toLowerCase().includes("stytch"))))
