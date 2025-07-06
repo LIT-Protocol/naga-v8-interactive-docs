@@ -397,6 +397,20 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
       }
     }
 
+    // For Stytch SMS - extract phone number from auth data
+    if (user.method === "stytch-sms") {
+      if (user.authData?.metadata?.phoneNumber) {
+        return user.authData.metadata.phoneNumber;
+      }
+      if (user.authData?.phoneNumber) {
+        return user.authData.phoneNumber;
+      }
+      // Fallback to user ID if no phone number found
+      if (user.authData?.metadata?.userId) {
+        return `User ID: ${user.authData.metadata.userId}`;
+      }
+    }
+
     return null;
   };
 

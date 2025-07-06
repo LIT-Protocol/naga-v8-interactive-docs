@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import AuthenticateEOA from "./LitExplorer/AuthenticateEOA";
 import AuthenticateWebAuthn from "./LitExplorer/AuthenticateWebAuthn";
 import AuthenticateStytchEmail from "./LitExplorer/AuthenticateStytchEmail";
+import AuthenticateStytchSms from "./LitExplorer/AuthenticateStytchSms";
 import Explorer from "./LitExplorer/Explorer";
 import Search from "./LitExplorer/Search";
 import { GoogleAuthenticator, DiscordAuthenticator } from "@lit-protocol/auth";
@@ -50,6 +51,7 @@ type ViewState =
   | "authenticate-eoa"
   | "authenticate-webauthn"
   | "authenticate-stytch-email"
+  | "authenticate-stytch-sms"
   | "explorer";
 
 const LitExplorer: React.FC = () => {
@@ -142,8 +144,8 @@ const LitExplorer: React.FC = () => {
       name: "SMS",
       icon: phoneIcon,
       description: "SMS verification code",
-      available: false,
-      comingSoon: true,
+      available: true,
+      comingSoon: false,
     },
     {
       id: "stytch-whatsapp",
@@ -195,6 +197,13 @@ const LitExplorer: React.FC = () => {
       if (method === "stytch-email") {
         // Navigate to Stytch Email authentication page
         setViewState("authenticate-stytch-email");
+        setIsAuthenticating(false);
+        return;
+      }
+
+      if (method === "stytch-sms") {
+        // Navigate to Stytch SMS authentication page
+        setViewState("authenticate-stytch-sms");
         setIsAuthenticating(false);
         return;
       }
@@ -313,6 +322,16 @@ const LitExplorer: React.FC = () => {
   if (viewState === "authenticate-stytch-email") {
     return (
       <AuthenticateStytchEmail
+        onBack={handleBackToMain}
+        onAuthSuccess={handleAuthSuccess}
+      />
+    );
+  }
+
+  // Show Stytch SMS authentication page
+  if (viewState === "authenticate-stytch-sms") {
+    return (
+      <AuthenticateStytchSms
         onBack={handleBackToMain}
         onAuthSuccess={handleAuthSuccess}
       />
