@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import AuthenticateEOA from "./LitExplorer/AuthenticateEOA";
 import AuthenticateWebAuthn from "./LitExplorer/AuthenticateWebAuthn";
+import AuthenticateStytchEmail from "./LitExplorer/AuthenticateStytchEmail";
 import Explorer from "./LitExplorer/Explorer";
 import Search from "./LitExplorer/Search";
 import { GoogleAuthenticator, DiscordAuthenticator } from "@lit-protocol/auth";
@@ -48,6 +49,7 @@ type ViewState =
   | "main"
   | "authenticate-eoa"
   | "authenticate-webauthn"
+  | "authenticate-stytch-email"
   | "explorer";
 
 const LitExplorer: React.FC = () => {
@@ -124,18 +126,16 @@ const LitExplorer: React.FC = () => {
       name: "WebAuthn",
       icon: passkeyIcon,
       description: "Use WebAuthn/Passkey",
-      available: false,
-      comingSoon: true,
-      // available: isWebAuthnAvailable === true,
-      // comingSoon: isWebAuthnAvailable === false,
+      available: isWebAuthnAvailable === true,
+      comingSoon: isWebAuthnAvailable === false,
     },
     {
       id: "stytch-email",
       name: "Email OTP",
       icon: emailIcon,
       description: "Email verification code",
-      available: false,
-      comingSoon: true,
+      available: true,
+      comingSoon: false,
     },
     {
       id: "stytch-sms",
@@ -188,6 +188,13 @@ const LitExplorer: React.FC = () => {
       if (method === "webauthn") {
         // Navigate to WebAuthn authentication page
         setViewState("authenticate-webauthn");
+        setIsAuthenticating(false);
+        return;
+      }
+
+      if (method === "stytch-email") {
+        // Navigate to Stytch Email authentication page
+        setViewState("authenticate-stytch-email");
         setIsAuthenticating(false);
         return;
       }
@@ -296,6 +303,16 @@ const LitExplorer: React.FC = () => {
   if (viewState === "authenticate-webauthn") {
     return (
       <AuthenticateWebAuthn
+        onBack={handleBackToMain}
+        onAuthSuccess={handleAuthSuccess}
+      />
+    );
+  }
+
+  // Show Stytch Email authentication page
+  if (viewState === "authenticate-stytch-email") {
+    return (
+      <AuthenticateStytchEmail
         onBack={handleBackToMain}
         onAuthSuccess={handleAuthSuccess}
       />

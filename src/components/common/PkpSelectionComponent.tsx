@@ -275,10 +275,12 @@ export default function PkpSelectionComponent({
         if (
           authDataObj &&
           (authDataObj.authMethodType === 8 ||
+            authDataObj.authMethodType === 6 || // Stytch Email OTP
             (authMethodName &&
-              authMethodName.toLowerCase().includes("webauthn")))
+              (authMethodName.toLowerCase().includes("webauthn") ||
+                authMethodName.toLowerCase().includes("stytch"))))
         ) {
-          // WebAuthn specific minting
+          // WebAuthn and Stytch specific minting
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           mintResult = await (litClient as any).authService.mintWithAuth({
             authData: authData,

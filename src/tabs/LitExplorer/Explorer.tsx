@@ -357,37 +357,16 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
       }
     }
 
-    // For Discord OAuth
+    // For Discord - parse Discord token format
     if (user.method === "discord") {
-      // Discord auth returns a token in format: user_id_base64.token_signature
-      if (user.authData.accessToken) {
+      if (user.authData?.accessToken) {
         try {
-          const token = user.authData.accessToken;
-          const parts = token.split(".");
-
-          if (parts.length >= 2) {
-            // Decode the first part to get user ID
-            const userIdBase64 = parts[0];
+          // Discord tokens have format: user_id_base64.token_signature
+          const tokenParts = user.authData.accessToken.split(".");
+          if (tokenParts.length >= 1) {
+            // Decode the first part which contains the user ID
+            const userIdBase64 = tokenParts[0];
             const userId = atob(userIdBase64);
-
-            console.log("Discord user ID:", userId);
-
-            // Look for user info in authData first
-            if (user.authData.userInfo) {
-              console.log("Discord user info:", user.authData.userInfo);
-
-              if (user.authData.userInfo.username) {
-                return `@${user.authData.userInfo.username}`;
-              }
-              if (user.authData.userInfo.global_name) {
-                return user.authData.userInfo.global_name;
-              }
-              if (user.authData.userInfo.display_name) {
-                return user.authData.userInfo.display_name;
-              }
-            }
-
-            // If no user info found, return the Discord user ID
             return `Discord ID: ${userId}`;
           }
         } catch (error) {
@@ -395,22 +374,26 @@ const Explorer: React.FC<ExplorerProps> = ({ user, onSignOut }) => {
         }
       }
 
-      // Fallback to other possible paths in authData
-      if (user.authData.userInfo?.username) {
-        return `@${user.authData.userInfo.username}`;
+      // Fallback for other possible Discord auth data paths
+      if (user.authData?.userInfo?.username) {
+        return user.authData.userInfo.username;
       }
-      if (user.authData.userInfo?.global_name) {
-        return user.authData.userInfo.global_name;
+      if (user.authData?.username) {
+        return user.authData.username;
       }
-      if (user.authData.userInfo?.display_name) {
-        return user.authData.userInfo.display_name;
+    }
+
+    // For Stytch Email - extract email from auth data
+    if (user.method === "stytch-email") {
+      if (user.authData?.metadata?.email) {
+        return user.authData.metadata.email;
       }
-      // Try alternative paths
-      if (user.authData.username) {
-        return `@${user.authData.username}`;
+      if (user.authData?.email) {
+        return user.authData.email;
       }
-      if (user.authData.global_name) {
-        return user.authData.global_name;
+      // Fallback to user ID if no email found
+      if (user.authData?.metadata?.userId) {
+        return `User ID: ${user.authData.metadata.userId}`;
       }
     }
 
