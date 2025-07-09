@@ -1,9 +1,13 @@
 import { createAuthManager, storagePlugins } from "@lit-protocol/auth";
 import { createLitClient } from "@lit-protocol/lit-client";
-import { nagaDev } from "@lit-protocol/networks";
+import { nagaDev, nagaTest } from "@lit-protocol/networks";
 import { useEffect, useState } from "react";
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, Outlet, useLocation } from "react-router-dom";
 import { MainLayout } from "../layouts/MainLayout";
+
+export const DEFAULT_APP_NAME = "lit-auth-app";
+export const DEFAULT_NETWORK_NAME = import.meta.env.VITE_LIT_NETWORK || "naga-dev";
+export const DEFAULT_NETWORK = (import.meta.env.VITE_LIT_NETWORK || "naga-dev") === "naga-test" ? nagaTest : nagaDev;
 
 // --- Singleton instances ---
 type LitClient = Awaited<ReturnType<typeof createLitClient>>;
@@ -15,7 +19,7 @@ let authManagerInstance: AuthManager | null = null;
 const getLitClient = async (): Promise<LitClient> => {
   if (!litClientInstance) {
     console.log("Creating new LitClient instance (should happen only once)");
-    litClientInstance = await createLitClient({ network: nagaDev });
+    litClientInstance = await createLitClient({ network: DEFAULT_NETWORK });
   }
   return litClientInstance;
 };
@@ -25,13 +29,25 @@ const getAuthManager = (): AuthManager => {
     console.log("Creating new AuthManager instance (should happen only once)");
     authManagerInstance = createAuthManager({
       storage: storagePlugins.localStorage({
-        appName: "my-app",
-        networkName: "naga-dev",
+        appName: DEFAULT_APP_NAME,
+        networkName: DEFAULT_NETWORK_NAME,
       }),
     });
   }
   return authManagerInstance;
 };
+
+// Type definitions for navigation items
+interface NavigationItem {
+  id: string;
+  path?: string;
+  name: string;
+  description?: string;
+  category?: string; // Optional for child items
+  type?: "primary" | "secondary"; // Optional for child items
+  secondarySection?: string;
+  children?: NavigationItem[];
+}
 
 // DependencyStatus component for displaying dependency status with proper alignment
 type Dependency = {
@@ -240,41 +256,364 @@ const DependencyStatus = ({
   );
 };
 
+// Recursive Navigation Item Component
+interface NavigationItemProps {
+  item: NavigationItem;
+  level: number;
+  activeMethod: string;
+  expandedCategories: { [key: string]: boolean };
+  toggleCategoryCollapse: (categoryKey: string) => void;
+  location: { pathname: string };
+}
+
+const NavigationItem = ({
+  item,
+  level,
+  activeMethod,
+  expandedCategories,
+  toggleCategoryCollapse,
+  location,
+}: NavigationItemProps) => {
+  const hasChildren = item.children && item.children.length > 0;
+  const isExpanded = expandedCategories[item.id];
+  const isActive = activeMethod === item.id;
+  const isPathActive = item.path && location.pathname === item.path;
+
+  const indentLevel = level * 15;
+  const fontSize = Math.max(0.9 - level * 0.05, 0.75); // Decrease font size for deeper levels
+
+  if (hasChildren) {
+    return (
+      <div style={{ marginBottom: "4px" }}>
+        <div style={{ position: "relative" }}>
+          <button
+            type="button"
+            style={{
+              display: "block",
+              width: "100%",
+              padding: "10px 15px",
+              paddingLeft: `${10 + indentLevel}px`,
+              borderRadius: "4px",
+              cursor: "pointer",
+              backgroundColor: isActive ? "#3b82f6" : "#ffffff",
+              color: isActive ? "#ffffff" : "#333333",
+              border: `1px solid ${isActive ? "#3b82f6" : "#dddddd"}`,
+              transition: "all 0.2s",
+              textAlign: "left",
+              fontWeight: "500",
+              textDecoration: "none",
+              position: "relative",
+              fontSize: `${fontSize}rem`,
+              marginBottom: "2px",
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleCategoryCollapse(item.id);
+            }}
+          >
+            <span style={{ marginRight: 8 }}>{isExpanded ? "▼" : "▶"}</span>
+            {item.name}
+          </button>
+
+          {/* Recursive children */}
+          {isExpanded && (
+            <div style={{ marginLeft: 0 }}>
+              {item.children!.map((child) => (
+                <NavigationItem
+                  key={child.id}
+                  item={child}
+                  level={level + 1}
+                  activeMethod={activeMethod}
+                  expandedCategories={expandedCategories}
+                  toggleCategoryCollapse={toggleCategoryCollapse}
+                  location={location}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  } else {
+    return (
+      <Link
+        to={item.path || ""}
+        style={{
+          display: "block",
+          padding: "10px 15px",
+          paddingLeft: `${10 + indentLevel}px`,
+          borderRadius: "4px",
+          cursor: "pointer",
+          backgroundColor: isPathActive ? "#3b82f6" : "#ffffff",
+          color: isPathActive ? "#ffffff" : "#333333",
+          border: `1px solid ${isPathActive ? "#3b82f6" : "#e9ecef"}`,
+          transition: "all 0.2s",
+          width: "100%",
+          textAlign: "left",
+          fontWeight: "500",
+          textDecoration: "none",
+          fontSize: `${fontSize}rem`,
+          marginBottom: 2,
+        }}
+      >
+        {item.name}
+      </Link>
+    );
+  }
+};
+
 // Authentication methods configuration
-const ACTIONS = [
+const ACTIONS: NavigationItem[] = [
+  {
+    id: "home",
+    path: "/",
+    name: "Home",
+    description: "Welcome to Lit Protocol Interactive Documentation",
+    category: "Home",
+    type: "primary",
+  },
+  {
+    id: "lit-explorer",
+    path: "/lit-explorer",
+    name: "Lit Explorer",
+    description: "Lit Explorer",
+    category: "Home",
+    type: "primary",
+  },
+
+  // Learning Lit
+  {
+    id: "what-is-lit",
+    path: "/learning-lit/what-is-lit",
+    name: "What is Lit Protocol",
+    description: "An overview of Lit Protocol.",
+    category: "Learning Lit",
+    type: "primary",
+  },
+  {
+    id: "how-it-works",
+    path: "/learning-lit/how-it-works",
+    name: "How It Works",
+    description: "An overview of how Lit Protocol works.",
+    category: "Learning Lit",
+    type: "primary",
+  },
+  {
+    id: "chronicle-yellowstone",
+    path: "/learning-lit/chronicle-yellowstone",
+    name: "Chronicle Yellowstone",
+    description: "Chronicle Yellowstone",
+    category: "Learning Lit",
+    type: "primary",
+  },
+  {
+    id: "lit-networks",
+    path: "/learning-lit/lit-networks",
+    name: "Lit Networks",
+    description: "Lit Networks",
+    category: "Learning Lit",
+    type: "primary",
+  },
+  {
+    id: "security",
+    name: "Security",
+    description: "An overview of Lit Protocol security.",
+    category: "Learning Lit",
+    type: "primary",
+    children: [
+      {
+        id: "security-overview",
+        path: "/learning-lit/security",
+        name: "Overview",
+      },
+      {
+        id: "security-node-architecture",
+        path: "/learning-lit/security/node-architecture",
+        name: "Node Architecture",
+      },
+      {
+        id: "security-key-generation",
+        path: "/learning-lit/security/key-generation",
+        name: "Key Generation",
+      },
+      {
+        id: "security-on-chain-coordination",
+        path: "/learning-lit/security/on-chain-coordination",
+        name: "On-Chain Coordination",
+      },
+      {
+        id: "security-communicating-with-nodes",
+        path: "/learning-lit/security/communicating-with-nodes",
+        name: "Communicating with Nodes",
+      },
+      {
+        id: "security-cryptoeconomic-security",
+        path: "/learning-lit/security/cryptoeconomic-security",
+        name: "Cryptoeconomic Security",
+      },
+      {
+        id: "security-backup-and-recovery",
+        path: "/learning-lit/security/backup-and-recovery",
+        name: "Backup and Recovery",
+      },
+    ],
+  },
   {
     id: "demo",
-    path: "/demo",
+    path: "/learning-lit/demo",
     name: "Demo",
-    description: "Demo page",
-    category: "Demo",
+    description:
+      "Interactive demo showcasing Lit Protocol authentication and encryption features",
+    category: "Learning Lit",
     type: "primary",
   },
-  // Getting Started - Foundation Setup
+
+  // Building With Lit
   {
-    id: "setup-lit-client",
-    path: "/setup-lit-client",
-    name: "Setup Lit Client",
-    description: "Create and configure your Lit Protocol client instance",
-    category: "Getting Started",
+    id: "building-with-lit-first-request",
+    path: "/building-with-lit/first-request",
+    name: "Making Your First Request",
+    description: "Making your first request with Lit Protocol",
+    category: "Building With Lit",
     type: "primary",
+    children: [
+      {
+        id: "building-with-lit-first-request-overview",
+        path: "/building-with-lit/first-request/overview",
+        name: "Overview",
+        description: "Overview of making your first request with Lit Protocol",
+        category: "Building With Lit",
+        type: "primary",
+      },
+      {
+        id: "building-with-lit-first-request-prerequisites",
+        path: "/building-with-lit/first-request/prerequisites",
+        name: "Prerequisites",
+        description:
+          "Prerequisites for making your first request with Lit Protocol",
+        category: "Building With Lit",
+        type: "primary",
+        children: [
+          {
+            id: "building-with-lit-first-request-prerequisites-setup-lit-client",
+            path: "/building-with-lit/first-request/prerequisites/setup-lit-client",
+            name: "1. Setup Lit Client",
+            description: "Setup the Lit Client",
+            category: "Building With Lit",
+            type: "secondary",
+          },
+          {
+            id: "building-with-lit-first-request-prerequisites-setup-auth-manager",
+            path: "/building-with-lit/first-request/prerequisites/setup-auth-manager",
+            name: "2. Setup Auth Manager",
+            description: "Setup the Auth Manager",
+            category: "Building With Lit",
+            type: "secondary",
+          },
+          {
+            id: "building-with-lit-first-request-prerequisites-creating-auth-context",
+            path: "/building-with-lit/first-request/prerequisites/creating-auth-context",
+            name: "3. Creating Auth Context",
+            description: "Creating an Auth Context",
+            category: "Building With Lit",
+            type: "secondary",
+          },
+        ],
+      },
+      {
+        id: "building-with-lit-first-request-encryption-and-access-control",
+        path: "/building-with-lit/first-request/encryption-and-access-control",
+        name: "Encryption and Access Control",
+        description: "Encryption and Access Control",
+        category: "Building With Lit",
+        type: "secondary",
+      },
+      {
+        id: "building-with-lit-first-request-pkp-signing",
+        path: "/building-with-lit/first-request/pkp-signing",
+        name: "PKP Signing",
+        description: "PKP Signing",
+        category: "Building With Lit",
+        type: "secondary",
+      },
+      {
+        id: "building-with-lit-first-request-lit-action-execution",
+        path: "/building-with-lit/first-request/lit-action-execution",
+        name: "Lit Action Execution",
+        description: "Lit Action Execution",
+        category: "Building With Lit",
+        type: "secondary",
+      },
+    ],
   },
-  {
-    id: "setup-auth-manager",
-    path: "/setup-auth-manager",
-    name: "Setup Auth Manager",
-    description: "Create and configure authentication manager with storage",
-    category: "Getting Started",
-    type: "primary",
-  },
+  // TODO Improve
+  // {
+  //   id: "storage-plugins",
+  //   path: "/building-with-lit/storage-plugins",
+  //   name: "Storage Plugins",
+  //   description: "Configure localStorage and other storage options",
+  //   category: "Building With Lit",
+  //   type: "primary",
+  // },
   {
     id: "setup-auth-services",
-    path: "/setup-auth-services",
+    path: "/building-with-lit/setup-auth-services",
     name: "Setup Auth Services",
     description: "Configure your own auth infrastructure (servers & worker)",
-    category: "Getting Started",
+    category: "Building With Lit",
     type: "primary",
   },
+
+  // Paying for Lit
+  {
+    id: "paying-for-lit-overview",
+    path: "/paying-for-lit/overview",
+    name: "Overview",
+    description: "Overview of paying for Lit",
+    category: "Paying for Lit",
+    type: "primary",
+  },
+  {
+    id: "paying-for-lit-payment-manager-quickstart",
+    path: "/paying-for-lit/payment-manager/quickstart",
+    name: "Quickstart",
+    description: "Quickstart guide to using the Payment Manager",
+    category: "Paying for Lit",
+    type: "primary",
+  },
+  {
+    id: "paying-for-lit-payment-manager-setup-payment-manager",
+    path: "/paying-for-lit/payment-manager/setup-payment-manager",
+    name: "Setup Payment Manager",
+    description: "Setup the Payment Manager",
+    category: "Paying for Lit",
+    type: "primary",
+  },
+  {
+    id: "paying-for-lit-payment-manager-depositing",
+    path: "/paying-for-lit/payment-manager/depositing",
+    name: "Depositing",
+    description: "Depositing $LITKEY tokens to the Ledger Contract",
+    category: "Paying for Lit",
+    type: "primary",
+  },
+  {
+    id: "paying-for-lit-payment-manager-delegating",
+    path: "/paying-for-lit/payment-manager/delegating",
+    name: "Delegating",
+    description: "Delegating $LITKEY tokens to the Ledger Contract",
+    category: "Paying for Lit",
+    type: "primary",
+  },
+  {
+    id: "paying-for-lit-payment-manager-withdrawing",
+    path: "/paying-for-lit/payment-manager/withdrawing",
+    name: "Withdrawing",
+    description: "Withdrawing $LITKEY tokens from the Ledger Contract",
+    category: "Paying for Lit",
+    type: "primary",
+  },
+
   // {
   //   id: "network-configuration",
   //   path: "/network-configuration",
@@ -292,111 +631,437 @@ const ACTIONS = [
   //   type: "primary",
   // },
 
-  // EOA Authentication
+  // Primary: Programmable Keys
   {
-    id: "eoa-native",
-    path: "/eoa-native",
-    name: "EOA Native",
-    description: "Direct EOA usage for PKP management",
-    category: "EOA Auth",
+    id: "programmable-keys-overview",
+    path: "/programmable-keys/overview",
+    name: "Overview",
+    description: "Overview of Programmable Keys",
+    category: "Programmable Keys",
     type: "primary",
   },
+  // Secondary: PKPs
   {
-    id: "eoa-auth",
-    path: "/eoa-auth",
-    name: "EOA",
-    description: "Authenticate using your EOA account",
-    category: "PKP Auth Methods",
+    id: "pkps",
+    name: "PKPs",
+    description: "Guide to minting and using PKPs",
+    category: "Programmable Keys",
     type: "primary",
-  },
-
-  {
-    id: "google-auth",
-    path: "/google-auth",
-    name: "Google",
-    description: "Authenticate using your Google account",
-    category: "PKP Auth Methods",
-    type: "primary",
-  },
-  {
-    id: "discord-auth",
-    path: "/discord-auth",
-    name: "Discord",
-    description: "Authenticate using your Discord account",
-    category: "PKP Auth Methods",
-    type: "primary",
-  },
-  {
-    id: "webauthn-auth",
-    path: "/webauthn-auth",
-    name: "WebAuthn",
-    description: "Authenticate using your WebAuthn device",
-    category: "PKP Auth Methods",
-    type: "primary",
-  },
-  {
-    id: "stytch-email-otp-auth",
-    path: "/stytch-email-otp-auth",
-    name: "Stytch Email OTP",
-    description: "Authenticate using Stytch Email OTP verification",
-    category: "PKP Auth Methods",
-    type: "primary",
-  },
-  {
-    id: "stytch-sms-otp-auth",
-    path: "/stytch-sms-otp-auth",
-    name: "Stytch SMS OTP",
-    description: "Authenticate using Stytch SMS OTP verification",
-    category: "PKP Auth Methods",
-    type: "primary",
-  },
-  {
-    id: "stytch-whatsapp-otp-auth",
-    path: "/stytch-whatsapp-otp-auth",
-    name: "Stytch WhatsApp OTP",
-    description: "Authenticate using Stytch WhatsApp OTP verification",
-    category: "PKP Auth Methods",
-    type: "primary",
-  },
-  {
-    id: "stytch-totp-auth",
-    path: "/stytch-totp-auth",
-    name: "(2FA) Stytch TOTP",
-    description: "Authenticate using Stytch TOTP (Authenticator App)",
-    category: "PKP Auth Methods",
-    type: "secondary",
-  },
-  {
-    id: "custom-auth",
-    path: "/custom-auth",
-    name: "Custom Auth (Demo IdP)",
-    description: "Build your own custom authentication with Lit Actions",
-    category: "PKP Custom Auth",
-    type: "primary",
+    children: [
+      {
+        id: "pkps-getting-started",
+        path: "/programmable-keys/pkps/getting-started",
+        name: "Getting Started",
+      },
+      {
+        id: "pkps-auth-methods",
+        path: "/programmable-keys/pkps/auth-methods",
+        name: "Auth Methods",
+        children: [
+          {
+            id: "pkps-auth-method-providers",
+            path: "/programmable-keys/pkps/auth-method-providers",
+            name: "Auth Method Providers",
+            children: [
+              {
+                id: "pkps-auth-methods-eoa-native",
+                path: "/programmable-keys/pkps/auth-methods/eoa-native",
+                name: "Ethereum Wallet (Native)",
+                description: "Direct EOA usage for PKP management",
+              },
+              {
+                id: "pkps-auth-methods-eoa",
+                path: "/programmable-keys/pkps/auth-methods/eoa",
+                name: "Ethereum Wallet (SIWE)",
+                description:
+                  "Authenticate using your Ethereum wallet and a SIWE message",
+              },
+              {
+                id: "pkps-auth-methods-google",
+                path: "/programmable-keys/pkps/auth-methods/google",
+                name: "Google oAuth",
+                description: "Authenticate using your Google account",
+              },
+              {
+                id: "pkps-auth-methods-discord",
+                path: "/programmable-keys/pkps/auth-methods/discord",
+                name: "Discord oAuth",
+                description: "Authenticate using your Discord account",
+              },
+              {
+                id: "pkps-auth-methods-webauthn",
+                path: "/programmable-keys/pkps/auth-methods/webauthn",
+                name: "WebAuthn",
+                description: "Authenticate using your WebAuthn device",
+              },
+              {
+                id: "pkps-auth-methods-stytch-email-otp",
+                path: "/programmable-keys/pkps/auth-methods/stytch-email-otp",
+                name: "Stytch Email OTP",
+                description: "Authenticate using Stytch Email OTP verification",
+              },
+              {
+                id: "pkps-auth-methods-stytch-sms-otp",
+                path: "/programmable-keys/pkps/auth-methods/stytch-sms-otp",
+                name: "Stytch SMS OTP",
+                description: "Authenticate using Stytch SMS OTP verification",
+              },
+              {
+                id: "pkps-auth-methods-stytch-whatsapp-otp",
+                path: "/programmable-keys/pkps/auth-methods/stytch-whatsapp-otp",
+                name: "Stytch WhatsApp OTP",
+                description:
+                  "Authenticate using Stytch WhatsApp OTP verification",
+              },
+              {
+                id: "pkps-auth-methods-stytch-totp",
+                path: "/programmable-keys/pkps/auth-methods/stytch-totp",
+                name: "Stytch 2FA TOTP",
+                description:
+                  "Authenticate using Stytch TOTP (Authenticator App)",
+              },
+            ],
+          },
+          {
+            id: "pkps-auth-methods-custom-auth",
+            path: "/programmable-keys/pkps/auth-methods/custom-auth",
+            name: "Custom Auth Method",
+            description:
+              "Build your own custom authentication with Lit Actions",
+          },
+          {
+            id: "pkps-auth-methods-add-remove",
+            path: "/programmable-keys/pkps/auth-methods/add-remove",
+            name: "Add & Remove Auth Methods",
+            description: "Add or remove auth methods from a PKP",
+          },
+        ],
+      },
+      {
+        id: "pkps-view-methods",
+        path: "/programmable-keys/pkps/view-methods",
+        name: "View PKP Info",
+        children: [
+          {
+            id: "pkps-view-methods-pkp-permissions",
+            path: "/programmable-keys/pkps/view/pkp-permissions",
+            name: "PKP Permissions",
+            description: "View PKP permissions",
+          },
+          {
+            id: "pkps-view-methods-pkps-by-address",
+            path: "/programmable-keys/pkps/view/pkps-by-address",
+            name: "PKPs by Address",
+            description: "View PKPs by address",
+          },
+          {
+            id: "pkps-view-methods-pkps-by-auth",
+            path: "/programmable-keys/pkps/view/pkps-by-auth",
+            name: "PKPs by Auth",
+            description: "View PKPs by auth",
+          },
+        ],
+      },
+      {
+        id: "pkps-signing",
+        path: "/programmable-keys/pkps/signing",
+        name: "PKP Signing",
+        children: [
+          {
+            id: "pkps-signing-raw",
+            path: "/programmable-keys/pkps/signing/raw",
+            name: "Raw Signing",
+            description: "Sign data using your PKP",
+          },
+          {
+            id: "pkps-signing-eth",
+            path: "/programmable-keys/pkps/signing/eth",
+            name: "Ethereum Signing",
+            description: "Sign data using your PKP",
+          },
+          {
+            id: "pkps-btc-signing",
+            path: "/programmable-keys/pkps/signing/btc",
+            name: "Bitcoin Signing",
+            description: "Sign data using your PKP",
+          },
+        ],
+      },
+      {
+        id: "pkps-connecting-to-dapps",
+        path: "/programmable-keys/pkps/connecting-to-dapps",
+        name: "Connecting to dApps",
+        description: "Connect your PKP to a dApp",
+      },
+    ],
   },
 
   // Encryption & Access Control
   {
-    id: "encryption",
-    path: "/encryption",
-    name: "Encryption & Decryption",
+    id: "encryption-overview",
+    path: "/encryption/overview",
+    name: "Overview",
     description: "Encrypt and decrypt data using access control conditions",
     category: "Encryption & Access Control",
     type: "primary",
   },
-
-  // Payment Management
   {
-    id: "payment-manager",
-    path: "/payment-manager",
-    name: "Payment Manager",
-    description:
-      "Manage deposits, withdrawals, and balance queries on the Ledger Contract",
-    category: "Payment Management",
+    id: "encryption-quickstart",
+    path: "/encryption/quickstart",
+    name: "Quickstart",
+    description: "Quickstart guide to encrypting and decrypting data",
+    category: "Encryption & Access Control",
     type: "primary",
   },
+  {
+    id: "encryption-access-control-conditions",
+    path: "/encryption/accs",
+    name: "Access Control Conditions",
+    description: "Access Control Conditions for encrypting data",
+    category: "Encryption & Access Control",
+    type: "primary",
+    children: [
+      {
+        id: "encryption-access-control-conditions-boolean-logic",
+        path: "/encryption/access-control/boolean-logic",
+        name: "Boolean Logic",
+      },
+      {
+        id: "encryption-access-control-conditions-comparison-operators",
+        path: "/encryption/access-control/comparison-operators",
+        name: "Comparison Operators",
+      },
+      {
+        id: "encryption-access-control-conditions-lit-action",
+        path: "/encryption/access-control/lit-action",
+        name: "Lit Action",
+      },
+      {
+        id: "encryption-access-control-conditions-evm",
+        path: "/encryption/access-control/evm",
+        name: "EVM Based Conditions",
+        description: "Access Control Conditions for EVM",
+        category: "Encryption & Access Control",
+        type: "secondary",
+        children: [
+          {
+            id: "encryption-access-control-conditions-evm-supported-chains",
+            path: "/encryption/access-control/evm/supported-chains",
+            name: "Supported EVM Chains",
+            description: "Access Control Conditions for Supported EVM Chains",
+            category: "Encryption & Access Control",
+            type: "secondary",
+          },
+          {
+            id: "encryption-access-control-conditions-evm-custom-contract-calls",
+            path: "/encryption/access-control/evm/custom-contract-calls",
+            name: "Custom Contract Calls",
+            description: "Access Control Conditions for Custom Contract Calls",
+          },
+          {
+            id: "encryption-access-control-conditions-evm-wallet-ownership",
+            path: "/encryption/access-control/evm/wallet-ownership",
+            name: "Wallet Ownership",
+            description: "Access Control Conditions for Wallet Ownership",
+            category: "Encryption & Access Control",
+            type: "secondary",
+          },
+          {
+            id: "encryption-access-control-conditions-evm-eth-balance",
+            path: "/encryption/access-control/evm/eth-balance",
+            name: "ETH Balance",
+            description: "Access Control Conditions for ETH Balance",
+            category: "Encryption & Access Control",
+            type: "secondary",
+          },
+          {
+            id: "encryption-access-control-conditions-evm-erc20-balance",
+            path: "/encryption/access-control/evm/erc20-balance",
+            name: "ERC-20 Balance",
+            description: "Access Control Conditions for ERC20 Balance",
+            category: "Encryption & Access Control",
+            type: "secondary",
+          },
+          {
+            id: "encryption-access-control-conditions-evm-erc721-ownership",
+            path: "/encryption/access-control/evm/erc721-ownership",
+            name: "ERC-721 NFT Ownership",
+            description: "Access Control Conditions for ERC721 Ownership",
+            category: "Encryption & Access Control",
+            type: "secondary",
+          },
+          {
+            id: "encryption-access-control-conditions-evm-time-based",
+            path: "/encryption/access-control/evm/time-based",
+            name: "Time Based",
+            description: "Access Control Conditions for Time Based",
+          },
+          {
+            id: "encryption-access-control-conditions-evm-dao-membership",
+            path: "/encryption/access-control/evm/dao-membership",
+            name: "DAO Membership",
+            description: "Access Control Conditions for DAO Membership",
+          },
+          {
+            id: "encryption-access-control-conditions-evm-poap-ownership",
+            path: "/encryption/access-control/evm/poap-ownership",
+            name: "POAP Ownership",
+            description: "Access Control Conditions for POAP Ownership",
+          },
+        ],
+      },
+      {
+        id: "encryption-access-control-conditions-sol",
+        path: "/encryption/access-control/sol",
+        name: "SOL Based Conditions",
+        description: "Access Control Conditions for SOL",
+        category: "Encryption & Access Control",
+        type: "secondary",
+        children: [
+          {
+            id: "encryption-access-control-conditions-sol-wallet-ownership",
+            path: "/encryption/access-control/sol/wallet-ownership",
+            name: "Wallet Ownership",
+            description: "Access Control Conditions for Wallet Ownership",
+            category: "Encryption & Access Control",
+            type: "secondary",
+          },
+          {
+            id: "encryption-access-control-conditions-sol-sol-balance",
+            path: "/encryption/access-control/sol/sol-balance",
+            name: "SOL Balance",
+            description: "Access Control Conditions for SOL Balance",
+            category: "Encryption & Access Control",
+            type: "secondary",
+          },
+          {
+            id: "encryption-access-control-conditions-sol-nft-ownership",
+            path: "/encryption/access-control/sol/nft-ownership",
+            name: "NFT Ownership",
+            description: "Access Control Conditions for NFT Ownership",
+            category: "Encryption & Access Control",
+            type: "secondary",
+          },
+        ],
+      },
+      {
+        id: "encryption-access-control-conditions-cosmos",
+        path: "/encryption/access-control/cosmos",
+        name: "Cosmos Based Conditions",
+        description: "Access Control Conditions for Cosmos",
+        category: "Encryption & Access Control",
+        type: "secondary",
+        children: [
+          {
+            id: "encryption-access-control-conditions-cosmos-wallet-ownership",
+            path: "/encryption/access-control/cosmos/wallet-ownership",
+            name: "Wallet Ownership",
+            description: "Access Control Conditions for Wallet Ownership",
+            category: "Encryption & Access Control",
+            type: "secondary",
+          },
+          {
+            id: "encryption-access-control-conditions-cosmos-cosmos-balance",
+            path: "/encryption/access-control/cosmos/cosmos-balance",
+            name: "Cosmos Balance",
+            description: "Access Control Conditions for Cosmos Balance",
+            category: "Encryption & Access Control",
+            type: "secondary",
+          },
+        ],
+      },
+    ],
+  },
 
-  // More authentication methods will be added here
+  // Lit Actions
+  {
+    id: "lit-actions-overview",
+    path: "/lit-actions/overview",
+    name: "Overview",
+    description: "Overview of Lit Actions",
+    category: "Private Compute - Lit Actions",
+    type: "primary",
+  },
+  {
+    id: "lit-actions-quick-start",
+    path: "/lit-actions/quick-start",
+    name: "Quick Start",
+    description: "Quick start guide to Lit Actions",
+    category: "Private Compute - Lit Actions",
+    type: "primary",
+  },
+  {
+    id: "lit-actions-deploying",
+    path: "/lit-actions/deploying",
+    name: "Deploying",
+    description: "Deploying Lit Actions",
+    category: "Private Compute - Lit Actions",
+    type: "primary",
+  },
+  {
+    id: "lit-actions-fetch",
+    path: "/lit-actions/fetch",
+    name: "Fetching Data",
+    description: "Fetching data from the web",
+    category: "Private Compute - Lit Actions",
+    type: "primary",
+  },
+  {
+    id: "lit-actions-run-once",
+    path: "/lit-actions/run-once",
+    name: "Run Once",
+    description: "Run logic within a Lit Action only once",
+    category: "Private Compute - Lit Actions",
+    type: "primary",
+  },
+  {
+    id: "lit-actions-decrypting",
+    path: "/lit-actions/decrypting",
+    name: "Decrypting Data",
+    description: "Decrypting data within a Lit Action",
+    category: "Private Compute - Lit Actions",
+    type: "primary",
+  },
+  {
+    id: "lit-actions-get-rpc-url",
+    path: "/lit-actions/get-rpc-url",
+    name: "Get RPC URLs",
+    description: "Get the RPC URL for a given chain",
+    category: "Private Compute - Lit Actions",
+    type: "primary",
+  },
+  {
+    id: "lit-actions-conditional-execution",
+    path: "/lit-actions/conditional-execution",
+    name: "Conditional Execution",
+    description: "Conditional execution of Lit Actions",
+    category: "Private Compute - Lit Actions",
+    type: "primary",
+  },
+  {
+    id: "lit-actions-pkp-signing",
+    path: "/lit-actions/pkp-signing",
+    name: "PKP Signing",
+    description: "Signing with a PKP",
+    category: "Private Compute - Lit Actions",
+    type: "primary",
+  },
+  {
+    id: "lit-actions-pkp-signing-eip191",
+    path: "/lit-actions/pkp-signing-eip191",
+    name: "PKP Signing with EIP-191",
+    description: "Signing with a PKP using EIP-191",
+    category: "Private Compute - Lit Actions",
+    type: "primary",
+  },
+  {
+    id: "lit-actions-broadcast-and-collect",
+    path: "/lit-actions/broadcast-and-collect",
+    name: "Aggregate Node Responses",
+    description: "Aggregate responses from all nodes in the network",
+    category: "Private Compute - Lit Actions",
+    type: "primary",
+  },
 ];
 
 export const HomePage = () => {
@@ -411,9 +1076,112 @@ export const HomePage = () => {
   const [authManager, setAuthManager] = useState<AuthManager | null>(null);
   const [authContext, setAuthContext] = useState<any>(null);
   const [activeMethod, setActiveMethod] = useState<string>("eoa");
-  const [collapsedCategories, setCollapsedCategories] = useState<{
+  // Helper function to find all parent categories for a given path
+  const findCategoriesForPath = (path: string): string[] => {
+    const categories: string[] = [];
+
+    const findInActions = (
+      actions: NavigationItem[],
+      parentHierarchy: string[] = []
+    ): boolean => {
+      for (const action of actions) {
+        if (action.path === path) {
+          // Add the main category if it exists
+          if (action.category) categories.push(action.category);
+          // Add all parent IDs in the hierarchy
+          parentHierarchy.forEach((parent) => categories.push(parent));
+          return true;
+        }
+
+        if (action.children) {
+          const newHierarchy = action.category
+            ? [...parentHierarchy, action.id]
+            : [...parentHierarchy, action.id];
+          if (findInActions(action.children, newHierarchy)) {
+            // If found in children, also add this action's category
+            if (action.category) categories.push(action.category);
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+
+    findInActions(ACTIONS);
+    return [...new Set(categories)]; // Remove duplicates
+  };
+
+  // Get expanded categories and navigation items based on current path
+  const getExpandedCategoriesForPath = (
+    path: string
+  ): { [key: string]: boolean } => {
+    const defaultExpanded: { [key: string]: boolean } = {
+      "Learning Lit": true,
+      "Building With Lit": true,
+      "Making Your First Request": true,
+      // Expand nested navigation items by default
+      "building-with-lit-first-request": true, // "Making Your First Request" parent
+    };
+
+    // Function to find and expand all parent navigation items for a given path
+    const findAndExpandParents = (
+      actions: NavigationItem[],
+      targetPath: string,
+      parentIds: string[] = []
+    ): boolean => {
+      for (const action of actions) {
+        const currentPath = [...parentIds, action.id];
+
+        if (action.path === targetPath) {
+          // Found the target - expand all parents
+          parentIds.forEach((parentId) => {
+            defaultExpanded[parentId] = true;
+          });
+          // Also expand categories
+          if (action.category) {
+            defaultExpanded[action.category] = true;
+          }
+          return true;
+        }
+
+        if (action.children) {
+          if (findAndExpandParents(action.children, targetPath, currentPath)) {
+            // If found in children, expand this parent
+            defaultExpanded[action.id] = true;
+            if (action.category) {
+              defaultExpanded[action.category] = true;
+            }
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+
+    // Always expand categories and navigation items for the current path
+    const currentPathCategories = findCategoriesForPath(path);
+    console.log(
+      "Current path:",
+      path,
+      "Found categories:",
+      currentPathCategories
+    );
+
+    // Expand categories
+    currentPathCategories.forEach((category) => {
+      defaultExpanded[category] = true;
+    });
+
+    // Expand parent navigation items
+    findAndExpandParents(ACTIONS, path);
+
+    console.log("Final expanded categories:", defaultExpanded);
+    return defaultExpanded;
+  };
+
+  const [expandedCategories, setExpandedCategories] = useState<{
     [key: string]: boolean;
-  }>({});
+  }>(getExpandedCategoriesForPath(location.pathname));
   const [siteAuthConfig, setSiteAuthConfig] = useState<any>({
     domain: window.location.host,
     statement: "🫵 YOU AGREED TO THE TERMS AND CONDITIONS",
@@ -438,7 +1206,8 @@ export const HomePage = () => {
     try {
       // Create a simple beep sound
       const audioContext = new (window.AudioContext ||
-        (window as any).webkitAudioContext)();
+        (window as { webkitAudioContext?: typeof AudioContext })
+          .webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
 
@@ -476,7 +1245,7 @@ export const HomePage = () => {
 
   // Function to toggle category collapse state
   const toggleCategoryCollapse = (categoryKey: string) => {
-    setCollapsedCategories((prev) => ({
+    setExpandedCategories((prev) => ({
       ...prev,
       [categoryKey]: !prev[categoryKey],
     }));
@@ -523,12 +1292,24 @@ export const HomePage = () => {
     }
   }, [litClient, authManager]);
 
-  // Update activeMethod based on the current path
+  // Update activeMethod and ensure current path categories are expanded
   useEffect(() => {
     const path = location.pathname;
     const actionId =
       ACTIONS.find((action) => action.path === path)?.id || "eoa";
     setActiveMethod(actionId);
+
+    // Ensure current path categories are expanded (but preserve existing expansions)
+    const currentPathCategories = findCategoriesForPath(path);
+    if (currentPathCategories.length > 0) {
+      setExpandedCategories((prev) => {
+        const updated = { ...prev };
+        currentPathCategories.forEach((category) => {
+          updated[category] = true;
+        });
+        return updated;
+      });
+    }
   }, [location.pathname]);
 
   function assertDependenciesLoaded() {
@@ -647,10 +1428,13 @@ export const HomePage = () => {
             {(() => {
               const groupedActions: { [key: string]: typeof ACTIONS } = {};
               ACTIONS.forEach((action) => {
-                if (!groupedActions[action.category]) {
-                  groupedActions[action.category] = [];
+                // Only group actions that have a category
+                if (action.category) {
+                  if (!groupedActions[action.category]) {
+                    groupedActions[action.category] = [];
+                  }
+                  groupedActions[action.category].push(action);
                 }
-                groupedActions[action.category].push(action);
               });
 
               return Object.entries(groupedActions).map(
@@ -666,9 +1450,8 @@ export const HomePage = () => {
                   const hasSecondaryActions = secondaryActions.length > 0;
                   const categoryKey = category;
                   const secondaryKey = `${category}-secondary`;
-                  const isCategoryCollapsed = collapsedCategories[categoryKey];
-                  const isSecondaryCollapsed =
-                    collapsedCategories[secondaryKey];
+                  const isCategoryExpanded = expandedCategories[categoryKey];
+                  const isSecondaryExpanded = expandedCategories[secondaryKey];
 
                   return (
                     <div key={category}>
@@ -678,150 +1461,194 @@ export const HomePage = () => {
                         />
                       )}
 
-                      {/* Collapsible Category Header */}
-                      <button
-                        onClick={() => toggleCategoryCollapse(categoryKey)}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          width: "100%",
-                          padding: "12px 0",
-                          backgroundColor: "transparent",
-                          border: "none",
-                          cursor: "pointer",
-                          fontSize: "1rem",
-                          color: "#555",
-                          fontWeight: "600",
-                          textAlign: "left",
-                        }}
-                      >
-                        <span style={{ marginRight: "8px" }}>
-                          {isCategoryCollapsed ? "▶" : "▼"}
-                        </span>
-                        {category}
-                        <span
-                          style={{
-                            marginLeft: "8px",
-                            fontSize: "0.8rem",
-                            color: "#888",
-                          }}
-                        >
-                          ({actionsInCategory.length})
-                        </span>
-                      </button>
+                      {category === "Home" ? (
+                        primaryActions.map((action) => (
+                          <Link
+                            key={action.id}
+                            to={action.path || ""}
+                            style={{
+                              display: "block",
+                              padding: "10px 15px",
+                              marginBottom: "4px",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                              backgroundColor:
+                                activeMethod === action.id
+                                  ? "#3b82f6"
+                                  : "#ffffff",
+                              color:
+                                activeMethod === action.id
+                                  ? "#ffffff"
+                                  : "#333333",
+                              border: `1px solid ${
+                                activeMethod === action.id
+                                  ? "#3b82f6"
+                                  : "#dddddd"
+                              }`,
+                              transition: "all 0.2s",
+                              width: "100%",
+                              textAlign: "left",
+                              fontWeight: "500",
+                              textDecoration: "none",
+                            }}
+                          >
+                            {action.name}
+                          </Link>
+                        ))
+                      ) : (
+                        <>
+                          {/* Collapsible Category Header */}
+                          <button
+                            onClick={() => toggleCategoryCollapse(categoryKey)}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              width: "100%",
+                              padding: "12px 0",
+                              backgroundColor: "transparent",
+                              border: "none",
+                              cursor: "pointer",
+                              fontSize: "1rem",
+                              color: "#555",
+                              fontWeight: "600",
+                              textAlign: "left",
+                            }}
+                          >
+                            <span style={{ marginRight: "8px" }}>
+                              {isCategoryExpanded ? "▼" : "▶"}
+                            </span>
+                            {category}
+                          </button>
 
-                      {/* Category Content */}
-                      {!isCategoryCollapsed && (
-                        <div style={{ marginLeft: "0px" }}>
-                          {/* Primary Actions */}
-                          {primaryActions.map((action) => (
-                            <Link
-                              key={action.id}
-                              to={action.path}
-                              style={{
-                                display: "block",
-                                padding: "10px 15px",
-                                marginBottom: "4px",
-                                borderRadius: "4px",
-                                cursor: "pointer",
-                                backgroundColor:
-                                  activeMethod === action.id
-                                    ? "#3b82f6"
-                                    : "#ffffff",
-                                color:
-                                  activeMethod === action.id
-                                    ? "#ffffff"
-                                    : "#333333",
-                                border: `1px solid ${
-                                  activeMethod === action.id
-                                    ? "#3b82f6"
-                                    : "#dddddd"
-                                }`,
-                                transition: "all 0.2s",
-                                width: "100%",
-                                textAlign: "left",
-                                fontWeight: "500",
-                                textDecoration: "none",
-                              }}
-                            >
-                              {action.name}
-                            </Link>
-                          ))}
-
-                          {/* Secondary Actions - Collapsible Tree */}
-                          {hasSecondaryActions && (
-                            <>
-                              {/* Toggle Button for Secondary Actions */}
-                              <button
-                                onClick={() =>
-                                  toggleCategoryCollapse(secondaryKey)
-                                }
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  width: "100%",
-                                  padding: "8px 15px",
-                                  marginTop: "8px",
-                                  marginBottom: "4px",
-                                  backgroundColor: "transparent",
-                                  border: "1px solid #e0e0e0",
-                                  borderRadius: "4px",
-                                  cursor: "pointer",
-                                  fontSize: "0.85rem",
-                                  color: "#666",
-                                  fontWeight: "600",
-                                }}
-                              >
-                                <span style={{ marginRight: "8px" }}>
-                                  {isSecondaryCollapsed ? "▶" : "▼"}
-                                </span>
-                                Secondary Methods ({secondaryActions.length})
-                              </button>
-
-                              {/* Secondary Actions List */}
-                              {!isSecondaryCollapsed &&
-                                secondaryActions.map((action) => (
-                                  <div
+                          {/* Category Content */}
+                          {isCategoryExpanded && (
+                            <div style={{ marginLeft: "0px" }}>
+                              {/* Primary Actions */}
+                              {primaryActions.map((action) =>
+                                action.children ? (
+                                  <NavigationItem
                                     key={action.id}
-                                    style={{ marginBottom: "4px" }}
+                                    item={action}
+                                    level={0}
+                                    activeMethod={activeMethod}
+                                    expandedCategories={expandedCategories}
+                                    toggleCategoryCollapse={
+                                      toggleCategoryCollapse
+                                    }
+                                    location={location}
+                                  />
+                                ) : (
+                                  <Link
+                                    key={action.id}
+                                    to={action.path || ""}
+                                    style={{
+                                      display: "block",
+                                      padding: "10px 15px",
+                                      marginBottom: "4px",
+                                      borderRadius: "4px",
+                                      cursor: "pointer",
+                                      backgroundColor:
+                                        activeMethod === action.id
+                                          ? "#3b82f6"
+                                          : "#ffffff",
+                                      color:
+                                        activeMethod === action.id
+                                          ? "#ffffff"
+                                          : "#333333",
+                                      border: `1px solid ${
+                                        activeMethod === action.id
+                                          ? "#3b82f6"
+                                          : "#dddddd"
+                                      }`,
+                                      transition: "all 0.2s",
+                                      width: "100%",
+                                      textAlign: "left",
+                                      fontWeight: "500",
+                                      textDecoration: "none",
+                                    }}
                                   >
-                                    <Link
-                                      to={action.path}
-                                      style={{
-                                        display: "block",
-                                        padding: "8px 15px",
-                                        paddingLeft: "35px", // Indent to show hierarchy
-                                        borderRadius: "4px",
-                                        cursor: "pointer",
-                                        backgroundColor:
-                                          activeMethod === action.id
-                                            ? "#3b82f6"
-                                            : "#f8f9fa",
-                                        color:
-                                          activeMethod === action.id
-                                            ? "#ffffff"
-                                            : "#333333",
-                                        border: `1px solid ${
-                                          activeMethod === action.id
-                                            ? "#3b82f6"
-                                            : "#e9ecef"
-                                        }`,
-                                        borderLeft: `3px solid #fbbf24`, // Visual indicator for dependency
-                                        transition: "all 0.2s",
-                                        width: "100%",
-                                        textAlign: "left",
-                                        fontWeight: "500",
-                                        textDecoration: "none",
-                                        fontSize: "0.9rem",
-                                      }}
-                                    >
-                                      {action.name}
-                                    </Link>
-                                  </div>
-                                ))}
-                            </>
+                                    {action.name}
+                                  </Link>
+                                )
+                              )}
+
+                              {/* Secondary Actions - Collapsible Tree */}
+                              {hasSecondaryActions && (
+                                <>
+                                  {/* Toggle Button for Secondary Actions */}
+                                  <button
+                                    onClick={() =>
+                                      toggleCategoryCollapse(secondaryKey)
+                                    }
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      width: "100%",
+                                      padding: "8px 15px",
+                                      marginTop: "8px",
+                                      marginBottom: "4px",
+                                      backgroundColor: "transparent",
+                                      border: "1px solid #e0e0e0",
+                                      borderRadius: "4px",
+                                      cursor: "pointer",
+                                      fontSize: "0.85rem",
+                                      color: "#666",
+                                      fontWeight: "600",
+                                    }}
+                                  >
+                                    <span style={{ marginRight: "8px" }}>
+                                      {isSecondaryExpanded ? "▼" : "▶"}
+                                    </span>
+                                    Secondary Methods ({secondaryActions.length}
+                                    )
+                                  </button>
+
+                                  {/* Secondary Actions List */}
+                                  {isSecondaryExpanded &&
+                                    secondaryActions.map((action) => (
+                                      <div
+                                        key={action.id}
+                                        style={{ marginBottom: "4px" }}
+                                      >
+                                        <Link
+                                          to={action.path || ""}
+                                          style={{
+                                            display: "block",
+                                            padding: "8px 15px",
+                                            paddingLeft: "35px", // Indent to show hierarchy
+                                            borderRadius: "4px",
+                                            cursor: "pointer",
+                                            backgroundColor:
+                                              activeMethod === action.id
+                                                ? "#3b82f6"
+                                                : "#f8f9fa",
+                                            color:
+                                              activeMethod === action.id
+                                                ? "#ffffff"
+                                                : "#333333",
+                                            border: `1px solid ${
+                                              activeMethod === action.id
+                                                ? "#3b82f6"
+                                                : "#e9ecef"
+                                            }`,
+                                            borderLeft: `3px solid #fbbf24`, // Visual indicator for dependency
+                                            transition: "all 0.2s",
+                                            width: "100%",
+                                            textAlign: "left",
+                                            fontWeight: "500",
+                                            textDecoration: "none",
+                                            fontSize: "0.9rem",
+                                          }}
+                                        >
+                                          {action.name}
+                                        </Link>
+                                      </div>
+                                    ))}
+                                </>
+                              )}
+                            </div>
                           )}
-                        </div>
+                        </>
                       )}
                     </div>
                   );

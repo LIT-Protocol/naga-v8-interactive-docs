@@ -1,0 +1,593 @@
+import React, { useState } from "react";
+import { createAccBuilder } from "@lit-protocol/access-control-conditions";
+import { DisplayCode } from "../../../../components/DisplayCode";
+import GreyBoarderWhiteBgContainer from "../../../../components/layout/GreyboardWhiteBgContainer";
+import { pageStyles } from "../../../../styles/pageStyles";
+import { NoteCallout } from "../../../../components/common";
+import { Link } from "react-router-dom";
+import EVMChainsSelector from "../../../../components/EVMChainsSelector";
+
+interface EVMChain {
+  name: string;
+  chainId: number | string;
+  symbol: string;
+  decimals: number;
+  rpcUrls: string[];
+  blockExplorerUrls?: string[];
+  vmType?: string;
+  nativeCurrency?: {
+    name: string;
+    symbol: string;
+    decimals: number;
+  };
+}
+
+const ETHBalance: React.FC = () => {
+  const [selectedExample, setSelectedExample] =
+    useState<string>("greater-equal");
+  const [selectedChain, setSelectedChain] = useState<string>("ethereum");
+  const [selectedChainInfo, setSelectedChainInfo] = useState<EVMChain | null>(
+    null
+  );
+  const [includeWalletOwnership, setIncludeWalletOwnership] =
+    useState<boolean>(false);
+  const [walletAddress, setWalletAddress] = useState<string>("");
+  const [builtConditions, setBuiltConditions] = useState<
+    unknown[] | { error: string } | null
+  >(null);
+
+  const handleChainSelect = (chainKey: string, chainInfo: EVMChain) => {
+    setSelectedChain(chainKey);
+    setSelectedChainInfo(chainInfo);
+  };
+
+  // Example templates for the four comparison operators
+  const getExamples = (
+    chainKey: string,
+    chainSymbol: string,
+    includeWallet: boolean,
+    address: string,
+    chainInfo: EVMChain | null
+  ) => {
+    // Get decimals from chain info, prioritizing nativeCurrency.decimals, then decimals, then default to 18
+    const decimals =
+      chainInfo?.nativeCurrency?.decimals ?? chainInfo?.decimals ?? 18;
+
+    // Calculate amounts based on the chain's native currency decimals
+    const oneUnit = BigInt(10) ** BigInt(decimals);
+    const pointOneAmount = (oneUnit / BigInt(10)).toString(); // 0.1 units
+    const oneAmount = oneUnit.toString(); // 1 unit
+    const fiveAmount = (oneUnit * BigInt(5)).toString(); // 5 units
+    const tenAmount = (oneUnit * BigInt(10)).toString(); // 10 units
+
+    const walletOwnershipSection = includeWallet
+      ? `.requireWalletOwnership('${address}')
+  .on('${chainKey}')
+  .and()
+  `
+      : "";
+
+    const ethBalanceDescription = includeWallet
+      ? ` AND hold the specified ${chainSymbol} balance`
+      : "";
+
+    const combinedDescription = includeWallet
+      ? `Require wallet ownership${ethBalanceDescription}`
+      : `Require users to hold the specified ${chainSymbol} balance`;
+
+    const baseUnitName =
+      decimals === 18 ? "wei" : `smallest unit (10^-${decimals})`;
+
+    return {
+      "greater-equal": {
+        title: `>= (Greater Than or Equal)`,
+        description: `${combinedDescription} (at least 0.1 ${chainSymbol})`,
+        builderCode: `import { createAccBuilder } from '@lit-protocol/access-control-conditions';
+
+const accs = createAccBuilder()
+  ${walletOwnershipSection}.requireEthBalance('${pointOneAmount}', '>=') // 0.1 ${chainSymbol} in ${baseUnitName}
+  .on('${chainKey}')
+  .build();`,
+        amount: pointOneAmount,
+        comparator: ">=" as const,
+      },
+      "greater-than": {
+        title: `> (Greater Than)`,
+        description: `${combinedDescription} (more than 1 ${chainSymbol})`,
+        builderCode: `import { createAccBuilder } from '@lit-protocol/access-control-conditions';
+
+const accs = createAccBuilder()
+  ${walletOwnershipSection}.requireEthBalance('${oneAmount}', '>') // More than 1 ${chainSymbol} in ${baseUnitName}
+  .on('${chainKey}')
+  .build();`,
+        amount: oneAmount,
+        comparator: ">" as const,
+      },
+      "equal-to": {
+        title: `= (Equal To)`,
+        description: `${combinedDescription} (exactly 5 ${chainSymbol})`,
+        builderCode: `import { createAccBuilder } from '@lit-protocol/access-control-conditions';
+
+const accs = createAccBuilder()
+  ${walletOwnershipSection}.requireEthBalance('${fiveAmount}', '=') // Exactly 5 ${chainSymbol} in ${baseUnitName}
+  .on('${chainKey}')
+  .build();`,
+        amount: fiveAmount,
+        comparator: "=" as const,
+      },
+      "less-equal": {
+        title: `<= (Less Than or Equal)`,
+        description: `${combinedDescription} (at most 10 ${chainSymbol})`,
+        builderCode: `import { createAccBuilder } from '@lit-protocol/access-control-conditions';
+
+const accs = createAccBuilder()
+  ${walletOwnershipSection}.requireEthBalance('${tenAmount}', '<=') // Max 10 ${chainSymbol} in ${baseUnitName}
+  .on('${chainKey}')
+  .build();`,
+        amount: tenAmount,
+        comparator: "<=" as const,
+      },
+      "less-than": {
+        title: `< (Less Than)`,
+        description: `${combinedDescription} (less than 5 ${chainSymbol})`,
+        builderCode: `import { createAccBuilder } from '@lit-protocol/access-control-conditions';
+
+const accs = createAccBuilder()
+  ${walletOwnershipSection}.requireEthBalance('${fiveAmount}', '<') // Less than 5 ${chainSymbol} in ${baseUnitName}
+  .on('${chainKey}')
+  .build();`,
+        amount: fiveAmount,
+        comparator: "<" as const,
+      },
+    };
+  };
+
+  const examples = getExamples(
+    selectedChain,
+    selectedChainInfo?.symbol || "ETH",
+    includeWalletOwnership,
+    walletAddress,
+    selectedChainInfo
+  );
+
+  const buildConditions = () => {
+    try {
+      const example = examples[selectedExample as keyof typeof examples];
+      if (!example || !("amount" in example) || !("comparator" in example))
+        return;
+
+      let builder = createAccBuilder();
+
+      // Add wallet ownership requirement if enabled
+      if (includeWalletOwnership) {
+        builder = builder
+          .requireWalletOwnership(walletAddress)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .on(selectedChain as any)
+          .and();
+      }
+
+      // Add ETH balance requirement
+      builder = builder
+        .requireEthBalance(example.amount, example.comparator)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .on(selectedChain as any);
+
+      const conditions = builder.build();
+      setBuiltConditions(conditions);
+    } catch (error) {
+      console.error("Error building conditions:", error);
+      setBuiltConditions({ error: (error as Error).message });
+    }
+  };
+
+  return (
+    <div className="tab-content">
+      <h1 style={pageStyles.h1}>ETH Balance Access Control Conditions</h1>
+
+      <GreyBoarderWhiteBgContainer>
+        <h2 style={pageStyles.h2}>Introduction</h2>
+        <p style={pageStyles.p}>
+          The <code>requireEthBalance</code> control condition lets you control
+          access based on how much of a native token a user holds on any of the{" "}
+          <Link
+            to="/encryption/access-control/evm/supported-chains"
+            style={{ color: "#007bff", textDecoration: "underline" }}
+          >
+            supported EVM-based blockchains
+          </Link>
+          .
+        </p>
+        <p style={pageStyles.p}>
+          In the examples below, you'll see how to use the{" "}
+          <code>requireEthBalance()</code> method to create balance checks using
+          different chains, amounts,{" "}
+          <Link
+            to="/encryption/access-control/boolean-logic"
+            style={{ color: "#007bff", textDecoration: "underline" }}
+          >
+            Boolean Logic
+          </Link>
+          , and{" "}
+          <Link
+            to="/encryption/access-control/comparison-operators"
+            style={{ color: "#007bff", textDecoration: "underline" }}
+          >
+            Comparison Operators
+          </Link>
+          .
+        </p>
+      </GreyBoarderWhiteBgContainer>
+
+      <GreyBoarderWhiteBgContainer>
+        <h2 style={pageStyles.h2}>Balance Scenarios</h2>
+
+        <p style={pageStyles.p}>
+          Balance conditions can be configured in several ways depending on your
+          access control needs:
+        </p>
+
+        {(() => {
+          const scenarios = [
+            {
+              title: "Minimum Balance",
+              description:
+                "Require users to hold at least a specific amount of native tokens",
+              example: ".requireEthBalance('1000000000000000000', '>=')",
+            },
+            {
+              title: "Maximum Balance",
+              description:
+                "Limit access to users with smaller balances (useful for airdrops)",
+              example: ".requireEthBalance('5000000000000000000', '<=')",
+            },
+            {
+              title: "Exact Balance",
+              description: "Require users to have exactly the specified amount",
+              example: ".requireEthBalance('1000000000000000000', '=')",
+            },
+            {
+              title: "Exclusive Access",
+              description: "Exclude users with over the threshold amount",
+              example: ".requireEthBalance('1000000000000000000', '<')",
+            },
+            {
+              title: "Balance Range",
+              description: "Require balance to fall within a specific range",
+              example: `.requireEthBalance('1000000000000000000', '>=')
+.and()
+.requireEthBalance('10000000000000000000', '<=')`,
+            },
+            {
+              title: "Multiple Balance Tiers",
+              description: "Accept multiple balance thresholds with OR logic",
+              example: `.requireEthBalance('1000000000000000000', '>=')
+.or()
+.requireEthBalance('5000000000000000000', '>=')`,
+            },
+          ];
+
+          const cardStyle = {
+            padding: "15px",
+            backgroundColor: "#fff",
+            borderRadius: "8px",
+            border: "1px solid #007bff",
+            width: "100%",
+            maxWidth: "100%",
+            boxSizing: "border-box" as const,
+            overflow: "hidden",
+          };
+
+          const titleStyle = {
+            margin: "0 0 8px 0",
+            color: "#0c4a6e",
+          };
+
+          const descriptionStyle = {
+            margin: "0 0 8px 0",
+            fontSize: "0.9rem",
+            color: "#0c4a6e",
+          };
+
+          return (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, 1fr)",
+                gap: "15px",
+                marginBottom: "20px",
+                width: "100%",
+                maxWidth: "100%",
+                boxSizing: "border-box",
+              }}
+            >
+              {scenarios.map((scenario, index) => (
+                <div key={index} style={cardStyle}>
+                  <h4 style={titleStyle}>{scenario.title}</h4>
+                  <p style={descriptionStyle}>{scenario.description}</p>
+                  <DisplayCode
+                    code={scenario.example}
+                    language="typescript"
+                    theme="dracula"
+                    style={{
+                      marginTop: "8px",
+                      maxWidth: "100%",
+                      overflow: "auto",
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+
+        <NoteCallout
+          title="Native Currency Units and Decimals"
+          message={
+            <>
+              <p style={pageStyles.p}>
+                All amounts must be specified in the{" "}
+                <strong>
+                  smallest unit of the native currency of the blockchain
+                </strong>
+                . Different chains have different decimal places.
+              </p>
+              <p style={pageStyles.p}>
+                Convert currency amounts to smallest units before using them:
+                <DisplayCode
+                  style={{ marginTop: "10px" }}
+                  code={`import { parseEther, parseUnits } from 'viem';
+
+// For 18 decimal currencies (ETH, POL, etc.)
+const amount18 = parseEther("1.5").toString(); // 1.5 tokens
+
+// For other decimal currencies
+const amount6 = parseUnits("1.5", 6).toString(); // 1.5 tokens with 6 decimals`}
+                  language="typescript"
+                  theme="dracula"
+                />
+              </p>
+            </>
+          }
+          variant="note"
+          style={{ marginBottom: "16px" }}
+        />
+      </GreyBoarderWhiteBgContainer>
+
+      <GreyBoarderWhiteBgContainer>
+        <h2 style={pageStyles.h2}>Interactive Examples</h2>
+        <p style={pageStyles.p}>
+          Select a chain and comparison operator to explore ETH balance
+          conditions:
+        </p>
+
+        {/* Selected Example Display */}
+        {selectedExample &&
+          examples[selectedExample as keyof typeof examples] && (
+            <div>
+              <h3
+                style={{
+                  fontSize: "1.5rem",
+                  fontWeight: "600",
+                  color: "#374151",
+                  marginTop: "24px",
+                  marginBottom: "12px",
+                }}
+              >
+                {examples[selectedExample as keyof typeof examples]?.title ||
+                  ""}
+              </h3>
+              <p style={pageStyles.p}>
+                {examples[selectedExample as keyof typeof examples]
+                  ?.description || ""}
+              </p>
+
+              {/* Builder Code */}
+              <DisplayCode
+                code={
+                  examples[selectedExample as keyof typeof examples]
+                    ?.builderCode || ""
+                }
+                language="typescript"
+                renderComponent={
+                  <>
+                    {/* Wallet Ownership Toggle */}
+                    <div style={{ marginBottom: "20px" }}>
+                      <label
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          cursor: "pointer",
+                          fontWeight: "500",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={includeWalletOwnership}
+                          onChange={(e) =>
+                            setIncludeWalletOwnership(e.target.checked)
+                          }
+                          style={{
+                            marginRight: "8px",
+                            transform: "scale(1.2)",
+                          }}
+                        />
+                        Include Wallet Ownership Requirement
+                      </label>
+                      <p
+                        style={{
+                          fontSize: "0.9rem",
+                          color: "#6b7280",
+                          margin: "5px 0 0 25px",
+                        }}
+                      >
+                        When enabled, adds a wallet ownership check using .and()
+                        operator
+                      </p>
+                    </div>
+
+                    {/* ACC Builder Syntax Callout */}
+                    {includeWalletOwnership && (
+                      <NoteCallout
+                        title="Chaining Requires .on(chain)"
+                        message={
+                          <>
+                            <p style={pageStyles.p}>
+                              When enabling the wallet ownership requirement,
+                              you must include <code>.on(chain)</code> after the
+                              wallet ownership check to enable chaining with
+                              <code>.and()</code>, however, the chain specified
+                              by <code>.on(chain)</code> has no affect on the
+                              validation process and should always be set to{" "}
+                              <code>ethereum</code>.
+                            </p>
+                          </>
+                        }
+                        variant="note"
+                        style={{ marginBottom: "20px" }}
+                      />
+                    )}
+
+                    {/* Wallet Address Input */}
+                    {includeWalletOwnership && (
+                      <div style={{ marginBottom: "20px" }}>
+                        <label
+                          style={{
+                            display: "block",
+                            marginBottom: "8px",
+                            fontWeight: "500",
+                          }}
+                        >
+                          Wallet Address:
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Enter wallet address (0x...)"
+                          value={walletAddress}
+                          onChange={(e) => setWalletAddress(e.target.value)}
+                          style={{
+                            padding: "8px 12px",
+                            borderRadius: "4px",
+                            border: "1px solid #d1d5db",
+                            fontSize: "14px",
+                            width: "100%",
+                            fontFamily: "monospace",
+                          }}
+                        />
+                        <p
+                          style={{
+                            fontSize: "0.8rem",
+                            color: "#6b7280",
+                            margin: "5px 0 0 0",
+                          }}
+                        >
+                          Required when wallet ownership is enabled
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Comparison Operator Selector */}
+                    <div style={{ marginBottom: "20px" }}>
+                      <label
+                        style={{
+                          display: "block",
+                          marginBottom: "8px",
+                          fontWeight: "500",
+                        }}
+                      >
+                        Choose a comparison operator:
+                      </label>
+                      <select
+                        value={selectedExample}
+                        onChange={(e) => setSelectedExample(e.target.value)}
+                        style={{
+                          padding: "8px 12px",
+                          borderRadius: "4px",
+                          border: "1px solid #d1d5db",
+                          fontSize: "14px",
+                          width: "100%",
+                        }}
+                      >
+                        {Object.entries(examples).map(([key, example]) => (
+                          <option key={key} value={key}>
+                            {example?.title || ""}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Chain Selector */}
+                    <div style={{ marginBottom: "20px" }}>
+                      <label
+                        style={{
+                          display: "block",
+                          marginBottom: "8px",
+                          fontWeight: "500",
+                        }}
+                      >
+                        Select Chain:
+                      </label>
+                      <EVMChainsSelector
+                        variant="compact"
+                        showSearch={true}
+                        onChainSelect={handleChainSelect}
+                        selectedChain={selectedChain}
+                      />
+                      {selectedChainInfo && (
+                        <div
+                          style={{
+                            marginTop: "10px",
+                            padding: "10px",
+                            backgroundColor: "#f0f9ff",
+                            borderRadius: "6px",
+                            border: "1px solid #007bff",
+                            fontSize: "0.9rem",
+                          }}
+                        >
+                          <strong>{selectedChainInfo.name}</strong> •{" "}
+                          {selectedChainInfo.symbol} • Chain ID:{" "}
+                          {selectedChainInfo.chainId}
+                        </div>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={buildConditions}
+                      disabled={includeWalletOwnership && !walletAddress.trim()}
+                      style={{
+                        padding: "10px 15px",
+                        backgroundColor:
+                          includeWalletOwnership && !walletAddress.trim()
+                            ? "#6b7280"
+                            : "#007bff",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor:
+                          includeWalletOwnership && !walletAddress.trim()
+                            ? "not-allowed"
+                            : "pointer",
+                        fontWeight: "500",
+                        width: "100%",
+                      }}
+                    >
+                      Build Conditions
+                    </button>
+                  </>
+                }
+                resultData={builtConditions}
+                resultLabel="Built Access Control Conditions"
+                useSideBySide={true}
+                theme="dracula"
+                isSuccess={Boolean(
+                  builtConditions && !("error" in builtConditions)
+                )}
+              />
+            </div>
+          )}
+      </GreyBoarderWhiteBgContainer>
+    </div>
+  );
+};
+
+export default ETHBalance;

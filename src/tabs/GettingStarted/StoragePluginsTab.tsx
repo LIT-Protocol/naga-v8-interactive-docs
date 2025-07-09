@@ -35,7 +35,7 @@ const StoragePluginsTab: React.FC = () => {
 
 const storage = localStorage({
   appName: "my-app",
-  networkName: "naga-dev",
+  networkName: import.meta.env.VITE_LIT_NETWORK || "naga-dev",
 });`,
     },
     localStorageNode: {
@@ -46,7 +46,7 @@ const storage = localStorage({
 
 const storage = localStorageNode({
   appName: "my-node-app",
-  networkName: "naga-dev", 
+  networkName: import.meta.env.VITE_LIT_NETWORK || "naga-dev", 
   storagePath: "./lit-auth-storage"
 });`,
     },

@@ -8,12 +8,7 @@
 import React, { useState, useCallback, useRef } from "react";
 import { createLitClient } from "@lit-protocol/lit-client";
 import { createAuthManager, storagePlugins } from "@lit-protocol/auth";
-import { nagaDev, nagaLocal } from "@lit-protocol/networks";
-
-// Configuration constants at the top
-const DEFAULT_APP_NAME = "lit-auth-app";
-const DEFAULT_NETWORK_NAME = "naga-dev";
-const DEFAULT_NETWORK = nagaDev;
+import { DEFAULT_APP_NAME, DEFAULT_NETWORK, DEFAULT_NETWORK_NAME } from "../pages";
 
 interface LitServiceSetupConfig {
   appName?: string;
@@ -88,9 +83,8 @@ export const useLitServiceSetup = (
       console.log("🎉 All Lit Protocol services initialized successfully");
       return newServices;
     } catch (err: any) {
-      const errorMessage = `Failed to initialize Lit Protocol services: ${
-        err.message || err
-      }`;
+      const errorMessage = `Failed to initialize Lit Protocol services: ${err.message || err
+        }`;
       console.error("❌", errorMessage, err);
       setError(errorMessage);
       throw new Error(errorMessage);
