@@ -57,7 +57,7 @@ const LitNetworks: React.FC = () => {
 
         <ul style={pageStyles.ul}>
           <li style={pageStyles.li}>
-            <LinkExternal href="https://naga-dev-status.getlit.dev/">
+            <LinkExternal href={`https://${import.meta.env.VITE_LIT_NETWORK || "naga-dev"}-status.getlit.dev/`}>
               Network Status Page
             </LinkExternal>
           </li>

@@ -143,7 +143,7 @@ const litClient = await createLitClient({
 const authManager = createAuthManager({
   storage: storagePlugins.localStorage({
     appName: "my-app",
-    networkName: "naga-dev",
+    networkName: import.meta.env.VITE_LIT_NETWORK || "naga-dev",
   }),
 });
 
@@ -197,7 +197,7 @@ const litClient = await createLitClient({
 const authManager = createAuthManager({
   storage: storagePlugins.localStorage({
     appName: "my-app", 
-    networkName: "naga-dev",
+    networkName: import.meta.env.VITE_LIT_NETWORK || "naga-dev",
   }),
 });
 
@@ -255,7 +255,7 @@ const litClient = await createLitClient({
 const authManager = createAuthManager({
   storage: storagePlugins.localStorage({
     appName: "my-app",
-    networkName: "naga-dev", 
+    networkName: import.meta.env.VITE_LIT_NETWORK || "naga-dev", 
   }),
 });
 

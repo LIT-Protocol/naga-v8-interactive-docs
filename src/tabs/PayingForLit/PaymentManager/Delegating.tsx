@@ -223,7 +223,7 @@ console.log(\`Accounts that can pay for \${userAddress}:\`, payers);`;
                 If you're using <code>Naga-dev</code>, the deployed contract
                 ABIs are available{" "}
                 <a
-                  href="https://github.com/LIT-Protocol/networks/tree/main/naga-dev/abis"
+                  href={`https://github.com/LIT-Protocol/networks/tree/main/${import.meta.env.VITE_LIT_NETWORK || "naga-dev"}/abis`}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{
@@ -235,7 +235,7 @@ console.log(\`Accounts that can pay for \${userAddress}:\`, payers);`;
                 </a>
                 , and the deployed contract addresses are available{" "}
                 <a
-                  href="https://github.com/LIT-Protocol/networks/blob/main/naga-dev/deployed-lit-node-contracts-temp.json"
+                  href={`https://github.com/LIT-Protocol/networks/blob/main/${import.meta.env.VITE_LIT_NETWORK || "naga-dev"}/deployed-lit-node-contracts-temp.json`}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{

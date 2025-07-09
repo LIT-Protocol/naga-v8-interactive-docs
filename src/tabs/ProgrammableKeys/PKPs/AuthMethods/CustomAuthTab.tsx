@@ -10,7 +10,7 @@ import { Link } from "react-router-dom";
 const AUTH_NAME = "Custom Authentication (dApp-Centric)";
 
 // Configuration constants
-const DEFAULT_AUTH_SERVICE_BASE_URL = "https://naga-auth-service.onrender.com";
+const DEFAULT_AUTH_SERVICE_BASE_URL = import.meta.env.VITE_AUTH_SERVICE_BASE_URL || "https://naga-auth-service.onrender.com";
 const DEFAULT_DEMO_USERNAME = "alice";
 const DEFAULT_DEMO_PASSWORD = "lit";
 
@@ -152,7 +152,7 @@ const authData = litUtils.generateAuthData({
 const authManager = createAuthManager({
   storage: storagePlugins.localStorage({
     appName: 'my-app', // namespace for isolating auth data
-    networkName: 'naga-dev', // useful for distinguishing environments
+    networkName: import.meta.env.VITE_LIT_NETWORK || 'naga-dev', // useful for distinguishing environments
   }),
 });
 

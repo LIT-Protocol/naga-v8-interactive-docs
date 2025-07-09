@@ -34,7 +34,7 @@ import { DEFAULT_APP_NAME, DEFAULT_NETWORK_NAME } from "../pages";
 const DEFAULT_PRIVATE_KEY =
   "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
 const FAUCET_URL = "https://chronicle-yellowstone-faucet.getlit.dev/";
-const DEFAULT_AUTH_SERVICE_BASE_URL = "https://naga-auth-service.onrender.com";
+const DEFAULT_AUTH_SERVICE_BASE_URL = import.meta.env.VITE_AUTH_SERVICE_BASE_URL || "https://naga-auth-service.onrender.com";
 
 type AuthMethod =
   | "google"

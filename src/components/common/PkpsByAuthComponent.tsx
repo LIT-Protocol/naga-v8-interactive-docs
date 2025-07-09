@@ -166,7 +166,7 @@ export default function PkpsByAuthComponent({
 // Create storage provider for caching
 const storageProvider = storagePlugins.localStorage({
   appName: 'my-app',
-  networkName: 'naga-dev',
+  networkName: import.meta.env.VITE_LIT_NETWORK || 'naga-dev',
 });
 
 // Get PKPs with pagination and caching

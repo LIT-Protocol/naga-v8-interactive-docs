@@ -16,7 +16,7 @@ interface AuthUser {
 
 type StytchEmailStep = "send-otp" | "verify-otp";
 
-const DEFAULT_AUTH_SERVICE_BASE_URL = "https://naga-auth-service.onrender.com";
+const DEFAULT_AUTH_SERVICE_BASE_URL = import.meta.env.VITE_AUTH_SERVICE_BASE_URL || "https://naga-auth-service.onrender.com";
 
 const AuthenticateStytchEmail: React.FC<AuthenticateStytchEmailProps> = ({
   onBack,

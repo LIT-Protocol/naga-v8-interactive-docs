@@ -14,7 +14,7 @@ const REGISTER_CODE = `
 import { WebAuthnAuthenticator } from "@lit-protocol/auth";
 
 const { pkpInfo, webAuthnPublicKey } = await WebAuthnAuthenticator.registerAndMintPKP({
-  authServiceBaseUrl: "https://naga-auth-service.onrender.com",
+  authServiceBaseUrl: import.meta.env.VITE_AUTH_SERVICE_BASE_URL || "https://naga-auth-service.onrender.com",
 });
 `;
 
@@ -22,7 +22,7 @@ const AUTHENTICATE_CODE = `
 import { WebAuthnAuthenticator } from "@lit-protocol/auth";
 
 const authData = await WebAuthnAuthenticator.authenticate({
-  authServiceBaseUrl: "https://naga-auth-service.onrender.com",
+  authServiceBaseUrl: import.meta.env.VITE_AUTH_SERVICE_BASE_URL || "https://naga-auth-service.onrender.com",
 });
 `;
 
@@ -133,7 +133,7 @@ export default function WebAuthnTab() {
 
       const { pkpInfo, webAuthnPublicKey } =
         await WebAuthnAuthenticator.registerAndMintPKP({
-          authServiceBaseUrl: "https://naga-auth-service.onrender.com",
+          authServiceBaseUrl: import.meta.env.VITE_AUTH_SERVICE_BASE_URL || "https://naga-auth-service.onrender.com",
           username: username || `testuser-${Date.now()}`,
         });
       setPkpInfo(pkpInfo);

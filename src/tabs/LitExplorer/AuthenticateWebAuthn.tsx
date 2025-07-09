@@ -38,7 +38,7 @@ const AuthenticateWebAuthn: React.FC<AuthenticateWebAuthnProps> = ({
         const usernameToUse = username.trim() || `user-${Date.now()}`;
 
         const { pkpInfo } = await WebAuthnAuthenticator.registerAndMintPKP({
-          authServiceBaseUrl: "https://naga-auth-service.onrender.com",
+          authServiceBaseUrl: import.meta.env.VITE_AUTH_SERVICE_BASE_URL || "https://naga-auth-service.onrender.com",
           username: usernameToUse,
         });
 

@@ -9,7 +9,7 @@ import ExecuteJsComponent from "../../../../../components/common/ExecuteJsCompon
 const AUTH_NAME = "Stytch WhatsApp OTP Authentication";
 
 // Configuration constants
-const DEFAULT_AUTH_SERVICE_BASE_URL = "https://naga-auth-service.onrender.com";
+const DEFAULT_AUTH_SERVICE_BASE_URL = import.meta.env.VITE_AUTH_SERVICE_BASE_URL || "https://naga-auth-service.onrender.com";
 
 // Code snippets for each functionality
 const SEND_OTP_CODE = `
@@ -17,7 +17,7 @@ import { StytchWhatsAppOtpAuthenticator } from "@lit-protocol/auth";
 
 const { methodId } = await StytchWhatsAppOtpAuthenticator.sendOtp({
   phoneNumber: "+1234567890",
-  authServiceBaseUrl: "https://naga-auth-service.onrender.com"
+  authServiceBaseUrl: import.meta.env.VITE_AUTH_SERVICE_BASE_URL || "https://naga-auth-service.onrender.com"
 });`;
 
 const VERIFY_OTP_CODE = `
@@ -26,7 +26,7 @@ import { StytchWhatsAppOtpAuthenticator } from "@lit-protocol/auth";
 const authData = await StytchWhatsAppOtpAuthenticator.authenticate({
   methodId: methodId, // from sendOtp step
   code: "123456", // user-entered OTP code
-  authServiceBaseUrl: "https://naga-auth-service.onrender.com"
+  authServiceBaseUrl: import.meta.env.VITE_AUTH_SERVICE_BASE_URL || "https://naga-auth-service.onrender.com"
 });`;
 
 const MINT_PKP_CODE = `
@@ -40,7 +40,7 @@ import { StytchTotp2FAAuthenticator } from "@lit-protocol/auth";
 // Step 1: Create TOTP registration
 const registrationData = await StytchTotp2FAAuthenticator.initiateTotpRegistration({
   userId:authData?.metadata?.userId // from your WhatsApp auth
-  authServiceBaseUrl: "https://naga-auth-service.onrender.com"
+  authServiceBaseUrl: import.meta.env.VITE_AUTH_SERVICE_BASE_URL || "https://naga-auth-service.onrender.com"
 });
 
 // Step 2: Verify TOTP setup with code from authenticator app
@@ -48,7 +48,7 @@ const verifyResult = await StytchTotp2FAAuthenticator.verifyTotpRegistration({
   userId:authData?.metadata?.userId
   totpRegistrationId: registrationData.totpRegistrationId,
   totpCode: "123456", // from authenticator app
-  authServiceBaseUrl: "https://naga-auth-service.onrender.com"
+  authServiceBaseUrl: import.meta.env.VITE_AUTH_SERVICE_BASE_URL || "https://naga-auth-service.onrender.com"
 });`;
 
 const CREATE_AUTH_CONTEXT_CODE = `

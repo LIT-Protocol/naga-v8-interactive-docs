@@ -28,7 +28,7 @@ import {
 
   const envConfigCode = `# ---------- LIT AUTH SERVICE ----------
 # Network configuration (supports naga-dev, naga-test, naga)
-NETWORK=naga-dev
+NETWORK=naga-test
 LOG_LEVEL=debug
 
 # Lit transaction sender settings
@@ -61,7 +61,7 @@ import { createLitAuthServer } from "@lit-protocol/auth-services";
 
 const litAuthServer = createLitAuthServer({
   port: process.env.PORT || 6380,
-  network: process.env.NETWORK || "naga-dev",
+  network: process.env.NETWORK || "naga-test",
   litTxsenderRpcUrl: process.env.LIT_TXSENDER_RPC_URL,
   litTxsenderPrivateKey: process.env.LIT_TXSENDER_PRIVATE_KEY,
   enableApiKeyGate: process.env.ENABLE_API_KEY_GATE === "true",
@@ -118,7 +118,7 @@ async function startAllServices() {
     // Start auth server
     const authServer = createLitAuthServer({
       port: process.env.PORT || 6380,
-      network: process.env.NETWORK || "naga-dev",
+      network: process.env.NETWORK || "naga-test",
       litTxsenderRpcUrl: process.env.LIT_TXSENDER_RPC_URL,
       litTxsenderPrivateKey: process.env.LIT_TXSENDER_PRIVATE_KEY,
       enableApiKeyGate: process.env.ENABLE_API_KEY_GATE === "true",
