@@ -1,92 +1,193 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { pageStyles } from "../styles/pageStyles";
 
-// const LEGACY_DOMAIN = "https://legacy-developer.litprotocol.com";
-const LEGACY_DOMAIN = "https://developer.litprotocol.com";
+const LEGACY_DOMAIN = import.meta.env.VITE_LEGACY_DOCS_DOMAIN;
 
-// Routes that should show 404 instead of redirecting to legacy
-const ROUTES_TO_404 = new Set([
-  "/favicon.ico",
-  "/robots.txt",
-  "/sitemap.xml",
-  "/api/*",
-  "/_next/*",
-  "/static/*",
-  "/assets/*",
-]);
-
-// Check if a route should show 404 instead of redirecting
-const shouldShow404 = (pathname: string): boolean => {
-  return Array.from(ROUTES_TO_404).some((route) => {
-    if (route.endsWith("*")) {
-      return pathname.startsWith(route.slice(0, -1));
-    }
-    return pathname === route;
-  });
-};
+interface CheckState {
+  isChecking: boolean;
+  routeExists: boolean;
+}
 
 export const NotFoundHandler = () => {
   const location = useLocation();
+  const [state, setState] = useState<CheckState>({
+    isChecking: true,
+    routeExists: false,
+  });
 
   useEffect(() => {
-    const currentPath = location.pathname;
+    let cancelled = false;
+    const controller = new AbortController();
 
-    // Don't redirect certain paths - show 404 instead
-    if (shouldShow404(currentPath)) {
-      return;
-    }
+    const checkLegacyRoute = async () => {
+      try {
+        // Create a timeout signal
+        const timeoutSignal = AbortSignal.timeout(5000);
 
-    // For all other paths, redirect to legacy domain
-    const legacyUrl = `${LEGACY_DOMAIN}${currentPath}${location.search}${location.hash}`;
-    window.location.href = legacyUrl;
+        const response = await fetch(`${LEGACY_DOMAIN}${location.pathname}`, {
+          method: "HEAD",
+          mode: "cors",
+          signal: timeoutSignal,
+        });
+
+        if (!cancelled) {
+          if (response.ok) {
+            // Redirect to legacy docs
+            window.location.href = `${LEGACY_DOMAIN}${location.pathname}${location.search}${location.hash}`;
+          } else {
+            setState({ isChecking: false, routeExists: false });
+          }
+        }
+      } catch (error) {
+        if (!cancelled) {
+          // Network error or timeout - show 404
+          console.warn("Failed to check legacy route:", error);
+          setState({ isChecking: false, routeExists: false });
+        }
+      }
+    };
+
+    checkLegacyRoute();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, [location]);
 
-  // This component renders a 404 page for paths that shouldn't redirect
-  if (shouldShow404(location.pathname)) {
+  // Show loading while checking legacy route
+  if (state.isChecking) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full text-center">
-          <div className="mb-8">
-            <h1 className="text-6xl font-bold text-gray-900 mb-4">404</h1>
-            <h2 className="text-2xl font-semibold text-gray-700 mb-4">
-              Page Not Found
-            </h2>
-            <p className="text-gray-600 mb-8">
-              The page you're looking for doesn't exist in the new
-              documentation.
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            <a
-              href="/"
-              className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Go to Homepage
-            </a>
-            <div className="text-sm text-gray-500">
-              Looking for older documentation?{" "}
-              <a
-                href={LEGACY_DOMAIN}
-                className="text-blue-600 hover:text-blue-800 underline"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Visit Legacy Docs
-              </a>
-            </div>
-          </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Checking documentation...</p>
         </div>
       </div>
     );
   }
 
-  // Show loading state while redirecting
+  // Show 404 page using pageStyles
+  const errorPageStyles = {
+    page: {
+      minHeight: "100vh",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "#f9f9f9",
+    },
+    content: {
+      ...pageStyles.container,
+      textAlign: "center" as const,
+      maxWidth: "600px",
+    },
+    card: {
+      backgroundColor: "#ffffff",
+      borderRadius: "16px",
+      padding: "40px",
+      marginBottom: "32px",
+      border: "1px solid #e5e7eb",
+      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+    },
+    errorNumber: {
+      ...pageStyles.h1,
+      fontSize: "4rem",
+      fontWeight: "800",
+      margin: "0 0 16px",
+      lineHeight: "1",
+    },
+    errorTitle: {
+      ...pageStyles.h2,
+      border: "none",
+      paddingBottom: "0",
+      margin: "0 0 16px",
+    },
+    errorText: {
+      ...pageStyles.p,
+      margin: "0",
+    },
+    actions: {
+      display: "flex",
+      flexDirection: "column" as const,
+      gap: "16px",
+      alignItems: "center",
+    },
+    homeButton: {
+      ...pageStyles.button(),
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      textDecoration: "none",
+      minWidth: "160px",
+      transition: "all 0.2s",
+    },
+    linkContainer: {
+      display: "flex",
+      gap: "24px",
+      flexWrap: "wrap" as const,
+      justifyContent: "center",
+    },
+    secondaryLink: {
+      ...pageStyles.link,
+      fontSize: "0.9rem",
+      fontWeight: "500",
+      transition: "color 0.2s",
+    },
+    helpBox: {
+      marginTop: "24px",
+      padding: "20px",
+      backgroundColor: "#fffbeb",
+      border: "1px solid #fbbf24",
+      borderRadius: "8px",
+      textAlign: "left" as const,
+    },
+    helpTitle: {
+      ...pageStyles.h4,
+      color: "#92400e",
+      margin: "0 0 12px",
+      fontSize: "1rem",
+    },
+    helpList: {
+      ...pageStyles.ul,
+      color: "#92400e",
+      margin: "0",
+      fontSize: "0.9rem",
+    },
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <p className="text-gray-600">Redirecting to legacy documentation...</p>
+    <div style={errorPageStyles.page}>
+      <div style={errorPageStyles.content}>
+        {/* Main Error Card */}
+        <div style={errorPageStyles.card}>
+          <h1 style={errorPageStyles.errorNumber}>404</h1>
+          <h2 style={errorPageStyles.errorTitle}>Page Not Found</h2>
+          <p style={errorPageStyles.errorText}>
+            This page doesn't exist. It may have been moved, deleted, or you
+            entered the wrong URL.
+          </p>
+        </div>
+
+        {/* Actions */}
+        <div style={errorPageStyles.actions}>
+          <div style={errorPageStyles.linkContainer}>
+            <a
+              href={LEGACY_DOMAIN}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={errorPageStyles.secondaryLink}
+            >
+              📚 Browse Legacy Docs
+            </a>
+            <a
+              href="https://t.me/+aa73FAF9Vp82ZjJh"
+              style={errorPageStyles.secondaryLink}
+            >
+              💬 Contact Support
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   );
