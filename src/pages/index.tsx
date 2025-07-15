@@ -1,13 +1,13 @@
 import { createAuthManager, storagePlugins } from "@lit-protocol/auth";
 import { createLitClient } from "@lit-protocol/lit-client";
-import { nagaDev } from "@lit-protocol/networks";
+import { nagaTest } from "@lit-protocol/networks";
 import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { MainLayout } from "../layouts/MainLayout";
 
 export const DEFAULT_APP_NAME = "lit-auth-app";
-export const DEFAULT_NETWORK_NAME = "naga-dev";
-export const DEFAULT_NETWORK = nagaDev;
+export const DEFAULT_NETWORK_NAME = "naga-test";
+export const DEFAULT_NETWORK = nagaTest;
 
 // --- Singleton instances ---
 type LitClient = Awaited<ReturnType<typeof createLitClient>>;
