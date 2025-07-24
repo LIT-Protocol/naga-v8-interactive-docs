@@ -7,7 +7,7 @@
 
 import React from "react";
 import GreyBoarderWhiteBgContainer from "../../components/layout/GreyboardWhiteBgContainer";
-import { NoteCallout } from "../../components/common";
+import { LinkExternal, NoteCallout } from "../../components/common";
 
 interface ProcessStepProps {
   title: string;
@@ -398,7 +398,7 @@ const LitActionsOverview: React.FC = () => {
       </GreyBoarderWhiteBgContainer>
 
       <GreyBoarderWhiteBgContainer style={{ marginTop: "32px" }}>
-        <h2 style={pageStyles.h2}>Live Implementations</h2>
+        <h2 style={pageStyles.h2}>Example Implementations</h2>
         <div
           style={{
             display: "grid",
@@ -411,32 +411,62 @@ const LitActionsOverview: React.FC = () => {
             {
               title: "MPC Autopilot by Polaris (Osmosis)",
               description:
-                "[Polaris](https://polaris.app/) lets you trade any token on any chain in a single application. Swap across Cosmos, Solana, Ethereum, Bitcoin, and beyond without breaking a sweat.",
-              icon: "💵",
+                "{" "}"
+                <LinkExternal href="https://polaris.app/">
+                  Polaris
+                </LinkExternal>
+                "lets you trade any token on any chain in a single application. Swap across Cosmos, Solana, Ethereum, Bitcoin, and beyond without breaking a sweat.",
+              icon: "🗺️",
             },
             {
               title: "Genius Bridge Protocol (GBP)",
               description:
-                "Built by the [Genius](https://www.tradegenius.com/) team, the Genius Bridge Protocol enables dApps to perform operations across both EVM and non-EVM chains while managing all of the steps required to fulfill the end user's intent.",
+                "Built by the{" "}"
+                <LinkExternal href="https://www.tradegenius.com/">
+                  Genius
+                </LinkExternal>
+                "team the Genius Bridge Protocol enables dApps to perform operations across both EVM and non-EVM chains while managing all of the steps required to fulfill the end user's intent.",
               icon: "🌉",
             },
             {
               title: "Crowd Liquidity by Eco",
               description:
-                "An implementation built by the [Eco](https://eco.com/) team, the Crowd Liquidity protocol enables stablecoin holders to passively contribute liquidity to the Eco network and earn yield in return. It functions as a shared and permissionless liquidity pool that services stablecoin transactions across the entire Eco network.",
+                "An implementation built by the{" "}"
+                <LinkExternal href="https://eco.com/">
+                  Eco
+                </LinkExternal>
+                "team, the Crowd Liquidity protocol enables stablecoin holders to passively contribute liquidity to the Eco network and earn yield in return. It functions as a shared and permissionless liquidity pool that services stablecoin transactions across the entire Eco network.",
               icon: "🌊",
             },
             {
               title: "Multi-Chain Vaults by Emblem Vault",
               description:
-                "[Emblem Vault](https://emblem.vision/) was designed to address the challenges of interoperability and flexibility in Web3. Functioning as a transferable multi-asset wallet, Emblem Vault enables users to manage a variety of digital assets (including crypto tokens and NFTs) across a broad spectrum of blockchains from a single interface.",
+                "{" "}"
+                <LinkExternal href="https://emblem.vision/">
+                  Emblem Vault
+                </LinkExternal>
+                " was designed to address the challenges of interoperability and flexibility in Web3. Functioning as a transferable multi-asset wallet, Emblem Vault enables users to manage a variety of digital assets (including crypto tokens and NFTs) across a broad spectrum of blockchains from a single interface.",
               icon: "🪙",
             },
             {
               title: "Bitcoin Strategy Vaults by Vault Layer",
               description:
-                "[Vault Layer](https://vaultlayer.xyz/) has leveraged Lit to build cross-chain smart vaults that enable users to seamlessly control BTC and EVM assets from a single programmable account.",
+                "{" "}"
+                <LinkExternal href="https://vaultlayer.xyz/">
+                  Vault Layer
+                </LinkExternal>
+                " has leveraged Lit to build cross-chain smart vaults that enable users to seamlessly control BTC and EVM assets from a single programmable account.",
               icon: "🔐",
+            },
+            {
+              title: "BestPath by Tria",
+              description:
+                "{" "}"
+                <LinkExternal href="https://www.tria.so/">
+                  Tria
+                </LinkExternal>
+                " has built BestPath, an AI-driven intent resolution and marketplace that pre-computes the most optimal path for a user's intent. BestPath can interface with liquidity, dApps, and protocols across all VM types and blockchain ecosystems.",
+              icon: "🎯",
             },
           ].map((useCase, index) => (
             <div
