@@ -411,7 +411,7 @@ const LitActionsOverview: React.FC = () => {
             {
               title: "MPC Autopilot by Polaris (Osmosis)",
               description:
-                "{" "}"
+                {" "}
                 <LinkExternal href="https://polaris.app/">
                   Polaris
                 </LinkExternal>
@@ -441,7 +441,7 @@ const LitActionsOverview: React.FC = () => {
             {
               title: "Multi-Chain Vaults by Emblem Vault",
               description:
-                "{" "}"
+                {" "}
                 <LinkExternal href="https://emblem.vision/">
                   Emblem Vault
                 </LinkExternal>
@@ -451,7 +451,7 @@ const LitActionsOverview: React.FC = () => {
             {
               title: "Bitcoin Strategy Vaults by Vault Layer",
               description:
-                "{" "}"
+                {" "}
                 <LinkExternal href="https://vaultlayer.xyz/">
                   Vault Layer
                 </LinkExternal>
@@ -461,7 +461,7 @@ const LitActionsOverview: React.FC = () => {
             {
               title: "BestPath by Tria",
               description:
-                "{" "}"
+                {" "}
                 <LinkExternal href="https://www.tria.so/">
                   Tria
                 </LinkExternal>
