@@ -396,6 +396,85 @@ const LitActionsOverview: React.FC = () => {
           ))}
         </div>
       </GreyBoarderWhiteBgContainer>
+
+      <GreyBoarderWhiteBgContainer style={{ marginTop: "32px" }}>
+        <h2 style={pageStyles.h2}>Live Implementations</h2>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gap: "20px",
+            marginTop: "24px",
+          }}
+        >
+          {[
+            {
+              title: "MPC Autopilot by Polaris (Osmosis)",
+              description:
+                "[Polaris](https://polaris.app/) lets you trade any token on any chain in a single application. Swap across Cosmos, Solana, Ethereum, Bitcoin, and beyond without breaking a sweat.",
+              icon: "💵",
+            },
+            {
+              title: "Genius Bridge Protocol (GBP)",
+              description:
+                "Built by the [Genius](https://www.tradegenius.com/) team, the Genius Bridge Protocol enables dApps to perform operations across both EVM and non-EVM chains while managing all of the steps required to fulfill the end user's intent.",
+              icon: "🌉",
+            },
+            {
+              title: "Crowd Liquidity by Eco",
+              description:
+                "An implementation built by the [Eco](https://eco.com/) team, the Crowd Liquidity protocol enables stablecoin holders to passively contribute liquidity to the Eco network and earn yield in return. It functions as a shared and permissionless liquidity pool that services stablecoin transactions across the entire Eco network.",
+              icon: "🌊",
+            },
+            {
+              title: "Multi-Chain Vaults by Emblem Vault",
+              description:
+                "[Emblem Vault](https://emblem.vision/) was designed to address the challenges of interoperability and flexibility in Web3. Functioning as a transferable multi-asset wallet, Emblem Vault enables users to manage a variety of digital assets (including crypto tokens and NFTs) across a broad spectrum of blockchains from a single interface.",
+              icon: "🪙",
+            },
+            {
+              title: "Bitcoin Strategy Vaults by Vault Layer",
+              description:
+                "[Vault Layer](https://vaultlayer.xyz/) has leveraged Lit to build cross-chain smart vaults that enable users to seamlessly control BTC and EVM assets from a single programmable account.",
+              icon: "🔐",
+            },
+          ].map((useCase, index) => (
+            <div
+              key={index}
+              style={{
+                padding: "20px",
+                backgroundColor: "#f8fafc",
+                borderRadius: "8px",
+                border: "1px solid #e2e8f0",
+              }}
+            >
+              <div style={{ fontSize: "2rem", marginBottom: "12px" }}>
+                {useCase.icon}
+              </div>
+              <h3
+                style={{
+                  margin: "0 0 8px 0",
+                  fontSize: "1.2rem",
+                  fontWeight: "600",
+                  color: "#1f2937",
+                }}
+              >
+                {useCase.title}
+              </h3>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "0.9rem",
+                  color: "#6b7280",
+                  lineHeight: "1.5",
+                }}
+              >
+                {useCase.description}
+              </p>
+            </div>
+          ))}
+        </div>
+      </GreyBoarderWhiteBgContainer>
     </div>
   );
 };
