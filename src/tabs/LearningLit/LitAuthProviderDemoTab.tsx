@@ -63,7 +63,7 @@ function App() {
   return (
     <LitAuthProvider
       appName="my-awesome-app"
-      networkName="naga-dev"
+      networkName={import.meta.env.VITE_LIT_NETWORK || "naga-dev"}
       autoSetup={false} // Services setup only when user initiates auth
     >
       <MyApp />
@@ -163,7 +163,7 @@ const authMethods = [
           <div style={{ minHeight: "600px" }}>
             <LitAuthProvider
               appName="lit-auth-modal-demo"
-              networkName="naga-dev"
+              networkName={import.meta.env.VITE_LIT_NETWORK || "naga-dev"}
               autoSetup={false}
               storageKey="lit-auth-modal-demo"
             >

@@ -32,7 +32,7 @@ const createLitService = async () => {
     const authManager = createAuthManager({
       storage: localStorage({
         appName: "my-app",
-        networkName: "naga-dev",
+        networkName: import.meta.env.VITE_LIT_NETWORK || "naga-dev",
       }),
     });
 
@@ -68,7 +68,7 @@ const createLitService = async () => {
     const authManager = createAuthManager({
       storage: localStorageNode({
         appName: "my-node-app", 
-        networkName: "naga-dev",
+        networkName: import.meta.env.VITE_LIT_NETWORK || "naga-dev",
         storagePath: "./lit-auth-storage"
       }),
     });
@@ -117,7 +117,7 @@ const createLitService = async () => {
     const authManager = createAuthManager({
       storage: storagePlugins.localStorageNode({
         appName: 'my-app',
-        networkName: 'naga-dev',
+        networkName: import.meta.env.VITE_LIT_NETWORK || 'naga-dev',
         storagePath: './lit-auth-storage',
       }),
     });
@@ -135,7 +135,7 @@ const createLitService = async () => {
       },
       storageProvider: storagePlugins.localStorageNode({
         appName: 'my-app',
-        networkName: 'naga-dev',
+        networkName: import.meta.env.VITE_LIT_NETWORK || 'naga-dev',
         storagePath: './pkp-tokens',
       }),
     });

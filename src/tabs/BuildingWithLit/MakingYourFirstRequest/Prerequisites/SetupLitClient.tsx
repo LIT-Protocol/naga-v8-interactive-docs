@@ -23,7 +23,9 @@ const SetupLitClient: React.FC = () => {
   const [clientStatus, setClientStatus] = useState<string>("Not initialized");
   const [isCreating, setIsCreating] = useState<boolean>(false);
   const [clientResult, setClientResult] = useState<unknown>(null);
-  const [selectedNetwork, setSelectedNetwork] = useState<string>("nagaDev");
+  const [selectedNetwork, setSelectedNetwork] = useState<string>(
+    (import.meta.env.VITE_LIT_NETWORK || "naga-dev") === "naga-test" ? "nagaTest" : "nagaDev"
+  );
   const [configResult, setConfigResult] = useState<unknown>(null);
   const [showSingletonPattern, setShowSingletonPattern] =
     useState<boolean>(false);

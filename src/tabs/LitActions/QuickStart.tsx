@@ -35,7 +35,7 @@ import { createAuthManager, storagePlugins } from "@lit-protocol/auth";
 const authManager = createAuthManager({
   storage: storagePlugins.localStorageNode({
     appName: "my-app",
-    networkName: "naga-dev",
+    networkName: import.meta.env.VITE_LIT_NETWORK || "naga-dev",
     storagePath: "./lit-auth-storage",
   }),
 });`;
@@ -254,7 +254,7 @@ export default function LitActionsQuickStart() {
       const manager = createAuthManager({
         storage: storagePlugins.localStorageNode({
           appName: "my-app",
-          networkName: "naga-dev",
+          networkName: import.meta.env.VITE_LIT_NETWORK || "naga-dev",
           storagePath: "./lit-auth-storage",
         }),
       });
@@ -586,7 +586,7 @@ export default function LitActionsQuickStart() {
             </button>
           }
           resultData={
-            litClient ? { network: "naga-dev", status: "connected" } : null
+            litClient ? { network: import.meta.env.VITE_LIT_NETWORK || "naga-dev", status: "connected" } : null
           }
           resultLabel="Lit Client"
           useSideBySide={true}

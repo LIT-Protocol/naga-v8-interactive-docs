@@ -16,7 +16,7 @@ interface AuthUser {
 
 type TotpMode = "setup" | "authenticate";
 
-const DEFAULT_AUTH_SERVICE_BASE_URL = "https://naga-auth-service.onrender.com";
+const DEFAULT_AUTH_SERVICE_BASE_URL = import.meta.env.VITE_AUTH_SERVICE_BASE_URL || "https://naga-auth-service.onrender.com";
 
 const AuthenticateStytchTotp: React.FC<AuthenticateStytchTotpProps> = ({
   onBack,

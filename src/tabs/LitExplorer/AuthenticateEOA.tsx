@@ -34,7 +34,7 @@ const AuthenticateEOA: React.FC<AuthenticateEOAProps> = ({
     isReady: isServicesReady,
   } = useLitServiceSetup({
     appName: "lit-explorer",
-    networkName: "naga-dev",
+    networkName: import.meta.env.VITE_LIT_NETWORK || "naga-dev",
     autoSetup: false, // Don't auto-setup to avoid conflicts with Explorer
   });
 

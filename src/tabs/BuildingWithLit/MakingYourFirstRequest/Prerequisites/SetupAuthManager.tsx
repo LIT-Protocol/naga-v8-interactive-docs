@@ -56,13 +56,13 @@ const SetupAuthManager: React.FC = () => {
 const authManager = createAuthManager({
   storage: storagePlugins.localStorage({
     appName: "my-app",
-    networkName: "naga-dev",
+    networkName: import.meta.env.VITE_LIT_NETWORK || "naga-dev",
   }),
 });`,
       createStorage: () =>
         storagePlugins.localStorage({
           appName: "my-app",
-          networkName: "naga-dev",
+          networkName: import.meta.env.VITE_LIT_NETWORK || "naga-dev",
         }),
     },
     localStorageNode: {
@@ -82,7 +82,7 @@ const authManager = createAuthManager({
 const authManager = createAuthManager({
   storage: storagePlugins.localStorageNode({
     appName: "my-node-app",
-    networkName: "naga-dev",
+    networkName: import.meta.env.VITE_LIT_NETWORK || "naga-dev",
     storagePath: "./lit-auth-storage"
   }),
 });`,

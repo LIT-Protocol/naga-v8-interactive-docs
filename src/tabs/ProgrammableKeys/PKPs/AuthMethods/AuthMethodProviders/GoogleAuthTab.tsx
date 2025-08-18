@@ -241,7 +241,7 @@ export default function GoogleAuthTab() {
             )}
           </li>
           <li>
-            Lit Auth Server (eg. https://naga-dev-auth-service.getlit.dev):{" "}
+            Lit Auth Server (eg. https://${import.meta.env.VITE_LIT_NETWORK || "naga-dev"}-auth-service.getlit.dev):{" "}
             {true ? (
               <span style={{ color: "green" }}>✓ Initialised</span>
             ) : (
