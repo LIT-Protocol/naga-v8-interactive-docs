@@ -77,7 +77,7 @@ const WhatIsLitTab: React.FC = () => {
   return (
     <div style={pageStyles.container}>
       <h1 style={pageStyles.h1}>What is Lit Protocol</h1>
-
+      
       <GreyBoarderWhiteBgContainer>
         <h2 style={pageStyles.h2}>Introduction</h2>
         <p style={pageStyles.p}>
@@ -113,7 +113,8 @@ const WhatIsLitTab: React.FC = () => {
           </Link>{" "}
           executed via Lit's MPC TSS network and protected by sealed TEEs
         </p>
-
+      </GreyBoarderWhiteBgContainer>
+      
       <GreyBoarderWhiteBgContainer>
         <h2 style={pageStyles.h2}>The Problem</h2>
         <p style={pageStyles.p}>
