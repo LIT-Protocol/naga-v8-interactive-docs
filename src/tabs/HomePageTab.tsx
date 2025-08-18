@@ -91,22 +91,22 @@ const HomePageTab: React.FC = () => {
   const learningSteps = [
     {
       step: "1",
-      title: "Understand Lit Protocol",
+      title: "START HERE: Understand Lit Protocol",
       description:
-        "Learn what Lit Protocol is, and explore the key features and capabilities",
+        "Learn what Lit Protocol is and explore key features and capabilities",
       path: "/learning-lit/what-is-lit",
     },
     {
       step: "2",
       title: "Learn How Lit Works",
       description:
-        "Dive deep into the technical architecture and mechanisms behind Lit Protocol",
+        "A deep dive into Lit Protocol's technical architecture",
       path: "/learning-lit/how-it-works",
     },
     {
       step: "3",
       title: "Understand the Security Model",
-      description: "Learn about the security model of Lit Protocol",
+      description: "Learn about how Lit keeps keys and data secure",
       path: "/learning-lit/security",
     },
     {
@@ -175,7 +175,7 @@ const HomePageTab: React.FC = () => {
               marginBottom: "16px",
             }}
           >
-            🔥 Lit Protocol Interactive Documentation
+            🔥 Lit Protocol Developer Documentation
           </h1>
         </div>
 
@@ -190,11 +190,7 @@ const HomePageTab: React.FC = () => {
             👋 Welcome
           </h2>
           <p>
-            This documentation provides a comprehensive guide to Lit Protocol's
-            JavaScript/TypeScript SDK. Along with overviews of key Lit concepts,
-            the SDK's features, and interactive code examples, this
-            documentation provides a comprehensive guide to help you get started
-            using Lit Protocol.
+            The Lit Protocol developer docs provide a comprehensive guide to building with Lit. Within the docs you'll find an overview of core Lit concepts, example implementations, code snippets, getting started with the Lit SDK, and more.
           </p>
         </GreyBoarderWhiteBgContainer>
 

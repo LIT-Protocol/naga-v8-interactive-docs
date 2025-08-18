@@ -83,7 +83,7 @@ const WhatIsLitTab: React.FC = () => {
         <p style={pageStyles.p}>
           Lit Protocol is a decentralized key management and private compute network. Lit provides developers building in Web3 with three core services:
         </p>
-        <p style={{ margin: "0", color: "#1e3a8a", lineHeight: "1.5" }}>
+        <p style={{ margin: "0", color: "#4b5563", lineHeight: "1.5" }}>
           1.{" "}
           <Link
             to="/programmable-keys/overview"
@@ -93,7 +93,7 @@ const WhatIsLitTab: React.FC = () => {
           </Link>{" "}
           (support for ECDSA and EdDSA signatures) via MPC TSS + TEEs
         </p>
-        <p style={{ margin: "0", color: "#1e3a8a", lineHeight: "1.5" }}>
+        <p style={{ margin: "0", color: "#4b5563", lineHeight: "1.5" }}>
           2.{" "}
           <Link
             to="/encryption/overview"
@@ -103,7 +103,7 @@ const WhatIsLitTab: React.FC = () => {
           </Link>{" "}
           (identity-based BLS encryption scheme) via MPC TSS + TEEs
         </p>
-        <p style={{ margin: "0", color: "#1e3a8a", lineHeight: "1.5" }}>
+        <p style={{ margin: "0", color: "#4b5563", lineHeight: "1.5" }}>
           3.{" "}
           <Link
             to="/lit-actions/overview"
