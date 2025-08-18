@@ -77,11 +77,48 @@ const WhatIsLitTab: React.FC = () => {
   return (
     <div style={pageStyles.container}>
       <h1 style={pageStyles.h1}>What is Lit Protocol</h1>
-
+      
       <GreyBoarderWhiteBgContainer>
         <h2 style={pageStyles.h2}>Introduction</h2>
         <p style={pageStyles.p}>
-          Lit Protocol is a decentralized key management network that solves the
+          Lit Protocol is a decentralized key management and private compute network. Lit provides developers building in Web3 with three core services:
+        </p>
+        <p style={{ margin: "0", color: "#4b5563", lineHeight: "1.5" }}>
+          1.{" "}
+          <Link
+            to="/programmable-keys/overview"
+            style={{ color: "#3b82f6", textDecoration: "underline" }}
+          >
+            Decentralized Signing and Wallet Management
+          </Link>{" "}
+          (support for ECDSA and EdDSA signatures) via MPC TSS + TEEs
+        </p>
+        <p style={{ margin: "0", color: "#4b5563", lineHeight: "1.5" }}>
+          2.{" "}
+          <Link
+            to="/encryption/overview"
+            style={{ color: "#3b82f6", textDecoration: "underline" }}
+          >
+            Decentralized Encryption / Decryption
+          </Link>{" "}
+          (identity-based BLS encryption scheme) via MPC TSS + TEEs
+        </p>
+        <p style={{ margin: "0", color: "#4b5563", lineHeight: "1.5" }}>
+          3.{" "}
+          <Link
+            to="/lit-actions/overview"
+            style={{ color: "#3b82f6", textDecoration: "underline" }}
+          >
+            Private Compute
+          </Link>{" "}
+          executed via Lit's MPC TSS network and protected by sealed TEEs
+        </p>
+      </GreyBoarderWhiteBgContainer>
+      
+      <GreyBoarderWhiteBgContainer>
+        <h2 style={pageStyles.h2}>The Problem</h2>
+        <p style={pageStyles.p}>
+          Lit Protocol was created to solve the
           fundamental Web3 security dilemma: how to manage secrets without
           compromising security, user experience, or decentralization. The
           network empowers developers to create secure, decentralized
@@ -147,10 +184,10 @@ const WhatIsLitTab: React.FC = () => {
       </GreyBoarderWhiteBgContainer>
 
       <GreyBoarderWhiteBgContainer style={{ marginTop: "32px" }}>
-        <h2 style={pageStyles.h2}>Key Capabilities</h2>
+        <h2 style={pageStyles.h2}>Use Cases and Live Implementations</h2>
         <p style={pageStyles.p}>
           Lit Protocol's versatile architecture supports a wide range of
-          applications across various domains:
+          applications across various categories:
         </p>
 
         <h3 style={pageStyles.h3}>Web3 Wallets and User Onboarding</h3>
