@@ -52,7 +52,7 @@ const SetupLitClientTab: React.FC = () => {
       name: "Naga Test",
       config: null, // Will be available in future releases
       description:
-        "Decentralised test network. No persistency guarantees. Mirrors Datil code and configuration. Payment is enforced.",
+        "Decentralised test network. No persistency guarantees. Payment is enforced.",
       recommended: false,
       available: false,
     },
@@ -139,14 +139,14 @@ const SetupLitClientTab: React.FC = () => {
   const networkImportCode = `import { nagaDev } from "@lit-protocol/networks";
 import { createLitClient } from "@lit-protocol/lit-client";
 
-const devClient = await createLitClient({ 
+const litClient = await createLitClient({ 
   network: nagaDev 
 });`;
 
   const networkTestImportCode = `import { nagaTest } from "@lit-protocol/networks";
 import { createLitClient } from "@lit-protocol/lit-client";
 
-const testClient = await createLitClient({ 
+const litClient = await createLitClient({ 
   network: nagaTest 
 });`;
 
@@ -154,7 +154,7 @@ const testClient = await createLitClient({
 import { createLitClient } from "@lit-protocol/lit-client";
 
 const litClient = await createLitClient({ 
-  network: naga 
+  network: naga
 });`;
 
   // Function to get the appropriate code based on selected network

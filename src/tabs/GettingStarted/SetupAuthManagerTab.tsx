@@ -45,7 +45,7 @@ const SetupAuthManagerTab: React.FC = () => {
     localStorage: {
       name: "localStorage",
       description: "Browser localStorage - persists between sessions",
-      recommended: true,
+      recommended: false,
       available: true,
       code: `import { createAuthManager, storagePlugins } from "@lit-protocol/auth";
 
@@ -106,16 +106,6 @@ const customStorage = {
     // Retrieve delegation auth signature
     return await myDatabase.get(\`lit-delegation:\${publicKey}\`);
   },
-  async writePKPTokens({ authMethodType, authMethodId, tokenIds }) {
-    // Cache PKP token IDs
-    const key = \`pkp-tokens:\${authMethodType}:\${authMethodId}\`;
-    await myDatabase.set(key, tokenIds);
-  },
-  async readPKPTokens({ authMethodType, authMethodId }) {
-    // Retrieve cached PKP token IDs
-    const key = \`pkp-tokens:\${authMethodType}:\${authMethodId}\`;
-    return await myDatabase.get(key);
-  }
   // ... implement other required methods
 };
 
@@ -353,7 +343,7 @@ const authManager = createAuthManager({
                               borderRadius: "3px",
                             }}
                           >
-                            NOT AVAILABLE
+                            NOT AVAILABLE IN BROWSER
                           </span>
                         )}
                         <div
@@ -423,7 +413,7 @@ const authManager = createAuthManager({
                     borderBottom: "1px solid #dee2e6",
                   }}
                 >
-                  Availability
+                  Environment
                 </th>
               </tr>
             </thead>
@@ -463,7 +453,7 @@ const authManager = createAuthManager({
                 <td
                   style={{ padding: "12px", borderBottom: "1px solid #dee2e6" }}
                 >
-                  ✅ Available
+                  Browser
                 </td>
               </tr>
               <tr>
@@ -489,7 +479,7 @@ const authManager = createAuthManager({
                 <td
                   style={{ padding: "12px", borderBottom: "1px solid #dee2e6" }}
                 >
-                  ❌ Node.js only
+                  Node.js only
                 </td>
               </tr>
               <tr>
@@ -498,7 +488,7 @@ const authManager = createAuthManager({
                 <td style={{ padding: "12px" }}>
                   Database storage, encrypted storage, cloud storage
                 </td>
-                <td style={{ padding: "12px" }}>✅ Available</td>
+                <td style={{ padding: "12px" }}>Custom</td>
               </tr>
             </tbody>
           </table>

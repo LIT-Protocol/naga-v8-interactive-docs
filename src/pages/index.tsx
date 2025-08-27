@@ -242,14 +242,14 @@ const DependencyStatus = ({
 
 // Authentication methods configuration
 const ACTIONS = [
-  {
-    id: "demo",
-    path: "/demo",
-    name: "Demo",
-    description: "Demo page",
-    category: "Demo",
-    type: "primary",
-  },
+  // {
+  //   id: "demo",
+  //   path: "/demo",
+  //   name: "Demo",
+  //   description: "Demo page",
+  //   category: "Demo",
+  //   type: "primary",
+  // },
   // Getting Started - Foundation Setup
   {
     id: "setup-lit-client",
@@ -639,9 +639,9 @@ export const HomePage = () => {
             overflowY: "auto",
           }}
         >
-          <h2 style={{ marginBottom: "20px" }}>Documentation</h2>
+          {/* <h2 style={{ marginBottom: "20px" }}>Documentation</h2> */}
 
-          <DependencyStatus dependencies={getDependencies()} />
+          {/* <DependencyStatus dependencies={getDependencies()} /> */}
 
           <div className="nav-tabs">
             {(() => {
@@ -689,7 +689,7 @@ export const HomePage = () => {
                           backgroundColor: "transparent",
                           border: "none",
                           cursor: "pointer",
-                          fontSize: "1rem",
+                          fontSize: "14px",
                           color: "#555",
                           fontWeight: "600",
                           textAlign: "left",

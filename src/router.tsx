@@ -86,7 +86,7 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Navigate to="/demo" replace />,
+        element: <Navigate to="/setup-lit-client" replace />,
       },
       {
         path: "demo",
