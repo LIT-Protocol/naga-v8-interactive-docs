@@ -1,12 +1,12 @@
 import { WebAuthnAuthenticator } from "@lit-protocol/auth";
 import { useEffect, useState } from "react";
-import EoaAuthSection from "../../components/common/EoaAuthSection";
 import PkpSelectionComponent from "../../components/common/PkpSelectionComponent";
 import { DisplayCode } from "../../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../../components/layout/GreyboardWhiteBgContainer";
 import { useAppContext } from "../../router";
 import PkpSigningComponent from "../../components/common/PkpSigningComponent";
 import ExecuteJsComponent from "../../components/common/ExecuteJsComponent";
+import { APP_INFO } from "../../_config";
 
 const AUTH_NAME = "WebAuthn Authentication";
 
@@ -16,6 +16,7 @@ import { WebAuthnAuthenticator } from "@lit-protocol/auth";
 
 const { pkpInfo, webAuthnPublicKey } = await WebAuthnAuthenticator.registerAndMintPKP({
   authServiceBaseUrl: "https://naga-auth-service.onrender.com",
+  scopes: ["sign-anything"],
 });
 `;
 
@@ -27,10 +28,7 @@ const authData = await WebAuthnAuthenticator.authenticate({
 });
 `;
 
-const MINT_PKP_CODE = `
-const res = await litClient.authService.mintWithAuth({
-  authData: authData,
-});`;
+// WebAuthn flow does not present a re-mint option; credential is bound to one PKP
 
 const CREATE_AUTH_CONTEXT_CODE = `
 const authContext = await authManager.createPkpAuthContext({
@@ -52,16 +50,12 @@ const authContext = await authManager.createPkpAuthContext({
 export default function WebAuthnTab() {
   const {
     getDependencyStatus,
-    areDependenciesLoaded,
     authContext,
-    activeMethod,
     setAuthContext,
-    setActiveMethod,
     setStatus,
     assertDependenciesLoaded,
     siteAuthConfig,
     showError,
-    clearError,
   } = useAppContext();
 
   const [isRegistering, setIsRegistering] = useState(false);
@@ -74,6 +68,8 @@ export default function WebAuthnTab() {
 
   const [authData, setAuthData] = useState<any>(null);
   const [pkpInfo, setPkpInfo] = useState<any>();
+  const [step1Done, setStep1Done] = useState(false);
+  const [step1bDone, setStep1bDone] = useState(false);
 
   // Success feedback state
   const [successActions, setSuccessActions] = useState<Set<string>>(new Set());
@@ -123,7 +119,7 @@ export default function WebAuthnTab() {
     checkFido2Availability();
   }, []);
 
-  // Step 2: Register a WebAuthn credential
+  // Step 1: Register a WebAuthn credential (alternative to authenticate)
   const register = async () => {
     try {
       setIsRegistering(true);
@@ -134,15 +130,29 @@ export default function WebAuthnTab() {
 
       const { pkpInfo, webAuthnPublicKey } =
         await WebAuthnAuthenticator.registerAndMintPKP({
-          authServiceBaseUrl: "https://naga-auth-service.onrender.com",
+          authServiceBaseUrl: APP_INFO.litAuthServer,
           username: username || `testuser-${Date.now()}`,
+          scopes: ["sign-anything"],
         });
+      console.log("webAuthnPublicKey:", webAuthnPublicKey);
       setPkpInfo(pkpInfo);
       setStatus("Successfully registered WebAuthn credential and minted a PKP");
+      // Immediately authenticate so that authData is available for loading PKPs
+      try {
+        const _authData = await WebAuthnAuthenticator.authenticate();
+        setAuthData(_authData);
+        setStep1Done(true);
+      } catch (e) {
+        console.warn("Post-register authenticate failed (user can auth in Step 1b):", e);
+        setStep1Done(true);
+      }
       showSuccess("webauthn-register");
     } catch (error: any) {
       console.error("Error registering WebAuthn credential:", error);
-      const errorMessage = formatErrorMessage("Failed to register WebAuthn credential: ", error);
+      const errorMessage = formatErrorMessage(
+        "Failed to register WebAuthn credential: ",
+        error
+      );
       setStatus(errorMessage);
       showError?.(errorMessage);
     } finally {
@@ -159,10 +169,14 @@ export default function WebAuthnTab() {
       const authData = await WebAuthnAuthenticator.authenticate();
       setAuthData(authData);
       setStatus("Successfully authenticated with WebAuthn");
+      setStep1bDone(true);
       showSuccess("webauthn-authenticate");
     } catch (error: any) {
       console.error("Error authenticating with WebAuthn:", error);
-      const errorMessage = formatErrorMessage("Failed to authenticate with WebAuthn: ", error);
+      const errorMessage = formatErrorMessage(
+        "Failed to authenticate with WebAuthn: ",
+        error
+      );
       setStatus(errorMessage);
       showError?.(errorMessage);
     } finally {
@@ -209,7 +223,10 @@ export default function WebAuthnTab() {
       showSuccess("webauthn-create-auth-context");
     } catch (error: any) {
       console.error("Error creating auth context:", error);
-      const errorMessage = formatErrorMessage("Failed to create auth context: ", error);
+      const errorMessage = formatErrorMessage(
+        "Failed to create auth context: ",
+        error
+      );
       setStatus(errorMessage);
       showError?.(errorMessage);
     } finally {
@@ -281,13 +298,32 @@ export default function WebAuthnTab() {
 
   return (
     <div className="tab-content">
-      <h2>{AUTH_NAME}</h2>
+      <h2 id="webauthn-top">{AUTH_NAME}</h2>
       <p>
         {AUTH_NAME} uses your device's secure hardware (such as fingerprint
         sensor, facial recognition, or security key) to authenticate you via the
         FIDO2/WebAuthn standard. This can be used to mint a PKP and then sign
         messages.
       </p>
+
+      {/* Choice Banner */}
+      <div
+        style={{
+          margin: "16px 0",
+          padding: "12px 16px",
+          backgroundColor: "#ecfeff",
+          border: "1px solid #67e8f9",
+          borderRadius: 8,
+        }}
+      >
+        <div style={{ fontWeight: 600, color: "#0e7490", marginBottom: 6 }}>
+          Choose one to continue
+        </div>
+        <div style={{ color: "#155e75", fontSize: 14 }}>
+          Do either Step 1 (register & mint) or Step 1b (authenticate existing). Once
+          complete, proceed to Step 2 to fetch your PKP.
+        </div>
+      </div>
 
       <GreyBoarderWhiteBgContainer>
         {/* ================================================ */}
@@ -336,6 +372,7 @@ export default function WebAuthnTab() {
       </GreyBoarderWhiteBgContainer>
 
       <GreyBoarderWhiteBgContainer>
+        <div id="step-1">
         {/* ================================================ */}
         {/*          Register WebAuthn Credential            */}
         {/* ================================================ */}
@@ -359,18 +396,61 @@ export default function WebAuthnTab() {
           theme="dracula"
           isSuccess={successActions.has("webauthn-register")}
         />
+
+        {step1Done && (
+          <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ color: "#16a34a", fontWeight: 600 }}>✓ Step complete</span>
+            <button
+              onClick={() => document.getElementById("step-2")?.scrollIntoView({ behavior: "smooth" })}
+              style={{
+                padding: "6px 10px",
+                backgroundColor: "#16a34a",
+                color: "white",
+                border: "none",
+                borderRadius: 6,
+                cursor: "pointer",
+                fontSize: 12,
+              }}
+            >
+              Continue to Step 2
+            </button>
+          </div>
+        )}
+        </div>
       </GreyBoarderWhiteBgContainer>
+
+      {/* OR Divider */}
+      <div style={{ display: "flex", alignItems: "center", margin: "12px 0" }}>
+        <div style={{ flex: 1, height: 1, backgroundColor: "#e5e7eb" }} />
+        <span
+          style={{
+            margin: "0 8px",
+            padding: "2px 8px",
+            backgroundColor: "#f3f4f6",
+            borderRadius: 999,
+            fontSize: 12,
+            color: "#6b7280",
+            fontWeight: 600,
+          }}
+        >
+          OR
+        </span>
+        <div style={{ flex: 1, height: 1, backgroundColor: "#e5e7eb" }} />
+      </div>
 
       <GreyBoarderWhiteBgContainer>
         {/* ================================================ */}
         {/*          Authenticate with WebAuthn               */}
         {/* ================================================ */}
-        <h3 style={{ marginTop: "20px" }}>
-          Step 2: Authenticate with WebAuthn
+        <h3 style={{ marginTop: "20px" }} id="step-1b">
+          Step 1b (Optional): Authenticate with WebAuthn
         </h3>
         <p>
           If you already have a registered WebAuthn credential, you can
           authenticate with it directly.
+        </p>
+        <p style={{ color: "#6b7280", fontSize: 12, marginTop: -8 }}>
+          Note: Each WebAuthn credential is bound to a single PKP; you cannot mint another with it.
         </p>
 
         <DisplayCode
@@ -383,20 +463,60 @@ export default function WebAuthnTab() {
           theme="dracula"
           isSuccess={successActions.has("webauthn-authenticate")}
         />
+
+        {step1bDone && (
+          <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ color: "#16a34a", fontWeight: 600 }}>✓ Step complete</span>
+            <button
+              onClick={() => document.getElementById("step-2")?.scrollIntoView({ behavior: "smooth" })}
+              style={{
+                padding: "6px 10px",
+                backgroundColor: "#16a34a",
+                color: "white",
+                border: "none",
+                borderRadius: 6,
+                cursor: "pointer",
+                fontSize: 12,
+              }}
+            >
+              Continue to Step 2
+            </button>
+          </div>
+        )}
       </GreyBoarderWhiteBgContainer>
 
       <GreyBoarderWhiteBgContainer>
         {/* ================================================ */}
-        {/*               Get or Mint PKP via WebAuthn       */}
+        {/*        Get PKP via WebAuthn (no re-minting)      */}
         {/* ================================================ */}
+        <h3 id="step-2" style={{ marginTop: 0 }}>
+          Step 2: Fetch your PKP (no re-minting with WebAuthn)
+        </h3>
+        {!authData && (
+          <div
+            style={{
+              marginBottom: 10,
+              padding: "8px 12px",
+              backgroundColor: "#fff7ed",
+              border: "1px solid #fed7aa",
+              borderRadius: 6,
+              color: "#9a3412",
+              fontSize: 12,
+            }}
+          >
+            Complete Step 1 or Step 1b to enable loading your PKPs.
+          </div>
+        )}
         <PkpSelectionComponent
+          stepNumber={2}
           authData={authData}
           onPkpSelected={setPkpInfo}
           setStatus={setStatus}
           assertDependenciesLoaded={assertDependenciesLoaded}
           showError={showError}
           authMethodName="WebAuthn Auth"
-          mintCodeSnippet={MINT_PKP_CODE}
+          // Do not expose minting in WebAuthn flow; credential is bound to one PKP
+          allowMint={false}
           disabled={!authData}
         />
       </GreyBoarderWhiteBgContainer>

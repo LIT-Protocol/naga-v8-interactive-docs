@@ -6,11 +6,12 @@ import PkpSelectionComponent from "../../components/common/PkpSelectionComponent
 import { useAppContext } from "../../router";
 import PkpSigningComponent from "../../components/common/PkpSigningComponent";
 import ExecuteJsComponent from "../../components/common/ExecuteJsComponent";
+import { APP_INFO } from "../../_config";
 
 const AUTH_NAME = "Stytch WhatsApp OTP Authentication";
 
 // Configuration constants
-const DEFAULT_AUTH_SERVICE_BASE_URL = "https://naga-auth-service.onrender.com";
+const DEFAULT_AUTH_SERVICE_BASE_URL = APP_INFO.litAuthServer;
 
 // Code snippets for each functionality
 const SEND_OTP_CODE = `
@@ -414,7 +415,7 @@ export default function StytchWhatsAppOtpAuthTab() {
                   type="url"
                   value={authServiceBaseUrl}
                   onChange={(e) => setAuthServiceBaseUrl(e.target.value)}
-                  placeholder="https://naga-auth-service.onrender.com"
+                  placeholder={APP_INFO.litAuthServer}
                   style={{
                     width: "100%",
                     padding: "8px 12px",

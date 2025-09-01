@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { APP_INFO } from "../../_config";
 
 // Chain configuration for balance fetching
 const SUPPORTED_CHAINS = {
@@ -239,7 +240,7 @@ const PkpSelectionForDemo: React.FC<PkpSelectionForDemoProps> = ({
       // Create storage provider for caching
       const storageProvider = storagePlugins.localStorage({
         appName: 'lit-auth-demo',
-        networkName: 'naga-dev',
+        networkName: APP_INFO.network,
       });
 
       // Get PKPs with pagination and granular caching

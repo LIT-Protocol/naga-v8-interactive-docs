@@ -8,6 +8,8 @@ import { useAppContext } from "../../router";
 import PkpSigningComponent from "../../components/common/PkpSigningComponent";
 import PkpSelectionComponent from "../../components/common/PkpSelectionComponent";
 import ExecuteJsComponent from "../../components/common/ExecuteJsComponent";
+import { APP_INFO } from "../../_config";
+import PaymentInformation from "../../components/tips/PaymentInformation";
 
 const AUTH_NAME = "Google Authentication";
 
@@ -112,6 +114,7 @@ export default function GoogleAuthTab() {
       showError?.(errorMessage);
     } finally {
       setIsSigningIn(false);
+      console.log("Finally auth data:", authData);
     }
   };
 
@@ -209,19 +212,8 @@ export default function GoogleAuthTab() {
         Server or your own Login Server. This can be used to mint a PKP and then
         sign messages.
       </p>
-      
-      <div style={{
-        padding: "12px",
-        backgroundColor: "#e8f4fd",
-        borderRadius: "4px",
-        border: "1px solid #b3d9ff",
-        marginBottom: "15px",
-        fontSize: "14px"
-      }}>
-        <strong>💰 Payment Information:</strong> PKP signing and Lit Action execution require payment. 
-        Visit the <a href="/payment-manager" style={{ color: "#0066cc", textDecoration: "underline" }}>
-        Payment Manager</a> page to understand pricing, deposit funds, and manage your payment balance.
-      </div>
+
+      <PaymentInformation />
 
       <GreyBoarderWhiteBgContainer>
         {/* ================================================ */}
@@ -246,17 +238,17 @@ export default function GoogleAuthTab() {
             )}
           </li>
           <li>
-            Lit Login Server (eg. https://login.litgateway.com):{" "}
+            Lit Login Server (eg. {APP_INFO.litLoginServer}):{" "}
             {true ? (
-              <span style={{ color: "green" }}>✓ Initialised</span>
+              <span style={{ color: "blue" }}>Manual setup</span>
             ) : (
               <span style={{ color: "red" }}>✗ Not initialised</span>
             )}
           </li>
           <li>
-            Lit Auth Server (eg. https://naga-dev-auth-service.getlit.dev):{" "}
+            Lit Auth Server (eg. {APP_INFO.litAuthServer}):{" "}
             {true ? (
-              <span style={{ color: "green" }}>✓ Initialised</span>
+              <span style={{ color: "blue" }}>Manual setup</span>
             ) : (
               <span style={{ color: "red" }}>✗ Not initialised</span>
             )}

@@ -8,12 +8,12 @@
 import React, { useState, useCallback, useRef } from "react";
 import { createLitClient } from "@lit-protocol/lit-client";
 import { createAuthManager, storagePlugins } from "@lit-protocol/auth";
-import { nagaDev, nagaLocal } from "@lit-protocol/networks";
+import { APP_INFO } from "../_config";
 
 // Configuration constants at the top
 const DEFAULT_APP_NAME = "lit-auth-app";
-const DEFAULT_NETWORK_NAME = "naga-dev";
-const DEFAULT_NETWORK = nagaDev;
+const DEFAULT_NETWORK_NAME = APP_INFO.network;
+const DEFAULT_NETWORK = APP_INFO.networkModule;
 
 interface LitServiceSetupConfig {
   appName?: string;

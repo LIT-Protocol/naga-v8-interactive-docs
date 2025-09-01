@@ -5,11 +5,13 @@ import { useAppContext } from "../router";
 import PkpSigningComponent from "../components/common/PkpSigningComponent";
 import { privateKeyToAccount } from "viem/accounts";
 import { utils as litUtils } from '@lit-protocol/lit-client';
+import { APP_INFO } from "../_config";
+import PaymentInformation from "../components/tips/PaymentInformation";
 
 const AUTH_NAME = "Custom Authentication (dApp-Centric)";
 
 // Configuration constants
-const DEFAULT_AUTH_SERVICE_BASE_URL = "https://naga-auth-service.onrender.com";
+const DEFAULT_AUTH_SERVICE_BASE_URL = APP_INFO.litAuthServer;
 const DEFAULT_DEMO_USERNAME = "alice";
 const DEFAULT_DEMO_PASSWORD = "lit";
 
@@ -626,18 +628,7 @@ export default function CustomAuthTab() {
           and the <strong>User</strong> who interacts with it.
         </p>
         
-        <div style={{
-          padding: "12px",
-          backgroundColor: "#e8f4fd",
-          borderRadius: "4px",
-          border: "1px solid #b3d9ff",
-          marginTop: "15px",
-          fontSize: "14px"
-        }}>
-          <strong>💰 Payment Information:</strong> PKP signing and Lit Action execution require payment. 
-          Visit the <a href="/payment-manager" style={{ color: "#0066cc", textDecoration: "underline" }}>
-          Payment Manager</a> page to understand pricing, deposit funds, and manage your payment balance.
-        </div>
+        <PaymentInformation/>
       </GreyBoarderWhiteBgContainer>
 
       <GreyBoarderWhiteBgContainer>
@@ -926,6 +917,7 @@ console.log('Auth Method Type (bigint):', authMethodConfig.bigint);`}
                     >
                       🚀 Open Lit Action Creator
                     </button>
+                    👈 Make sure you login first
                     <small
                       style={{
                         color: "#666",
@@ -1246,6 +1238,7 @@ console.log('Validation CID:', userPkpInfo.validationCid);`}
                     >
                       Password:
                     </label>
+                    <div style={{ color: "#666", fontSize: "12px", marginBottom: "3px" }}>(no validation checking here, so all passwords are valid)</div>
                     <input
                       id="userPassword"
                       type="password"
@@ -1306,6 +1299,10 @@ console.log('Validation CID:', userPkpInfo.validationCid);`}
               Create a custom auth context using the user's PKP and the dApp's
               validation IPFS CID. The Lit Action will validate the user's
               credentials against the dApp's authentication logic.
+            </p>
+
+            <p>
+              ⭐️ Try changing the password, you will get an error if you don't have the correct password.
             </p>
 
             <DisplayCode

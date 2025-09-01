@@ -12,6 +12,7 @@ import GreyBoarderWhiteBgContainer from "../../components/layout/GreyboardWhiteB
 import { useAppContext } from "../../router";
 import EoaAuthSection from "../../components/common/EoaAuthSection";
 import ExecuteJsComponent from "../../components/common/ExecuteJsComponent";
+import PaymentInformation from "../../components/tips/PaymentInformation";
 
 const AUTH_NAME = "EOA Authentication";
 
@@ -166,17 +167,20 @@ export default function EoaAuthTab() {
         return;
       }
 
+      console.log("Loading!!");
+
+      console.log("authData:", authData);
+      console.log("pkpInfo.pubkey:", pkpInfo.pubkey);
+
       const authContext = await authManager.createPkpAuthContext({
         authData: authData,
         pkpPublicKey: pkpInfo.pubkey,
         authConfig: {
-          capabilityAuthSigs: [],
           expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
-          statement: "",
-          domain: "",
           resources: [
             ["pkp-signing", "*"],
             ["lit-action-execution", "*"],
+            ["access-control-condition-decryption", "*"],
           ],
         },
         litClient: litClient,
@@ -207,19 +211,8 @@ export default function EoaAuthTab() {
         Ethereum account to authenticate and mint PKPs. You can either use a
         private key or connect your wallet.
       </p>
-      
-      <div style={{
-        padding: "12px",
-        backgroundColor: "#e8f4fd",
-        borderRadius: "4px",
-        border: "1px solid #b3d9ff",
-        marginBottom: "15px",
-        fontSize: "14px"
-      }}>
-        <strong>💰 Payment Information:</strong> PKP signing and Lit Action execution require payment. 
-        Visit the <a href="/payment-manager" style={{ color: "#0066cc", textDecoration: "underline" }}>
-        Payment Manager</a> page to understand pricing, deposit funds, and manage your payment balance.
-      </div>
+
+      <PaymentInformation />
 
       <GreyBoarderWhiteBgContainer>
         {/* ================================================ */}

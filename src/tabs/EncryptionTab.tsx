@@ -17,6 +17,7 @@ import {
 import { DisplayCode } from "../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgContainer";
 import { useAppContext } from "../router";
+import PaymentInformation from "../components/tips/PaymentInformation";
 
 const OPERATION_NAME = "Encrypt & Decrypt";
 
@@ -594,18 +595,7 @@ export default function EncryptionTab() {
         properly configured access control conditions.
       </p>
       
-      <div style={{
-        padding: "12px",
-        backgroundColor: "#e8f4fd",
-        borderRadius: "4px",
-        border: "1px solid #b3d9ff",
-        marginBottom: "15px",
-        fontSize: "14px"
-      }}>
-        <strong>💰 Payment Information:</strong> Encryption and decryption operations require payment. 
-        Visit the <a href="/payment-manager" style={{ color: "#0066cc", textDecoration: "underline" }}>
-        Payment Manager</a> page to understand pricing, deposit funds, and manage your payment balance.
-      </div>
+      <PaymentInformation />
 
       <GreyBoarderWhiteBgContainer>
         {/* ================================================ */}

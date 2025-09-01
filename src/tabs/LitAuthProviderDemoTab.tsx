@@ -12,6 +12,7 @@ import { DisplayCode } from "../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgContainer";
 import ProtectedAppRefactored from "../components/protectedApp/examples/ProtectedAppRefactored";
 import ProtectedAppComplete from "../components/protectedApp/examples/ProtectedAppComplete";
+import { APP_INFO } from "../_config";
 
 const LitAuthProviderDemoTab: React.FC = () => {
   const usageCode = `import { LitAuthProvider, useLitAuth } from './contexts/LitAuthProvider';
@@ -114,7 +115,7 @@ const authMethods = [
             <div style={{ minHeight: "600px" }}>
               <LitAuthProvider
                 appName="lit-auth-modal-demo"
-                networkName="naga-dev"
+                networkName={APP_INFO.network}
                 autoSetup={false}
                 storageKey="lit-auth-modal-demo"
               >

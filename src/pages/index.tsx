@@ -1,9 +1,9 @@
 import { createAuthManager, storagePlugins } from "@lit-protocol/auth";
 import { createLitClient } from "@lit-protocol/lit-client";
-import { nagaDev } from "@lit-protocol/networks";
 import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { MainLayout } from "../layouts/MainLayout";
+import { APP_INFO } from "../_config";
 
 // --- Singleton instances ---
 type LitClient = Awaited<ReturnType<typeof createLitClient>>;
@@ -15,7 +15,7 @@ let authManagerInstance: AuthManager | null = null;
 const getLitClient = async (): Promise<LitClient> => {
   if (!litClientInstance) {
     console.log("Creating new LitClient instance (should happen only once)");
-    litClientInstance = await createLitClient({ network: nagaDev });
+    litClientInstance = await createLitClient({ network: APP_INFO.networkModule });
   }
   return litClientInstance;
 };
@@ -26,7 +26,7 @@ const getAuthManager = (): AuthManager => {
     authManagerInstance = createAuthManager({
       storage: storagePlugins.localStorage({
         appName: "my-app",
-        networkName: "naga-dev",
+        networkName: APP_INFO.network,
       }),
     });
   }
@@ -364,7 +364,7 @@ const ACTIONS = [
     name: "(2FA) Stytch TOTP",
     description: "Authenticate using Stytch TOTP (Authenticator App)",
     category: "PKP Auth Methods",
-    type: "secondary",
+    type: "primary",
   },
   {
     id: "custom-auth",

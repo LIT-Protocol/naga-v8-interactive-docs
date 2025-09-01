@@ -5,6 +5,8 @@
  * Modify these values to customize the application behavior.
  */
 
+import { nagaDev, nagaStaging } from "@lit-protocol/networks";
+
 // WalletConnect Configuration
 export const WALLET_CONNECT = {
   projectId: "YOUR_WALLETCONNECT_PROJECT_ID", // Replace with your actual WalletConnect Project ID
@@ -17,7 +19,15 @@ export const APP_INFO = {
   description: "Explore the Lit Protocol ecosystem",
   copyright: "Lit Protocol",
   version: "1.0.0",
-};
+  network: 'naga-dev',
+  networkModule: nagaDev,
+  litLoginServer: 'https://login.litgateway.com',
+
+  // 'https://naga-dev-auth-service.getlit.dev'
+  litAuthServer: 'http://localhost:3301',
+  faucetUrl: 'https://chronicle-yellowstone-faucet.getlit.dev/',
+  defaultPrivateKey: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+} as const;
 
 // Theme Configuration
 export const THEME = {

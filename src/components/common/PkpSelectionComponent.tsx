@@ -14,23 +14,16 @@
 
 import { useState, useEffect } from "react";
 import { DisplayCode } from "../DisplayCode";
-import { storagePlugins } from "@lit-protocol/auth";
+// import { storagePlugins } from "@lit-protocol/auth";
+import { APP_INFO } from "../../_config";
+import { createLitClient } from "@lit-protocol/lit-client";
 
 // Configuration constants
 const DEFAULT_PAGE_SIZE = 5;
-const CACHE_STORAGE_PATH = "./lit-pkp-cache";
+// const CACHE_STORAGE_PATH = "./lit-pkp-cache";
 
 // Code snippets for documentation
 const VIEW_PKPS_CODE = `
-import { storagePlugins } from '@lit-protocol/auth';
-
-// Create storage provider for caching
-const storageProvider = storagePlugins.localStorage({
-  appName: 'my-app',
-  networkName: 'naga-dev',
-});
-
-// Get PKPs with pagination and caching
 const result = await litClient.viewPKPsByAuthData({
   authData: {
     authMethodType: authData.authMethodType,
@@ -39,8 +32,7 @@ const result = await litClient.viewPKPsByAuthData({
   pagination: {
     limit: 5,
     offset: 0,
-  },
-  storageProvider, // Optional: enables caching
+  }
 });`;
 
 const MINT_PKP_CODE = `
@@ -59,20 +51,23 @@ interface PKPInfo {
 }
 
 interface PkpSelectionComponentProps {
+  stepNumber: number;
   authData: any;
   account?: any;
   walletClient?: any;
   accountMethod?: "privateKey" | "walletClient";
   onPkpSelected: (pkpInfo: PKPInfo) => void;
   setStatus: (message: string) => void;
-  assertDependenciesLoaded: () => { litClient: any; authManager: any };
+  assertDependenciesLoaded: () => { litClient: Awaited<ReturnType<typeof createLitClient>>; authManager: any };
   showError?: (errorMessage: string) => void;
   authMethodName: string; // e.g., "EOA Auth", "Google Auth"
   mintCodeSnippet?: string; // Custom mint code snippet
   disabled?: boolean;
+  allowMint?: boolean; // Whether minting a new PKP is allowed in this context
 }
 
 export default function PkpSelectionComponent({
+  stepNumber,
   authData,
   account,
   walletClient,
@@ -84,10 +79,11 @@ export default function PkpSelectionComponent({
   authMethodName,
   mintCodeSnippet = MINT_PKP_CODE,
   disabled = false,
+  allowMint = true,
 }: PkpSelectionComponentProps) {
   // Selection mode state
   const [selectionMode, setSelectionMode] = useState<"mint" | "existing">("existing");
-  
+
   // Existing PKPs state
   const [existingPkps, setExistingPkps] = useState<PKPInfo[]>([]);
   const [isLoadingPkps, setIsLoadingPkps] = useState(false);
@@ -98,10 +94,10 @@ export default function PkpSelectionComponent({
     total: 0,
     hasMore: false,
   });
-  
+
   // Minting state
   const [isMinting, setIsMinting] = useState(false);
-  
+
   // Success feedback state
   const [successActions, setSuccessActions] = useState<Set<string>>(new Set());
 
@@ -143,12 +139,6 @@ export default function PkpSelectionComponent({
 
       const { litClient } = assertDependenciesLoaded();
 
-      // Create storage provider for caching
-      const storageProvider = storagePlugins.localStorage({
-        appName: 'lit-pkp-demo',
-        networkName: 'naga-dev',
-      });
-
       const result = await litClient.viewPKPsByAuthData({
         authData: {
           authMethodType: authData.authMethodType,
@@ -157,15 +147,16 @@ export default function PkpSelectionComponent({
         pagination: {
           limit: pagination.limit,
           offset: offset,
-        },
-        storageProvider,
+        }
       });
 
-      const pkps = result.pkps.map((pkp: any) => ({
+      console.log("result:", result);
+
+      const pkps = result.pkps.map((pkp: { tokenId: string; publicKey: string; ethAddress: string; pubkey: string }) => ({
         tokenId: pkp.tokenId,
         publicKey: pkp.publicKey,
         ethAddress: pkp.ethAddress,
-        pubkey: pkp.publicKey, // Add alternative naming for compatibility
+        pubkey: pkp.publicKey,
       }));
 
       if (append) {
@@ -214,8 +205,11 @@ export default function PkpSelectionComponent({
 
   // Mint a new PKP
   const mintNewPkp = async () => {
-    if (!authData || (!account && !walletClient)) {
-      setStatus("Missing authentication data or account. Please authenticate first.");
+
+    if (!authData && (!account && !walletClient)) {
+      const _msg = "Missing authentication data or account. Please authenticate first."
+      setStatus(_msg);
+      showError?.(_msg);
       return;
     }
 
@@ -227,21 +221,27 @@ export default function PkpSelectionComponent({
 
       let mintResult;
       if (accountMethod === "privateKey" && account) {
+        console.log("1. Using private key")
         mintResult = await litClient.mintWithAuth({
           account: account,
           authData: authData,
           scopes: ["sign-anything"],
         });
       } else if (accountMethod === "walletClient" && walletClient) {
+        console.log("2. Using wallet client")
         mintResult = await litClient.mintWithAuth({
           account: walletClient,
           authData: authData,
           scopes: ["sign-anything"],
         });
       } else {
+        console.log("3. Using auth service");
+        console.log("authData:", authData);
         // Fallback for other auth methods (like Google)
         mintResult = await litClient.authService.mintWithAuth({
           authData: authData,
+          authServiceBaseUrl: APP_INFO.litAuthServer,
+          scopes: ["sign-anything"]
         });
       }
 
@@ -282,13 +282,20 @@ export default function PkpSelectionComponent({
     setSelectedPkpIndex(null);
   }, [selectionMode]);
 
+  // Enforce existing-only mode when minting is not allowed
+  useEffect(() => {
+    if (!allowMint && selectionMode === "mint") {
+      setSelectionMode("existing");
+    }
+  }, [allowMint, selectionMode]);
+
   return (
     <div>
       <h3 style={{ marginTop: "20px" }}>
-        Step 3: Get or Mint PKP
+        Step {stepNumber || 3}: Get or Mint PKP
       </h3>
       <p>
-        You can either select an existing PKP associated with your account or mint a new one.
+        You can select an existing PKP associated with your account{allowMint ? " or mint a new one" : ""}.
         Existing PKPs are loaded with caching for better performance.
       </p>
 
@@ -313,21 +320,23 @@ export default function PkpSelectionComponent({
           >
             Use Existing PKP
           </button>
-          <button
-            onClick={() => setSelectionMode("mint")}
-            disabled={disabled}
-            style={{
-              padding: "8px 15px",
-              backgroundColor: selectionMode === "mint" ? "#4285F4" : "#f0f0f0",
-              color: selectionMode === "mint" ? "white" : "#333",
-              border: "1px solid #ddd",
-              borderRadius: "4px",
-              cursor: disabled ? "not-allowed" : "pointer",
-              fontSize: "14px",
-            }}
-          >
-            Mint New PKP
-          </button>
+          {allowMint && (
+            <button
+              onClick={() => setSelectionMode("mint")}
+              disabled={disabled}
+              style={{
+                padding: "8px 15px",
+                backgroundColor: selectionMode === "mint" ? "#4285F4" : "#f0f0f0",
+                color: selectionMode === "mint" ? "white" : "#333",
+                border: "1px solid #ddd",
+                borderRadius: "4px",
+                cursor: disabled ? "not-allowed" : "pointer",
+                fontSize: "14px",
+              }}
+            >
+              Mint New PKP
+            </button>
+          )}
         </div>
       </div>
 
@@ -439,7 +448,7 @@ export default function PkpSelectionComponent({
       )}
 
       {/* Mint New PKP Section */}
-      {selectionMode === "mint" && (
+      {allowMint && selectionMode === "mint" && (
         <DisplayCode
           code={mintCodeSnippet}
           language="typescript"
@@ -470,7 +479,7 @@ export default function PkpSelectionComponent({
       )}
 
       {/* Info Box */}
-      <div
+      {/* <div
         style={{
           marginTop: "15px",
           padding: "12px",
@@ -480,10 +489,10 @@ export default function PkpSelectionComponent({
           fontSize: "14px",
         }}
       >
-        <strong>💡 Performance Note:</strong> Loading existing PKPs uses caching to improve performance. 
-        The first load may take longer, but subsequent loads will be much faster. 
+        <strong>💡 Performance Note:</strong> Loading existing PKPs uses caching to improve performance.
+        The first load may take longer, but subsequent loads will be much faster.
         PKP data is cached locally and respects pagination for efficient memory usage.
-      </div>
+      </div> */}
     </div>
   );
 } 

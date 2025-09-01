@@ -1,6 +1,6 @@
 // Buffer polyfill - must be imported before other modules
-import { Buffer } from 'buffer';
-if (typeof window !== 'undefined') {
+import { Buffer } from "buffer";
+if (typeof window !== "undefined") {
   window.Buffer = Buffer;
   (globalThis as any).Buffer = Buffer;
 }
@@ -33,14 +33,17 @@ const queryClient = new QueryClient();
 // Define the Chronicle Testnet (nagaDev)
 const chronicleTestnet = {
   id: 175188,
-  name: 'Chronicle Testnet',
-  nativeCurrency: { name: 'Test Lit Token', symbol: 'tLIT', decimals: 18 },
+  name: "Chronicle Testnet",
+  nativeCurrency: { name: "Test Lit Token", symbol: "tLIT", decimals: 18 },
   rpcUrls: {
-    default: { http: ['https://chain-rpc.litprotocol.com/http'] },
-    public: { http: ['https://chain-rpc.litprotocol.com/http'] },
+    default: { http: ["https://yellowstone-rpc.litprotocol.com"] },
+    public: { http: ["https://yellowstone-rpc.litprotocol.com"] },
   },
   blockExplorers: {
-    default: { name: 'Chronicle Explorer', url: 'https://chain.litprotocol.com' },
+    default: {
+      name: "Chronicle Explorer",
+      url: "https://chain.litprotocol.com",
+    },
   },
   testnet: true,
 };

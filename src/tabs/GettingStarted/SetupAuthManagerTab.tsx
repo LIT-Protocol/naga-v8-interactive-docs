@@ -11,6 +11,7 @@ import { createAuthManager, storagePlugins } from "@lit-protocol/auth";
 import { DisplayCode } from "../../components/DisplayCode";
 import SingletonPattern from "../../components/tips/SingletonPattern";
 import { exploreClientStructure } from "../../utils/explore-structure";
+import { APP_INFO } from "../../_config";
 
 interface TabContext {
   areDependenciesLoaded: () => boolean;
@@ -58,7 +59,7 @@ const authManager = createAuthManager({
       createStorage: () =>
         storagePlugins.localStorage({
           appName: "my-app",
-          networkName: "naga-dev",
+          networkName:APP_INFO.network,
         }),
     },
     localStorageNode: {

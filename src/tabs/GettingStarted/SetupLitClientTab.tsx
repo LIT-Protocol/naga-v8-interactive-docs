@@ -12,6 +12,7 @@ import { nagaDev } from "@lit-protocol/networks";
 import { DisplayCode } from "../../components/DisplayCode";
 import { exploreClientStructure } from "../../utils/explore-structure";
 import SingletonPattern from "../../components/tips/SingletonPattern";
+import { APP_INFO } from "../../_config";
 
 interface TabContext {
   areDependenciesLoaded: () => boolean;
@@ -33,14 +34,14 @@ const SetupLitClientTab: React.FC = () => {
   const [clientStatus, setClientStatus] = useState<string>("Not initialised");
   const [isCreating, setIsCreating] = useState<boolean>(false);
   const [clientResult, setClientResult] = useState<any>(null);
-  const [selectedNetwork, setSelectedNetwork] = useState<string>("nagaDev");
+  const [selectedNetwork, setSelectedNetwork] = useState<string>(APP_INFO.network);
   const [configResult, setConfigResult] = useState<any>(null);
   const [exploreDepth, setExploreDepth] = useState<number>(3);
   const [showSingletonPattern, setShowSingletonPattern] =
     useState<boolean>(false);
 
   const networks: Record<string, NetworkConfig> = {
-    nagaDev: {
+    'naga-dev': {
       name: "Naga Dev",
       config: nagaDev,
       description:
@@ -48,7 +49,7 @@ const SetupLitClientTab: React.FC = () => {
       recommended: true,
       available: true,
     },
-    nagaTest: {
+    'naga-test': {
       name: "Naga Test",
       config: null, // Will be available in future releases
       description:

@@ -28,12 +28,12 @@ import phoneIcon from "../assets/phone.svg";
 import web3WalletIcon from "../assets/web3-wallet.svg";
 import whatsappIcon from "../assets/whatsapp.svg";
 import PkpSelectionForDemo from "../components/common/PkpSelectionForDemo";
+import { APP_INFO } from "../_config";
 
 // Configuration constants
-const DEFAULT_PRIVATE_KEY =
-  "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
-const FAUCET_URL = "https://chronicle-yellowstone-faucet.getlit.dev/";
-const DEFAULT_AUTH_SERVICE_BASE_URL = "https://naga-auth-service.onrender.com";
+const DEFAULT_PRIVATE_KEY = APP_INFO.defaultPrivateKey;
+const FAUCET_URL = APP_INFO.faucetUrl;
+const DEFAULT_AUTH_SERVICE_BASE_URL = APP_INFO.litAuthServer;
 
 type AuthMethod =
   | "google"
@@ -99,7 +99,7 @@ interface AuthMethodInfo {
 export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
   children,
   appName = "lit-auth-app",
-  networkName = "naga-dev",
+  networkName = APP_INFO.network,
   autoSetup = false,
   storageKey = "lit-auth-user",
 }) => {
@@ -1927,7 +1927,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                           onChange={(e) =>
                             setAuthServiceBaseUrl(e.target.value)
                           }
-                          placeholder="https://naga-auth-service.onrender.com"
+                          placeholder={APP_INFO.litAuthServer}
                           style={{
                             width: "100%",
                             padding: "8px 10px",

@@ -6,6 +6,7 @@ import { DisplayCode } from "../../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../../components/layout/GreyboardWhiteBgContainer";
 import { useAppContext } from "../../router";
 import ExecuteJsComponent from "../../components/common/ExecuteJsComponent";
+import { APP_INFO } from "../../_config";
 
 const AUTH_NAME = "Discord Authentication";
 
@@ -233,17 +234,17 @@ export default function DiscordAuthTab() {
             )}
           </li>
           <li>
-            Lit Login Server (eg. https://login.litgateway.com):{" "}
+            Lit Login Server (eg. {APP_INFO.litLoginServer}):{" "}
             {true ? (
-              <span style={{ color: "green" }}>✓ Initialised</span>
+              <span style={{ color: "blue" }}>Manual setup</span>
             ) : (
               <span style={{ color: "red" }}>✗ Not initialised</span>
             )}
           </li>
           <li>
-            Lit Auth Server (eg. https://naga-dev-auth-service.getlit.dev):{" "}
+            Lit Auth Server (eg. {APP_INFO.litAuthServer}):{" "}
             {true ? (
-              <span style={{ color: "green" }}>✓ Initialised</span>
+              <span style={{ color: "blue" }}>Manual setup</span>
             ) : (
               <span style={{ color: "red" }}>✗ Not initialised</span>
             )}
