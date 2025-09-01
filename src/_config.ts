@@ -24,7 +24,7 @@ export const APP_INFO = {
   litLoginServer: 'https://login.litgateway.com',
 
   // 'https://naga-dev-auth-service.getlit.dev'
-  litAuthServer: 'http://localhost:3301',
+  litAuthServer: import.meta.env.VITE_AUTH_SERVICE_URL,
   faucetUrl: 'https://chronicle-yellowstone-faucet.getlit.dev/',
   defaultPrivateKey: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
 } as const;
