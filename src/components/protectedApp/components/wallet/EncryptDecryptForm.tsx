@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { useLitAuth } from '../../../../contexts/LitAuthProvider';
+import { useLitAuth } from '../../../../lit-login-modal/LitAuthProvider';
 import { PkpInfo } from '../../types';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 

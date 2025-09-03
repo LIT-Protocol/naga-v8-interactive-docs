@@ -27,7 +27,7 @@ import passkeyIcon from "../assets/passkey.svg";
 import phoneIcon from "../assets/phone.svg";
 import web3WalletIcon from "../assets/web3-wallet.svg";
 import whatsappIcon from "../assets/whatsapp.svg";
-import PkpSelectionForDemo from "../components/common/PkpSelectionForDemo";
+import PkpSelectionForDemo from "./PkpSelectionForDemo";
 import { APP_INFO } from "../_config";
 
 // Configuration constants

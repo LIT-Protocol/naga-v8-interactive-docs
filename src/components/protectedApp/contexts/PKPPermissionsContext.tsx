@@ -7,7 +7,7 @@
  */
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { useLitAuth } from '../../../contexts/LitAuthProvider';
+import { useLitAuth } from '../../../lit-login-modal/LitAuthProvider';
 import { PkpInfo } from '../types';
 
 interface PKPPermissionsContextType {

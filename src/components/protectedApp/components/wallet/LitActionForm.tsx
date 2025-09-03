@@ -6,7 +6,7 @@
 
 import React, { useState } from "react";
 import Editor from "@monaco-editor/react";
-import { useLitAuth } from "../../../../contexts/LitAuthProvider";
+import { useLitAuth } from "../../../../lit-login-modal/LitAuthProvider";
 import { PkpInfo } from "../../types";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
 

@@ -7,7 +7,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useLitAuth } from '../../../contexts/LitAuthProvider';
+import { useLitAuth } from '../../../lit-login-modal/LitAuthProvider';
 import {
   PKPPermissionsProvider,
   PermissionsDashboard,
@@ -26,7 +26,7 @@ import {
   type Tab
 } from '../index';
 
-import PkpSelectionForDemo from '../../common/PkpSelectionForDemo';
+import PkpSelectionForDemo from '../../../lit-login-modal/PkpSelectionForDemo';
 
 export default function ProtectedAppComplete() {
   const {

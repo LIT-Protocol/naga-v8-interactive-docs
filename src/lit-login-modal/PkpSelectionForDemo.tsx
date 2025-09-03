@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { APP_INFO } from "../../_config";
+import { APP_INFO } from "../_config";
 
 // Chain configuration for balance fetching
 const SUPPORTED_CHAINS = {
@@ -1029,7 +1029,7 @@ const PkpSelectionForDemo: React.FC<PkpSelectionForDemoProps> = ({
       </div>
 
       {/* Cache Information */}
-      <div style={{
+      {/* <div style={{
         marginTop: "16px",
         padding: "12px 16px",
         backgroundColor: "#f0f9ff",
@@ -1046,7 +1046,7 @@ const PkpSelectionForDemo: React.FC<PkpSelectionForDemoProps> = ({
           so pagination works seamlessly. Balances are fetched fresh from the Chronicle Yellowstone network 
           for real-time accuracy. You'll see 📦 (cached) or  indicators in the status. Use "🔄 Refresh" to bypass cache when needed.
         </div>
-      </div>
+      </div> */}
 
       <style>{`
         @keyframes spin {

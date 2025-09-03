@@ -51,7 +51,7 @@ export const AddActionForm: React.FC<AddActionFormProps> = ({ disabled = false }
       }}
     >
       <h3 style={{ margin: "0 0 16px 0", color: "#1f2937" }}>
-        ➕ Add Action Permission
+        ➕ Add Lit Action Permission
       </h3>
       <p
         style={{

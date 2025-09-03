@@ -7,7 +7,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useLitAuth } from '../../../contexts/LitAuthProvider';
+import { useLitAuth } from '../../../lit-login-modal/LitAuthProvider';
 import {
   PKPPermissionsProvider,
   TransactionToastContainer,
@@ -24,7 +24,7 @@ import {
 } from '../index';
 import { PaymentManagerOperationsDashboard } from '../components/payment/PaymentManagerOperationsDashboard';
 
-import PkpSelectionForDemo from '../../common/PkpSelectionForDemo';
+import PkpSelectionForDemo from '../../../lit-login-modal/PkpSelectionForDemo';
 
 interface PaymentTransaction {
   id: string;

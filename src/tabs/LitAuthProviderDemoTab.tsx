@@ -6,7 +6,7 @@
  */
 
 import React from "react";
-import { LitAuthProvider } from "../contexts/LitAuthProvider";
+import { LitAuthProvider } from "../lit-login-modal/LitAuthProvider";
 import ProtectedApp from "../components/ProtectedApp";
 import { DisplayCode } from "../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgContainer";
