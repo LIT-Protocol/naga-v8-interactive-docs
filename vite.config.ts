@@ -130,5 +130,10 @@ function generateVersionPage(): Plugin {
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), generateVersionPage(), tailwindcss()]
+  plugins: [react(), generateVersionPage(), tailwindcss()],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
 });

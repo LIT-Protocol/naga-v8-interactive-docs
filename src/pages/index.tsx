@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { MainLayout } from "../layouts/MainLayout";
 import { APP_INFO } from "../_config";
+import { LitAuthProvider } from "../lit-login-modal/LitAuthProvider";
 
 // --- Singleton instances ---
 type LitClient = Awaited<ReturnType<typeof createLitClient>>;
@@ -15,7 +16,9 @@ let authManagerInstance: AuthManager | null = null;
 const getLitClient = async (): Promise<LitClient> => {
   if (!litClientInstance) {
     console.log("Creating new LitClient instance (should happen only once)");
-    litClientInstance = await createLitClient({ network: APP_INFO.networkModule });
+    litClientInstance = await createLitClient({
+      network: APP_INFO.networkModule,
+    });
   }
   return litClientInstance;
 };
@@ -610,7 +613,31 @@ export const HomePage = () => {
     isErrorVisible,
   };
 
-  return (
+  return location.pathname.startsWith("/") ? (
+    <LitAuthProvider
+      appName="lit-auth-modal-demo"
+      network={APP_INFO.networkModule}
+      closeOnBackdropClick={true}
+      supportedNetworks={["naga-dev"]}
+      defaultNetwork="naga-dev"
+      hideNetworkSelectButton={false}
+      displayNetworkMessage={true}
+    >
+      <MainLayout>
+        {/* Fixed Error Toast - positioned outside of sidebar */}
+        <ErrorDisplay
+          error={error}
+          isVisible={isErrorVisible}
+          onClear={clearError}
+        />
+
+        {/* Content area */}
+        <div>
+          <Outlet context={contextValue} />
+        </div>
+      </MainLayout>
+    </LitAuthProvider>
+  ) : (
     <MainLayout>
       {/* Fixed Error Toast - positioned outside of sidebar */}
       <ErrorDisplay
@@ -619,25 +646,9 @@ export const HomePage = () => {
         onClear={clearError}
       />
 
-      <div
-        className="doc-layout"
-        style={{
-          display: "flex",
-          height: "100vh",
-          margin: "0 auto",
-        }}
-      >
-        {/* Content area */}
-        <div
-          className="content"
-          style={{
-            flex: 1,
-            padding: "20px",
-            overflowY: "auto",
-          }}
-        >
-          <Outlet context={contextValue} />
-        </div>
+      {/* Content area */}
+      <div className="flex-1 overflow-y-auto">
+        <Outlet context={contextValue} />
       </div>
     </MainLayout>
   );

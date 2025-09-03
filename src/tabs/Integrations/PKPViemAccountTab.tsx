@@ -10,7 +10,7 @@ import { useWalletClient } from "wagmi";
 import { DisplayCode } from "../../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../../components/layout/GreyboardWhiteBgContainer";
 import { useAppContext } from "../../router";
-import { SUPPORTED_CHAINS } from "../../components/ProtectedApp/utils/chains";
+import { SUPPORTED_CHAINS } from "../../components/lit-logged-page/protectedApp/utils/chains";
 import AccountMethodSelector, {
   AccountMethod,
   CREATE_ACCOUNT_PRIVATE_KEY_CODE,

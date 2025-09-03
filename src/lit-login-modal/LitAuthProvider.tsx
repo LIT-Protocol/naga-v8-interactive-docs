@@ -6,6 +6,8 @@
  */
 
 import { DiscordAuthenticator, GoogleAuthenticator } from "@lit-protocol/auth";
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import { ChevronDown } from "lucide-react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import React, {
   createContext,
@@ -29,6 +31,20 @@ import web3WalletIcon from "../assets/web3-wallet.svg";
 import whatsappIcon from "../assets/whatsapp.svg";
 import PkpSelectionForDemo from "./PkpSelectionForDemo";
 import { APP_INFO } from "../_config";
+import { nagaDev, nagaStaging, nagaTest } from "@lit-protocol/networks";
+
+type SupportedNetworkName = "naga" | "naga-dev" | "naga-staging" | "naga-test";
+const NETWORK_MODULES: Partial<Record<SupportedNetworkName, any>> = {
+  "naga-dev": nagaDev,
+  "naga-staging": nagaStaging,
+  "naga-test": nagaTest,
+};
+
+const formatNetworkLabel = (name: string): string =>
+  name
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join("");
 
 // Configuration constants
 const DEFAULT_PRIVATE_KEY = APP_INFO.defaultPrivateKey;
@@ -67,6 +83,8 @@ interface LitAuthContextValue {
   isInitializingServices: boolean;
   showPkpSelectionModal: () => void;
   updateUserWithPkp: (pkpInfo: any, authContext?: any) => void;
+  currentNetworkName: string;
+  shouldDisplayNetworkMessage: boolean;
 }
 
 const LitAuthContext = createContext<LitAuthContextValue | null>(null);
@@ -79,12 +97,28 @@ export const useLitAuth = () => {
   return context;
 };
 
+/**
+ * useOptionalLitAuth
+ *
+ * Safe variant that returns null if no provider is present.
+ * Use this when rendering components that may be mounted outside the provider.
+ */
+export const useOptionalLitAuth = () => {
+  return useContext(LitAuthContext);
+};
+
 interface LitAuthProviderProps {
   children: ReactNode;
   appName?: string;
   networkName?: string;
   autoSetup?: boolean;
   storageKey?: string;
+  closeOnBackdropClick?: boolean;
+  network?: any;
+  supportedNetworks?: SupportedNetworkName[];
+  defaultNetwork?: SupportedNetworkName;
+  hideNetworkSelectButton?: boolean;
+  displayNetworkMessage?: boolean;
 }
 
 interface AuthMethodInfo {
@@ -102,8 +136,25 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
   networkName = APP_INFO.network,
   autoSetup = false,
   storageKey = "lit-auth-user",
+  closeOnBackdropClick = true,
+  network = APP_INFO.networkModule,
+  supportedNetworks = ["naga-dev", "naga-staging"],
+  defaultNetwork,
+  hideNetworkSelectButton = false,
+  displayNetworkMessage = false,
 }) => {
   const { data: walletClient } = useWalletClient();
+
+  // Local network selection state for runtime switching
+  const [localNetwork, setLocalNetwork] = useState<any>(network);
+  const [localNetworkName, setLocalNetworkName] = useState<string>(
+    defaultNetwork || networkName
+  );
+
+  useEffect(() => {
+    setLocalNetwork(network);
+    setLocalNetworkName(defaultNetwork || networkName);
+  }, [network, networkName, defaultNetwork]);
 
   // Setup Lit Protocol services
   const {
@@ -111,11 +162,13 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
     isInitializing,
     error: setupError,
     setupServices,
+    clearServices,
     isReady: isServicesReady,
   } = useLitServiceSetup({
     appName,
-    networkName,
+    networkName: localNetworkName,
     autoSetup,
+    network: localNetwork,
   });
 
   // Auth state
@@ -266,9 +319,14 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
   // Auto-initialize services when user exists but services aren't ready
   useEffect(() => {
     if (user && !isServicesReady && !isInitializing) {
-      console.log("🔄 User exists but services not ready - initializing services...");
+      console.log(
+        "🔄 User exists but services not ready - initializing services..."
+      );
       setupServices().catch((error) => {
-        console.error("Failed to auto-initialize services for existing user:", error);
+        console.error(
+          "Failed to auto-initialize services for existing user:",
+          error
+        );
         // Don't logout the user automatically, but log the error
         // The user can try to use functionality and it will show appropriate error messages
       });
@@ -278,30 +336,42 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
   // Recreate authContext when services become ready for existing user
   useEffect(() => {
     const recreateAuthContext = async () => {
-      if (user && user.authData && user.pkpInfo && isServicesReady && services) {
+      if (
+        user &&
+        user.authData &&
+        user.pkpInfo &&
+        isServicesReady &&
+        services
+      ) {
         // Check if authContext is missing methods (indicates it was loaded from localStorage)
-        const needsRecreation = !user.authContext?.authNeededCallback || 
-                               typeof user.authContext?.authNeededCallback !== 'function';
-        
+        const needsRecreation =
+          !user.authContext?.authNeededCallback ||
+          typeof user.authContext?.authNeededCallback !== "function";
+
         if (needsRecreation) {
-          console.log("🔧 Recreating authContext for user loaded from localStorage...");
+          console.log(
+            "🔧 Recreating authContext for user loaded from localStorage..."
+          );
           try {
-            const newAuthContext = await services.authManager.createPkpAuthContext({
-              authData: user.authData,
-              pkpPublicKey: user.pkpInfo.pubkey || user.pkpInfo.publicKey,
-              authConfig: {
-                capabilityAuthSigs: [],
-                expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
-                statement: "",
-                domain: "",
-                resources: [
-                  ["pkp-signing", "*"],
-                  ["lit-action-execution", "*"],
-                  ["access-control-condition-decryption", "*"],
-                ],
-              },
-              litClient: services.litClient,
-            });
+            const newAuthContext =
+              await services.authManager.createPkpAuthContext({
+                authData: user.authData,
+                pkpPublicKey: user.pkpInfo.pubkey || user.pkpInfo.publicKey,
+                authConfig: {
+                  capabilityAuthSigs: [],
+                  expiration: new Date(
+                    Date.now() + 1000 * 60 * 60 * 24
+                  ).toISOString(),
+                  statement: "",
+                  domain: "",
+                  resources: [
+                    ["pkp-signing", "*"],
+                    ["lit-action-execution", "*"],
+                    ["access-control-condition-decryption", "*"],
+                  ],
+                },
+                litClient: services.litClient,
+              });
 
             // Update user with new authContext
             const updatedUser = {
@@ -399,6 +469,9 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
     localStorage.removeItem(storageKey);
     resetModalState();
     // Don't automatically show modal on logout - let user manually reconnect
+
+    // redirect back to home page
+    window.location.href = "/";
   };
 
   const showAuthModal = () => setShowModal(true);
@@ -439,7 +512,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
           resources: [
             ["pkp-signing", "*"],
             ["lit-action-execution", "*"],
-            ['access-control-condition-decryption', '*'],
+            ["access-control-condition-decryption", "*"],
           ],
         },
         litClient: services.litClient,
@@ -1003,6 +1076,8 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
         saveUser(updatedUser);
       }
     },
+    currentNetworkName: localNetworkName,
+    shouldDisplayNetworkMessage: displayNetworkMessage && localNetworkName !== "naga",
   };
 
   // Always render children with context
@@ -1101,6 +1176,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
             padding: "20px",
           }}
           onClick={(e) => {
+            if (!closeOnBackdropClick) return;
             if (e.target === e.currentTarget) {
               resetModalState();
             }
@@ -1119,8 +1195,92 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
               boxShadow:
                 "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
               border: "1px solid #e5e7eb",
+              position: "relative",
             }}
           >
+            {/* Network message moved to LoggedInDashboard */}
+            {/* Network selector (top-right) */}
+            {!hideNetworkSelectButton && !showPkpSelection && (
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  marginBottom: "8px",
+                }}
+              >
+                <DropdownMenu.Root>
+                  <DropdownMenu.Trigger asChild>
+                    <button
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        padding: "6px 10px",
+                        border: "1px solid #d1d5db",
+                        borderRadius: "6px",
+                        background: "white",
+                        color: "#374151",
+                        cursor: "pointer",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {localNetworkName}
+                      {/* {formatNetworkLabel(localNetworkName)} */}
+                      <ChevronDown size={14} />
+                    </button>
+                  </DropdownMenu.Trigger>
+                  <DropdownMenu.Content
+                    sideOffset={6}
+                    align="end"
+                    style={{
+                      background: "white",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "8px",
+                      padding: "6px",
+                      boxShadow:
+                        "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)",
+                    }}
+                  >
+                    <DropdownMenu.RadioGroup
+                      value={localNetworkName}
+                      onValueChange={async (value) => {
+                        try {
+                          const key = value as SupportedNetworkName;
+                          const selected = NETWORK_MODULES[key] || nagaDev;
+                          setLocalNetworkName(value);
+                          setLocalNetwork(selected);
+                          clearServices();
+                          await setupServices();
+                        } catch (err) {
+                          console.error("Failed to switch network:", err);
+                        }
+                      }}
+                    >
+                      {supportedNetworks.map((net) => (
+                        <DropdownMenu.RadioItem
+                          key={net}
+                          value={net}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            padding: "6px 10px",
+                            borderRadius: "6px",
+                            fontSize: "13px",
+                            cursor: "pointer",
+                            color: "#111827",
+                          }}
+                        >
+                          {net}
+                          {/* {formatNetworkLabel(net)} */}
+                        </DropdownMenu.RadioItem>
+                      ))}
+                    </DropdownMenu.RadioGroup>
+                  </DropdownMenu.Content>
+                </DropdownMenu.Root>
+              </div>
+            )}
             {!showMethodDetail ? (
               // Main method selection or PKP selection
               showPkpSelection ? (
@@ -1172,8 +1332,8 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                           margin: "0 0 8px 0",
                         }}
                       >
-                         👋 You've successfully authenticated with{" "}
-                         <strong className="capitalize">{tempMethod}</strong>.
+                        👋 You've successfully authenticated with{" "}
+                        <strong className="capitalize">{tempMethod}</strong>.
                       </h3>
                       {/* <p
                         style={{
@@ -1249,9 +1409,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                         lineHeight: "1.2",
                       }}
                     >
-                      {modalMode === "signin"
-                        ? "Log in"
-                        : "Sign up"}
+                      {modalMode === "signin" ? "Log in" : "Sign up"}
                     </h2>
                     <p
                       style={{
@@ -1681,7 +1839,9 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                           <input
                             type="password"
                             value={privateKey}
-                            onChange={(e) => setPrivateKey(e.target.value as any)}
+                            onChange={(e) =>
+                              setPrivateKey(e.target.value as any)
+                            }
                             placeholder="0x..."
                             style={{
                               width: "100%",
@@ -1801,7 +1961,10 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                     selectedMethod === "stytch-sms" ||
                     selectedMethod === "stytch-whatsapp") && (
                     <div className="text-black">
-                      <div className="text-black" style={{ marginBottom: "12px" }}>
+                      <div
+                        className="text-black"
+                        style={{ marginBottom: "12px" }}
+                      >
                         <label
                           style={{
                             fontSize: "13px",
@@ -2191,7 +2354,6 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                 </button>
               </div>
             )}
-            
             <div className="text-gray-700 text-xs text-center font-bold mt-4 flex items-center justify-center gap-1">
               <span>Powered by</span>
               <img src={litPrimaryOrangeIcon} alt="Lit logo" className="h-3" />

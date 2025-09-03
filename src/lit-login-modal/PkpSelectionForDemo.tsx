@@ -64,7 +64,7 @@ const PkpSelectionForDemo: React.FC<PkpSelectionForDemoProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalPkps, setTotalPkps] = useState(0);
-  const [pageSize] = useState(10);
+  const [pageSize] = useState(5);
   const [isLoadingPage, setIsLoadingPage] = useState(false);
 
   // Copy functionality

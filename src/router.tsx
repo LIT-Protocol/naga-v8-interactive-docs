@@ -17,7 +17,7 @@ import StytchSmsOtpAuthTab from "./tabs/PKPAuthMethods/StytchSmsOtpAuthTab";
 import StytchWhatsAppOtpAuthTab from "./tabs/PKPAuthMethods/StytchWhatsAppOtpAuthTab";
 import CustomAuthTab from "./tabs/CustomAuthTab";
 
-import LitAuthProviderDemoTab from "./tabs/LitAuthProviderDemoTab";
+import LitAuthProviderDemoTab from "./components/lit-logged-page/main";
 import EncryptionTab from "./tabs/EncryptionTab";
 import SetupLitClientTab from "./tabs/GettingStarted/SetupLitClientTab";
 import SetupAuthManagerTab from "./tabs/GettingStarted/SetupAuthManagerTab";
@@ -86,7 +86,7 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Navigate to="/setup-lit-client" replace />,
+        element: <LitAuthProviderDemoTab />,
       },
       {
         path: "demo",
