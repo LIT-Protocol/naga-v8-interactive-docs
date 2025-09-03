@@ -620,7 +620,7 @@ export const HomePage = () => {
       closeOnBackdropClick={true}
       supportedNetworks={["naga-dev"]}
       defaultNetwork="naga-dev"
-      hideNetworkSelectButton={false}
+      showSettingsButton={true}
       displayNetworkMessage={true}
     >
       <MainLayout>

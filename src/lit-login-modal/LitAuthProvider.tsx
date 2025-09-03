@@ -6,8 +6,7 @@
  */
 
 import { DiscordAuthenticator, GoogleAuthenticator } from "@lit-protocol/auth";
-import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { ChevronDown } from "lucide-react";
+import { Settings } from "lucide-react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import React, {
   createContext,
@@ -117,7 +116,7 @@ interface LitAuthProviderProps {
   network?: any;
   supportedNetworks?: SupportedNetworkName[];
   defaultNetwork?: SupportedNetworkName;
-  hideNetworkSelectButton?: boolean;
+  showSettingsButton?: boolean;
   displayNetworkMessage?: boolean;
 }
 
@@ -140,7 +139,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
   network = APP_INFO.networkModule,
   supportedNetworks = ["naga-dev", "naga-staging"],
   defaultNetwork,
-  hideNetworkSelectButton = false,
+  showSettingsButton = true,
   displayNetworkMessage = false,
 }) => {
   const { data: walletClient } = useWalletClient();
@@ -184,6 +183,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
     "select"
   );
   const [modalMode, setModalMode] = useState<"signin" | "signup">("signin");
+  const [showSettingsView, setShowSettingsView] = useState(false);
 
   // EOA specific state
   const [privateKey, setPrivateKey] = useState(DEFAULT_PRIVATE_KEY);
@@ -443,6 +443,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
     setShowMethodDetail(false);
     setAuthStep("select");
     setModalMode("signin");
+    setShowSettingsView(false);
     setError(null);
     setEmail("");
     setPhoneNumber("");
@@ -1199,8 +1200,8 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
             }}
           >
             {/* Network message moved to LoggedInDashboard */}
-            {/* Network selector (top-right) */}
-            {!hideNetworkSelectButton && !showPkpSelection && (
+            {/* Settings (top-right) */}
+            {showSettingsButton && !showPkpSelection && (
               <div
                 style={{
                   display: "flex",
@@ -1208,80 +1209,131 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                   marginBottom: "8px",
                 }}
               >
-                <DropdownMenu.Root>
-                  <DropdownMenu.Trigger asChild>
-                    <button
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        padding: "6px 10px",
-                        border: "1px solid #d1d5db",
-                        borderRadius: "6px",
-                        background: "white",
-                        color: "#374151",
-                        cursor: "pointer",
-                        fontSize: "12px",
-                        fontWeight: 600,
-                      }}
-                    >
-                      {localNetworkName}
-                      {/* {formatNetworkLabel(localNetworkName)} */}
-                      <ChevronDown size={14} />
-                    </button>
-                  </DropdownMenu.Trigger>
-                  <DropdownMenu.Content
-                    sideOffset={6}
-                    align="end"
+                <button
+                  aria-label="Settings"
+                  onClick={() => {
+                    setShowSettingsView(true);
+                    setShowMethodDetail(false);
+                    setShowPkpSelection(false);
+                  }}
+                  onMouseDown={(e) => e.preventDefault()}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "6px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "6px",
+                    background: "white",
+                    color: "#374151",
+                    cursor: "pointer",
+                    outline: "none",
+                    boxShadow: "none",
+                  }}
+                >
+                  <Settings size={16} />
+                </button>
+              </div>
+            )}
+            {showSettingsView ? (
+              // Settings view
+              <div className="text-black">
+                <div style={{ marginBottom: "16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <h3
                     style={{
-                      background: "white",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: "8px",
-                      padding: "6px",
-                      boxShadow:
-                        "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)",
+                      fontSize: "18px",
+                      fontWeight: "600",
+                      color: "#111827",
+                      margin: 0,
                     }}
                   >
-                    <DropdownMenu.RadioGroup
-                      value={localNetworkName}
-                      onValueChange={async (value) => {
-                        try {
-                          const key = value as SupportedNetworkName;
-                          const selected = NETWORK_MODULES[key] || nagaDev;
-                          setLocalNetworkName(value);
-                          setLocalNetwork(selected);
-                          clearServices();
-                          await setupServices();
-                        } catch (err) {
-                          console.error("Failed to switch network:", err);
-                        }
-                      }}
-                    >
-                      {supportedNetworks.map((net) => (
-                        <DropdownMenu.RadioItem
+                    Settings
+                  </h3>
+                  <button
+                    onClick={() => setShowSettingsView(false)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#6b7280",
+                      fontSize: "12px",
+                      cursor: "pointer",
+                      padding: "6px 8px",
+                      borderRadius: "4px",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "#f3f4f6";
+                      e.currentTarget.style.color = "#374151";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                      e.currentTarget.style.color = "#6b7280";
+                    }}
+                  >
+                    ← Back
+                  </button>
+                </div>
+
+                <div
+                  style={{
+                    padding: "12px",
+                    backgroundColor: "#f8fafc",
+                    borderRadius: "8px",
+                    border: "1px solid #e5e7eb",
+                    marginBottom: "16px",
+                  }}
+                >
+                  <label
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      display: "block",
+                      marginBottom: "8px",
+                      color: "#111827",
+                    }}
+                  >
+                    Network
+                  </label>
+                  <div style={{ display: "grid", gap: "8px" }}>
+                    {supportedNetworks.map((net) => {
+                      const isActive = localNetworkName === net;
+                      return (
+                        <button
                           key={net}
-                          value={net}
+                          onClick={async () => {
+                            try {
+                              const key = net as SupportedNetworkName;
+                              const selected = NETWORK_MODULES[key] || nagaDev;
+                              setLocalNetworkName(net);
+                              setLocalNetwork(selected);
+                              clearServices();
+                              await setupServices();
+                            } catch (err) {
+                              console.error("Failed to switch network:", err);
+                            }
+                          }}
                           style={{
                             display: "flex",
                             alignItems: "center",
-                            gap: "8px",
-                            padding: "6px 10px",
+                            justifyContent: "space-between",
+                            padding: "8px 12px",
+                            border: "1px solid #d1d5db",
                             borderRadius: "6px",
-                            fontSize: "13px",
-                            cursor: "pointer",
+                            backgroundColor: isActive ? "#eef2ff" : "white",
                             color: "#111827",
+                            cursor: "pointer",
                           }}
                         >
-                          {net}
-                          {/* {formatNetworkLabel(net)} */}
-                        </DropdownMenu.RadioItem>
-                      ))}
-                    </DropdownMenu.RadioGroup>
-                  </DropdownMenu.Content>
-                </DropdownMenu.Root>
+                          <span style={{ fontSize: "13px", fontWeight: 600 }}>{net}</span>
+                          {isActive && (
+                            <span style={{ fontSize: "12px", color: "#4f46e5", fontWeight: 600 }}>Selected</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
-            )}
-            {!showMethodDetail ? (
+            ) : !showMethodDetail ? (
               // Main method selection or PKP selection
               showPkpSelection ? (
                 // PKP Selection View
