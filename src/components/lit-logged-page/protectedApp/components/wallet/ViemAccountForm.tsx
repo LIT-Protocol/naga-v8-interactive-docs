@@ -225,7 +225,7 @@ export const ViemAccountForm: React.FC<ViemAccountFormProps> = ({
                 border: "1px solid #bbf7d0",
               }}
             >
-              <strong>Signature:</strong> {viemSignature.signature?.slice(0, 40)}...
+              <strong>Signature:</strong> {viemSignature.signature}
             </div>
           </div>
         </div>

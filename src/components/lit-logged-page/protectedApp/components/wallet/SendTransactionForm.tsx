@@ -8,7 +8,7 @@ import React, { useState, useEffect } from 'react';
 import { useLitAuth } from '../../../../../lit-login-modal/LitAuthProvider';
 import { PkpInfo, TransactionResult } from '../../types';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
-import { SUPPORTED_CHAINS } from '../../utils/chains';
+import { getAllChains } from '../../utils/chains';
 
 interface SendTransactionFormProps {
   selectedPkp: PkpInfo | null;
@@ -68,8 +68,14 @@ export const SendTransactionForm: React.FC<SendTransactionFormProps> = ({
     setIsSendingTransaction(true);
     setStatus("Preparing and sending transaction...");
     try {
-      // Get the selected chain configuration
-      const chainInfo = SUPPORTED_CHAINS[selectedChain as keyof typeof SUPPORTED_CHAINS];
+      // Get the selected chain configuration (supports custom chains)
+      const allChains = getAllChains();
+      const chainInfo = allChains[selectedChain as keyof typeof allChains];
+      if (!chainInfo) {
+        setStatus(`Unknown chain: ${selectedChain}`);
+        setIsSendingTransaction(false);
+        return;
+      }
 
       // Create a custom chain config for viem
       const chainConfig = {
@@ -147,7 +153,10 @@ export const SendTransactionForm: React.FC<SendTransactionFormProps> = ({
     }
   };
 
-  const chainInfo = SUPPORTED_CHAINS[selectedChain as keyof typeof SUPPORTED_CHAINS];
+  const chainInfo = (() => {
+    const allChains = getAllChains();
+    return allChains[selectedChain as keyof typeof allChains];
+  })();
 
   return (
     <div

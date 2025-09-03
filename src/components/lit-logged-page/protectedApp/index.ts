@@ -31,4 +31,4 @@ export * from './types';
 
 // Utilities
 export * from './utils';
-export { SUPPORTED_CHAINS, SUPPORTED_CHAIN_ID } from './utils/chains'; 
+export { SUPPORTED_CHAINS, SUPPORTED_CHAIN_ID, getAllChains, getCustomChains, addCustomChain, removeCustomChain, isCustomChain } from './utils/chains';

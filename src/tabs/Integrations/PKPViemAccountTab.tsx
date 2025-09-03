@@ -534,28 +534,6 @@ export default function PKPViemAccountTab() {
           )}
         </ul>
 
-        {/* Faucet Information */}
-        <div
-          style={{
-            marginTop: "15px",
-            padding: "10px",
-            backgroundColor: "#e8f4fd",
-            borderRadius: "4px",
-            border: "1px solid #b3d9ff",
-          }}
-        >
-          <strong>💰 Need Test Tokens?</strong> Visit the{" "}
-          <a
-            href={FAUCET_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: "#0066cc", textDecoration: "underline" }}
-          >
-            Chronicle Yellowstone Faucet
-          </a>{" "}
-          to get test tokens for your EOA account.
-        </div>
-
         {/* Chain Selection */}
         <div style={{ marginTop: "15px" }}>
           <label
@@ -691,6 +669,7 @@ export default function PKPViemAccountTab() {
           authMethodName="EOA Auth"
           mintCodeSnippet={MINT_PKP_CODE}
           disabled={!authData || !account}
+          stepNumber={4}
         />
       </GreyBoarderWhiteBgContainer>
 

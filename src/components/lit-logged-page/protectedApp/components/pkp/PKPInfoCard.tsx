@@ -4,7 +4,7 @@
  * Displays PKP wallet information including balance and addresses
  */
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { PkpInfo, BalanceInfo } from "../../types";
 import { formatPublicKey, copyToClipboard } from "../../utils";
 import copyIcon from "../../../../../assets/copy.svg";
@@ -17,14 +17,9 @@ import phoneIcon from "../../../../../assets/phone.svg";
 import whatsappIcon from "../../../../../assets/whatsapp.svg";
 import tfaIcon from "../../../../../assets/2fa.svg";
 import { getAddress } from "viem";
-import { ChainSelector } from "../layout/ChainSelector";
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-} from "@/components/ui/navigation-menu";
+import { ChainSelector } from "../layout";
+import { APP_INFO } from "@/_config";
+// Replaced hover behaviour with a click-triggered menu
 
 const AUTH_ICON_BY_METHOD: Record<string, string> = {
   google: googleIcon,
@@ -58,6 +53,37 @@ export const PKPInfoCard: React.FC<PKPInfoCardProps> = ({
   onChainChange,
 }) => {
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [isChainMenuOpen, setIsChainMenuOpen] = useState<boolean>(false);
+  const chainTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const chainMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        isChainMenuOpen &&
+        chainMenuRef.current &&
+        !chainMenuRef.current.contains(target) &&
+        chainTriggerRef.current &&
+        !chainTriggerRef.current.contains(target)
+      ) {
+        setIsChainMenuOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsChainMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isChainMenuOpen]);
 
   const handleCopy = async (text: string, fieldName: string) => {
     await copyToClipboard(text, setCopiedField, fieldName);
@@ -75,7 +101,7 @@ export const PKPInfoCard: React.FC<PKPInfoCardProps> = ({
   }
 
   return (
-    <div className="mt-5">
+    <div id="pkp-info-card">
       {/* Header row: avatar | title | actions (chain + settings) */}
       <div className="mb-3 grid grid-cols-[24px_1fr_auto] items-center gap-2">
         {/* Avatar (circular) */}
@@ -89,42 +115,21 @@ export const PKPInfoCard: React.FC<PKPInfoCardProps> = ({
 
         {/* Title only */}
         <div className="min-w-0">
-          <div className="capitalized text-sm font-medium leading-none">PKP Wallet</div>
+          <div className="capitalized text-sm font-medium leading-none">
+            PKP Wallet
+          </div>
         </div>
 
-        {/* Actions: Chain selector (navigation menu) + Settings */}
-        <div className="flex items-center gap-1">
-          <NavigationMenu viewport={false}>
-            <NavigationMenuList>
-              <NavigationMenuItem>
-                <NavigationMenuTrigger className="h-6 w-6 p-0 hover:bg-sky-100 text-sky-700" showChevron={false}>
-                  <span className="sr-only">Select chain</span>
-                  <svg
-                    aria-hidden="true"
-                    viewBox="0 0 24 24"
-                    className="h-4 w-4 opacity-80 group-data-[state=open]:opacity-100"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M2 12h20" />
-                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                  </svg>
-                </NavigationMenuTrigger>
-                <NavigationMenuContent className="p-2">
-                  <div className="w-64">
-                    <ChainSelector
-                      selectedChain={selectedChain}
-                      onChainChange={onChainChange}
-                    />
-                  </div>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
+        {/* Actions: Chain selector + Settings */}
+        <div className="flex items-center gap-1 relative">
+          <ChainSelector
+            selectedChain={selectedChain}
+            onChainChange={(slug) => {
+              onChainChange(slug);
+            }}
+            iconTrigger
+            triggerAriaLabel="Select chain"
+          />
 
           <button
             type="button"
@@ -168,7 +173,7 @@ export const PKPInfoCard: React.FC<PKPInfoCardProps> = ({
         )}
       </div>
 
-      <div className="p-4 bg-white rounded-md border border-gray-300 mb-4">
+      <div className="p-4 bg-white rounded-md border border-gray-300">
         <div className="text-black grid gap-2 text-xs">
           <div className="grid [grid-template-columns:90px_1fr] gap-2 items-center">
             <strong>Token ID:</strong>

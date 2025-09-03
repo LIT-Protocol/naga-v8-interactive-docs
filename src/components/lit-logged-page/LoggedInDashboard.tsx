@@ -20,7 +20,7 @@ import {
   BalanceInfo,
   TransactionToast,
   TransactionResult,
-  SUPPORTED_CHAINS,
+  getAllChains,
   type Tab,
 } from "./protectedApp/index";
 
@@ -123,8 +123,9 @@ export default function LoggedInDashboard() {
     if (!silent) setIsLoadingBalance(true);
     try {
       const { createPublicClient, http } = await import("viem");
-      const chainInfo =
-        SUPPORTED_CHAINS[selectedChain as keyof typeof SUPPORTED_CHAINS];
+      const allChains = getAllChains();
+      const chainInfo = allChains[selectedChain as keyof typeof allChains];
+      if (!chainInfo) throw new Error(`Unknown chain: ${selectedChain}`);
 
       const chainConfig = {
         id: chainInfo.id,
@@ -197,8 +198,9 @@ export default function LoggedInDashboard() {
     (async () => {
       try {
         const { createPublicClient, http } = await import("viem");
-        const chainInfo =
-          SUPPORTED_CHAINS[selectedChain as keyof typeof SUPPORTED_CHAINS];
+        const allChains = getAllChains();
+        const chainInfo = allChains[selectedChain as keyof typeof allChains];
+        if (!chainInfo) return;
 
         const chainConfig = {
           id: chainInfo.id,
@@ -350,25 +352,28 @@ export default function LoggedInDashboard() {
       setStatus={setStatus}
       addTransactionToast={addTransactionToast}
     >
-      <div id="header-nav" className="text-black max-w-8xl mx-auto sticky top-16 z-50">
-        <div className="lg:flex px-12 h-12 font-medium text-sm bg-white">
-          <div className="nav-tabs h-full flex text-sm gap-x-6">
-            {tabs.map((t) => (
-              <a
-                key={t.id}
-                onClick={() => setActiveTab(t.id)}
-                className={`cursor-pointer relative h-full gap-2 flex items-center hover:border-b ${
-                  activeTab === t.id
-                    ? "border-b border-b-[#EA580D] hover:border-b-[#EA580D]"
-                    : "text-[#837F7E] hover:border-b-gray-300 hover:text-[#575250] font-medium"
-                }`}
-              >
-                {t.label}
-              </a>
-            ))}
+      <div className="sticky top-16 z-50 bg-white">
+        <div id="header-nav" className="text-black max-w-8xl mx-auto">
+          <div className="lg:flex px-12 h-12 font-medium text-sm bg-white">
+            <div className="nav-tabs h-full flex text-sm gap-x-6">
+              {tabs.map((t) => (
+                <a
+                  key={t.id}
+                  onClick={() => setActiveTab(t.id)}
+                  className={`cursor-pointer relative h-full gap-2 flex items-center hover:border-b ${
+                    activeTab === t.id
+                      ? "border-b border-b-[#EA580D] hover:border-b-[#EA580D]"
+                      : "text-[#837F7E] hover:border-b-gray-300 hover:text-[#575250] font-medium"
+                  }`}
+                >
+                  {t.label}
+                </a>
+              ))}
+            </div>
           </div>
         </div>
       </div>
+
       <div className="w-full border-b border-gray-500/5"></div>
       {(() => {
         try {
