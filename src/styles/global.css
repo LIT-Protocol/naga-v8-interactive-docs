@@ -1,14 +1,16 @@
+@import "tailwindcss";
+
 /**
  * NOTE: Many of these values are now configured in src/_config.ts
  * For customization, please update the values in that file.
  * This allows for programmatic access to these values in components.
  */
 
-* {
+/* * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-}
+} */
 /* WebKit-based browsers */
 *::-webkit-scrollbar {
   width: 6px;
@@ -75,6 +77,9 @@
   --lit-light-gray: hsl(0 0% 96%);
   --lit-border-color: hsl(0 0% 88%);
 
+  /* Lit Docs colors */
+  --lit-docs-bg: #FFFFFF;
+
   /* Gradients */
   --lit-primary-gradient: linear-gradient(
     to right,
@@ -88,12 +93,20 @@
   );
 }
 
+/* Custom max-width utilities */
+.max-w-8xl {
+  max-width: 92rem; /* 1408px - larger than max-w-7xl (80rem/1280px) */
+}
+
+.w-8xl{
+  width: 92rem; /* 1408px - larger than max-w-7xl (80rem/1280px) */
+}
 body {
   font-family: "Inter", "Inter Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI",
     Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
   line-height: 1.6;
-  color: var(--lit-dark-purple);
-  background-color: var(--lit-light-gray);
+  color: var(--lit-docs-bg);
+  background-color: var(--lit-docs-bg);
 }
 
 a {
@@ -148,12 +161,12 @@ a:hover {
   width: 100%;
 }
 
-.header {
+/* .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 16px 24px;
-  background-color: var(--lit-dark-purple);
+  background-color: var(--lit-docs-bg);
   border-bottom: 1px solid var(--lit-purple);
   color: var(--lit-white);
   width: 100%;
@@ -163,7 +176,7 @@ a:hover {
 .header nav {
   display: flex;
   align-items: center;
-}
+} */
 
 .logo {
   font-weight: bold;
@@ -237,7 +250,7 @@ a:hover {
 
 .footer {
   padding: 16px 24px;
-  background-color: var(--lit-dark-purple);
+  background-color: var(--lit-docs-bg);
   color: var(--lit-white);
   border-top: 1px solid var(--lit-purple);
   text-align: center;
@@ -255,7 +268,7 @@ a:hover {
 
 h1 {
   margin-bottom: 16px;
-  color: var(--lit-dark-purple);
+  color: var(--lit-docs-bg);
 }
 
 p {
@@ -339,7 +352,7 @@ ul {
 }
 
 .account-section h2 {
-  color: var(--lit-dark-purple);
+  color: var(--lit-docs-bg);
   margin-bottom: 16px;
 }
 
@@ -363,4 +376,18 @@ ul {
   border-radius: var(--radius);
   border: 1px solid var(--lit-border-color);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+
+/* --- Explorer Specific Styles --- */
+.header-logo {
+  height: 28px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.header{
+  border-bottom: none !important;
 }

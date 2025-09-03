@@ -2,6 +2,7 @@ import { defineConfig, Plugin } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import fs from 'fs';
 import path from 'path';
+import tailwindcss from '@tailwindcss/vite'
 
 /**
  * Custom Vite plugin to generate version.html with @lit-protocol package versions
@@ -129,5 +130,5 @@ function generateVersionPage(): Plugin {
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), generateVersionPage()]
+  plugins: [react(), generateVersionPage(), tailwindcss()]
 });

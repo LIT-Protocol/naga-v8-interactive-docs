@@ -94,71 +94,71 @@ export const router = createBrowserRouter([
       },
 
       // Getting Started Routes
-      {
-        path: "setup-lit-client",
-        element: <SetupLitClientTab />,
-      },
-      {
-        path: "setup-auth-manager",
-        element: <SetupAuthManagerTab />,
-      },
-      {
-        path: "setup-auth-services",
-        element: <SetupAuthServicesTab />,
-      },
-      {
-        path: "storage-plugins",
-        element: <StoragePluginsTab />,
-      },
-      // EOA and Auth Routes
-      {
-        path: "eoa-native",
-        element: <EoaNativeTab />,
-      },
-      {
-        path: "google-auth",
-        element: <GoogleAuthTab />,
-      },
-      {
-        path: "discord-auth",
-        element: <DiscordAuthTab />,
-      },
-      {
-        path: "webauthn-auth",
-        element: <WebAuthnTab />,
-      },
-      {
-        path: "eoa-auth",
-        element: <EoaAuthTab />,
-      },
-      {
-        path: "stytch-email-otp-auth",
-        element: <StytchEmailOtpAuthTab />,
-      },
-      {
-        path: "stytch-sms-otp-auth",
-        element: <StytchSmsOtpAuthTab />,
-      },
-      {
-        path: "stytch-whatsapp-otp-auth",
-        element: <StytchWhatsAppOtpAuthTab />,
-      },
-      {
-        path: "stytch-totp-auth",
-        element: <StytchTotpAuthTab />,
-      },
-      {
-        path: "custom-auth",
-        element: <CustomAuthTab />,
-      },
-      {
-        path: "encryption",
-        element: <EncryptionTab />,
-      },
-      {
-        path: "payment-manager",
-        element: <PaymentManagerTab />,
-      },
+      // {
+      //   path: "setup-lit-client",
+      //   element: <SetupLitClientTab />,
+      // },
+      // {
+      //   path: "setup-auth-manager",
+      //   element: <SetupAuthManagerTab />,
+      // },
+      // {
+      //   path: "setup-auth-services",
+      //   element: <SetupAuthServicesTab />,
+      // },
+      // {
+      //   path: "storage-plugins",
+      //   element: <StoragePluginsTab />,
+      // },
+      // // EOA and Auth Routes
+      // {
+      //   path: "eoa-native",
+      //   element: <EoaNativeTab />,
+      // },
+      // {
+      //   path: "google-auth",
+      //   element: <GoogleAuthTab />,
+      // },
+      // {
+      //   path: "discord-auth",
+      //   element: <DiscordAuthTab />,
+      // },
+      // {
+      //   path: "webauthn-auth",
+      //   element: <WebAuthnTab />,
+      // },
+      // {
+      //   path: "eoa-auth",
+      //   element: <EoaAuthTab />,
+      // },
+      // {
+      //   path: "stytch-email-otp-auth",
+      //   element: <StytchEmailOtpAuthTab />,
+      // },
+      // {
+      //   path: "stytch-sms-otp-auth",
+      //   element: <StytchSmsOtpAuthTab />,
+      // },
+      // {
+      //   path: "stytch-whatsapp-otp-auth",
+      //   element: <StytchWhatsAppOtpAuthTab />,
+      // },
+      // {
+      //   path: "stytch-totp-auth",
+      //   element: <StytchTotpAuthTab />,
+      // },
+      // {
+      //   path: "custom-auth",
+      //   element: <CustomAuthTab />,
+      // },
+      // {
+      //   path: "encryption",
+      //   element: <EncryptionTab />,
+      // },
+      // {
+      //   path: "payment-manager",
+      //   element: <PaymentManagerTab />,
+      // },
     ],
   },
 ]);

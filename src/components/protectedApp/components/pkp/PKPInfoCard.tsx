@@ -59,6 +59,7 @@ export const PKPInfoCard: React.FC<PKPInfoCardProps> = ({
       }}
     >
       <div
+        className="text-black"
         style={{
           display: "flex",
           justifyContent: "space-between",
@@ -85,7 +86,7 @@ export const PKPInfoCard: React.FC<PKPInfoCardProps> = ({
         </button>
       </div>
 
-      <div style={{ display: "grid", gap: "8px", fontSize: "11px" }}>
+      <div className="text-black" style={{ display: "grid", gap: "8px", fontSize: "11px" }}>
         <div
           style={{
             display: "grid",

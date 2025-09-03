@@ -32,41 +32,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 }) => {
   return (
     <div style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
-      {/* Welcome Banner */}
-      <div
-        style={{
-          marginBottom: "24px",
-          padding: "20px",
-          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-          borderRadius: "12px",
-          color: "white",
-          textAlign: "center",
-        }}
-      >
-        <div style={{ fontSize: "48px", marginBottom: "12px" }}>🎉</div>
-        <h1
-          style={{
-            margin: "0 0 8px 0",
-            fontSize: "24px",
-            fontWeight: "700",
-            color: "white",
-          }}
-        >
-          You've successfully authenticated via{" "}
-          <strong
-            style={{
-              fontWeight: "bold",
-              textTransform: "uppercase",
-              fontSize: "24px",
-              borderBottom: "2px solid white",
-            }}
-          >
-            {userMethod}
-          </strong>{" "}
-          and selected your PKP wallet!
-        </h1>
-      </div>
-
       {/* Header with PKP info and controls */}
       <div
         style={{

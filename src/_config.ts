@@ -61,7 +61,7 @@ export const THEME = {
     brightPurple: "#5f35b8",
     green: "#22C55E",
     white: "#FFFFFF",
-    lightGray: "#f5f5f5",
+    lightGray: "#FFFFFF",
     borderColor: "#e0e0e0",
   },
   

@@ -17,7 +17,7 @@ import React, {
 import { privateKeyToAccount } from "viem/accounts";
 import { useWalletClient } from "wagmi";
 import { useLitServiceSetup } from "../hooks/useLitServiceSetup";
-
+import litPrimaryOrangeIcon from "../assets/lit-primary-orange.svg";
 // Import icon assets
 import tfaIcon from "../assets/2fa.svg";
 import discordIcon from "../assets/discord.png";
@@ -160,7 +160,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
 
   // Custom auth specific state (demo PKP and validation)
   const [customPkpPublicKey, setCustomPkpPublicKey] = useState(
-    "0x04b8e68a0b4b95e39b2c49f7b8c4b8b3b6f16b52e4a1e4b6b8b3b6f16b52e4a1e4b6b8b3b6f16b52e4a1e4b6b8b3b6f16b52e4a1e4b6b8b3b6f16b52e4a1e"
+    "0x04b8e68a0b4b95e39b2c49f7b8c4b8b3b6f16b52e4a1e4b6b8b3b6f16b52e4a1e4b6b8b3b6f16b52e4a1e4b6b8b3b6f16b52e4a1e4b6b8b3b6f16b52e4a1e4b6b8b3b6f16b52e4a1e"
   );
   const [customValidationCid, setCustomValidationCid] = useState(
     "QmYLeVmwJPVs7Uebk85YdVPivMyrvoeKR6X37kyVRZUXW4"
@@ -1111,6 +1111,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
               backgroundColor: "white",
               borderRadius: "12px",
               padding: "28px",
+              paddingBottom: "12px",
               maxWidth: showPkpSelection ? "48rem" : "32rem",
               width: "100%",
               maxHeight: "90vh",
@@ -1171,9 +1172,10 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                           margin: "0 0 8px 0",
                         }}
                       >
-                        🎉 Authentication Successful!
+                         👋 You've successfully authenticated with{" "}
+                         <strong className="capitalize">{tempMethod}</strong>.
                       </h3>
-                      <p
+                      {/* <p
                         style={{
                           fontSize: "14px",
                           color: "#1e40af",
@@ -1182,8 +1184,8 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                         }}
                       >
                         You've successfully authenticated with{" "}
-                        <strong>{tempMethod}</strong>.
-                      </p>
+                        <strong className="capitalize">{tempMethod}</strong>.
+                      </p> */}
                       <p
                         style={{
                           fontSize: "13px",
@@ -1209,7 +1211,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                   )}
 
                   {/* Instructions for after PKP selection */}
-                  <div
+                  {/* <div
                     style={{
                       marginTop: "20px",
                       padding: "12px",
@@ -1232,11 +1234,11 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                       where you can manage your PKP, view balances, and access
                       all features.
                     </p>
-                  </div>
+                  </div> */}
                 </div>
               ) : (
                 // Main method selection
-                <div>
+                <div className="text-black">
                   <div style={{ textAlign: "center", marginBottom: "20px" }}>
                     <h2
                       style={{
@@ -1248,8 +1250,8 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                       }}
                     >
                       {modalMode === "signin"
-                        ? "Sign In to Lit Protocol"
-                        : "Sign Up with Lit Protocol"}
+                        ? "Log in"
+                        : "Sign up"}
                     </h2>
                     <p
                       style={{
@@ -1679,7 +1681,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                           <input
                             type="password"
                             value={privateKey}
-                            onChange={(e) => setPrivateKey(e.target.value)}
+                            onChange={(e) => setPrivateKey(e.target.value as any)}
                             placeholder="0x..."
                             style={{
                               width: "100%",
@@ -1798,8 +1800,8 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                   {(selectedMethod === "stytch-email" ||
                     selectedMethod === "stytch-sms" ||
                     selectedMethod === "stytch-whatsapp") && (
-                    <div>
-                      <div style={{ marginBottom: "12px" }}>
+                    <div className="text-black">
+                      <div className="text-black" style={{ marginBottom: "12px" }}>
                         <label
                           style={{
                             fontSize: "13px",
@@ -1909,7 +1911,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                   )}
 
                   {selectedMethod === "stytch-totp" && (
-                    <div>
+                    <div className="text-black">
                       <div style={{ marginBottom: "12px" }}>
                         <label
                           style={{
@@ -1999,7 +2001,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                   )}
 
                   {selectedMethod === "custom" && (
-                    <div>
+                    <div className="text-black">
                       <div style={{ marginBottom: "12px" }}>
                         <label
                           style={{
@@ -2189,6 +2191,11 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                 </button>
               </div>
             )}
+            
+            <div className="text-gray-700 text-xs text-center font-bold mt-4 flex items-center justify-center gap-1">
+              <span>Powered by</span>
+              <img src={litPrimaryOrangeIcon} alt="Lit logo" className="h-3" />
+            </div>
           </div>
         </div>
       )}

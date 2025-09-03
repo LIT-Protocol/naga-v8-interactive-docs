@@ -414,7 +414,7 @@ const PkpSelectionForDemo: React.FC<PkpSelectionForDemoProps> = ({
           margin: "0",
           lineHeight: "1.4"
         }}>
-          Choose a PKP for your <strong>{authMethodName}</strong> authentication
+          Choose a PKP for your <strong className="capitalize">{authMethodName}</strong> authentication
         </p>
       </div>
 
