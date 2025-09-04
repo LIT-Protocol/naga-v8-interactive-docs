@@ -1178,7 +1178,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
       {/* Authentication Modal */}
       {showModal && isServicesReady && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000] p-5"
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000] p-4 sm:p-5"
           onClick={(e) => {
             if (!closeOnBackdropClick) return;
             if (e.target === e.currentTarget) {
@@ -1188,9 +1188,11 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
         >
           <div
             id="lit-auth-modal-container"
-            className={`bg-white rounded-xl px-7 pt-7 pb-7 ${
-              showPkpSelection ? "max-w-[48rem]" : "max-w-[32rem]"
-            } w-full max-h-[90vh] overflow-y-auto shadow-xl border border-gray-200 relative`}
+            className={`bg-white rounded-xl px-4 sm:px-7 pt-6 sm:pt-7 pb-6 sm:pb-7 w-full max-h-[90vh] overflow-y-auto shadow-xl border border-gray-200 relative ${
+              showPkpSelection
+                ? "max-w-[92vw] sm:max-w-lg md:max-w-xl lg:max-w-[48rem]"
+                : "max-w-[92vw] sm:max-w-sm md:max-w-md lg:max-w-[32rem]"
+            }`}
           >
             {/* Network message moved to LoggedInDashboard */}
             {/* Settings (top-right) */}
@@ -1363,7 +1365,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                           <img
                             src={method.icon}
                             alt={method.name}
-                            className="w-6 h-6 object-contain"
+                            className="w-5 h-5 sm:w-6 sm:h-6 object-contain"
                           />
                         </div>
                         <div className="flex-1 flex items-center justify-center">

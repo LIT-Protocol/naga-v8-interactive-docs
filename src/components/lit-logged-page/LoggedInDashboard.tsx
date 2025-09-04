@@ -16,6 +16,10 @@ import {
 } from "./protectedApp/index";
 
 import PKPSelectionModal from "./PKPSelectionModal";
+import { useState as useReactState } from "react";
+import copyIcon from "../../assets/copy.svg";
+import { getAddress } from "viem";
+import { formatPublicKey } from "./protectedApp/utils";
 
 enum LOGIN_STYLE {
   button = "button",
@@ -314,10 +318,10 @@ export default function LoggedInDashboard() {
       setStatus={setStatus}
       addTransactionToast={addTransactionToast}
     >
-      <div className="sticky top-16 z-50 bg-white">
+      <div className="sticky top-14 sm:top-16 z-50 bg-white">
         <div id="header-nav" className="text-black max-w-8xl mx-auto">
-          <div className="lg:flex px-12 h-12 font-medium text-sm bg-white">
-            <div className="nav-tabs h-full flex text-sm gap-x-6">
+          <div className="px-4 sm:px-6 lg:px-12 h-12 font-medium text-sm bg-white flex items-center justify-between">
+            <div className="nav-tabs h-full flex text-sm gap-x-4 sm:gap-x-6 overflow-x-auto whitespace-nowrap no-scrollbar">
               {tabs.map((t) => (
                 <a
                   key={t.id}
@@ -332,6 +336,11 @@ export default function LoggedInDashboard() {
                 </a>
               ))}
             </div>
+            <AccountMenu
+              selectedChain={selectedChain}
+              onChainChange={setSelectedChain}
+              onShowPkpModal={() => setShowPkpModal(true)}
+            />
           </div>
         </div>
       </div>
@@ -342,7 +351,7 @@ export default function LoggedInDashboard() {
           const { shouldDisplayNetworkMessage, currentNetworkName } =
             useLitAuth();
           return shouldDisplayNetworkMessage ? (
-            <div className="w-full bg-[#FFF6E5] text-black text-sm text-yellow-700 p-2 text-center border-b border-[#FFDD8F] border-t font-light sticky top-28 z-50 -mt-px">
+            <div className="w-full bg-[#FFF6E5] text-black text-sm text-yellow-700 p-2 text-center border-b border-[#FFDD8F] border-t font-light relative md:sticky md:top-28 z-10 -mt-px">
               ⚠️ The {currentNetworkName} testnet is a public testnet and is not
               meant for production use as there's no persistency guarantees.
               Please use for testing and development purposes only.
@@ -411,5 +420,147 @@ export default function LoggedInDashboard() {
 
       {/* Tailwind handles animations; no inline keyframes needed */}
     </PKPPermissionsProvider>
+  );
+}
+
+function AccountMenu({
+  selectedChain,
+  onChainChange,
+  onShowPkpModal,
+}: {
+  selectedChain: string;
+  onChainChange: (chain: string) => void;
+  onShowPkpModal: () => void;
+}) {
+  const { user, logout } = useLitAuth();
+  const [open, setOpen] = useReactState(false);
+  const [copiedField, setCopiedField] = useReactState<string | null>(null);
+  if (!user) return null;
+  const pkp = user.pkpInfo || {};
+  const publicKey: string = pkp.pubkey || pkp.publicKey || "";
+  const ethAddress: string = pkp.ethAddress || "";
+
+  const handleCopy = async (value: string, field: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 1500);
+    } catch {}
+  };
+  return (
+    <div className="fixed top-2 right-2 sm:top-3 sm:right-3 z-[1100] block lg:hidden">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Open account menu"
+        className="p-2 rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          className="w-5 h-5"
+        >
+          <path d="M3.75 6.75h16.5a.75.75 0 0 0 0-1.5H3.75a.75.75 0 0 0 0 1.5Zm0 6h16.5a.75.75 0 0 0 0-1.5H3.75a.75.75 0 0 0 0 1.5Zm0 6h16.5a.75.75 0 0 0 0-1.5H3.75a.75.75 0 0 0 0 1.5Z" />
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute right-0 mt-2 w-[300px] max-w-[90vw] bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-[1200] overflow-hidden">
+          <div className="text-xs text-gray-500 mb-2 font-semibold">PKP</div>
+          <div className="grid gap-2 text-xs text-gray-800">
+            {pkp.tokenId && (
+              <div className="grid grid-cols-[72px_1fr] items-center gap-2">
+                <div className="text-gray-500 whitespace-nowrap text-[11px]">Token ID</div>
+                <button
+                  onClick={() => handleCopy(String(pkp.tokenId), "tokenId")}
+                  className={`group w-full px-1.5 py-1 rounded border flex items-center justify-between gap-1 min-w-0 overflow-hidden ${
+                    copiedField === "tokenId"
+                      ? "bg-green-50 border-green-200"
+                      : "bg-gray-50 border-gray-200 hover:bg-gray-100"
+                  }`}
+                  title="Click to copy Token ID"
+                >
+                  <span className="truncate font-mono text-[11px]">
+                    {copiedField === "tokenId" ? `✅ ${pkp.tokenId}` : String(pkp.tokenId)}
+                  </span>
+                  <img src={copyIcon} alt="Copy" className="h-3 w-3 opacity-70 group-hover:opacity-100" />
+                </button>
+              </div>
+            )}
+            {publicKey && (
+              <div className="grid grid-cols-[72px_1fr] items-center gap-2">
+                <div className="text-gray-500 whitespace-nowrap text-[11px]">Public Key</div>
+                <button
+                  onClick={() => handleCopy(publicKey, "publicKey")}
+                  className={`group w-full px-1.5 py-1 rounded border flex items-center justify-between gap-1 min-w-0 overflow-hidden ${
+                    copiedField === "publicKey"
+                      ? "bg-green-50 border-green-200"
+                      : "bg-gray-50 border-gray-200 hover:bg-gray-100"
+                  }`}
+                  title="Click to copy Public Key"
+                >
+                  <span className="truncate font-mono text-[11px]">
+                    {copiedField === "publicKey" ? `✅ ${publicKey}` : formatPublicKey(publicKey)}
+                  </span>
+                  <img src={copyIcon} alt="Copy" className="h-3 w-3 opacity-70 group-hover:opacity-100" />
+                </button>
+              </div>
+            )}
+            {ethAddress && (
+              <div className="grid grid-cols-[72px_1fr] items-center gap-2">
+                <div className="text-gray-500 whitespace-nowrap text-[11px]">ETH</div>
+                <button
+                  onClick={() => handleCopy(getAddress(ethAddress), "ethAddress")}
+                  className={`group w-full px-1.5 py-1 rounded border flex items-center justify-between gap-1 min-w-0 overflow-hidden ${
+                    copiedField === "ethAddress"
+                      ? "bg-green-50 border-green-200"
+                      : "bg-gray-50 border-gray-200 hover:bg-gray-100"
+                  }`}
+                  title="Click to copy ETH Address"
+                >
+                  <span className="truncate font-mono text-[11px]">
+                    {copiedField === "ethAddress" ? `✅ ${getAddress(ethAddress)}` : getAddress(ethAddress)}
+                  </span>
+                  <img src={copyIcon} alt="Copy" className="h-3 w-3 opacity-70 group-hover:opacity-100" />
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="mt-3 pt-3 border-t border-gray-200">
+            <div className="text-xs text-gray-500 mb-2 font-semibold">Actions</div>
+            <div className="grid gap-2">
+              <div className="grid grid-cols-[72px_1fr] items-center gap-2">
+                <div className="text-gray-500 whitespace-nowrap text-[11px]">Chain</div>
+                <select
+                  className="w-full px-2 py-1 rounded border border-gray-300 bg-white text-[12px] text-gray-800"
+                  value={selectedChain}
+                  onChange={(e) => onChainChange(e.target.value)}
+                >
+                  {Object.entries(getAllChains()).map(([key, info]) => (
+                    <option key={key} value={key}>
+                      {info.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                onClick={() => {
+                  setOpen(false);
+                  onShowPkpModal();
+                }}
+                className="w-full px-3 py-2 rounded-md border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-sm cursor-pointer"
+              >
+                Change PKP
+              </button>
+            </div>
+          </div>
+          <button
+            onClick={logout}
+            className="mt-3 w-full px-3 py-2 rounded-md bg-red-500 hover:bg-red-600 text-white text-sm cursor-pointer"
+          >
+            Log out
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

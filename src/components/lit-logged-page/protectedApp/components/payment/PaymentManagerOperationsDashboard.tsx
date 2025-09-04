@@ -331,32 +331,11 @@ export const PaymentManagerOperationsDashboard: React.FC<
     <>
       {/* Error Display */}
       {error && (
-        <div
-          style={{
-            margin: "0 0 20px 0",
-            padding: "12px 16px",
-            backgroundColor: "#fee2e2",
-            border: "1px solid #fecaca",
-            borderRadius: "8px",
-            color: "#991b1b",
-            fontSize: "14px",
-          }}
-        >
-          ⚠️ {error}
-        </div>
+        <div className="mb-5 px-4 py-3 bg-red-100 border border-red-200 rounded-lg text-red-800 text-sm">⚠️ {error}</div>
       )}
 
       {/* Account Setup */}
-      <div
-        style={{
-          marginBottom: "30px",
-          padding: "20px",
-          backgroundColor: "white",
-          borderRadius: "12px",
-          border: "1px solid #e5e7eb",
-          boxShadow: "",
-        }}
-      >
+      <div className="mb-8 p-5 bg-white rounded-xl border border-gray-200">
         <h3 style={{ margin: "0 0 15px 0", color: "#1f2937" }}>
           Account Setup
         </h3>
@@ -403,16 +382,7 @@ export const PaymentManagerOperationsDashboard: React.FC<
 
       {/* Balance Section */}
       {paymentManager && (
-        <div
-          style={{
-            marginBottom: "30px",
-            padding: "20px",
-            backgroundColor: "white",
-            borderRadius: "12px",
-            border: "1px solid #e5e7eb",
-            boxShadow: "",
-          }}
-        >
+        <div className="mb-8 p-5 bg-white rounded-xl border border-gray-200">
           <div
             style={{
               display: "flex",
@@ -544,23 +514,9 @@ export const PaymentManagerOperationsDashboard: React.FC<
 
       {/* Operations Grid */}
       {paymentManager && (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
-            gap: "30px",
-          }}
-        >
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Deposit Section */}
-          <div
-            style={{
-              padding: "20px",
-              backgroundColor: "white",
-              borderRadius: "12px",
-              border: "1px solid #e5e7eb",
-              boxShadow: "",
-            }}
-          >
+          <div className="p-5 bg-white rounded-xl border border-gray-200">
             <h3 style={{ margin: "0 0 15px 0", color: "#1f2937" }}>
               💰 Deposit Funds
             </h3>
@@ -598,7 +554,7 @@ export const PaymentManagerOperationsDashboard: React.FC<
               </div>
             </div>
 
-            <div style={{ marginBottom: "15px" }}>
+            <div className="mb-4">
               <input
                 type="number"
                 step="0.001"
@@ -607,15 +563,9 @@ export const PaymentManagerOperationsDashboard: React.FC<
                 value={depositAmount}
                 onChange={(e) => setDepositAmount(e.target.value)}
                 disabled={!account}
-                style={{
-                  width: "100%",
-                  padding: "12px",
-                  border: "1px solid #d1d5db",
-                  borderRadius: "8px",
-                  fontSize: "14px",
-                  backgroundColor: !account ? "#f9fafb" : "white",
-                  color: "black",
-                }}
+                className={`w-full px-3 py-2 rounded-lg text-sm border ${
+                  !account ? 'bg-gray-50' : 'bg-white'
+                } border-gray-300 text-black`}
               />
             </div>
 
@@ -655,26 +605,20 @@ export const PaymentManagerOperationsDashboard: React.FC<
                 👥 Deposit for Others
               </h4>
 
-              <div style={{ marginBottom: "10px" }}>
+              <div className="mb-3">
                 <input
                   type="text"
                   placeholder="Recipient address (0x...)"
                   value={depositForUserAddress}
                   onChange={(e) => setDepositForUserAddress(e.target.value)}
                   disabled={!account}
-                  style={{
-                    width: "100%",
-                    padding: "10px",
-                    border: "1px solid #d1d5db",
-                    borderRadius: "6px",
-                    fontSize: "14px",
-                    backgroundColor: !account ? "#f9fafb" : "white",
-                    color: "black",
-                  }}
+                  className={`w-full px-3 py-2 rounded-lg text-sm border ${
+                    !account ? 'bg-gray-50' : 'bg-white'
+                  } border-gray-300 text-black`}
                 />
               </div>
 
-              <div style={{ marginBottom: "10px" }}>
+              <div className="mb-3">
                 <input
                   type="number"
                   step="0.001"
@@ -683,15 +627,9 @@ export const PaymentManagerOperationsDashboard: React.FC<
                   value={depositForUserAmount}
                   onChange={(e) => setDepositForUserAmount(e.target.value)}
                   disabled={!account}
-                  style={{
-                    width: "100%",
-                    padding: "10px",
-                    border: "1px solid #d1d5db",
-                    borderRadius: "6px",
-                    fontSize: "14px",
-                    backgroundColor: !account ? "#f9fafb" : "white",
-                    color: "black",
-                  }}
+                  className={`w-full px-3 py-2 rounded-lg text-sm border ${
+                    !account ? 'bg-gray-50' : 'bg-white'
+                  } border-gray-300 text-black`}
                 />
               </div>
 
@@ -720,15 +658,7 @@ export const PaymentManagerOperationsDashboard: React.FC<
           </div>
 
           {/* Withdrawal Section */}
-          <div
-            style={{
-              padding: "20px",
-              backgroundColor: "white",
-              borderRadius: "12px",
-              border: "1px solid #e5e7eb",
-              boxShadow: "",
-            }}
-          >
+          <div className="p-5 bg-white rounded-xl border border-gray-200">
             <h3 style={{ margin: "0 0 15px 0", color: "#1f2937" }}>
               🔄 Withdraw Funds
             </h3>
@@ -805,7 +735,7 @@ export const PaymentManagerOperationsDashboard: React.FC<
             {/* Request Withdrawal */}
             {(!withdrawInfo || !withdrawInfo.isPending) && (
               <>
-                <div style={{ marginBottom: "15px" }}>
+                <div className="mb-4">
                   <input
                     type="number"
                     step="0.001"
@@ -814,15 +744,9 @@ export const PaymentManagerOperationsDashboard: React.FC<
                     value={withdrawAmount}
                     onChange={(e) => setWithdrawAmount(e.target.value)}
                     disabled={!account}
-                    style={{
-                      width: "100%",
-                      padding: "12px",
-                      border: "1px solid #d1d5db",
-                      borderRadius: "8px",
-                      fontSize: "14px",
-                      backgroundColor: !account ? "#f9fafb" : "white",
-                      color: "black",
-                    }}
+                    className={`w-full px-3 py-2 rounded-lg text-sm border ${
+                      !account ? 'bg-gray-50' : 'bg-white'
+                    } border-gray-300 text-black`}
                   />
                 </div>
 

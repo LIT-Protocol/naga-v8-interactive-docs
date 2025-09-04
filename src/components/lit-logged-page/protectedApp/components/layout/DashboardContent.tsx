@@ -25,10 +25,10 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
 }) => {
   return (
     <div className="bg-[#FAFAFA] text-black z-0">
-      <div className="h-8"></div>
-      <div className="max-w-8xl m-auto px-12">
+      <div className="h-6 sm:h-8"></div>
+      <div className="max-w-8xl m-auto px-4 sm:px-6 lg:px-12">
         <aside
-          className="z-20 lg:block fixed bottom-0 right-auto w-[18rem] h-full pt-8"
+          className="hidden lg:block z-20 fixed bottom-0 right-auto w-[18rem] h-full pt-6 lg:pt-8"
           style={{ top: "calc(7rem + 38px)" }}
         >
           {/* Faucet Information */}
@@ -130,7 +130,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
             </li> */}
           </ul>
         </aside>
-        <main className="relative grow box-border flex-col w-full mx-auto px-1 lg:pl-[23.7rem] lg:-ml-12 ">
+        <main className="relative grow box-border flex-col w-full mx-auto px-1 lg:pl-[23.7rem] lg:-ml-12">
           {children}
         </main>
       </div>

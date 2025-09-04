@@ -32,14 +32,8 @@ export const WalletOperationsDashboard: React.FC<
       {/* <SignMessageForm selectedPkp={selectedPkp} disabled={disabled} /> */}
 
       {/* Viem Integrations Section */}
-      <div style={{ marginBottom: "30px" }}>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
-            gap: "20px",
-          }}
-        >
+      <div className="mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* PKP Viem Account Signing */}
           <ViemAccountForm selectedPkp={selectedPkp} disabled={disabled} />
 
@@ -57,7 +51,9 @@ export const WalletOperationsDashboard: React.FC<
       {/* <EncryptDecryptForm selectedPkp={selectedPkp} disabled={disabled} /> */}
 
       {/* Lit Action Execution */}
-      <LitActionForm selectedPkp={selectedPkp} disabled={disabled} />
+      <div className="mt-6">
+        <LitActionForm selectedPkp={selectedPkp} disabled={disabled} />
+      </div>
     </>
   );
 };

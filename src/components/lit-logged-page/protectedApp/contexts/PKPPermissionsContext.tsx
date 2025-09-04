@@ -131,17 +131,24 @@ export const PKPPermissionsProvider: React.FC<PKPPermissionsProviderProps> = ({
     try {
       const pkpPermissionsManager = await getPermissionsManager();
       const context = await pkpPermissionsManager.getPermissionsContext();
-      console.log("context:", context);
-
-      const permittedAddresses = await pkpPermissionsManager.getPermittedAddresses();
-      console.log("permittedAddresses:", permittedAddresses);
-
-      const permittedActions = await pkpPermissionsManager.getPermittedActions();
-      console.log("permittedActions:", permittedActions);
-
-      const permittedAuthMethods = await pkpPermissionsManager.getPermittedAuthMethods();
-      console.log("permittedAuthMethods:", permittedAuthMethods);
-
+      // Merge explicit lists into context if missing to ensure UI stops loading
+      let merged = { ...context } as any;
+      if (!merged.addresses) {
+        try {
+          merged.addresses = await pkpPermissionsManager.getPermittedAddresses();
+        } catch {}
+      }
+      if (!merged.actions) {
+        try {
+          merged.actions = await pkpPermissionsManager.getPermittedActions();
+        } catch {}
+      }
+      if (!merged.authMethods) {
+        try {
+          merged.authMethods = await pkpPermissionsManager.getPermittedAuthMethods();
+        } catch {}
+      }
+      setPermissionsContext(merged);
       console.log("✅ Permissions context loaded successfully");
     } catch (error: any) {
       console.error("Failed to load permissions context:", error);

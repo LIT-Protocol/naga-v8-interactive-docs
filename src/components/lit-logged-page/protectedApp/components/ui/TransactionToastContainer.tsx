@@ -17,50 +17,22 @@ export const TransactionToastContainer: React.FC<TransactionToastContainerProps>
   toasts, 
   onRemoveToast 
 }) => (
-  <div
-    style={{
-      position: "fixed",
-      top: "20px",
-      right: "20px",
-      zIndex: 10000,
-      display: "flex",
-      flexDirection: "column",
-      gap: "12px",
-      maxWidth: "400px",
-    }}
-  >
+  <div className="fixed z-[10000] flex flex-col gap-3 max-w-[90vw] sm:max-w-[420px] right-3 sm:right-6 top-3 sm:top-6">
     {toasts.map((toast) => (
       <div
         key={toast.id}
-        style={{
-          background: toast.type === 'success' ? "#10b981" : "#ef4444",
-          color: "white",
-          padding: "12px 16px",
-          borderRadius: "8px",
-          fontSize: "14px",
-          fontWeight: "500",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-          animation: "slideIn 0.3s ease-out",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "12px",
-        }}
+        className={`${toast.type === 'success' ? 'bg-emerald-500' : 'bg-red-500'} text-white px-4 py-3 rounded-lg text-sm font-medium shadow-[0_4px_12px_rgba(0,0,0,0.15)] flex items-center justify-between gap-3`}
       >
-        <div style={{ flex: 1 }}>
-          <div style={{ marginBottom: "4px" }}>
+        <div className="flex-1 min-w-0">
+          <div className="mb-1 truncate">
             {toast.type === 'success' ? '✅' : '❌'} {toast.message}
           </div>
-          <div style={{ fontSize: "11px", opacity: 0.9, fontFamily: "monospace" }}>
+          <div className="text-[11px] opacity-90 font-mono truncate">
             <a
               href={`https://yellowstone-explorer.litprotocol.com/tx/${toast.txHash}`}
               target="_blank"
               rel="noopener noreferrer"
-              style={{
-                color: "white",
-                textDecoration: "underline",
-                opacity: 0.9,
-              }}
+              className="text-white underline opacity-90"
             >
               Tx: {formatTxHash(toast.txHash)}
             </a>
@@ -68,16 +40,7 @@ export const TransactionToastContainer: React.FC<TransactionToastContainerProps>
         </div>
         <button
           onClick={() => onRemoveToast(toast.id)}
-          style={{
-            background: "none",
-            border: "none",
-            color: "white",
-            fontSize: "16px",
-            cursor: "pointer",
-            padding: "4px",
-            borderRadius: "4px",
-            opacity: 0.8,
-          }}
+          className="bg-transparent border-0 text-white text-base cursor-pointer p-1 rounded hover:bg-white/10"
         >
           ✕
         </button>
