@@ -5,11 +5,12 @@
  */
 
 import React, { useState, useEffect, useCallback } from "react";
-import { useWalletClient } from "wagmi";
+// import { useWalletClient } from "wagmi";
 import { PkpInfo, TransactionResult } from "../../types";
 import AccountMethodSelector, {
   AccountMethod,
 } from "../../../../common/AccountMethodSelector";
+import { useOptionalLitAuth } from "../../../../../lit-login-modal/LitAuthProvider";
 
 interface PaymentManagerOperationsDashboardProps {
   selectedPkp: PkpInfo | null;
@@ -48,12 +49,14 @@ export const PaymentManagerOperationsDashboard: React.FC<
   onTransactionComplete,
   services,
 }) => {
-  const { data: walletClient } = useWalletClient();
+  // const { data: walletClient } = useWalletClient();
+  const optionalAuth = useOptionalLitAuth();
+  const user = optionalAuth?.user;
+  const litServices = optionalAuth?.services;
 
   // Account state
-  const [accountMethod, setAccountMethod] =
-    useState<AccountMethod>("walletClient");
   const [account, setAccount] = useState<any>(null);
+  const [accountSource, setAccountSource] = useState<"pkp" | "eoa">("pkp");
 
   // PaymentManager state
   const [paymentManager, setPaymentManager] = useState<any>(null);
@@ -109,6 +112,51 @@ export const PaymentManagerOperationsDashboard: React.FC<
   };
 
   const clearError = () => setError("");
+
+  // Create a PKP viem account when PKP is selected as the source
+  useEffect(() => {
+    const hasAuthContext = Boolean(user?.authContext);
+    const pkpPublicKey = selectedPkp?.publicKey || user?.pkpInfo?.pubkey;
+    const targetServices = services || litServices;
+    const canUsePkp = Boolean(targetServices?.litClient && hasAuthContext && pkpPublicKey);
+
+    if (accountSource !== "pkp") {
+      return;
+    }
+
+    // Reset current account when switching to PKP
+    setAccount(null);
+
+    if (!canUsePkp) {
+      return;
+    }
+
+    let cancelled = false;
+    const derivePkpAccount = async () => {
+      try {
+        clearError();
+        const chainConfig = targetServices!.litClient.getChainConfig().viemConfig;
+        const pkpViemAccount = await targetServices!.litClient.getPkpViemAccount({
+          pkpPublicKey,
+          authContext: user!.authContext,
+          chainConfig,
+        });
+        if (!cancelled) {
+          setAccount(pkpViemAccount);
+        }
+      } catch (e: any) {
+        console.error("Failed to create PKP viem account:", e);
+        if (!cancelled) {
+          showError(`Failed to create PKP viem account: ${e?.message || e}`);
+          setAccount(null);
+        }
+      }
+    };
+    derivePkpAccount();
+    return () => {
+      cancelled = true;
+    };
+  }, [accountSource, services, litServices, user, selectedPkp]);
 
   // Initialize PaymentManager when account is available
   const initializePaymentManager = useCallback(async () => {
@@ -337,20 +385,66 @@ export const PaymentManagerOperationsDashboard: React.FC<
       {/* Account Setup */}
       <div className="mb-8 p-5 bg-white rounded-xl border border-gray-200">
         <h3 style={{ margin: "0 0 15px 0", color: "#1f2937" }}>
-          Account Setup
+          Select a Payment Manager Account
         </h3>
-        <AccountMethodSelector
-          onAccountCreated={setAccount}
-          onMethodChange={setAccountMethod}
-          setStatus={() => {}}
-          showError={showError}
-          showSuccess={() => {}}
-          successActionIds={{
-            createAccount: "pm-create-account",
-            getWalletAccount: "pm-get-wallet-account",
-          }}
-          successActions={successActions}
-        />
+
+        {/* Account source selector: PKP (default) or EOA */}
+        <div style={{ display: "flex", gap: "10px", marginBottom: "15px" }}>
+          <button
+            onClick={() => {
+              setAccountSource("pkp");
+            }}
+            disabled={disabled}
+            style={{
+              padding: "8px 15px",
+              backgroundColor: accountSource === "pkp" ? "#B7410D" : "#f0f0f0",
+              color: accountSource === "pkp" ? "white" : "#333",
+              border: "1px solid #ddd",
+              borderRadius: "6px",
+              cursor: disabled ? "not-allowed" : "pointer",
+              fontSize: "14px",
+              opacity: disabled ? 0.6 : 1,
+            }}
+          >
+            Current PKP Wallet
+          </button>
+          <button
+            onClick={() => {
+              setAccountSource("eoa");
+              setAccount(null);
+            }}
+            disabled={disabled}
+            style={{
+              padding: "8px 15px",
+              backgroundColor: accountSource === "eoa" ? "#B7410D" : "#f0f0f0",
+              color: accountSource === "eoa" ? "white" : "#333",
+              border: "1px solid #ddd",
+              borderRadius: "6px",
+              cursor: disabled ? "not-allowed" : "pointer",
+              fontSize: "14px",
+              opacity: disabled ? 0.6 : 1,
+            }}
+          >
+            Externally Owned Account (EOA)
+          </button>
+        </div>
+
+        {/* EOA account manual selection */}
+        {accountSource === "eoa" && (
+          <AccountMethodSelector
+            onAccountCreated={setAccount}
+            onMethodChange={() => {}}
+            setStatus={() => {}}
+            showError={showError}
+            showSuccess={() => {}}
+            successActionIds={{
+              createAccount: "pm-create-account",
+              getWalletAccount: "pm-get-wallet-account",
+            }}
+            successActions={successActions}
+            disabled={disabled}
+          />
+        )}
 
         {account && (
           <div
@@ -391,7 +485,7 @@ export const PaymentManagerOperationsDashboard: React.FC<
               marginBottom: "15px",
             }}
           >
-            <h3 style={{ margin: 0, color: "#1f2937" }}>Balance Overview</h3>
+            <h3 style={{ margin: 0, color: "#1f2937" }}>Lit Ledger Balance Overview</h3>
             <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
               <label style={{ fontSize: "14px", color: "#6b7280" }}>
                 <input
