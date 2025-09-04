@@ -23,7 +23,9 @@
     /* ShadCn */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@layout/*": ["./src/layout/*"],
+      "@layout": ["./src/layout", "./src/layout/index.ts"]
     }
   },
   "include": ["src"],

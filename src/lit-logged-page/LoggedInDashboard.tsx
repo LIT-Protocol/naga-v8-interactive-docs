@@ -6,14 +6,14 @@ import {
   WalletOperationsDashboard,
   PaymentManagementDashboard,
   TransactionToastContainer,
-  DashboardContent,
   PkpInfo,
   BalanceInfo,
   TransactionToast,
   TransactionResult,
   getAllChains,
-  type Tab,
+  PKPInfoCard,
 } from "./protectedApp/index";
+import { TopNavBar, GlobalMessage, StickySidebarLayout, type TopNavTab } from "@layout";
 
 import PKPSelectionModal from "./PKPSelectionModal";
 import { useState as useReactState } from "react";
@@ -71,7 +71,7 @@ export default function LoggedInDashboard() {
   >([]);
 
   // Tab configuration
-  const tabs: Tab[] = [
+  const tabs: TopNavTab[] = [
     { id: "playground", label: "Playground" },
     { id: "permissions", label: "PKP Permissions" },
     { id: "payment", label: "Payment Management" },
@@ -318,57 +318,104 @@ export default function LoggedInDashboard() {
       setStatus={setStatus}
       addTransactionToast={addTransactionToast}
     >
-      <div className="sticky top-14 sm:top-16 z-50 bg-white">
-        <div id="header-nav" className="text-black max-w-8xl mx-auto">
-          <div className="px-4 sm:px-6 lg:px-12 h-12 font-medium text-sm bg-white flex items-center justify-between">
-            <div className="nav-tabs h-full flex text-sm gap-x-4 sm:gap-x-6 overflow-x-auto whitespace-nowrap no-scrollbar">
-              {tabs.map((t) => (
-                <a
-                  key={t.id}
-                  onClick={() => setActiveTab(t.id)}
-                  className={`cursor-pointer relative h-full gap-2 flex items-center hover:border-b ${
-                    activeTab === t.id
-                      ? "border-b border-b-[#EA580D] hover:border-b-[#EA580D]"
-                      : "text-[#837F7E] hover:border-b-gray-300 hover:text-[#575250] font-medium"
-                  }`}
-                >
-                  {t.label}
-                </a>
-              ))}
-            </div>
-            <AccountMenu
-              selectedChain={selectedChain}
-              onChainChange={setSelectedChain}
-              onShowPkpModal={() => setShowPkpModal(true)}
-            />
-          </div>
-        </div>
-      </div>
+      <TopNavBar
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        rightSlot={
+          <AccountMenu
+            selectedChain={selectedChain}
+            onChainChange={setSelectedChain}
+            onShowPkpModal={() => setShowPkpModal(true)}
+          />
+        }
+      />
 
       <div className="w-full border-b border-gray-500/5"></div>
       {(() => {
         try {
-          const { shouldDisplayNetworkMessage, currentNetworkName } =
-            useLitAuth();
-          return shouldDisplayNetworkMessage ? (
-            <div className="w-full bg-[#FFF6E5] text-black text-sm text-yellow-700 p-2 text-center border-b border-[#FFDD8F] border-t font-light relative md:sticky md:top-28 z-10 -mt-px">
-              ⚠️ The {currentNetworkName} testnet is a public testnet and is not
-              meant for production use as there's no persistency guarantees.
-              Please use for testing and development purposes only.
-            </div>
-          ) : null;
+          const { shouldDisplayNetworkMessage, currentNetworkName } = useLitAuth();
+          return (
+            <GlobalMessage
+              visible={Boolean(shouldDisplayNetworkMessage)}
+              message={`⚠️ The ${currentNetworkName} testnet is a public testnet and is not meant for production use as there's no persistency guarantees. Please use for testing and development purposes only.`}
+            />
+          );
         } catch {
           return null;
         }
       })()}
-      <DashboardContent
-        selectedPkp={selectedPkp}
-        balance={balance}
-        isLoadingBalance={isLoadingBalance}
-        selectedChain={selectedChain}
-        onShowPkpModal={() => setShowPkpModal(true)}
-        onChainChange={setSelectedChain}
-        userMethod={user.method}
+
+      <StickySidebarLayout
+        sidebar={
+          <>
+            <PKPInfoCard
+              selectedPkp={selectedPkp}
+              balance={balance}
+              isLoadingBalance={isLoadingBalance}
+              onShowPkpModal={() => setShowPkpModal(true)}
+              userMethod={user.method}
+              selectedChain={selectedChain}
+              onChainChange={setSelectedChain}
+            />
+
+            <h5 className="mt-5 text-sm font-medium mb-3">Resources</h5>
+            <ul id="sidebar-group">
+              <li className="text-sm text-[#1D1917] font-light pr-3 rounded-xl cursor-pointer">
+                <a
+                  className="group flex items-center pr-3 py-2 cursor-pointer focus:outline-primary dark:focus:outline-primary-light gap-x-3 rounded-xl hover:bg-gray-600/5 hover:text-black"
+                  style={{ paddingLeft: "1rem", marginLeft: "-1rem" }}
+                  href="https://chronicle-yellowstone-faucet.getlit.dev/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <div className="flex-1 flex items-center space-x-2.5">
+                    <div className="text-sm">Faucet (test tokens)</div>
+                  </div>
+                </a>
+              </li>
+              <li className="text-sm text-[#1D1917] font-light pr-3 rounded-xl cursor-pointer">
+                <a
+                  className="group flex items-center pr-3 py-2 cursor-pointer focus:outline-primary dark:focus:outline-primary-light gap-x-3 rounded-xl hover:bg-gray-600/5 hover:text-black"
+                  style={{ paddingLeft: "1rem", marginLeft: "-1rem" }}
+                  href="https://hub.conduit.xyz/chronicle-yellowstone-testnet-9qgmzfcohk"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <div className="flex-1 flex items-center space-x-2.5">
+                    <div className="text-sm">Private RPC URL</div>
+                  </div>
+                </a>
+              </li>
+              <li className="text-sm text-[#1D1917] font-light pr-3 rounded-xl cursor-pointer">
+                <a
+                  className="group flex items-center pr-3 py-2 cursor-pointer focus:outline-primary dark:focus:outline-primary-light gap-x-3 rounded-xl hover:bg-gray-600/5 hover:text-black"
+                  style={{ paddingLeft: "1rem", marginLeft: "-1rem" }}
+                  href="https://yellowstone-explorer.litprotocol.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <div className="flex-1 flex items-center space-x-2.5">
+                    <div className="text-sm">Testnet Explorer</div>
+                  </div>
+                </a>
+              </li>
+              <li className="text-sm text-[#1D1917] font-light pr-3 rounded-xl cursor-pointer">
+                <a
+                  className="group flex items-center pr-3 py-2 cursor-pointer focus:outline-primary dark:focus:outline-primary-light gap-x-3 rounded-xl hover:bg-gray-600/5 hover:text-black"
+                  style={{ paddingLeft: "1rem", marginLeft: "-1rem" }}
+                  href="https://actions-docs.litprotocol.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <div className="flex-1 flex items-center space-x-2.5">
+                    <div className="text-sm">LitActions API Docs</div>
+                  </div>
+                </a>
+              </li>
+            </ul>
+          </>
+        }
       >
         {activeTab === "playground" && (
           <WalletOperationsDashboard
@@ -388,7 +435,7 @@ export default function LoggedInDashboard() {
             services={services}
           />
         )}
-      </DashboardContent>
+      </StickySidebarLayout>
 
       {/* Status Display */}
       {/* <StatusDisplay status={status} onDismiss={() => setStatus("")} /> */}
