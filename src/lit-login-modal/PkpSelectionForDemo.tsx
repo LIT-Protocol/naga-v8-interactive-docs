@@ -45,7 +45,6 @@ interface PkpSelectionForDemoProps {
   services: any;
   disabled?: boolean;
   authServiceBaseUrl: string;
-  hideModeSwitcher?: boolean;
   singlePkpMessaging?: boolean;
 }
 
@@ -56,7 +55,6 @@ const PkpSelectionForDemo: React.FC<PkpSelectionForDemoProps> = ({
   services,
   disabled = false,
   authServiceBaseUrl,
-  hideModeSwitcher = false,
   singlePkpMessaging = false,
 }) => {
   const [mode, setMode] = useState<"existing" | "mint">("existing");
@@ -221,7 +219,7 @@ const PkpSelectionForDemo: React.FC<PkpSelectionForDemoProps> = ({
       setIsLoading(true);
     }
     
-    setStatus(page === 1 ? "Loading PKPs..." : `Loading page ${page}...`);
+    // setStatus(page === 1 ? "Loading PKPs..." : `Loading page ${page}...`);
     
     try {
       console.log(`Loading PKPs page ${page} with authData:`, authData);
@@ -410,39 +408,18 @@ const PkpSelectionForDemo: React.FC<PkpSelectionForDemoProps> = ({
       <div className="mb-5">
         <h3 className="text-[18px] font-semibold text-gray-900 m-0 mb-2">🔑 Select Your PKP Wallet</h3>
         <p className="text-[14px] text-gray-500 m-0 leading-snug">
-          Choose a PKP for your <strong className="capitalize">{authMethodName}</strong> authentication
+          {singlePkpMessaging ? (
+            <>Each WebAuthn auth maps to a single PKP. When using WebAuthn, you won’t need to pick.</>
+          ) : (
+            <>Choose a PKP for your <strong className="capitalize">{authMethodName}</strong> authentication</>
+          )}
         </p>
       </div>
 
-      {/* Mode Selection */}
-      {!hideModeSwitcher && (
-        <div className="p-4 bg-slate-50 rounded-lg border border-[#e9ecef] mb-5">
-          <h4 className="m-0 mb-3 text-[14px] font-semibold text-[#495057]">PKP Options</h4>
-          <div className="flex gap-2.5">
-            <button
-              onClick={() => setMode("existing")}
-              disabled={disabled}
-              className={`px-4 py-2 rounded-md text-[14px] font-medium transition border ${
-                mode === "existing" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-[#495057] border-[#dee2e6]"
-              } ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
-            >
-              📋 Use Existing PKP
-            </button>
-            <button
-              onClick={() => setMode("mint")}
-              disabled={disabled}
-              className={`px-4 py-2 rounded-md text-[14px] font-medium transition border ${
-                mode === "mint" ? "bg-green-600 text-white border-green-600" : "bg-white text-[#495057] border-[#dee2e6]"
-              } ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
-            >
-              ⚡ Mint New PKP
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Mode Selection removed for streamlined UX */}
 
       {/* Status Display */}
-      {status && (
+      {status && !((singlePkpMessaging && status.startsWith("Showing")) || status.startsWith("No PKPs found")) && (
         <div
           className={`px-4 py-3 mb-5 rounded-md text-[14px] font-medium border ${
             status.includes("❌")
@@ -458,42 +435,57 @@ const PkpSelectionForDemo: React.FC<PkpSelectionForDemoProps> = ({
 
       {/* Content Area */}
       <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
-        {mode === "existing" ? (
-          <div>
+        <div>
             {/* Existing PKPs Header */}
-            <div className="p-4 bg-slate-50 border-b border-gray-200">
-              <div className="flex justify-between items-center mb-1">
-                <h4 className="m-0 text-[16px] font-semibold text-gray-700">
-                  {singlePkpMessaging ? "🔑 Passkey-linked PKP" : "📋 Your Existing PKPs"}
-                </h4>
-                {!singlePkpMessaging && (
-                  <button
-                    onClick={() => loadExistingPkps(1, true)}
-                    disabled={isLoading || disabled}
-                    className={`px-3 py-1.5 ${
-                      isLoading || disabled ? "bg-gray-100 text-gray-400" : "bg-indigo-500 text-white"
-                    } border border-gray-300 rounded cursor-${
-                      isLoading || disabled ? "not-allowed" : "pointer"
-                    } text-[12px] font-medium flex items-center gap-1`}
-                    title="Force refresh PKP data from server"
-                  >
-                    {isLoading ? (
-                      <>
-                        <div className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                        Refreshing...
-                      </>
-                    ) : (
-                      <>🔄 Refresh</>
-                    )}
-                  </button>
-                )}
+            {!singlePkpMessaging && (
+              <div className="p-4 bg-slate-50 border-b border-gray-200">
+                <div className="flex justify-between items-center mb-1">
+                  <h4 className="m-0 text-[16px] font-semibold text-gray-700">📋 Your Existing PKPs</h4>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => loadExistingPkps(1, true)}
+                      disabled={isLoading || disabled}
+                      className={`px-3 py-1.5 ${
+                        isLoading || disabled ? "bg-gray-100 text-gray-400" : "bg-indigo-500 text-white"
+                      } border border-gray-300 rounded cursor-${
+                        isLoading || disabled ? "not-allowed" : "pointer"
+                      } text-[12px] font-medium flex items-center gap-1`}
+                      title="Force refresh PKP data from server"
+                    >
+                      {isLoading ? (
+                        <>
+                          <div className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                          Refreshing...
+                        </>
+                      ) : (
+                        <>🔄 Refresh</>
+                      )}
+                    </button>
+                    <button
+                      onClick={handleMintNewPkp}
+                      disabled={disabled || isMinting}
+                      className={`px-3 py-1.5 ${
+                        disabled || isMinting ? "bg-gray-100 text-gray-400" : "bg-green-600 text-white"
+                      } border border-gray-300 rounded ${
+                        disabled || isMinting ? "cursor-not-allowed" : "cursor-pointer"
+                      } text-[12px] font-medium flex items-center gap-1`}
+                    >
+                      {isMinting ? (
+                        <>
+                          <div className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                          Minting...
+                        </>
+                      ) : (
+                        <>⚡ Mint New PKP</>
+                      )}
+                    </button>
+                  </div>
+                </div>
+                <p className="m-0 text-[13px] text-gray-500">
+                  Select a PKP wallet to continue. Click any address to copy it.
+                </p>
               </div>
-              <p className="m-0 text-[13px] text-gray-500">
-                {singlePkpMessaging
-                  ? "Each passkey maps to a single PKP. When using WebAuthn, you won’t need to pick"
-                  : "Select a PKP wallet to continue. Click any address to copy it."}
-              </p>
-            </div>
+            )}
 
             {/* PKP List */}
             <div className="p-4 relative">
@@ -711,92 +703,24 @@ const PkpSelectionForDemo: React.FC<PkpSelectionForDemoProps> = ({
                     You can mint a new PKP to get started.
                   </p>
                   <button
-                    onClick={() => setMode("mint")}
-                    disabled={disabled}
-                    className={`px-5 py-2 bg-green-600 text-white rounded text-[14px] font-medium ${
-                      disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
-                    }`}
+                    onClick={handleMintNewPkp}
+                    disabled={disabled || isMinting}
+                    className={`px-5 py-2 ${
+                      disabled || isMinting ? "bg-gray-400" : "bg-green-600"
+                    } text-white rounded text-[14px] font-medium ${
+                      disabled || isMinting ? "cursor-not-allowed" : "cursor-pointer"
+                    } flex items-center gap-2 justify-center min-w-[180px] mx-auto`}
                   >
-                    ⚡ Mint Your First PKP
+                    {isMinting && (
+                      <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    )}
+                    {isMinting ? "Minting PKP..." : "⚡ Mint Your First PKP"}
                   </button>
                 </div>
               )}
             </div>
           </div>
-        ) : (
-          /* Mint New PKP */
-          <div>
-            {/* Mint Header */}
-            <div className="p-4 bg-green-50 border-b border-gray-200">
-              <h4 className="m-0 text-[16px] font-semibold text-gray-700">
-                ⚡ Mint New PKP
-              </h4>
-              <p className="mt-1 text-[13px] text-gray-500">
-                Create a new PKP wallet for your authentication
-              </p>
-            </div>
-
-            {/* Mint Content */}
-            <div className="p-6 text-center">
-              <div className="text-[48px] mb-4">⚡</div>
-              <h4 className="m-0 mb-3 text-[18px] font-semibold text-gray-700">
-                Create New PKP Wallet
-              </h4>
-              <p className="m-0 mb-6 text-[14px] text-gray-500 leading-snug max-w-[300px] mx-auto">
-                This will create a new PKP wallet specifically for your {authMethodName}. 
-                The process takes a few seconds.
-              </p>
-              
-              <button
-                onClick={handleMintNewPkp}
-                disabled={disabled || isMinting}
-                className={`px-6 py-3 ${
-                  disabled || isMinting ? "bg-gray-400" : "bg-green-600"
-                } text-white rounded-lg text-[16px] font-semibold ${
-                  disabled || isMinting ? "cursor-not-allowed" : "cursor-pointer"
-                } flex items-center justify-center gap-2 mx-auto min-w-[180px]`}
-              >
-                {isMinting && (
-                  <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                )}
-                {isMinting ? "Minting PKP..." : "⚡ Mint New PKP"}
-              </button>
-
-              {!isMinting && (
-                <button
-                  onClick={() => setMode("existing")}
-                  disabled={disabled}
-                  className={`mt-3 px-4 py-2 bg-transparent text-gray-500 border-0 rounded text-[14px] ${
-                    disabled ? "cursor-not-allowed" : "cursor-pointer underline"
-                  }`}
-                >
-                  ← Back to existing PKPs
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Cache Information */}
-      {/* <div style={{
-        marginTop: "16px",
-        padding: "12px 16px",
-        backgroundColor: "#f0f9ff",
-        border: "1px solid #bfdbfe",
-        borderRadius: "8px",
-        fontSize: "13px",
-        color: "#1e40af",
-      }}>
-        <div style={{ fontWeight: "600", marginBottom: "4px" }}>
-          📦 Smart PKP Caching + 💰 Live Balance Data
         </div>
-        <div style={{ lineHeight: "1.4" }}>
-          PKP data is cached for lightning-fast performance! Each PKP is stored individually by tokenId, 
-          so pagination works seamlessly. Balances are fetched fresh from the Chronicle Yellowstone network 
-          for real-time accuracy. You'll see 📦 (cached) or  indicators in the status. Use "🔄 Refresh" to bypass cache when needed.
-        </div>
-      </div> */}
 
       
     </div>
