@@ -616,14 +616,14 @@ export const HomePage = () => {
   return location.pathname.startsWith("/") ? (
     <LitAuthProvider
       appName="lit-auth-modal-demo"
-      network={APP_INFO.networkModule}
-      closeOnBackdropClick={false}
+      networkModule={APP_INFO.networkModule}
       supportedNetworks={["naga-dev"]}
       defaultNetwork="naga-dev"
+      authServiceBaseUrl={APP_INFO.litAuthServer}
+      closeOnBackdropClick={false}
       showSettingsButton={true}
       showSignUpPage={false}
       showNetworkMessage={true}
-      authServiceBaseUrl={APP_INFO.litAuthServer}
     >
       <MainLayout>
         {/* Fixed Error Toast - positioned outside of sidebar */}

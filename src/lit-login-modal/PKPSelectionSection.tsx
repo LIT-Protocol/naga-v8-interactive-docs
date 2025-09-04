@@ -38,7 +38,7 @@ interface PkpInfo {
   isLoadingBalance?: boolean;
 }
 
-interface PkpSelectionForDemoProps {
+interface PKPSelectionSectionProps {
   authData: any;
   onPkpSelected: (pkpInfo: PkpInfo) => void;
   authMethodName: string;
@@ -48,7 +48,7 @@ interface PkpSelectionForDemoProps {
   singlePkpMessaging?: boolean;
 }
 
-const PkpSelectionForDemo: React.FC<PkpSelectionForDemoProps> = ({
+const PKPSelectionSection: React.FC<PKPSelectionSectionProps> = ({
   authData,
   onPkpSelected,
   authMethodName,
@@ -76,7 +76,7 @@ const PkpSelectionForDemo: React.FC<PkpSelectionForDemoProps> = ({
 
   // Debug logging
   useEffect(() => {
-    console.log("PkpSelectionForDemo mounted with:", {
+    console.log("PKPSelectionSection mounted with:", {
       authData,
       authMethodName,
       services: !!services,
@@ -727,4 +727,4 @@ const PkpSelectionForDemo: React.FC<PkpSelectionForDemoProps> = ({
   );
 };
 
-export default PkpSelectionForDemo; 
+export default PKPSelectionSection; 

@@ -24,7 +24,7 @@ import {
   type Tab,
 } from "./protectedApp/index";
 
-import PkpSelectionForDemo from "../../lit-login-modal/PkpSelectionForDemo";
+import PkpSelectionForDemo from "../../lit-login-modal/PKPSelectionSection";
 
 enum LOGIN_STYLE {
   button = "button",

@@ -21,7 +21,7 @@ import passkeyIcon from "../assets/passkey.svg";
 import phoneIcon from "../assets/phone.svg";
 import web3WalletIcon from "../assets/web3-wallet.svg";
 import whatsappIcon from "../assets/whatsapp.svg";
-import PkpSelectionForDemo from "./PkpSelectionForDemo";
+import PKPSelectionSection from "./PKPSelectionSection";
 import { APP_INFO } from "../_config";
 import { nagaDev, nagaStaging, nagaTest } from "@lit-protocol/networks";
 
@@ -103,7 +103,7 @@ interface LitAuthProviderProps {
   autoSetup?: boolean;
   storageKey?: string;
   closeOnBackdropClick?: boolean;
-  network?: any;
+  networkModule?: any;
   supportedNetworks?: SupportedNetworkName[];
   defaultNetwork?: SupportedNetworkName;
   showSettingsButton?: boolean;
@@ -129,7 +129,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
   autoSetup = false,
   storageKey = "lit-auth-user",
   closeOnBackdropClick = true,
-  network = APP_INFO.networkModule,
+  networkModule = APP_INFO.networkModule,
   supportedNetworks = ["naga-dev", "naga-staging"],
   defaultNetwork,
   showSettingsButton = true,
@@ -141,15 +141,15 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
   const { data: walletClient } = useWalletClient();
 
   // Local network selection state for runtime switching
-  const [localNetwork, setLocalNetwork] = useState<any>(network);
+  const [localNetwork, setLocalNetwork] = useState<any>(networkModule);
   const [localNetworkName, setLocalNetworkName] = useState<string>(
     defaultNetwork || networkName
   );
 
   useEffect(() => {
-    setLocalNetwork(network);
+    setLocalNetwork(networkModule);
     setLocalNetworkName(defaultNetwork || networkName);
-  }, [network, networkName, defaultNetwork]);
+  }, [networkModule, networkName, defaultNetwork]);
 
   // Setup Lit Protocol services
   const {
@@ -170,6 +170,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isUserAuthenticated = !!user && !!user.authContext && !!user.pkpInfo;
 
   // UI state
   const [showModal, setShowModal] = useState(false);
@@ -209,10 +210,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
   useEffect(() => {
     try {
       if (authServiceBaseUrl) {
-        localStorage.setItem(
-          AUTH_SERVICE_URL_STORAGE_KEY,
-          authServiceBaseUrl
-        );
+        localStorage.setItem(AUTH_SERVICE_URL_STORAGE_KEY, authServiceBaseUrl);
       } else {
         localStorage.removeItem(AUTH_SERVICE_URL_STORAGE_KEY);
       }
@@ -393,7 +391,6 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                 authData: user.authData,
                 pkpPublicKey: user.pkpInfo.pubkey || user.pkpInfo.publicKey,
                 authConfig: {
-                  capabilityAuthSigs: [],
                   expiration: new Date(
                     Date.now() + 1000 * 60 * 60 * 24
                   ).toISOString(),
@@ -511,12 +508,24 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
     window.location.href = "/";
   };
 
-  const showAuthModal = () => setShowModal(true);
+  const showAuthModal = () => {
+    if (!isUserAuthenticated) {
+      setShowModal(true);
+    }
+  };
   const hideAuthModal = () => resetModalState();
 
   const initiateAuthentication = async () => {
     try {
-      // Show the modal immediately (this will show loading if services aren't ready)
+      // If already authenticated, don't open modal; just ensure services are ready
+      if (isUserAuthenticated) {
+        if (!isServicesReady && !isInitializing) {
+          await setupServices();
+        }
+        return;
+      }
+
+      // Show the modal (this will show loading if services aren't ready)
       setShowModal(true);
 
       // If services aren't ready, set them up first
@@ -527,6 +536,17 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
       handleError(error, "Failed to initialize Lit Protocol services");
     }
   };
+
+  // Close modal automatically if we detect an authenticated user (e.g., after refresh)
+  useEffect(() => {
+    if (isUserAuthenticated && showModal) {
+      setShowModal(false);
+      setShowMethodDetail(false);
+      setShowPkpSelection(false);
+      setShowSettingsView(false);
+      setSelectedMethod(null);
+    }
+  }, [isUserAuthenticated, showModal]);
 
   const handlePkpSelectionInModal = async (pkpInfo: any) => {
     if (!tempAuthData || !tempMethod || !services) {
@@ -542,7 +562,6 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
         authData: tempAuthData,
         pkpPublicKey: pkpInfo.pubkey || pkpInfo.publicKey,
         authConfig: {
-          capabilityAuthSigs: [],
           expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
           statement: "",
           domain: "",
@@ -589,7 +608,9 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
     try {
       // Set WebAuthn existing-flow flag deterministically based on method and mode
       setIsWebAuthnExistingFlow(
-        method === "webauthn" && modalMode === "signin" && webAuthnMode === "authenticate"
+        method === "webauthn" &&
+          modalMode === "signin" &&
+          webAuthnMode === "authenticate"
       );
       // Store auth data temporarily and show PKP selection in modal
       setTempAuthData(authData);
@@ -613,7 +634,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
       // Mint PKP
       const result = await services!.litClient.authService.mintWithAuth({
         authData,
-        scopes: ['sign-anything'],
+        scopes: ["sign-anything"],
       });
 
       // Create auth context
@@ -621,7 +642,6 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
         authData,
         pkpPublicKey: result.data.pubkey,
         authConfig: {
-          capabilityAuthSigs: [],
           expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
           statement: "",
           domain: "",
@@ -738,7 +758,6 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
           authData,
           pkpPublicKey: result.data.pubkey,
           authConfig: {
-            capabilityAuthSigs: [],
             expiration: new Date(
               Date.now() + 1000 * 60 * 60 * 24
             ).toISOString(),
@@ -791,7 +810,6 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
           authData,
           pkpPublicKey: pkpInfo.pubkey,
           authConfig: {
-            capabilityAuthSigs: [],
             expiration: new Date(
               Date.now() + 1000 * 60 * 60 * 24
             ).toISOString(),
@@ -987,7 +1005,6 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
         await services!.authManager.createCustomAuthContext({
           pkpPublicKey: customPkpPublicKey,
           authConfig: {
-            capabilityAuthSigs: [],
             expiration: new Date(
               Date.now() + 1000 * 60 * 60 * 24
             ).toISOString(),
@@ -1261,7 +1278,9 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                   />
                   <div className="mt-2">
                     <button
-                      onClick={() => setAuthServiceBaseUrl(DEFAULT_AUTH_SERVICE_BASE_URL)}
+                      onClick={() =>
+                        setAuthServiceBaseUrl(DEFAULT_AUTH_SERVICE_BASE_URL)
+                      }
                       className="px-3 py-1.5 border border-gray-300 rounded text-[12px] cursor-pointer bg-white hover:bg-gray-100 text-gray-700"
                     >
                       Reset to default
@@ -1287,14 +1306,13 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                   </div>
 
                   {tempAuthData && tempMethod && services && (
-                    <PkpSelectionForDemo
+                    <PKPSelectionSection
                       authData={tempAuthData}
                       onPkpSelected={handlePkpSelectionInModal}
                       authMethodName={`${tempMethod} Auth`}
                       services={services}
                       disabled={isAuthenticating}
                       authServiceBaseUrl={authServiceBaseUrl}
-                      hideModeSwitcher={isWebAuthnExistingFlow}
                       singlePkpMessaging={isWebAuthnExistingFlow}
                     />
                   )}
