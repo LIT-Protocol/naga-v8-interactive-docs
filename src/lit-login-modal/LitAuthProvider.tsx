@@ -39,11 +39,7 @@ const NETWORK_MODULES: Partial<Record<SupportedNetworkName, any>> = {
   "naga-test": nagaTest,
 };
 
-const formatNetworkLabel = (name: string): string =>
-  name
-    .split("-")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join("");
+// Removed unused helper to satisfy linter
 
 // Configuration constants
 const DEFAULT_PRIVATE_KEY = APP_INFO.defaultPrivateKey;
@@ -118,6 +114,7 @@ interface LitAuthProviderProps {
   defaultNetwork?: SupportedNetworkName;
   showSettingsButton?: boolean;
   displayNetworkMessage?: boolean;
+  supportedAuthMethods?: AuthMethod[];
 }
 
 interface AuthMethodInfo {
@@ -141,6 +138,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
   defaultNetwork,
   showSettingsButton = true,
   displayNetworkMessage = false,
+  supportedAuthMethods,
 }) => {
   const { data: walletClient } = useWalletClient();
 
@@ -295,6 +293,12 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
       available: true,
     },
   ];
+
+  // Determine which methods to show based on provided prop; defaults to all available
+  const methodsToShow = (supportedAuthMethods && supportedAuthMethods.length > 0)
+    ? supportedAuthMethods
+    : authMethods.map((m) => m.id);
+  const filteredAuthMethods = authMethods.filter((m) => methodsToShow.includes(m.id));
 
   // Load user from localStorage on mount
   useEffect(() => {
@@ -1333,6 +1337,43 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                     })}
                   </div>
                 </div>
+
+                {/* Auth Service URL moved to Settings */}
+                <div
+                  style={{
+                    padding: "12px",
+                    backgroundColor: "#f8fafc",
+                    borderRadius: "8px",
+                    border: "1px solid #e5e7eb",
+                    marginBottom: "16px",
+                  }}
+                >
+                  <label
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      display: "block",
+                      marginBottom: "8px",
+                      color: "#111827",
+                    }}
+                  >
+                    Auth Service URL
+                  </label>
+                  <input
+                    type="url"
+                    value={authServiceBaseUrl}
+                    onChange={(e) => setAuthServiceBaseUrl(e.target.value)}
+                    placeholder={APP_INFO.litAuthServer}
+                    style={{
+                      width: "100%",
+                      padding: "8px 10px",
+                      border: "1px solid #d1d5db",
+                      borderRadius: "4px",
+                      fontSize: "12px",
+                      fontFamily: "monospace",
+                    }}
+                  />
+                </div>
               </div>
             ) : !showMethodDetail ? (
               // Main method selection or PKP selection
@@ -1368,7 +1409,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                       ← Back to Authentication
                     </button>
 
-                    <div
+                    {/* <div
                       style={{
                         padding: "16px",
                         backgroundColor: "#f0f9ff",
@@ -1388,7 +1429,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                         👋 You've successfully authenticated with{" "}
                         <strong className="capitalize">{tempMethod}</strong>.
                       </h3>
-                      {/* <p
+                      <p
                         style={{
                           fontSize: "14px",
                           color: "#1e40af",
@@ -1398,7 +1439,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                       >
                         You've successfully authenticated with{" "}
                         <strong className="capitalize">{tempMethod}</strong>.
-                      </p> */}
+                      </p>
                       <p
                         style={{
                           fontSize: "13px",
@@ -1410,7 +1451,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                         Select a PKP wallet below to complete the process and
                         access your protected dashboard.
                       </p>
-                    </div>
+                    </div> */}
                   </div>
 
                   {tempAuthData && tempMethod && services && (
@@ -1501,7 +1542,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                       marginBottom: "16px",
                     }}
                   >
-                    {authMethods.map((method) => (
+                    {filteredAuthMethods.map((method) => (
                       <button
                         key={method.id}
                         onClick={() => handleMethodSelect(method.id)}
@@ -1663,18 +1704,34 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                         </div>
                       </button>
                     ))}
+                    {filteredAuthMethods.length === 0 && (
+                      <div
+                        style={{
+                          padding: "10px 12px",
+                          border: "1px solid #e5e7eb",
+                          borderRadius: "8px",
+                          color: "#6b7280",
+                          fontSize: "12px",
+                          textAlign: "center",
+                        }}
+                      >
+                        No sign-in methods available.
+                      </div>
+                    )}
                   </div>
 
-                  <div
-                    style={{
-                      textAlign: "center",
-                      marginTop: "16px",
-                      fontSize: "11px",
-                      color: "#6b7280",
-                    }}
-                  >
-                    Press ESC to close
-                  </div>
+                  {closeOnBackdropClick && (
+                    <div
+                      style={{
+                        textAlign: "center",
+                        marginTop: "16px",
+                        fontSize: "11px",
+                        color: "#6b7280",
+                      }}
+                    >
+                      Press ESC to close
+                    </div>
+                  )}
 
                   {/* Mode Toggle */}
                   <div
@@ -1764,7 +1821,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                 {/* Method-specific form inputs */}
                 <div style={{ marginBottom: "16px" }}>
                   {selectedMethod === "eoa" && (
-                    <div>
+                    <div className="text-black">
                       <div style={{ marginBottom: "12px" }}>
                         <label
                           style={{
@@ -1823,6 +1880,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                       </div>
                       {accountMethod === "wallet" && (
                         <div
+                          className="text-black"
                           style={{
                             marginBottom: "12px",
                             padding: "12px",
@@ -1922,7 +1980,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                   )}
 
                   {selectedMethod === "webauthn" && (
-                    <div>
+                    <div className="text-black">
                       <div style={{ marginBottom: "12px" }}>
                         <label
                           style={{
@@ -2014,37 +2072,6 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                     selectedMethod === "stytch-sms" ||
                     selectedMethod === "stytch-whatsapp") && (
                     <div className="text-black">
-                      <div
-                        className="text-black"
-                        style={{ marginBottom: "12px" }}
-                      >
-                        <label
-                          style={{
-                            fontSize: "13px",
-                            fontWeight: "500",
-                            marginBottom: "6px",
-                            display: "block",
-                          }}
-                        >
-                          Auth Service URL:
-                        </label>
-                        <input
-                          type="url"
-                          value={authServiceBaseUrl}
-                          onChange={(e) =>
-                            setAuthServiceBaseUrl(e.target.value)
-                          }
-                          placeholder="https://naga-auth-service.onrender.com"
-                          style={{
-                            width: "100%",
-                            padding: "8px 10px",
-                            border: "1px solid #d1d5db",
-                            borderRadius: "4px",
-                            fontSize: "12px",
-                            fontFamily: "monospace",
-                          }}
-                        />
-                      </div>
 
                       {authStep === "input" && (
                         <div style={{ marginBottom: "12px" }}>
@@ -2128,34 +2155,6 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
 
                   {selectedMethod === "stytch-totp" && (
                     <div className="text-black">
-                      <div style={{ marginBottom: "12px" }}>
-                        <label
-                          style={{
-                            fontSize: "13px",
-                            fontWeight: "500",
-                            marginBottom: "6px",
-                            display: "block",
-                          }}
-                        >
-                          Auth Service URL:
-                        </label>
-                        <input
-                          type="url"
-                          value={authServiceBaseUrl}
-                          onChange={(e) =>
-                            setAuthServiceBaseUrl(e.target.value)
-                          }
-                          placeholder={APP_INFO.litAuthServer}
-                          style={{
-                            width: "100%",
-                            padding: "8px 10px",
-                            border: "1px solid #d1d5db",
-                            borderRadius: "4px",
-                            fontSize: "12px",
-                            fontFamily: "monospace",
-                          }}
-                        />
-                      </div>
 
                       <div style={{ marginBottom: "12px" }}>
                         <label

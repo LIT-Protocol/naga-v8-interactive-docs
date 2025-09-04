@@ -617,11 +617,12 @@ export const HomePage = () => {
     <LitAuthProvider
       appName="lit-auth-modal-demo"
       network={APP_INFO.networkModule}
-      closeOnBackdropClick={true}
+      closeOnBackdropClick={false}
       supportedNetworks={["naga-dev"]}
       defaultNetwork="naga-dev"
       showSettingsButton={true}
       displayNetworkMessage={true}
+      
     >
       <MainLayout>
         {/* Fixed Error Toast - positioned outside of sidebar */}
