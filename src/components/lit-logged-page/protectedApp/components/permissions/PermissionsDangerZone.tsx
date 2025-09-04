@@ -18,7 +18,7 @@ export const PermissionsDangerZone: React.FC = () => {
           backgroundColor: "#fef2f2",
           borderRadius: "12px",
           border: "1px solid #fecaca",
-          boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+          boxShadow: "",
         }}
       >
         <h3 style={{ margin: "0 0 16px 0", color: "#dc2626" }}>

@@ -30,7 +30,7 @@ export const PermissionsSummaryCards: React.FC = () => {
           backgroundColor: "#ffffff",
           borderRadius: "12px",
           border: "1px solid #e5e7eb",
-          boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+          boxShadow: "",
           textAlign: "center",
         }}
       >
@@ -71,7 +71,7 @@ export const PermissionsSummaryCards: React.FC = () => {
           backgroundColor: "#ffffff",
           borderRadius: "12px",
           border: "1px solid #e5e7eb",
-          boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+          boxShadow: "",
           textAlign: "center",
         }}
       >
@@ -112,7 +112,7 @@ export const PermissionsSummaryCards: React.FC = () => {
           backgroundColor: "#ffffff",
           borderRadius: "12px",
           border: "1px solid #e5e7eb",
-          boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+          boxShadow: "",
           textAlign: "center",
         }}
       >

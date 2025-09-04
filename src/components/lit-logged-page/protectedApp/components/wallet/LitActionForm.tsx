@@ -117,7 +117,7 @@ export const LitActionForm: React.FC<LitActionFormProps> = ({
         backgroundColor: "#ffffff",
         borderRadius: "12px",
         border: "1px solid #e5e7eb",
-        boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+        boxShadow: "",
         marginBottom: "20px",
       }}
     >

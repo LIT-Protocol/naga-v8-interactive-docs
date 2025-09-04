@@ -1201,12 +1201,13 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
           >
             {/* Network message moved to LoggedInDashboard */}
             {/* Settings (top-right) */}
-            {showSettingsButton && !showPkpSelection && (
+            {showSettingsButton && !showPkpSelection && !showSettingsView && (
               <div
                 style={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  marginBottom: "8px",
+                  position: "absolute",
+                  top: "12px",
+                  right: "12px",
+                  zIndex: 1,
                 }}
               >
                 <button

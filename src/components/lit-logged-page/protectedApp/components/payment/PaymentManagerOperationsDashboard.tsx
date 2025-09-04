@@ -354,7 +354,7 @@ export const PaymentManagerOperationsDashboard: React.FC<
           backgroundColor: "white",
           borderRadius: "12px",
           border: "1px solid #e5e7eb",
-          boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+          boxShadow: "",
         }}
       >
         <h3 style={{ margin: "0 0 15px 0", color: "#1f2937" }}>
@@ -410,7 +410,7 @@ export const PaymentManagerOperationsDashboard: React.FC<
             backgroundColor: "white",
             borderRadius: "12px",
             border: "1px solid #e5e7eb",
-            boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+            boxShadow: "",
           }}
         >
           <div
@@ -558,7 +558,7 @@ export const PaymentManagerOperationsDashboard: React.FC<
               backgroundColor: "white",
               borderRadius: "12px",
               border: "1px solid #e5e7eb",
-              boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+              boxShadow: "",
             }}
           >
             <h3 style={{ margin: "0 0 15px 0", color: "#1f2937" }}>
@@ -750,7 +750,7 @@ export const PaymentManagerOperationsDashboard: React.FC<
               backgroundColor: "white",
               borderRadius: "12px",
               border: "1px solid #e5e7eb",
-              boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+              boxShadow: "",
             }}
           >
             <h3 style={{ margin: "0 0 15px 0", color: "#1f2937" }}>
