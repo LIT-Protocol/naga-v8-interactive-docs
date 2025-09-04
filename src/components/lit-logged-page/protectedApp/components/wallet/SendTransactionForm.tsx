@@ -283,35 +283,15 @@ export const SendTransactionForm: React.FC<SendTransactionFormProps> = ({
           !sendAmount ||
           parseFloat(sendAmount) <= 0
         }
-        style={{
-          width: "100%",
-          padding: "12px",
-          backgroundColor:
-            disabled ||
-            isSendingTransaction ||
-            !recipientAddress ||
-            !sendAmount ||
-            parseFloat(sendAmount) <= 0
-              ? "#9ca3af"
-              : "#dc2626",
-          color: "white",
-          border: "none",
-          borderRadius: "8px",
-          fontSize: "14px",
-          fontWeight: "500",
-          cursor:
-            disabled ||
-            isSendingTransaction ||
-            !recipientAddress ||
-            !sendAmount ||
-            parseFloat(sendAmount) <= 0
-              ? "not-allowed"
-              : "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "8px",
-        }}
+        className={`w-full p-3 rounded-lg text-sm font-medium flex items-center justify-center gap-2 border-1 border-gray-200 ${
+          disabled ||
+          isSendingTransaction ||
+          !recipientAddress ||
+          !sendAmount ||
+          parseFloat(sendAmount) <= 0
+            ? "bg-gray-400 cursor-not-allowed text-white"
+            : "bg-[#B7410D] text-white cursor-pointer"
+        }`}
       >
         {isSendingTransaction ? (
           <>

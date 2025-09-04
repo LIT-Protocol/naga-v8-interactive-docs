@@ -97,29 +97,14 @@ export const AddAddressForm: React.FC<AddAddressFormProps> = ({ disabled = false
           !newPermittedAddress.trim() ||
           newAddressSelectedScopes.length === 0
         }
-        style={{
-          width: "100%",
-          padding: "12px",
-          backgroundColor:
-            disabled ||
-            isAdding ||
-            !newPermittedAddress.trim() ||
-            newAddressSelectedScopes.length === 0
-              ? "#9ca3af"
-              : "#3b82f6",
-          color: "white",
-          border: "none",
-          borderRadius: "8px",
-          fontSize: "14px",
-          fontWeight: "500",
-          cursor:
-            disabled ||
-            isAdding ||
-            !newPermittedAddress.trim() ||
-            newAddressSelectedScopes.length === 0
-              ? "not-allowed"
-              : "pointer",
-        }}
+        className={`w-full p-3 rounded-lg text-sm font-medium border-1 border-gray-200 ${
+          disabled ||
+          isAdding ||
+          !newPermittedAddress.trim() ||
+          newAddressSelectedScopes.length === 0
+            ? "bg-gray-400 cursor-not-allowed text-white"
+            : "bg-[#B7410D] text-white cursor-pointer"
+        }`}
       >
         {isAdding ? "Adding..." : "Add Address Permission"}
       </button>

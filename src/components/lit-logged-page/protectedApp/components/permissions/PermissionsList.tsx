@@ -187,7 +187,7 @@ export const PermissionsList: React.FC = () => {
                         ) {
                           return (
                             <span style={{ marginLeft: "8px", color: "#065f46", fontSize: "11px" }}>
-                              (Current PKP)
+                              (PKP Itself)
                             </span>
                           );
                         }
@@ -299,7 +299,7 @@ export const PermissionsList: React.FC = () => {
                               {displayId}
                               {isCurrentPkpEth && (
                                 <span style={{ marginLeft: "8px", color: "#065f46", fontSize: "11px" }}>
-                                  (Current PKP)
+                                  (PKP Itself)
                                 </span>
                               )}
                             </>

@@ -206,12 +206,24 @@ export const LitActionForm: React.FC<LitActionFormProps> = ({
         disabled={disabled}
       >
         {isFullscreen ? (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true"
+          >
             <path d="M9 3H3v6h2V5h4V3zm12 6V3h-6v2h4v4h2zM3 15v6h6v-2H5v-4H3zm18 6v-6h-2v4h-4v2h6z" />
           </svg>
         ) : (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M9 7H5v4H3V5h6v2zm12 4h-2V7h-4V5h6v6zM7 19h4v2H5v-6h2v4zm12-4h2v6h-6v-2h4v-4z" />
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path d="M9 3H3v6h2V5h4V3zm12 6V3h-6v2h4v4h2zM3 15v6h6v-2H5v-4H3zm18 6v-6h-2v4h-4v2h6z" />
           </svg>
         )}
       </button>
@@ -234,7 +246,8 @@ export const LitActionForm: React.FC<LitActionFormProps> = ({
           }}
         >
           <span>
-            Press <strong>Cmd</strong>+<strong>Enter</strong> (Mac) / <strong>Ctrl</strong>+<strong>Enter</strong> (Windows)
+            Press <strong>Cmd</strong>+<strong>Enter</strong> (Mac) /{" "}
+            <strong>Ctrl</strong>+<strong>Enter</strong> (Windows)
           </span>
           <button
             onClick={() => setShowShortcutTip(false)}
@@ -249,7 +262,13 @@ export const LitActionForm: React.FC<LitActionFormProps> = ({
               placeItems: "center",
             }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden="true"
+            >
               <path d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7A1 1 0 0 0 5.7 7.11L10.59 12l-4.9 4.89a1 1 0 1 0 1.41 1.41L12 13.41l4.89 4.9a1 1 0 0 0 1.41-1.41L13.41 12l4.9-4.89a1 1 0 0 0-.01-1.4z" />
             </svg>
           </button>
@@ -278,7 +297,8 @@ export const LitActionForm: React.FC<LitActionFormProps> = ({
                 border: "none",
                 borderRadius: "4px",
                 fontSize: "11px",
-                cursor: disabled || isExecutingAction ? "not-allowed" : "pointer",
+                cursor:
+                  disabled || isExecutingAction ? "not-allowed" : "pointer",
               }}
             >
               Load Sign Example
@@ -294,7 +314,8 @@ export const LitActionForm: React.FC<LitActionFormProps> = ({
                 border: "none",
                 borderRadius: "4px",
                 fontSize: "11px",
-                cursor: disabled || isExecutingAction ? "not-allowed" : "pointer",
+                cursor:
+                  disabled || isExecutingAction ? "not-allowed" : "pointer",
               }}
             >
               Load Custom Auth Example
@@ -357,8 +378,7 @@ export const LitActionForm: React.FC<LitActionFormProps> = ({
                   border: "none",
                   backgroundColor:
                     activeExample === "blockchash" ? "#ffffff" : "#f3f4f6",
-                  color:
-                    activeExample === "blockchash" ? "#111827" : "#374151",
+                  color: activeExample === "blockchash" ? "#111827" : "#374151",
                   cursor: "pointer",
                 }}
               >
@@ -410,27 +430,11 @@ export const LitActionForm: React.FC<LitActionFormProps> = ({
             <button
               onClick={executeLitAction}
               disabled={disabled || isExecutingAction || !litActionCode.trim()}
-              style={{
-                width: "100%",
-                padding: "12px",
-                backgroundColor:
-                  disabled || isExecutingAction || !litActionCode.trim()
-                    ? "#9ca3af"
-                    : "#dc2626",
-                color: "white",
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "14px",
-                fontWeight: "500",
-                cursor:
-                  disabled || isExecutingAction || !litActionCode.trim()
-                    ? "not-allowed"
-                    : "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "8px",
-              }}
+              className={`w-full p-3 rounded-lg text-sm font-medium flex items-center justify-center gap-2 border-1 border-gray-200 ${
+                disabled || isExecutingAction || !litActionCode.trim()
+                  ? "bg-gray-400 cursor-not-allowed text-white"
+                  : "bg-[#B7410D] text-white cursor-pointer"
+              }`}
             >
               {isExecutingAction ? (
                 <>
@@ -492,7 +496,8 @@ export const LitActionForm: React.FC<LitActionFormProps> = ({
                     marginBottom: "8px",
                   }}
                 >
-                  Executed at: {new Date(litActionResult.timestamp).toLocaleString()}
+                  Executed at:{" "}
+                  {new Date(litActionResult.timestamp).toLocaleString()}
                 </div>
                 <pre
                   style={{
@@ -566,34 +571,22 @@ export const LitActionForm: React.FC<LitActionFormProps> = ({
                 fontSize: "12px",
               }}
             >
-              Tip: Press <span style={{ fontWeight: 600 }}>Cmd</span>+<span style={{ fontWeight: 600 }}>Enter</span> (Mac) or <span style={{ fontWeight: 600 }}>Ctrl</span>+<span style={{ fontWeight: 600 }}>Enter</span> (Windows) to execute while the editor is focused.
+              Tip: Press <span style={{ fontWeight: 600 }}>Cmd</span>+
+              <span style={{ fontWeight: 600 }}>Enter</span> (Mac) or{" "}
+              <span style={{ fontWeight: 600 }}>Ctrl</span>+
+              <span style={{ fontWeight: 600 }}>Enter</span> (Windows) to
+              execute while the editor is focused.
             </div>
           )}
 
           <button
             onClick={executeLitAction}
             disabled={disabled || isExecutingAction || !litActionCode.trim()}
-            style={{
-              width: "100%",
-              padding: "12px",
-              backgroundColor:
-                disabled || isExecutingAction || !litActionCode.trim()
-                  ? "#9ca3af"
-                  : "#dc2626",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              fontSize: "14px",
-              fontWeight: "500",
-              cursor:
-                disabled || isExecutingAction || !litActionCode.trim()
-                  ? "not-allowed"
-                  : "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "8px",
-            }}
+            className={`w-full p-3 rounded-lg text-sm font-medium flex items-center justify-center gap-2 border-1 border-gray-200 ${
+              disabled || isExecutingAction || !litActionCode.trim()
+                ? "bg-gray-400 cursor-not-allowed text-white"
+                : "bg-[#B7410D] text-white cursor-pointer"
+            }`}
           >
             {isExecutingAction ? (
               <>
@@ -651,7 +644,8 @@ export const LitActionForm: React.FC<LitActionFormProps> = ({
                   marginBottom: "8px",
                 }}
               >
-                Executed at: {new Date(litActionResult.timestamp).toLocaleString()}
+                Executed at:{" "}
+                {new Date(litActionResult.timestamp).toLocaleString()}
               </div>
               <pre
                 style={{

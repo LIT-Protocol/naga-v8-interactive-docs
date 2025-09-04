@@ -1,13 +1,13 @@
 /**
  * ViemAccountForm Component
- * 
+ *
  * Form for signing messages using PKP as a Viem account
  */
 
-import React, { useState } from 'react';
-import { useLitAuth } from '../../../../../lit-login-modal/LitAuthProvider';
-import { PkpInfo } from '../../types';
-import { LoadingSpinner } from '../ui/LoadingSpinner';
+import React, { useState } from "react";
+import { useLitAuth } from "../../../../../lit-login-modal/LitAuthProvider";
+import { PkpInfo } from "../../types";
+import { LoadingSpinner } from "../ui/LoadingSpinner";
 
 interface ViemAccountFormProps {
   selectedPkp: PkpInfo | null;
@@ -21,13 +21,16 @@ interface ViemSignatureResult {
   timestamp: string;
 }
 
-export const ViemAccountForm: React.FC<ViemAccountFormProps> = ({ 
-  selectedPkp, 
-  disabled = false 
+export const ViemAccountForm: React.FC<ViemAccountFormProps> = ({
+  selectedPkp,
+  disabled = false,
 }) => {
   const { user, services } = useLitAuth();
-  const [viemAccountMessage, setViemAccountMessage] = useState("Hello from PKP Viem Account!");
-  const [viemSignature, setViemSignature] = useState<ViemSignatureResult | null>(null);
+  const [viemAccountMessage, setViemAccountMessage] = useState(
+    "Hello from PKP Viem Account!"
+  );
+  const [viemSignature, setViemSignature] =
+    useState<ViemSignatureResult | null>(null);
   const [isSigningViem, setIsSigningViem] = useState(false);
   const [status, setStatus] = useState<string>("");
 
@@ -101,7 +104,7 @@ export const ViemAccountForm: React.FC<ViemAccountFormProps> = ({
       >
         Viem Integration
       </div>
-      
+
       <h3 style={{ margin: "0 0 16px 0", color: "#1f2937" }}>
         ✍️ Sign a Message
       </h3>
@@ -136,27 +139,11 @@ export const ViemAccountForm: React.FC<ViemAccountFormProps> = ({
       <button
         onClick={signWithViemAccount}
         disabled={disabled || isSigningViem || !viemAccountMessage.trim()}
-        style={{
-          width: "100%",
-          padding: "12px",
-          backgroundColor: 
-            disabled || isSigningViem || !viemAccountMessage.trim() 
-              ? "#9ca3af" 
-              : "#7c3aed",
-          color: "white",
-          border: "none",
-          borderRadius: "8px",
-          fontSize: "14px",
-          fontWeight: "500",
-          cursor: 
-            disabled || isSigningViem || !viemAccountMessage.trim() 
-              ? "not-allowed" 
-              : "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "8px",
-        }}
+        className={`w-full p-3 rounded-lg text-sm font-medium flex items-center justify-center gap-2 border-1 border-gray-200 ${
+          disabled || isSigningViem || !viemAccountMessage.trim()
+            ? "bg-gray-400 cursor-not-allowed text-white"
+            : "bg-[#B7410D] text-white cursor-pointer"
+        }`}
       >
         {isSigningViem ? (
           <>
@@ -175,7 +162,9 @@ export const ViemAccountForm: React.FC<ViemAccountFormProps> = ({
             marginTop: "12px",
             padding: "8px 12px",
             backgroundColor: status.includes("signed") ? "#f0fdf4" : "#fef2f2",
-            border: `1px solid ${status.includes("signed") ? "#bbf7d0" : "#fecaca"}`,
+            border: `1px solid ${
+              status.includes("signed") ? "#bbf7d0" : "#fecaca"
+            }`,
             borderRadius: "6px",
             color: status.includes("signed") ? "#15803d" : "#dc2626",
             fontSize: "12px",
@@ -213,7 +202,8 @@ export const ViemAccountForm: React.FC<ViemAccountFormProps> = ({
               <strong>Address:</strong> {viemSignature.address}
             </div>
             <div style={{ marginBottom: "4px" }}>
-              <strong>Timestamp:</strong> {new Date(viemSignature.timestamp).toLocaleString()}
+              <strong>Timestamp:</strong>{" "}
+              {new Date(viemSignature.timestamp).toLocaleString()}
             </div>
             <div
               style={{
@@ -247,4 +237,4 @@ export const ViemAccountForm: React.FC<ViemAccountFormProps> = ({
       </div> */}
     </div>
   );
-}; 
+};

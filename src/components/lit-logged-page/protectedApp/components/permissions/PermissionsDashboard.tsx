@@ -169,7 +169,7 @@ export const PermissionsDashboard: React.FC<PermissionsDashboardProps> = ({
       )}
 
       {/* Danger Zone */}
-      <PermissionsDangerZone />
+      {/* <PermissionsDangerZone /> */}
 
       {/* Loading animation CSS */}
       <style>{`

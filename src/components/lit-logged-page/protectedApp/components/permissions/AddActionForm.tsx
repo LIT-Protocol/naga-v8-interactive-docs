@@ -97,29 +97,14 @@ export const AddActionForm: React.FC<AddActionFormProps> = ({ disabled = false }
           !newActionIpfsId.trim() ||
           newActionSelectedScopes.length === 0
         }
-        style={{
-          width: "100%",
-          padding: "12px",
-          backgroundColor:
-            disabled ||
-            isAdding ||
-            !newActionIpfsId.trim() ||
-            newActionSelectedScopes.length === 0
-              ? "#9ca3af"
-              : "#059669",
-          color: "white",
-          border: "none",
-          borderRadius: "8px",
-          fontSize: "14px",
-          fontWeight: "500",
-          cursor:
-            disabled ||
-            isAdding ||
-            !newActionIpfsId.trim() ||
-            newActionSelectedScopes.length === 0
-              ? "not-allowed"
-              : "pointer",
-        }}
+        className={`w-full p-3 rounded-lg text-sm font-medium border-1 border-gray-200 ${
+          disabled ||
+          isAdding ||
+          !newActionIpfsId.trim() ||
+          newActionSelectedScopes.length === 0
+            ? "bg-gray-400 cursor-not-allowed text-white"
+            : "bg-[#B7410D] text-white cursor-pointer"
+        }`}
       >
         {isAdding ? "Adding..." : "Add Action Permission"}
       </button>

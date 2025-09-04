@@ -624,23 +624,11 @@ export const PaymentManagerOperationsDashboard: React.FC<
               disabled={
                 isDepositing || !paymentManager || !depositAmount || !account
               }
-              style={{
-                width: "100%",
-                padding: "12px",
-                backgroundColor:
-                  !account || !paymentManager || isDepositing
-                    ? "#d1d5db"
-                    : "#10b981",
-                color: "white",
-                border: "none",
-                borderRadius: "8px",
-                cursor:
-                  !account || !paymentManager || isDepositing
-                    ? "not-allowed"
-                    : "pointer",
-                fontWeight: "500",
-                fontSize: "14px",
-              }}
+              className={`w-full p-3 rounded-lg text-sm font-medium border-1 border-gray-200 ${
+                !account || !paymentManager || isDepositing
+                  ? "bg-gray-400 cursor-not-allowed text-white"
+                  : "bg-[#B7410D] text-white cursor-pointer"
+              }`}
             >
               {isDepositing
                 ? "Processing..."
@@ -716,23 +704,11 @@ export const PaymentManagerOperationsDashboard: React.FC<
                   !depositForUserAddress ||
                   !account
                 }
-                style={{
-                  width: "100%",
-                  padding: "10px",
-                  backgroundColor:
-                    !account || !paymentManager || isDepositingForUser
-                      ? "#d1d5db"
-                      : "#3b82f6",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor:
-                    !account || !paymentManager || isDepositingForUser
-                      ? "not-allowed"
-                      : "pointer",
-                  fontWeight: "500",
-                  fontSize: "14px",
-                }}
+                className={`w-full p-2.5 rounded-lg text-sm font-medium border-1 border-gray-200 ${
+                  !account || !paymentManager || isDepositingForUser
+                    ? "bg-gray-400 cursor-not-allowed text-white"
+                    : "bg-[#B7410D] text-white cursor-pointer"
+                }`}
               >
                 {isDepositingForUser
                   ? "Processing..."
@@ -858,23 +834,11 @@ export const PaymentManagerOperationsDashboard: React.FC<
                     !withdrawAmount ||
                     !account
                   }
-                  style={{
-                    width: "100%",
-                    padding: "12px",
-                    backgroundColor:
-                      !account || !paymentManager || isRequestingWithdraw
-                        ? "#d1d5db"
-                        : "#f59e0b",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "8px",
-                    cursor:
-                      !account || !paymentManager || isRequestingWithdraw
-                        ? "not-allowed"
-                        : "pointer",
-                    fontWeight: "500",
-                    fontSize: "14px",
-                  }}
+                  className={`w-full p-3 rounded-lg text-sm font-medium border-1 border-gray-200 ${
+                    !account || !paymentManager || isRequestingWithdraw
+                      ? "bg-gray-400 cursor-not-allowed text-white"
+                      : "bg-[#B7410D] text-white cursor-pointer"
+                  }`}
                 >
                   {isRequestingWithdraw
                     ? "Processing..."
