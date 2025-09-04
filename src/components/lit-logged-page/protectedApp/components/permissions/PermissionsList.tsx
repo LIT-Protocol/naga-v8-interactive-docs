@@ -10,6 +10,7 @@ import { usePKPPermissions } from '../../contexts/PKPPermissionsContext';
 import { hexToIpfsCid, getAuthMethodTypeName } from '../../utils';
 import { AUTH_METHOD_TYPE } from '../../types';
 import { getAddress, isAddress } from 'viem';
+import { useLitAuth } from '../../../../../lit-login-modal/LitAuthProvider';
 
 export const PermissionsList: React.FC = () => {
   const {
@@ -20,6 +21,71 @@ export const PermissionsList: React.FC = () => {
     removePermittedAuthMethod,
     selectedPkp,
   } = usePKPPermissions();
+  const { user } = useLitAuth();
+
+  const currentAuthType: number | undefined = user?.authData?.authMethodType;
+  const currentAuthIdRaw: string = (user?.authData?.authMethodId || '') as string;
+
+  const normaliseAuthId = (typeNumber: number, id?: string): string => {
+    if (!id) return '';
+    // Normalise EVM addresses for EthWallet type; lowercase fallback for others
+    if (Number(typeNumber) === AUTH_METHOD_TYPE.EthWallet) {
+      try {
+        if (isAddress(id)) return getAddress(id).toLowerCase();
+      } catch {}
+    }
+    return String(id).toLowerCase();
+  };
+
+  const isCurrentSessionAuthMethod = (method: { authMethodType: number | string; id?: string }): boolean => {
+    const methodType = Number(method.authMethodType);
+    if (currentAuthType === undefined || currentAuthType === null) return false;
+    if (methodType !== Number(currentAuthType)) return false;
+    const a = normaliseAuthId(methodType, method.id);
+    const b = normaliseAuthId(Number(currentAuthType), currentAuthIdRaw);
+    return !!a && !!b && a === b;
+  };
+
+  const handleRemoveAction = async (actionCid: string) => {
+    const ok = window.confirm(
+      `Are you sure you want to remove this permitted action?\n\nIPFS CID: ${actionCid}`
+    );
+    if (!ok) return;
+    await removePermittedAction(actionCid);
+  };
+
+  const handleRemoveAddress = async (address: string) => {
+    const ok = window.confirm(
+      `Are you sure you want to remove this permitted address?\n\nAddress: ${address}`
+    );
+    if (!ok) return;
+    await removePermittedAddress(address);
+  };
+
+  const handleRemoveAuthMethod = async (
+    authType: number,
+    authId: string,
+    displayId: string,
+    isCurrent: boolean
+  ) => {
+    const typeName = getAuthMethodTypeName(authType);
+    const baseMsg = `Are you sure you want to remove this auth method?\n\nType: ${typeName}\nID: ${displayId || authId}`;
+    const ok = window.confirm(
+      isCurrent
+        ? `${baseMsg}\n\n❗️❗️ Warning: This matches your current session's authentication and removing it will block you from authenticating this PKP with the current auth method again.`
+        : baseMsg
+    );
+    if (!ok) return;
+
+    if (isCurrent) {
+      const typed = window.prompt(
+        `Type DELETE to confirm removing the current session's auth method.`
+      );
+      if ((typed || '').trim().toUpperCase() !== 'DELETE') return;
+    }
+
+    await removePermittedAuthMethod(authType, authId);
+  };
 
   if (!permissionsContext) {
     return (
@@ -132,7 +198,7 @@ export const PermissionsList: React.FC = () => {
                   </div>
                 </div>
                 <RemoveButton
-                  onRemove={() => removePermittedAction(action)}
+                  onRemove={() => handleRemoveAction(action)}
                   isRemoving={removingItems.has(`action:${action}`)}
                 />
               </div>
@@ -151,10 +217,40 @@ export const PermissionsList: React.FC = () => {
               fontSize: "16px",
             }}
           >
-            🏠 Permitted Addresses ({permissionsContext.addresses.length})
+            🏠 Permitted Addresses ({(() => {
+              try {
+                const normalise = (addr: string) => {
+                  try {
+                    return getAddress(addr).toLowerCase();
+                  } catch {
+                    return String(addr).toLowerCase();
+                  }
+                };
+                const unique = Array.from(new Set(permissionsContext.addresses.map((a: string) => normalise(a))));
+                return unique.length;
+              } catch {
+                return permissionsContext.addresses.length;
+              }
+            })()})
           </h4>
           <div style={{ display: "grid", gap: "8px" }}>
-            {permissionsContext.addresses.map((address: string, index: number) => (
+            {(() => {
+              // Build unique list (case-insensitive, checksum-normalised when possible)
+              const addresses: string[] = permissionsContext.addresses;
+              const normalise = (addr: string) => {
+                try {
+                  return getAddress(addr).toLowerCase();
+                } catch {
+                  return String(addr).toLowerCase();
+                }
+              };
+              const uniqueKeys = Array.from(new Set(addresses.map((a: string) => normalise(a))));
+              const uniqueAddresses = uniqueKeys.map((key: string) => {
+                const original = addresses.find((a: string) => normalise(a) === key) as string;
+                return original;
+              });
+
+              return uniqueAddresses.map((address: string, index: number) => (
               <div
                 key={index}
                 style={{
@@ -200,11 +296,12 @@ export const PermissionsList: React.FC = () => {
                   </div>
                 </div>
                 <RemoveButton
-                  onRemove={() => removePermittedAddress(address)}
+                  onRemove={() => handleRemoveAddress(address)}
                   isRemoving={removingItems.has(`address:${address}`)}
                 />
               </div>
-            ))}
+              ));
+            })()}
           </div>
         </div>
       )}
@@ -237,6 +334,7 @@ export const PermissionsList: React.FC = () => {
                 }
                 return authMethod.id || "";
               })();
+              const isCurrent = isCurrentSessionAuthMethod(authMethod);
 
               return (
                 <div
@@ -315,6 +413,11 @@ export const PermissionsList: React.FC = () => {
                       }}
                     >
                       <strong>Type:</strong> {getAuthMethodTypeName(authType)}
+                      {isCurrent && (
+                        <span style={{ color: "#b45309", marginLeft: "8px" }}>
+                          (Current session)
+                        </span>
+                      )}
                       {isLitAction && (
                         <span style={{ color: "#059669", marginLeft: "8px" }}>
                           📎 (IPFS Link)
@@ -336,7 +439,14 @@ export const PermissionsList: React.FC = () => {
                     )}
                   </div>
                   <RemoveButton
-                    onRemove={() => removePermittedAuthMethod(authType, authMethod.id)}
+                    onRemove={() =>
+                      handleRemoveAuthMethod(
+                        authType,
+                        authMethod.id,
+                        String(displayId),
+                        isCurrent
+                      )
+                    }
                     isRemoving={removingItems.has(`${authType}:${authMethod.id}`)}
                   />
                 </div>

@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import { getAddress } from 'viem';
 import { usePKPPermissions } from '../../contexts/PKPPermissionsContext';
 
 export const PermissionsSummaryCards: React.FC = () => {
@@ -13,6 +14,22 @@ export const PermissionsSummaryCards: React.FC = () => {
   if (!permissionsContext) {
     return null;
   }
+
+  const uniqueAddressCount = React.useMemo(() => {
+    const addresses: string[] = permissionsContext?.addresses || [];
+    try {
+      const normalise = (addr: string) => {
+        try {
+          return getAddress(addr).toLowerCase();
+        } catch {
+          return String(addr).toLowerCase();
+        }
+      };
+      return Array.from(new Set(addresses.map((a) => normalise(a)))).length;
+    } catch {
+      return addresses.length;
+    }
+  }, [permissionsContext?.addresses]);
 
   return (
     <div
@@ -83,7 +100,7 @@ export const PermissionsSummaryCards: React.FC = () => {
             marginBottom: "8px",
           }}
         >
-          {permissionsContext?.addresses?.length || 0}
+          {uniqueAddressCount}
         </div>
         <div
           style={{

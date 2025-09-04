@@ -9,6 +9,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { useLitAuth } from '../../../../lit-login-modal/LitAuthProvider';
 import { PkpInfo } from '../types';
+import { createLitClient } from '@lit-protocol/lit-client';
 
 interface PKPPermissionsContextType {
   // PKP data
@@ -130,8 +131,17 @@ export const PKPPermissionsProvider: React.FC<PKPPermissionsProviderProps> = ({
     try {
       const pkpPermissionsManager = await getPermissionsManager();
       const context = await pkpPermissionsManager.getPermissionsContext();
-      setPermissionsContext(context);
-      
+      console.log("context:", context);
+
+      const permittedAddresses = await pkpPermissionsManager.getPermittedAddresses();
+      console.log("permittedAddresses:", permittedAddresses);
+
+      const permittedActions = await pkpPermissionsManager.getPermittedActions();
+      console.log("permittedActions:", permittedActions);
+
+      const permittedAuthMethods = await pkpPermissionsManager.getPermittedAuthMethods();
+      console.log("permittedAuthMethods:", permittedAuthMethods);
+
       console.log("✅ Permissions context loaded successfully");
     } catch (error: any) {
       console.error("Failed to load permissions context:", error);
