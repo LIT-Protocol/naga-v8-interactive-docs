@@ -136,7 +136,7 @@ function generateVersionPage(): Plugin {
 // https://vitejs.dev/config/
 export default defineConfig({
   preview: {
-    allowedHosts: ["lit-explorer-naga.onrender.com"],
+    allowedHosts: ["lit-explorer-naga.onrender.com", "naga-explorer.getlit.dev"],
   },
   plugins: [
     react(),
