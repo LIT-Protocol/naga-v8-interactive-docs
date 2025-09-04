@@ -14,6 +14,7 @@ import {
   PKPInfoCard,
 } from "./protectedApp/index";
 import { TopNavBar, GlobalMessage, StickySidebarLayout, type TopNavTab } from "@layout";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import PKPSelectionModal from "./PKPSelectionModal";
 import { useState as useReactState } from "react";
@@ -63,7 +64,6 @@ export default function LoggedInDashboard() {
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
   const [selectedChain, setSelectedChain] = useState<string>("yellowstone");
   const [, setStatus] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<string>("playground");
 
   // Transaction toast state
   const [transactionToasts, setTransactionToasts] = useState<
@@ -76,6 +76,21 @@ export default function LoggedInDashboard() {
     { id: "permissions", label: "PKP Permissions" },
     { id: "payment", label: "Payment Management" },
   ];
+
+  // URL-driven tab state
+  const navigate = useNavigate();
+  const location = useLocation();
+  const pathToTab: Record<string, string> = {
+    "/playground": "playground",
+    "/pkp-permissions": "permissions",
+    "/payment": "payment",
+  };
+  const tabToPath: Record<string, string> = {
+    playground: "/playground",
+    permissions: "/pkp-permissions",
+    payment: "/payment",
+  };
+  const activeTabId = pathToTab[location.pathname] ?? "playground";
 
   // Toast management
   const addTransactionToast = (
@@ -320,8 +335,8 @@ export default function LoggedInDashboard() {
     >
       <TopNavBar
         tabs={tabs}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
+        activeTab={activeTabId}
+        onTabChange={(id) => navigate(tabToPath[id] ?? "/playground")}
         rightSlot={
           <AccountMenu
             selectedChain={selectedChain}
@@ -417,7 +432,7 @@ export default function LoggedInDashboard() {
           </>
         }
       >
-        {activeTab === "playground" && (
+        {activeTabId === "playground" && (
           <WalletOperationsDashboard
             selectedPkp={selectedPkp}
             selectedChain={selectedChain}
@@ -425,9 +440,9 @@ export default function LoggedInDashboard() {
           />
         )}
 
-        {activeTab === "permissions" && <PermissionsDashboard />}
+        {activeTabId === "permissions" && <PermissionsDashboard />}
 
-        {activeTab === "payment" && (
+        {activeTabId === "payment" && (
           <PaymentManagementDashboard
             selectedPkp={selectedPkp}
             selectedChain={selectedChain}
