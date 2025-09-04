@@ -45,6 +45,8 @@ interface PkpSelectionForDemoProps {
   services: any;
   disabled?: boolean;
   authServiceBaseUrl: string;
+  hideModeSwitcher?: boolean;
+  singlePkpMessaging?: boolean;
 }
 
 const PkpSelectionForDemo: React.FC<PkpSelectionForDemoProps> = ({
@@ -54,6 +56,8 @@ const PkpSelectionForDemo: React.FC<PkpSelectionForDemoProps> = ({
   services,
   disabled = false,
   authServiceBaseUrl,
+  hideModeSwitcher = false,
+  singlePkpMessaging = false,
 }) => {
   const [mode, setMode] = useState<"existing" | "mint">("existing");
   const [pkps, setPkps] = useState<PkpInfo[]>([]);
@@ -403,190 +407,99 @@ const PkpSelectionForDemo: React.FC<PkpSelectionForDemoProps> = ({
   return (
     <div>
       {/* Header */}
-      <div style={{ marginBottom: "20px" }}>
-        <h3 style={{ 
-          fontSize: "18px", 
-          fontWeight: "600", 
-          color: "#111827",
-          margin: "0 0 8px 0" 
-        }}>
-          🔑 Select Your PKP Wallet
-        </h3>
-        <p style={{ 
-          fontSize: "14px", 
-          color: "#6b7280", 
-          margin: "0",
-          lineHeight: "1.4"
-        }}>
+      <div className="mb-5">
+        <h3 className="text-[18px] font-semibold text-gray-900 m-0 mb-2">🔑 Select Your PKP Wallet</h3>
+        <p className="text-[14px] text-gray-500 m-0 leading-snug">
           Choose a PKP for your <strong className="capitalize">{authMethodName}</strong> authentication
         </p>
       </div>
 
       {/* Mode Selection */}
-      <div style={{
-        padding: "16px",
-        backgroundColor: "#f8f9fa",
-        borderRadius: "8px",
-        border: "1px solid #e9ecef",
-        marginBottom: "20px",
-      }}>
-        <h4 style={{ 
-          margin: "0 0 12px 0", 
-          fontSize: "14px", 
-          fontWeight: "600", 
-          color: "#495057" 
-        }}>
-          PKP Options
-        </h4>
-        <div style={{ display: "flex", gap: "10px" }}>
-          <button
-            onClick={() => setMode("existing")}
-            disabled={disabled}
-            style={{
-              padding: "10px 16px",
-              backgroundColor: mode === "existing" ? "#007bff" : "white",
-              color: mode === "existing" ? "white" : "#495057",
-              border: mode === "existing" ? "1px solid #007bff" : "1px solid #dee2e6",
-              borderRadius: "6px",
-              cursor: disabled ? "not-allowed" : "pointer",
-              fontSize: "14px",
-              fontWeight: "500",
-              transition: "all 0.2s",
-              opacity: disabled ? 0.6 : 1,
-            }}
-          >
-            📋 Use Existing PKP
-          </button>
-          <button
-            onClick={() => setMode("mint")}
-            disabled={disabled}
-            style={{
-              padding: "10px 16px",
-              backgroundColor: mode === "mint" ? "#28a745" : "white",
-              color: mode === "mint" ? "white" : "#495057",
-              border: mode === "mint" ? "1px solid #28a745" : "1px solid #dee2e6",
-              borderRadius: "6px",
-              cursor: disabled ? "not-allowed" : "pointer",
-              fontSize: "14px",
-              fontWeight: "500",
-              transition: "all 0.2s",
-              opacity: disabled ? 0.6 : 1,
-            }}
-          >
-            ⚡ Mint New PKP
-          </button>
+      {!hideModeSwitcher && (
+        <div className="p-4 bg-slate-50 rounded-lg border border-[#e9ecef] mb-5">
+          <h4 className="m-0 mb-3 text-[14px] font-semibold text-[#495057]">PKP Options</h4>
+          <div className="flex gap-2.5">
+            <button
+              onClick={() => setMode("existing")}
+              disabled={disabled}
+              className={`px-4 py-2 rounded-md text-[14px] font-medium transition border ${
+                mode === "existing" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-[#495057] border-[#dee2e6]"
+              } ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+            >
+              📋 Use Existing PKP
+            </button>
+            <button
+              onClick={() => setMode("mint")}
+              disabled={disabled}
+              className={`px-4 py-2 rounded-md text-[14px] font-medium transition border ${
+                mode === "mint" ? "bg-green-600 text-white border-green-600" : "bg-white text-[#495057] border-[#dee2e6]"
+              } ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+            >
+              ⚡ Mint New PKP
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Status Display */}
       {status && (
-        <div style={{
-          padding: "12px 16px",
-          marginBottom: "20px",
-          backgroundColor: status.includes("❌") ? "#fff5f5" : 
-                           status.includes("✅") ? "#f0fff4" : "#e7f3ff",
-          border: `1px solid ${status.includes("❌") ? "#fecaca" : 
-                                status.includes("✅") ? "#9ae6b4" : "#b3d9ff"}`,
-          borderRadius: "6px",
-          fontSize: "14px",
-          color: status.includes("❌") ? "#dc2626" : 
-                 status.includes("✅") ? "#16a34a" : "#1d4ed8",
-          fontWeight: "500",
-        }}>
+        <div
+          className={`px-4 py-3 mb-5 rounded-md text-[14px] font-medium border ${
+            status.includes("❌")
+              ? "bg-red-50 border-red-200 text-red-600"
+              : status.includes("✅")
+              ? "bg-green-50 border-green-300 text-green-600"
+              : "bg-blue-50 border-blue-200 text-blue-700"
+          }`}
+        >
           {status}
         </div>
       )}
 
       {/* Content Area */}
-      <div style={{
-        border: "1px solid #e5e7eb",
-        borderRadius: "8px",
-        overflow: "hidden",
-        backgroundColor: "white",
-      }}>
+      <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
         {mode === "existing" ? (
           <div>
             {/* Existing PKPs Header */}
-            <div style={{
-              padding: "16px",
-              backgroundColor: "#f8fafc",
-              borderBottom: "1px solid #e5e7eb",
-            }}>
-              <div style={{ 
-                display: "flex", 
-                justifyContent: "space-between", 
-                alignItems: "center",
-                marginBottom: "4px" 
-              }}>
-                <h4 style={{ 
-                  margin: "0", 
-                  fontSize: "16px", 
-                  fontWeight: "600", 
-                  color: "#374151" 
-                }}>
-                  📋 Your Existing PKPs
+            <div className="p-4 bg-slate-50 border-b border-gray-200">
+              <div className="flex justify-between items-center mb-1">
+                <h4 className="m-0 text-[16px] font-semibold text-gray-700">
+                  {singlePkpMessaging ? "🔑 Passkey-linked PKP" : "📋 Your Existing PKPs"}
                 </h4>
-                <button
-                  onClick={() => loadExistingPkps(1, true)}
-                  disabled={isLoading || disabled}
-                  style={{
-                    padding: "6px 12px",
-                    backgroundColor: isLoading || disabled ? "#f3f4f6" : "#6366f1",
-                    color: isLoading || disabled ? "#9ca3af" : "white",
-                    border: "1px solid #d1d5db",
-                    borderRadius: "6px",
-                    cursor: isLoading || disabled ? "not-allowed" : "pointer",
-                    fontSize: "12px",
-                    fontWeight: "500",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "4px",
-                  }}
-                  title="Force refresh PKP data from server"
-                >
-                  {isLoading ? (
-                    <>
-                      <div style={{
-                        width: "12px",
-                        height: "12px",
-                        border: "2px solid #ffffff40",
-                        borderTop: "2px solid #ffffff",
-                        borderRadius: "50%",
-                        animation: "spin 1s linear infinite",
-                      }} />
-                      Refreshing...
-                    </>
-                  ) : (
-                    <>🔄 Refresh</>
-                  )}
-                </button>
+                {!singlePkpMessaging && (
+                  <button
+                    onClick={() => loadExistingPkps(1, true)}
+                    disabled={isLoading || disabled}
+                    className={`px-3 py-1.5 ${
+                      isLoading || disabled ? "bg-gray-100 text-gray-400" : "bg-indigo-500 text-white"
+                    } border border-gray-300 rounded cursor-${
+                      isLoading || disabled ? "not-allowed" : "pointer"
+                    } text-[12px] font-medium flex items-center gap-1`}
+                    title="Force refresh PKP data from server"
+                  >
+                    {isLoading ? (
+                      <>
+                        <div className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                        Refreshing...
+                      </>
+                    ) : (
+                      <>🔄 Refresh</>
+                    )}
+                  </button>
+                )}
               </div>
-              <p style={{ 
-                margin: "0", 
-                fontSize: "13px", 
-                color: "#6b7280" 
-              }}>
-                Select a PKP wallet to continue. Click any address to copy it.
+              <p className="m-0 text-[13px] text-gray-500">
+                {singlePkpMessaging
+                  ? "Each passkey maps to a single PKP. When using WebAuthn, you won’t need to pick"
+                  : "Select a PKP wallet to continue. Click any address to copy it."}
               </p>
             </div>
 
             {/* PKP List */}
-            <div style={{ padding: "16px", position: "relative" }}>
+            <div className="p-4 relative">
               {isLoading || isLoadingPage ? (
-                <div style={{ 
-                  textAlign: "center", 
-                  padding: "40px",
-                  color: "#6b7280",
-                }}>
-                  <div style={{
-                    width: "32px",
-                    height: "32px",
-                    border: "3px solid #e5e7eb",
-                    borderTop: "3px solid #3b82f6",
-                    borderRadius: "50%",
-                    animation: "spin 1s linear infinite",
-                    margin: "0 auto 16px",
-                  }} />
+                <div className="text-center p-10 text-gray-500">
+                  <div className="w-8 h-8 border-[3px] border-gray-200 border-t-blue-500 rounded-full animate-spin mx-auto mb-4" />
                   {isLoading ? "Loading your PKPs..." : `Loading page ${currentPage}...`}
                 </div>
               ) : pkps.length > 0 ? (
@@ -597,95 +510,60 @@ const PkpSelectionForDemo: React.FC<PkpSelectionForDemoProps> = ({
                     return null;
                   })()}
                   {/* PKP Grid */}
-                  <div style={{ display: "grid", gap: "12px", marginBottom: totalPages > 1 ? "20px" : "0" }}>
+                  <div className={`grid gap-3 ${totalPages > 1 ? "mb-5" : "mb-0"}`}>
                     {pkps.map((pkp) => {
                       console.log(`🔑 [PKP_RENDER] Rendering PKP: ${pkp.tokenId?.slice(-8)}, Address: ${pkp.ethAddress?.slice(-6)}, Balance: ${pkp.balance}, Loading: ${pkp.isLoadingBalance}`);
                       return (
                       <div
                         key={pkp.tokenId}
                         onClick={() => !disabled && handlePkpSelect(pkp)}
-                        style={{
-                          padding: "16px",
-                          border: selectedPkp?.tokenId === pkp.tokenId 
-                            ? "2px solid #3b82f6" 
-                            : "1px solid #e5e7eb",
-                          borderRadius: "8px",
-                          backgroundColor: selectedPkp?.tokenId === pkp.tokenId 
-                            ? "#eff6ff" 
-                            : "white",
-                          cursor: disabled ? "not-allowed" : "pointer",
-                          transition: "all 0.2s",
-                          opacity: disabled ? 0.6 : 1,
-                        }}
+                        className={`p-4 rounded-lg ${
+                          selectedPkp?.tokenId === pkp.tokenId
+                            ? "border-2 border-blue-500 bg-blue-50"
+                            : "border border-gray-200 bg-white"
+                        } ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"} transition`}
                         onMouseEnter={(e) => {
                           if (!disabled && selectedPkp?.tokenId !== pkp.tokenId) {
-                            e.currentTarget.style.backgroundColor = "#f8fafc";
-                            e.currentTarget.style.borderColor = "#d1d5db";
+                            e.currentTarget.classList.add("bg-gray-50", "border-gray-300");
                           }
                         }}
                         onMouseLeave={(e) => {
                           if (!disabled && selectedPkp?.tokenId !== pkp.tokenId) {
-                            e.currentTarget.style.backgroundColor = "white";
-                            e.currentTarget.style.borderColor = "#e5e7eb";
+                            e.currentTarget.classList.remove("bg-gray-50", "border-gray-300");
                           }
                         }}
                       >
-                        <div style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "flex-start",
-                          marginBottom: "8px",
-                        }}>
-                          <div style={{
-                            fontSize: "14px",
-                            fontWeight: "600",
-                            color: "#111827",
-                          }}>
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="text-[14px] font-semibold text-gray-900">
                             🔑 PKP #{pkp.tokenId?.slice(-8) || 'N/A'}
                           </div>
                           {selectedPkp?.tokenId === pkp.tokenId && (
-                            <div style={{
-                              fontSize: "12px",
-                              color: "#3b82f6",
-                              fontWeight: "600",
-                              backgroundColor: "#dbeafe",
-                              padding: "2px 8px",
-                              borderRadius: "12px",
-                            }}>
+                            <div className="text-[12px] text-blue-500 font-semibold bg-blue-100 px-2 py-0.5 rounded-full">
                               ✓ Selected
                             </div>
                           )}
                         </div>
-                        
-                        <div style={{ fontSize: "13px", color: "#6b7280", lineHeight: "1.4" }}>
-                          <div style={{ marginBottom: "4px" }}>
-                            <strong style={{ color: "#374151" }}>Address:</strong>{" "}
+                        <div className="text-[13px] text-gray-500 leading-snug">
+                          <div className="mb-1">
+                            <strong className="text-gray-700">Address:</strong>{" "}
                             <span 
                               onClick={(e) => {
                                 e.stopPropagation();
                                 copyToClipboard(pkp.ethAddress, `address-${pkp.tokenId}`);
                               }}
-                              style={{ 
-                                fontFamily: "monospace",
-                                cursor: "pointer",
-                                padding: "2px 6px",
-                                borderRadius: "4px",
-                                backgroundColor: copiedAddress === `address-${pkp.tokenId}` ? "#dcfce7" : "transparent",
-                                color: copiedAddress === `address-${pkp.tokenId}` ? "#16a34a" : "#374151",
-                                border: "1px solid transparent",
-                                transition: "all 0.2s",
-                                display: "inline-block",
-                              }}
+                              className={`font-mono cursor-pointer px-1.5 py-0.5 rounded border inline-block ${
+                                copiedAddress === `address-${pkp.tokenId}`
+                                  ? "bg-green-100 text-green-600 border-green-200"
+                                  : "bg-transparent text-gray-700 border-transparent hover:bg-gray-100 hover:border-gray-300"
+                              }`}
                               onMouseEnter={(e) => {
                                 if (copiedAddress !== `address-${pkp.tokenId}`) {
-                                  e.currentTarget.style.backgroundColor = "#f3f4f6";
-                                  e.currentTarget.style.borderColor = "#d1d5db";
+                                  e.currentTarget.classList.add("bg-gray-100", "border-gray-300");
                                 }
                               }}
                               onMouseLeave={(e) => {
                                 if (copiedAddress !== `address-${pkp.tokenId}`) {
-                                  e.currentTarget.style.backgroundColor = "transparent";
-                                  e.currentTarget.style.borderColor = "transparent";
+                                  e.currentTarget.classList.remove("bg-gray-100", "border-gray-300");
                                 }
                               }}
                               title="Click to copy full address"
@@ -693,33 +571,27 @@ const PkpSelectionForDemo: React.FC<PkpSelectionForDemoProps> = ({
                               {copiedAddress === `address-${pkp.tokenId}` ? "✅ Copied!" : formatAddress(pkp.ethAddress)}
                             </span>
                           </div>
-                          <div style={{ marginBottom: "4px" }}>
-                            <strong style={{ color: "#374151" }}>Public Key:</strong>{" "}
-                            <span style={{ fontFamily: "monospace" }}>
+                          <div className="mb-1">
+                            <strong className="text-gray-700">Public Key:</strong>{" "}
+                            <span className="font-mono">
                               {formatPublicKey(pkp.publicKey)}
                             </span>
                           </div>
-                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                            <strong style={{ color: "#374151" }}>Balance:</strong>{" "}
+                          <div className="flex items-center gap-1.5">
+                            <strong className="text-gray-700">Balance:</strong>{" "}
                             {pkp.isLoadingBalance ? (
-                              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                                <div style={{
-                                  width: "12px",
-                                  height: "12px",
-                                  border: "2px solid #e5e7eb",
-                                  borderTop: "2px solid #3b82f6",
-                                  borderRadius: "50%",
-                                  animation: "spin 1s linear infinite",
-                                }} />
-                                <span style={{ fontSize: "12px", color: "#9ca3af" }}>Loading...</span>
+                              <div className="flex items-center gap-1">
+                                <div className="w-3 h-3 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
+                                <span className="text-[12px] text-gray-400">Loading...</span>
                               </div>
                             ) : (
-                              <span style={{ 
-                                fontFamily: "monospace",
-                                fontWeight: "500",
-                                color: pkp.balance === "N/A" ? "#ef4444" : 
-                                       (parseFloat(pkp.balance || "0") > 0 ? "#16a34a" : "#f59e0b")
-                              }}>
+                              <span className={`font-mono font-medium ${
+                                pkp.balance === "N/A"
+                                  ? "text-red-500"
+                                  : parseFloat(pkp.balance || "0") > 0
+                                  ? "text-green-600"
+                                  : "text-amber-500"
+                              }`}>
                                 {pkp.balance || "N/A"} {pkp.balanceSymbol || "LPX"}
                               </span>
                             )}
@@ -732,23 +604,14 @@ const PkpSelectionForDemo: React.FC<PkpSelectionForDemoProps> = ({
 
                   {/* Pagination Controls */}
                   {totalPages > 1 && (
-                    <div style={{
-                      borderTop: "1px solid #e5e7eb",
-                      paddingTop: "16px",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}>
+                    <div className="border-t border-gray-200 pt-4 flex justify-between items-center">
                       {/* Pagination Info */}
-                      <div style={{
-                        fontSize: "13px",
-                        color: "#6b7280",
-                      }}>
+                      <div className="text-[13px] text-gray-500">
                         Page {currentPage} of {totalPages} ({totalPkps} total PKPs)
                       </div>
 
                       {/* Pagination Buttons */}
-                      <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                      <div className="flex gap-2 items-center">
                         <button
                           onClick={() => {
                             const newPage = Math.max(1, currentPage - 1);
@@ -759,23 +622,17 @@ const PkpSelectionForDemo: React.FC<PkpSelectionForDemoProps> = ({
                             setCurrentPage(newPage);
                           }}
                           disabled={currentPage === 1 || isLoadingPage || disabled}
-                          style={{
-                            padding: "6px 12px",
-                            backgroundColor: currentPage === 1 || isLoadingPage || disabled ? "#f3f4f6" : "#ffffff",
-                            color: currentPage === 1 || isLoadingPage || disabled ? "#9ca3af" : "#374151",
-                            border: "1px solid #d1d5db",
-                            borderRadius: "6px",
-                            cursor: currentPage === 1 || isLoadingPage || disabled ? "not-allowed" : "pointer",
-                            fontSize: "13px",
-                            fontWeight: "500",
-                            transition: "all 0.2s",
-                          }}
+                          className={`px-3 py-1.5 border border-gray-300 rounded text-[13px] font-medium transition ${
+                            currentPage === 1 || isLoadingPage || disabled
+                              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                              : "bg-white text-gray-700 hover:bg-gray-100 cursor-pointer"
+                          }`}
                         >
                           ← Previous
                         </button>
 
                         {/* Page Numbers */}
-                        <div style={{ display: "flex", gap: "4px" }}>
+                        <div className="flex gap-1">
                           {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                             let pageNumber;
                             if (totalPages <= 5) {
@@ -799,19 +656,11 @@ const PkpSelectionForDemo: React.FC<PkpSelectionForDemoProps> = ({
                                   setCurrentPage(pageNumber);
                                 }}
                                 disabled={isLoadingPage || disabled}
-                                style={{
-                                  padding: "6px 10px",
-                                  backgroundColor: currentPage === pageNumber ? "#3b82f6" : "#ffffff",
-                                  color: currentPage === pageNumber ? "#ffffff" : "#374151",
-                                  border: currentPage === pageNumber ? "1px solid #3b82f6" : "1px solid #d1d5db",
-                                  borderRadius: "6px",
-                                  cursor: isLoadingPage || disabled ? "not-allowed" : "pointer",
-                                  fontSize: "13px",
-                                  fontWeight: "500",
-                                  minWidth: "32px",
-                                  transition: "all 0.2s",
-                                  opacity: isLoadingPage || disabled ? 0.6 : 1,
-                                }}
+                                className={`px-2.5 py-1 border rounded text-[13px] font-medium min-w-[32px] transition ${
+                                  currentPage === pageNumber
+                                    ? "bg-blue-500 text-white border-blue-500"
+                                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
+                                } ${isLoadingPage || disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
                               >
                                 {pageNumber}
                               </button>
@@ -829,17 +678,11 @@ const PkpSelectionForDemo: React.FC<PkpSelectionForDemoProps> = ({
                             setCurrentPage(newPage);
                           }}
                           disabled={currentPage === totalPages || isLoadingPage || disabled}
-                          style={{
-                            padding: "6px 12px",
-                            backgroundColor: currentPage === totalPages || isLoadingPage || disabled ? "#f3f4f6" : "#ffffff",
-                            color: currentPage === totalPages || isLoadingPage || disabled ? "#9ca3af" : "#374151",
-                            border: "1px solid #d1d5db",
-                            borderRadius: "6px",
-                            cursor: currentPage === totalPages || isLoadingPage || disabled ? "not-allowed" : "pointer",
-                            fontSize: "13px",
-                            fontWeight: "500",
-                            transition: "all 0.2s",
-                          }}
+                          className={`px-3 py-1.5 border border-gray-300 rounded text-[13px] font-medium transition ${
+                            currentPage === totalPages || isLoadingPage || disabled
+                              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                              : "bg-white text-gray-700 hover:bg-gray-100 cursor-pointer"
+                          }`}
                         >
                           Next →
                         </button>
@@ -849,75 +692,30 @@ const PkpSelectionForDemo: React.FC<PkpSelectionForDemoProps> = ({
 
                   {/* Loading overlay for page changes */}
                   {isLoadingPage && (
-                    <div style={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      backgroundColor: "rgba(255, 255, 255, 0.8)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderRadius: "8px",
-                    }}>
-                      <div style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        color: "#6b7280",
-                        fontSize: "14px",
-                      }}>
-                        <div style={{
-                          width: "16px",
-                          height: "16px",
-                          border: "2px solid #e5e7eb",
-                          borderTop: "2px solid #3b82f6",
-                          borderRadius: "50%",
-                          animation: "spin 1s linear infinite",
-                        }} />
+                    <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-lg">
+                      <div className="flex items-center gap-2 text-gray-500 text-[14px]">
+                        <div className="w-4 h-4 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
                         Loading page {currentPage}...
                       </div>
                     </div>
                   )}
                 </div>
               ) : (
-                <div style={{ 
-                  textAlign: "center", 
-                  padding: "40px",
-                  color: "#6b7280",
-                }}>
-                  <div style={{ fontSize: "48px", marginBottom: "16px" }}>🔍</div>
-                  <h4 style={{ 
-                    margin: "0 0 8px 0", 
-                    fontSize: "16px", 
-                    fontWeight: "600",
-                    color: "#374151"
-                  }}>
+                <div className="text-center p-10 text-gray-500">
+                  <div className="text-[48px] mb-4">🔍</div>
+                  <h4 className="m-0 mb-2 text-[16px] font-semibold text-gray-700">
                     No PKPs Found
                   </h4>
-                  <p style={{ 
-                    margin: "0 0 20px 0", 
-                    fontSize: "14px",
-                    lineHeight: "1.4"
-                  }}>
+                  <p className="m-0 mb-5 text-[14px] leading-snug">
                     No PKPs found for your {authMethodName}.<br />
                     You can mint a new PKP to get started.
                   </p>
                   <button
                     onClick={() => setMode("mint")}
                     disabled={disabled}
-                    style={{
-                      padding: "10px 20px",
-                      backgroundColor: "#28a745",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "6px",
-                      fontSize: "14px",
-                      fontWeight: "500",
-                      cursor: disabled ? "not-allowed" : "pointer",
-                      opacity: disabled ? 0.6 : 1,
-                    }}
+                    className={`px-5 py-2 bg-green-600 text-white rounded text-[14px] font-medium ${
+                      disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
+                    }`}
                   >
                     ⚡ Mint Your First PKP
                   </button>
@@ -929,48 +727,22 @@ const PkpSelectionForDemo: React.FC<PkpSelectionForDemoProps> = ({
           /* Mint New PKP */
           <div>
             {/* Mint Header */}
-            <div style={{
-              padding: "16px",
-              backgroundColor: "#f0fdf4",
-              borderBottom: "1px solid #e5e7eb",
-            }}>
-              <h4 style={{ 
-                margin: "0", 
-                fontSize: "16px", 
-                fontWeight: "600", 
-                color: "#374151" 
-              }}>
+            <div className="p-4 bg-green-50 border-b border-gray-200">
+              <h4 className="m-0 text-[16px] font-semibold text-gray-700">
                 ⚡ Mint New PKP
               </h4>
-              <p style={{ 
-                margin: "4px 0 0 0", 
-                fontSize: "13px", 
-                color: "#6b7280" 
-              }}>
+              <p className="mt-1 text-[13px] text-gray-500">
                 Create a new PKP wallet for your authentication
               </p>
             </div>
 
             {/* Mint Content */}
-            <div style={{ padding: "24px", textAlign: "center" }}>
-              <div style={{ fontSize: "48px", marginBottom: "16px" }}>⚡</div>
-              <h4 style={{ 
-                margin: "0 0 12px 0", 
-                fontSize: "18px", 
-                fontWeight: "600",
-                color: "#374151"
-              }}>
+            <div className="p-6 text-center">
+              <div className="text-[48px] mb-4">⚡</div>
+              <h4 className="m-0 mb-3 text-[18px] font-semibold text-gray-700">
                 Create New PKP Wallet
               </h4>
-              <p style={{ 
-                margin: "0 0 24px 0", 
-                fontSize: "14px",
-                color: "#6b7280",
-                lineHeight: "1.4",
-                maxWidth: "300px",
-                marginLeft: "auto",
-                marginRight: "auto",
-              }}>
+              <p className="m-0 mb-6 text-[14px] text-gray-500 leading-snug max-w-[300px] mx-auto">
                 This will create a new PKP wallet specifically for your {authMethodName}. 
                 The process takes a few seconds.
               </p>
@@ -978,32 +750,14 @@ const PkpSelectionForDemo: React.FC<PkpSelectionForDemoProps> = ({
               <button
                 onClick={handleMintNewPkp}
                 disabled={disabled || isMinting}
-                style={{
-                  padding: "12px 24px",
-                  backgroundColor: disabled || isMinting ? "#9ca3af" : "#28a745",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "16px",
-                  fontWeight: "600",
-                  cursor: disabled || isMinting ? "not-allowed" : "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "8px",
-                  margin: "0 auto",
-                  minWidth: "180px",
-                }}
+                className={`px-6 py-3 ${
+                  disabled || isMinting ? "bg-gray-400" : "bg-green-600"
+                } text-white rounded-lg text-[16px] font-semibold ${
+                  disabled || isMinting ? "cursor-not-allowed" : "cursor-pointer"
+                } flex items-center justify-center gap-2 mx-auto min-w-[180px]`}
               >
                 {isMinting && (
-                  <div style={{
-                    width: "16px",
-                    height: "16px",
-                    border: "2px solid #ffffff40",
-                    borderTop: "2px solid #ffffff",
-                    borderRadius: "50%",
-                    animation: "spin 1s linear infinite",
-                  }} />
+                  <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                 )}
                 {isMinting ? "Minting PKP..." : "⚡ Mint New PKP"}
               </button>
@@ -1012,17 +766,9 @@ const PkpSelectionForDemo: React.FC<PkpSelectionForDemoProps> = ({
                 <button
                   onClick={() => setMode("existing")}
                   disabled={disabled}
-                  style={{
-                    marginTop: "12px",
-                    padding: "8px 16px",
-                    backgroundColor: "transparent",
-                    color: "#6b7280",
-                    border: "none",
-                    borderRadius: "6px",
-                    fontSize: "14px",
-                    cursor: disabled ? "not-allowed" : "pointer",
-                    textDecoration: "underline",
-                  }}
+                  className={`mt-3 px-4 py-2 bg-transparent text-gray-500 border-0 rounded text-[14px] ${
+                    disabled ? "cursor-not-allowed" : "cursor-pointer underline"
+                  }`}
                 >
                   ← Back to existing PKPs
                 </button>
@@ -1052,12 +798,7 @@ const PkpSelectionForDemo: React.FC<PkpSelectionForDemoProps> = ({
         </div>
       </div> */}
 
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
+      
     </div>
   );
 };

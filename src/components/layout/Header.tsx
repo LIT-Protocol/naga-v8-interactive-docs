@@ -29,7 +29,7 @@ export const Header = () => {
                 <div className="flex-1 max-w-2xl mx-8"></div>
 
                 {/* Right side - Controls */}
-                <div className="text-sm flex items-center gap-3 ml-auto text-[#837F7E]">
+                <div className="text-sm flex items-center gap-3 ml-auto text-[#837F7E] pr-16">
                   {litAuth?.isAuthenticated && (
                     <button
                       className="cursor-pointer"

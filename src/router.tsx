@@ -2,30 +2,13 @@ import { createAuthManager } from "@lit-protocol/auth";
 import { createLitClient } from "@lit-protocol/lit-client";
 import {
   createBrowserRouter,
-  Navigate,
   Outlet,
   useOutletContext,
 } from "react-router-dom";
 import { MainLayout } from "./layouts/MainLayout";
 import { HomePage } from "./pages";
-import DiscordAuthTab from "./tabs/PKPAuthMethods/DiscordAuthTab";
-import GoogleAuthTab from "./tabs/PKPAuthMethods/GoogleAuthTab";
-import WebAuthnTab from "./tabs/PKPAuthMethods/WebAuthnTab";
-import EoaAuthTab from "./tabs/PKPAuthMethods/EoaAuthTab";
-import StytchEmailOtpAuthTab from "./tabs/PKPAuthMethods/StytchEmailOtpAuthTab";
-import StytchSmsOtpAuthTab from "./tabs/PKPAuthMethods/StytchSmsOtpAuthTab";
-import StytchWhatsAppOtpAuthTab from "./tabs/PKPAuthMethods/StytchWhatsAppOtpAuthTab";
-import CustomAuthTab from "./tabs/CustomAuthTab";
 
-import LitAuthProviderDemoTab from "./components/lit-logged-page/main";
-import EncryptionTab from "./tabs/EncryptionTab";
-import SetupLitClientTab from "./tabs/GettingStarted/SetupLitClientTab";
-import SetupAuthManagerTab from "./tabs/GettingStarted/SetupAuthManagerTab";
-import SetupAuthServicesTab from "./tabs/GettingStarted/SetupAuthServicesTab";
-import EoaNativeTab from "./tabs/EoaNativeTab";
-import StoragePluginsTab from "./tabs/GettingStarted/StoragePluginsTab";
-import StytchTotpAuthTab from "./tabs/PKPAuthMethods/2fa/StytchTotpAuthTab";
-import PaymentManagerTab from "./tabs/PaymentManagerTab";
+import LoggedInDashboard from "./components/lit-logged-page/LoggedInDashboard";
 
 // Create a type for the context
 type ContextType = {
@@ -63,15 +46,7 @@ type ContextType = {
 export const AppLayout = () => {
   return (
     <MainLayout>
-      <div
-        className="doc-layout"
-        style={{
-          display: "flex",
-          height: "100vh",
-          margin: "0 auto",
-        }}
-      >
-        {/* Sidebar will be rendered in the index page */}
+      <div id="lit-auth-main-layout" className="doc-layout flex h-screen mx-auto">
         <Outlet />
       </div>
     </MainLayout>
@@ -86,79 +61,8 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <LitAuthProviderDemoTab />,
+        element: <LoggedInDashboard />,
       },
-      {
-        path: "demo",
-        element: <LitAuthProviderDemoTab />,
-      },
-
-      // Getting Started Routes
-      // {
-      //   path: "setup-lit-client",
-      //   element: <SetupLitClientTab />,
-      // },
-      // {
-      //   path: "setup-auth-manager",
-      //   element: <SetupAuthManagerTab />,
-      // },
-      // {
-      //   path: "setup-auth-services",
-      //   element: <SetupAuthServicesTab />,
-      // },
-      // {
-      //   path: "storage-plugins",
-      //   element: <StoragePluginsTab />,
-      // },
-      // // EOA and Auth Routes
-      // {
-      //   path: "eoa-native",
-      //   element: <EoaNativeTab />,
-      // },
-      // {
-      //   path: "google-auth",
-      //   element: <GoogleAuthTab />,
-      // },
-      // {
-      //   path: "discord-auth",
-      //   element: <DiscordAuthTab />,
-      // },
-      // {
-      //   path: "webauthn-auth",
-      //   element: <WebAuthnTab />,
-      // },
-      // {
-      //   path: "eoa-auth",
-      //   element: <EoaAuthTab />,
-      // },
-      // {
-      //   path: "stytch-email-otp-auth",
-      //   element: <StytchEmailOtpAuthTab />,
-      // },
-      // {
-      //   path: "stytch-sms-otp-auth",
-      //   element: <StytchSmsOtpAuthTab />,
-      // },
-      // {
-      //   path: "stytch-whatsapp-otp-auth",
-      //   element: <StytchWhatsAppOtpAuthTab />,
-      // },
-      // {
-      //   path: "stytch-totp-auth",
-      //   element: <StytchTotpAuthTab />,
-      // },
-      // {
-      //   path: "custom-auth",
-      //   element: <CustomAuthTab />,
-      // },
-      // {
-      //   path: "encryption",
-      //   element: <EncryptionTab />,
-      // },
-      // {
-      //   path: "payment-manager",
-      //   element: <PaymentManagerTab />,
-      // },
     ],
   },
 ]);

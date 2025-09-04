@@ -621,8 +621,9 @@ export const HomePage = () => {
       supportedNetworks={["naga-dev"]}
       defaultNetwork="naga-dev"
       showSettingsButton={true}
-      displayNetworkMessage={true}
-      
+      showSignUpPage={false}
+      showNetworkMessage={true}
+      authServiceBaseUrl={APP_INFO.litAuthServer}
     >
       <MainLayout>
         {/* Fixed Error Toast - positioned outside of sidebar */}

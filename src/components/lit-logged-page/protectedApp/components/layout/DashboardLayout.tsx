@@ -61,7 +61,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           />
 
           {/* Reference */}
-          <h5 className="mt-5 text-sm font-medium mb-3">Useful links</h5>
+          <h5 className="mt-5 text-sm font-medium mb-3">Resources</h5>
 
           <ul id="sidebar-group">
             <li className="text-sm text-[#1D1917] font-light pr-3 rounded-xl cursor-pointer">
@@ -73,21 +73,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 rel="noopener noreferrer"
               >
                 <div className="flex-1 flex items-center space-x-2.5">
-                  <div className="text-sm">💰 Need test tokens? Visit the Faucet</div>
-                </div>
-              </a>
-            </li>
-
-            <li className="text-sm text-[#1D1917] font-light pr-3 rounded-xl cursor-pointer">
-              <a
-                className="group flex items-center pr-3 py-2 cursor-pointer focus:outline-primary dark:focus:outline-primary-light gap-x-3 rounded-xl hover:bg-gray-600/5 hover:text-black"
-                style={{ paddingLeft: "1rem", marginLeft: "-1rem" }}
-                href="https://yellowstone-explorer.litprotocol.com"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <div className="flex-1 flex items-center space-x-2.5">
-                  <div className="text-sm">Lit Protocol Testnet explorer</div>
+                  <div className="text-sm">Faucet (test tokens)</div>
                 </div>
               </a>
             </li>
@@ -101,11 +87,25 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 rel="noopener noreferrer"
               >
                 <div className="flex-1 flex items-center space-x-2.5">
-                  <div className="text-sm">Private RPC URL for Chronicle Yellowstone - Lit Protocol Testnet</div>
+                  <div className="text-sm">Private RPC URL</div>
                 </div>
               </a>
             </li>
-            
+
+            <li className="text-sm text-[#1D1917] font-light pr-3 rounded-xl cursor-pointer">
+              <a
+                className="group flex items-center pr-3 py-2 cursor-pointer focus:outline-primary dark:focus:outline-primary-light gap-x-3 rounded-xl hover:bg-gray-600/5 hover:text-black"
+                style={{ paddingLeft: "1rem", marginLeft: "-1rem" }}
+                href="https://yellowstone-explorer.litprotocol.com"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <div className="flex-1 flex items-center space-x-2.5">
+                  <div className="text-sm">Testnet Explorer</div>
+                </div>
+              </a>
+            </li>
+
             <li className="text-sm text-[#1D1917] font-light pr-3 rounded-xl cursor-pointer">
               <a
                 className="group flex items-center pr-3 py-2 cursor-pointer focus:outline-primary dark:focus:outline-primary-light gap-x-3 rounded-xl hover:bg-gray-600/5 hover:text-black"
@@ -115,7 +115,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 rel="noopener noreferrer"
               >
                 <div className="flex-1 flex items-center space-x-2.5">
-                  <div className="text-sm">LitActions API Documentation</div>
+                  <div className="text-sm">LitActions API Docs</div>
                 </div>
               </a>
             </li>

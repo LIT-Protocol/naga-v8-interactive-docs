@@ -1,10 +1,3 @@
-/**
- * LitAuthProvider.tsx
- *
- * Authentication provider that shows a modal for Lit Protocol authentication.
- * Once authenticated, users can access the main app with auth context available.
- */
-
 import { DiscordAuthenticator, GoogleAuthenticator } from "@lit-protocol/auth";
 import { Settings } from "lucide-react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
@@ -39,12 +32,11 @@ const NETWORK_MODULES: Partial<Record<SupportedNetworkName, any>> = {
   "naga-test": nagaTest,
 };
 
-// Removed unused helper to satisfy linter
-
 // Configuration constants
 const DEFAULT_PRIVATE_KEY = APP_INFO.defaultPrivateKey;
 const FAUCET_URL = APP_INFO.faucetUrl;
 const DEFAULT_AUTH_SERVICE_BASE_URL = APP_INFO.litAuthServer;
+const AUTH_SERVICE_URL_STORAGE_KEY = "lit-auth-server-url"; // canonical key
 
 type AuthMethod =
   | "google"
@@ -80,6 +72,8 @@ interface LitAuthContextValue {
   updateUserWithPkp: (pkpInfo: any, authContext?: any) => void;
   currentNetworkName: string;
   shouldDisplayNetworkMessage: boolean;
+  authServiceBaseUrl: string;
+  setAuthServiceBaseUrl: (url: string) => void;
 }
 
 const LitAuthContext = createContext<LitAuthContextValue | null>(null);
@@ -113,8 +107,10 @@ interface LitAuthProviderProps {
   supportedNetworks?: SupportedNetworkName[];
   defaultNetwork?: SupportedNetworkName;
   showSettingsButton?: boolean;
-  displayNetworkMessage?: boolean;
+  showNetworkMessage?: boolean;
   supportedAuthMethods?: AuthMethod[];
+  showSignUpPage?: boolean;
+  authServiceBaseUrl?: string;
 }
 
 interface AuthMethodInfo {
@@ -137,8 +133,10 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
   supportedNetworks = ["naga-dev", "naga-staging"],
   defaultNetwork,
   showSettingsButton = true,
-  displayNetworkMessage = false,
+  showNetworkMessage = false,
   supportedAuthMethods,
+  showSignUpPage = true,
+  authServiceBaseUrl: authServiceBaseUrlProp,
 }) => {
   const { data: walletClient } = useWalletClient();
 
@@ -183,6 +181,13 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
   const [modalMode, setModalMode] = useState<"signin" | "signup">("signin");
   const [showSettingsView, setShowSettingsView] = useState(false);
 
+  // Ensure we never remain in signup mode when sign up page is disabled
+  useEffect(() => {
+    if (!showSignUpPage && modalMode === "signup") {
+      setModalMode("signin");
+    }
+  }, [showSignUpPage, modalMode]);
+
   // EOA specific state
   const [privateKey, setPrivateKey] = useState(DEFAULT_PRIVATE_KEY);
   const [accountMethod, setAccountMethod] = useState<"privateKey" | "wallet">(
@@ -190,9 +195,31 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
   );
 
   // Stytch specific state
-  const [authServiceBaseUrl, setAuthServiceBaseUrl] = useState(
-    DEFAULT_AUTH_SERVICE_BASE_URL
-  );
+  const [authServiceBaseUrl, setAuthServiceBaseUrl] = useState(() => {
+    try {
+      const saved = localStorage.getItem(AUTH_SERVICE_URL_STORAGE_KEY);
+      return saved || authServiceBaseUrlProp || DEFAULT_AUTH_SERVICE_BASE_URL;
+    } catch {
+      return authServiceBaseUrlProp || DEFAULT_AUTH_SERVICE_BASE_URL;
+    }
+  });
+
+  // No restore effect needed; initialiser above ensures correct precedence on first render
+
+  useEffect(() => {
+    try {
+      if (authServiceBaseUrl) {
+        localStorage.setItem(
+          AUTH_SERVICE_URL_STORAGE_KEY,
+          authServiceBaseUrl
+        );
+      } else {
+        localStorage.removeItem(AUTH_SERVICE_URL_STORAGE_KEY);
+      }
+    } catch (e) {
+      console.warn("Failed to write auth service URL to storage", e);
+    }
+  }, [authServiceBaseUrl]);
   const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [otpCode, setOtpCode] = useState("");
@@ -226,6 +253,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
   const [tempAuthData, setTempAuthData] = useState<any>(null);
   const [tempMethod, setTempMethod] = useState<AuthMethod | null>(null);
   const [showPkpSelection, setShowPkpSelection] = useState(false);
+  const [isWebAuthnExistingFlow, setIsWebAuthnExistingFlow] = useState(false);
 
   // Authentication methods configuration
   const authMethods: AuthMethodInfo[] = [
@@ -295,10 +323,13 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
   ];
 
   // Determine which methods to show based on provided prop; defaults to all available
-  const methodsToShow = (supportedAuthMethods && supportedAuthMethods.length > 0)
-    ? supportedAuthMethods
-    : authMethods.map((m) => m.id);
-  const filteredAuthMethods = authMethods.filter((m) => methodsToShow.includes(m.id));
+  const methodsToShow =
+    supportedAuthMethods && supportedAuthMethods.length > 0
+      ? supportedAuthMethods
+      : authMethods.map((m) => m.id);
+  const filteredAuthMethods = authMethods.filter((m) =>
+    methodsToShow.includes(m.id)
+  );
 
   // Load user from localStorage on mount
   useEffect(() => {
@@ -461,6 +492,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
     setShowPkpSelection(false);
     setTempAuthData(null);
     setTempMethod(null);
+    setIsWebAuthnExistingFlow(false);
   };
 
   const saveUser = (userData: AuthUser) => {
@@ -555,6 +587,10 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
     method: AuthMethod
   ) => {
     try {
+      // Set WebAuthn existing-flow flag deterministically based on method and mode
+      setIsWebAuthnExistingFlow(
+        method === "webauthn" && modalMode === "signin" && webAuthnMode === "authenticate"
+      );
       // Store auth data temporarily and show PKP selection in modal
       setTempAuthData(authData);
       setTempMethod(method);
@@ -577,6 +613,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
       // Mint PKP
       const result = await services!.litClient.authService.mintWithAuth({
         authData,
+        scopes: ['sign-anything'],
       });
 
       // Create auth context
@@ -744,6 +781,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
         const { pkpInfo } = await WebAuthnAuthenticator.registerAndMintPKP({
           authServiceBaseUrl: authServiceBaseUrl,
           username: webAuthnUsername || `user-${Date.now()}`,
+          scopes: ["sign-anything"],
         });
 
         // For registerAndMintPKP, we need to authenticate to get authData
@@ -1068,6 +1106,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
         setShowModal(true);
         setShowMethodDetail(false);
         setSelectedMethod(null);
+        setIsWebAuthnExistingFlow(user.method === "webauthn");
       }
     },
     updateUserWithPkp: (pkpInfo: any, authContext?: any) => {
@@ -1082,7 +1121,10 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
       }
     },
     currentNetworkName: localNetworkName,
-    shouldDisplayNetworkMessage: displayNetworkMessage && localNetworkName !== "naga",
+    shouldDisplayNetworkMessage:
+      showNetworkMessage && localNetworkName !== "naga",
+    authServiceBaseUrl,
+    setAuthServiceBaseUrl,
   };
 
   // Always render children with context
@@ -1092,72 +1134,24 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
 
       {/* Setup loading overlay */}
       {!isServicesReady && showModal && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 9999,
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: "white",
-              borderRadius: "12px",
-              padding: "40px",
-              textAlign: "center",
-              maxWidth: "400px",
-              margin: "20px",
-            }}
-          >
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]">
+          <div className="bg-white rounded-xl p-10 text-center max-w-[400px] m-5">
             {setupError ? (
               <div>
-                <h3 style={{ color: "#dc3545", marginBottom: "20px" }}>
-                  ⚠️ Setup Failed
-                </h3>
-                <p style={{ color: "#666", marginBottom: "20px" }}>
-                  {setupError}
-                </p>
+                <h3 className="text-red-600 mb-5">⚠️ Setup Failed</h3>
+                <p className="text-gray-600 mb-5">{setupError}</p>
                 <button
                   onClick={setupServices}
-                  style={{
-                    padding: "12px 24px",
-                    backgroundColor: "#007bff",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "8px",
-                    fontSize: "16px",
-                    cursor: "pointer",
-                  }}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg text-base cursor-pointer"
                 >
                   Retry Setup
                 </button>
               </div>
             ) : (
               <div>
-                <div
-                  style={{
-                    width: "40px",
-                    height: "40px",
-                    border: "4px solid #e3e3e3",
-                    borderTop: "4px solid #007bff",
-                    borderRadius: "50%",
-                    animation: "spin 1s linear infinite",
-                    margin: "0 auto 20px",
-                  }}
-                />
-                <h3 style={{ color: "#333", marginBottom: "10px" }}>
-                  Setting up Lit Protocol
-                </h3>
-                <p style={{ color: "#666", margin: 0 }}>
-                  Initialising services...
-                </p>
+                <div className="w-10 h-10 border-4 border-gray-300 border-t-blue-600 rounded-full animate-spin mx-auto mb-5" />
+                <h3 className="text-gray-800 mb-2">Setting up Lit Protocol</h3>
+                <p className="text-gray-600 m-0">Initialising services...</p>
               </div>
             )}
           </div>
@@ -1167,19 +1161,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
       {/* Authentication Modal */}
       {showModal && isServicesReady && (
         <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-            padding: "20px",
-          }}
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000] p-5"
           onClick={(e) => {
             if (!closeOnBackdropClick) return;
             if (e.target === e.currentTarget) {
@@ -1188,32 +1170,15 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
           }}
         >
           <div
-            style={{
-              backgroundColor: "white",
-              borderRadius: "12px",
-              padding: "28px",
-              paddingBottom: "12px",
-              maxWidth: showPkpSelection ? "48rem" : "32rem",
-              width: "100%",
-              maxHeight: "90vh",
-              overflowY: "auto",
-              boxShadow:
-                "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-              border: "1px solid #e5e7eb",
-              position: "relative",
-            }}
+            id="lit-auth-modal-container"
+            className={`bg-white rounded-xl px-7 pt-7 pb-7 ${
+              showPkpSelection ? "max-w-[48rem]" : "max-w-[32rem]"
+            } w-full max-h-[90vh] overflow-y-auto shadow-xl border border-gray-200 relative`}
           >
             {/* Network message moved to LoggedInDashboard */}
             {/* Settings (top-right) */}
             {showSettingsButton && !showPkpSelection && !showSettingsView && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "12px",
-                  right: "12px",
-                  zIndex: 1,
-                }}
-              >
+              <div className="absolute top-3 right-3 z-[1]">
                 <button
                   aria-label="Settings"
                   onClick={() => {
@@ -1221,20 +1186,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                     setShowMethodDetail(false);
                     setShowPkpSelection(false);
                   }}
-                  onMouseDown={(e) => e.preventDefault()}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    padding: "6px",
-                    border: "1px solid #d1d5db",
-                    borderRadius: "6px",
-                    background: "white",
-                    color: "#374151",
-                    cursor: "pointer",
-                    outline: "none",
-                    boxShadow: "none",
-                  }}
+                  className="inline-flex items-center justify-center p-1.5 border border-gray-300 rounded-md bg-white text-gray-700 cursor-pointer outline-none shadow-none hover:bg-gray-50"
                 >
                   <Settings size={16} />
                 </button>
@@ -1243,62 +1195,23 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
             {showSettingsView ? (
               // Settings view
               <div className="text-black">
-                <div style={{ marginBottom: "16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <h3
-                    style={{
-                      fontSize: "18px",
-                      fontWeight: "600",
-                      color: "#111827",
-                      margin: 0,
-                    }}
-                  >
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-[18px] font-semibold text-gray-900 m-0">
                     Settings
                   </h3>
                   <button
                     onClick={() => setShowSettingsView(false)}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      color: "#6b7280",
-                      fontSize: "12px",
-                      cursor: "pointer",
-                      padding: "6px 8px",
-                      borderRadius: "4px",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = "#f3f4f6";
-                      e.currentTarget.style.color = "#374151";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = "transparent";
-                      e.currentTarget.style.color = "#6b7280";
-                    }}
+                    className="bg-transparent border-0 text-gray-500 text-[12px] cursor-pointer px-2 py-1 rounded hover:bg-gray-100 hover:text-gray-700"
                   >
                     ← Back
                   </button>
                 </div>
 
-                <div
-                  style={{
-                    padding: "12px",
-                    backgroundColor: "#f8fafc",
-                    borderRadius: "8px",
-                    border: "1px solid #e5e7eb",
-                    marginBottom: "16px",
-                  }}
-                >
-                  <label
-                    style={{
-                      fontSize: "13px",
-                      fontWeight: 600,
-                      display: "block",
-                      marginBottom: "8px",
-                      color: "#111827",
-                    }}
-                  >
+                <div className="p-3 bg-slate-50 rounded-lg border border-gray-200 mb-4">
+                  <label className="text-[13px] font-semibold block mb-2 text-gray-900">
                     Network
                   </label>
-                  <div style={{ display: "grid", gap: "8px" }}>
+                  <div className="grid gap-2">
                     {supportedNetworks.map((net) => {
                       const isActive = localNetworkName === net;
                       return (
@@ -1316,21 +1229,17 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                               console.error("Failed to switch network:", err);
                             }
                           }}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            padding: "8px 12px",
-                            border: "1px solid #d1d5db",
-                            borderRadius: "6px",
-                            backgroundColor: isActive ? "#eef2ff" : "white",
-                            color: "#111827",
-                            cursor: "pointer",
-                          }}
+                          className={`flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md ${
+                            isActive ? "bg-indigo-50" : "bg-white"
+                          } text-gray-900 cursor-pointer`}
                         >
-                          <span style={{ fontSize: "13px", fontWeight: 600 }}>{net}</span>
+                          <span className="text-[13px] font-semibold">
+                            {net}
+                          </span>
                           {isActive && (
-                            <span style={{ fontSize: "12px", color: "#4f46e5", fontWeight: 600 }}>Selected</span>
+                            <span className="text-[12px] text-indigo-600 font-semibold">
+                              Selected
+                            </span>
                           )}
                         </button>
                       );
@@ -1339,24 +1248,8 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                 </div>
 
                 {/* Auth Service URL moved to Settings */}
-                <div
-                  style={{
-                    padding: "12px",
-                    backgroundColor: "#f8fafc",
-                    borderRadius: "8px",
-                    border: "1px solid #e5e7eb",
-                    marginBottom: "16px",
-                  }}
-                >
-                  <label
-                    style={{
-                      fontSize: "13px",
-                      fontWeight: 600,
-                      display: "block",
-                      marginBottom: "8px",
-                      color: "#111827",
-                    }}
-                  >
+                <div className="p-3 bg-slate-50 rounded-lg border border-gray-200 mb-4">
+                  <label className="text-[13px] font-semibold block mb-2 text-gray-900">
                     Auth Service URL
                   </label>
                   <input
@@ -1364,15 +1257,16 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                     value={authServiceBaseUrl}
                     onChange={(e) => setAuthServiceBaseUrl(e.target.value)}
                     placeholder={APP_INFO.litAuthServer}
-                    style={{
-                      width: "100%",
-                      padding: "8px 10px",
-                      border: "1px solid #d1d5db",
-                      borderRadius: "4px",
-                      fontSize: "12px",
-                      fontFamily: "monospace",
-                    }}
+                    className="w-full px-2.5 py-2 border border-gray-300 rounded text-[12px] font-mono"
                   />
+                  <div className="mt-2">
+                    <button
+                      onClick={() => setAuthServiceBaseUrl(DEFAULT_AUTH_SERVICE_BASE_URL)}
+                      className="px-3 py-1.5 border border-gray-300 rounded text-[12px] cursor-pointer bg-white hover:bg-gray-100 text-gray-700"
+                    >
+                      Reset to default
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : !showMethodDetail ? (
@@ -1380,78 +1274,16 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
               showPkpSelection ? (
                 // PKP Selection View
                 <div>
-                  <div style={{ marginBottom: "20px" }}>
+                  <div className="mb-5">
                     <button
-                      onClick={() => setShowPkpSelection(false)}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        color: "#6b7280",
-                        fontSize: "13px",
-                        cursor: "pointer",
-                        marginBottom: "12px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        padding: "4px 8px",
-                        borderRadius: "4px",
-                        transition: "all 0.2s",
+                      onClick={() => {
+                        setShowPkpSelection(false);
+                        setIsWebAuthnExistingFlow(false);
                       }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = "#f3f4f6";
-                        e.currentTarget.style.color = "#374151";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = "transparent";
-                        e.currentTarget.style.color = "#6b7280";
-                      }}
+                      className="bg-transparent border-0 text-gray-500 text-[13px] cursor-pointer mb-3 flex items-center gap-1.5 px-2 py-1 rounded transition hover:bg-gray-100 hover:text-gray-700"
                     >
                       ← Back to Authentication
                     </button>
-
-                    {/* <div
-                      style={{
-                        padding: "16px",
-                        backgroundColor: "#f0f9ff",
-                        borderRadius: "8px",
-                        border: "1px solid #bfdbfe",
-                        marginBottom: "16px",
-                      }}
-                    >
-                      <h3
-                        style={{
-                          fontSize: "18px",
-                          fontWeight: "600",
-                          color: "#1e40af",
-                          margin: "0 0 8px 0",
-                        }}
-                      >
-                        👋 You've successfully authenticated with{" "}
-                        <strong className="capitalize">{tempMethod}</strong>.
-                      </h3>
-                      <p
-                        style={{
-                          fontSize: "14px",
-                          color: "#1e40af",
-                          margin: "0 0 8px 0",
-                          lineHeight: "1.4",
-                        }}
-                      >
-                        You've successfully authenticated with{" "}
-                        <strong className="capitalize">{tempMethod}</strong>.
-                      </p>
-                      <p
-                        style={{
-                          fontSize: "13px",
-                          color: "#3730a3",
-                          margin: "0",
-                          lineHeight: "1.4",
-                        }}
-                      >
-                        Select a PKP wallet below to complete the process and
-                        access your protected dashboard.
-                      </p>
-                    </div> */}
                   </div>
 
                   {tempAuthData && tempMethod && services && (
@@ -1462,58 +1294,19 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                       services={services}
                       disabled={isAuthenticating}
                       authServiceBaseUrl={authServiceBaseUrl}
+                      hideModeSwitcher={isWebAuthnExistingFlow}
+                      singlePkpMessaging={isWebAuthnExistingFlow}
                     />
                   )}
-
-                  {/* Instructions for after PKP selection */}
-                  {/* <div
-                    style={{
-                      marginTop: "20px",
-                      padding: "12px",
-                      backgroundColor: "#f8fafc",
-                      borderRadius: "6px",
-                      border: "1px solid #e5e7eb",
-                    }}
-                  >
-                    <p
-                      style={{
-                        fontSize: "13px",
-                        color: "#4b5563",
-                        margin: "0",
-                        lineHeight: "1.4",
-                        textAlign: "center",
-                      }}
-                    >
-                      💡 <strong>After selecting a PKP:</strong> This modal will
-                      close and you'll be taken to your protected dashboard
-                      where you can manage your PKP, view balances, and access
-                      all features.
-                    </p>
-                  </div> */}
                 </div>
               ) : (
                 // Main method selection
                 <div className="text-black">
-                  <div style={{ textAlign: "center", marginBottom: "20px" }}>
-                    <h2
-                      style={{
-                        fontSize: "22px",
-                        fontWeight: "700",
-                        marginBottom: "6px",
-                        color: "#111827",
-                        lineHeight: "1.2",
-                      }}
-                    >
+                  <div className="text-center mb-5">
+                    <h2 className="text-[22px] font-bold mb-1.5 text-gray-900 leading-tight">
                       {modalMode === "signin" ? "Log in" : "Sign up"}
                     </h2>
-                    <p
-                      style={{
-                        fontSize: "13px",
-                        color: "#6b7280",
-                        lineHeight: "1.4",
-                        margin: 0,
-                      }}
-                    >
+                    <p className="text-[13px] text-gray-500 leading-snug m-0">
                       {modalMode === "signin"
                         ? "Access your existing PKP wallet"
                         : "Create a new wallet secured by accounts you already have"}
@@ -1521,28 +1314,12 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                   </div>
 
                   {error && (
-                    <div
-                      style={{
-                        padding: "8px 12px",
-                        backgroundColor: "#fef2f2",
-                        border: "1px solid #fecaca",
-                        borderRadius: "6px",
-                        marginBottom: "16px",
-                        color: "#dc2626",
-                        fontSize: "12px",
-                      }}
-                    >
+                    <div className="px-3 py-2 bg-red-50 border border-red-200 rounded mb-4 text-red-600 text-[12px]">
                       {error}
                     </div>
                   )}
 
-                  <div
-                    style={{
-                      display: "grid",
-                      gap: "8px",
-                      marginBottom: "16px",
-                    }}
-                  >
+                  <div className="grid gap-2 mb-4">
                     {filteredAuthMethods.map((method) => (
                       <button
                         key={method.id}
@@ -1553,217 +1330,77 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                           (method.id === "webauthn" &&
                             isFido2Available === false)
                         }
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "12px",
-                          padding: "8px 12px",
-                          backgroundColor:
-                            method.available &&
-                            !isAuthenticating &&
-                            !(
-                              method.id === "webauthn" &&
-                              isFido2Available === false
-                            )
-                              ? "white"
-                              : "#f9fafb",
-                          border: "1px solid #d1d5db",
-                          borderRadius: "8px",
-                          cursor:
-                            method.available &&
-                            !isAuthenticating &&
-                            !(
-                              method.id === "webauthn" &&
-                              isFido2Available === false
-                            )
-                              ? "pointer"
-                              : "not-allowed",
-                          opacity:
-                            method.available &&
-                            !isAuthenticating &&
-                            !(
-                              method.id === "webauthn" &&
-                              isFido2Available === false
-                            )
-                              ? 1
-                              : 0.6,
-                          fontSize: "14px",
-                          fontWeight: "500",
-                          color: "#374151",
-                          transition: "all 0.2s",
-                          textAlign: "left",
-                          minHeight: "44px",
-                        }}
-                        onMouseEnter={(e) => {
-                          if (
-                            method.available &&
-                            !isAuthenticating &&
-                            !(
-                              method.id === "webauthn" &&
-                              isFido2Available === false
-                            )
-                          ) {
-                            e.currentTarget.style.backgroundColor = "#f3f4f6";
-                            e.currentTarget.style.borderColor = "#9ca3af";
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (
-                            method.available &&
-                            !isAuthenticating &&
-                            !(
-                              method.id === "webauthn" &&
-                              isFido2Available === false
-                            )
-                          ) {
-                            e.currentTarget.style.backgroundColor = "white";
-                            e.currentTarget.style.borderColor = "#d1d5db";
-                          }
-                        }}
+                        className={`flex items-center gap-3 px-3 py-2 border border-gray-300 rounded-lg text-[14px] font-medium text-gray-700 transition ${
+                          method.available &&
+                          !isAuthenticating &&
+                          !(
+                            method.id === "webauthn" &&
+                            isFido2Available === false
+                          )
+                            ? "bg-white hover:bg-gray-100 hover:border-gray-400 cursor-pointer"
+                            : "bg-gray-50 cursor-not-allowed opacity-60"
+                        } min-h-[44px] text-left`}
                       >
-                        <div
-                          style={{
-                            width: "40px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
+                        <div className="w-10 flex items-center justify-center">
                           <img
                             src={method.icon}
                             alt={method.name}
-                            style={{
-                              width: "24px",
-                              height: "24px",
-                              objectFit: "contain",
-                            }}
+                            className="w-6 h-6 object-contain"
                           />
                         </div>
-                        <div
-                          style={{
-                            flex: 1,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontWeight: "600",
-                              lineHeight: "1.2",
-                              textAlign: "center",
-                            }}
-                          >
+                        <div className="flex-1 flex items-center justify-center">
+                          <span className="font-semibold leading-tight text-center">
                             {method.name}
                             {method.comingSoon && (
-                              <span
-                                style={{
-                                  fontSize: "12px",
-                                  color: "#6b7280",
-                                  fontWeight: "400",
-                                  marginLeft: "4px",
-                                }}
-                              >
+                              <span className="text-[12px] text-gray-500 font-normal ml-1">
                                 (Soon)
                               </span>
                             )}
                             {method.id === "webauthn" &&
                               isFido2Available === false && (
-                                <span
-                                  style={{
-                                    fontSize: "12px",
-                                    color: "#dc2626",
-                                    fontWeight: "400",
-                                    marginLeft: "4px",
-                                  }}
-                                >
+                                <span className="text-[12px] text-red-600 font-normal ml-1">
                                   (Not Available)
                                 </span>
                               )}
                           </span>
                         </div>
-                        <div
-                          style={{
-                            width: "40px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
+                        <div className="w-10 flex items-center justify-center">
                           {isAuthenticating && selectedMethod === method.id && (
-                            <div
-                              style={{
-                                width: "16px",
-                                height: "16px",
-                                border: "2px solid #e5e7eb",
-                                borderTop: "2px solid #3b82f6",
-                                borderRadius: "50%",
-                                animation: "spin 1s linear infinite",
-                              }}
-                            />
+                            <div className="w-4 h-4 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
                           )}
                         </div>
                       </button>
                     ))}
                     {filteredAuthMethods.length === 0 && (
-                      <div
-                        style={{
-                          padding: "10px 12px",
-                          border: "1px solid #e5e7eb",
-                          borderRadius: "8px",
-                          color: "#6b7280",
-                          fontSize: "12px",
-                          textAlign: "center",
-                        }}
-                      >
+                      <div className="px-3 py-2 border border-gray-200 rounded-lg text-gray-500 text-[12px] text-center">
                         No sign-in methods available.
                       </div>
                     )}
                   </div>
 
                   {closeOnBackdropClick && (
-                    <div
-                      style={{
-                        textAlign: "center",
-                        marginTop: "16px",
-                        fontSize: "11px",
-                        color: "#6b7280",
-                      }}
-                    >
+                    <div className="text-center mt-4 text-[11px] text-gray-500">
                       Press ESC to close
                     </div>
                   )}
 
                   {/* Mode Toggle */}
-                  <div
-                    style={{
-                      textAlign: "center",
-                      marginTop: "12px",
-                      paddingTop: "12px",
-                      borderTop: "1px solid #e5e7eb",
-                    }}
-                  >
-                    <button
-                      onClick={() =>
-                        setModalMode(
-                          modalMode === "signin" ? "signup" : "signin"
-                        )
-                      }
-                      style={{
-                        background: "none",
-                        border: "none",
-                        color: "#3b82f6",
-                        fontSize: "13px",
-                        cursor: "pointer",
-                        textDecoration: "underline",
-                        fontWeight: "500",
-                      }}
-                    >
-                      {modalMode === "signin"
-                        ? "Need an account? Sign up"
-                        : "Already have an account? Sign in"}
-                    </button>
-                  </div>
+                  {showSignUpPage && (
+                    <div className="text-center mt-3 pt-3 border-t border-gray-200">
+                      <button
+                        onClick={() =>
+                          setModalMode(
+                            modalMode === "signin" ? "signup" : "signin"
+                          )
+                        }
+                        className="bg-transparent border-0 text-blue-500 text-[13px] cursor-pointer underline font-medium"
+                      >
+                        {modalMode === "signin"
+                          ? "Need an account? Sign up"
+                          : "Already have an account? Sign in"}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )
             ) : (
@@ -1820,132 +1457,65 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                 )}
 
                 {/* Method-specific form inputs */}
-                <div style={{ marginBottom: "16px" }}>
+                <div className="mb-4">
                   {selectedMethod === "eoa" && (
                     <div className="text-black">
-                      <div style={{ marginBottom: "12px" }}>
-                        <label
-                          style={{
-                            fontSize: "13px",
-                            fontWeight: "500",
-                            marginBottom: "6px",
-                            display: "block",
-                          }}
-                        >
+                      <div className="mb-3">
+                        <label className="text-[13px] font-medium mb-1.5 block">
                           Account Method:
                         </label>
-                        <div style={{ display: "flex", gap: "8px" }}>
+                        <div className="flex gap-2">
                           <button
                             onClick={() => setAccountMethod("wallet")}
-                            style={{
-                              padding: "8px 15px",
-                              backgroundColor:
-                                accountMethod === "wallet"
-                                  ? "#4285F4"
-                                  : "#f3f4f6",
-                              color:
-                                accountMethod === "wallet"
-                                  ? "white"
-                                  : "#374151",
-                              border: "1px solid #d1d5db",
-                              borderRadius: "4px",
-                              fontSize: "12px",
-                              cursor: "pointer",
-                              fontWeight: "500",
-                            }}
+                            className={`px-4 py-2 border border-gray-300 rounded text-[12px] cursor-pointer font-medium ${
+                              accountMethod === "wallet"
+                                ? "bg-[#4285F4] text-white"
+                                : "bg-gray-100 text-gray-700"
+                            }`}
                           >
                             Connected Wallet
                           </button>
                           <button
                             onClick={() => setAccountMethod("privateKey")}
-                            style={{
-                              padding: "8px 15px",
-                              backgroundColor:
-                                accountMethod === "privateKey"
-                                  ? "#4285F4"
-                                  : "#f3f4f6",
-                              color:
-                                accountMethod === "privateKey"
-                                  ? "white"
-                                  : "#374151",
-                              border: "1px solid #d1d5db",
-                              borderRadius: "4px",
-                              fontSize: "12px",
-                              cursor: "pointer",
-                              fontWeight: "500",
-                            }}
+                            className={`px-4 py-2 border border-gray-300 rounded text-[12px] cursor-pointer font-medium ${
+                              accountMethod === "privateKey"
+                                ? "bg-[#4285F4] text-white"
+                                : "bg-gray-100 text-gray-700"
+                            }`}
                           >
                             Private Key
                           </button>
                         </div>
                       </div>
                       {accountMethod === "wallet" && (
-                        <div
-                          className="text-black"
-                          style={{
-                            marginBottom: "12px",
-                            padding: "12px",
-                            backgroundColor: "#f8f9fa",
-                            borderRadius: "6px",
-                            border: "1px solid #e9ecef",
-                          }}
-                        >
-                          <p
-                            style={{
-                              margin: "0 0 8px 0",
-                              fontSize: "13px",
-                              fontWeight: "500",
-                            }}
-                          >
+                        <div className="text-black mb-3 p-3 bg-[#f8f9fa] rounded border border-[#e9ecef]">
+                          <p className="m-0 mb-2 text-[13px] font-medium">
                             <strong>Using Connected Wallet:</strong>
                           </p>
-                          <p
-                            style={{
-                              margin: "0 0 10px 0",
-                              fontSize: "12px",
-                              color: "#666",
-                              lineHeight: "1.4",
-                            }}
-                          >
+                          <p className="m-0 mb-2 text-[12px] text-gray-600 leading-snug">
                             This will use your currently connected wallet
                             account (e.g., MetaMask). Make sure your wallet is
                             connected and you have test tokens.
                           </p>
-                          <p
-                            style={{
-                              margin: "0 0 10px 0",
-                              fontSize: "12px",
-                              color: "#666",
-                            }}
-                          >
+                          <p className="m-0 mb-2 text-[12px] text-gray-600">
                             Need tokens? Visit the{" "}
                             <a
                               href={FAUCET_URL}
                               target="_blank"
                               rel="noopener noreferrer"
-                              style={{
-                                color: "#4285F4",
-                                textDecoration: "underline",
-                              }}
+                              className="text-[#4285F4] underline"
                             >
                               Chronicle Yellowstone Faucet
                             </a>
                           </p>
-                          <div style={{ marginTop: "8px" }}>
+                          <div className="mt-2">
                             <ConnectButton showBalance={false} />
                           </div>
                         </div>
                       )}
                       {accountMethod === "privateKey" && (
-                        <div style={{ marginBottom: "12px" }}>
-                          <label
-                            style={{
-                              fontSize: "13px",
-                              fontWeight: "500",
-                              marginBottom: "6px",
-                              display: "block",
-                            }}
-                          >
+                        <div className="mb-3">
+                          <label className="text-[13px] font-medium mb-1.5 block">
                             Private Key:
                           </label>
                           <input
@@ -1955,23 +1525,9 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                               setPrivateKey(e.target.value as any)
                             }
                             placeholder="0x..."
-                            style={{
-                              width: "100%",
-                              padding: "8px 12px",
-                              border: "1px solid #d1d5db",
-                              borderRadius: "4px",
-                              fontSize: "12px",
-                              fontFamily: "monospace",
-                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded text-[12px] font-mono"
                           />
-                          <small
-                            style={{
-                              color: "#666",
-                              fontSize: "11px",
-                              display: "block",
-                              marginTop: "4px",
-                            }}
-                          >
+                          <small className="text-gray-600 text-[11px] block mt-1">
                             Default test private key is provided. Replace with
                             your own for production use.
                           </small>
@@ -1982,55 +1538,25 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
 
                   {selectedMethod === "webauthn" && (
                     <div className="text-black">
-                      <div style={{ marginBottom: "12px" }}>
-                        <label
-                          style={{
-                            fontSize: "13px",
-                            fontWeight: "500",
-                            marginBottom: "6px",
-                            display: "block",
-                          }}
-                        >
-                          Mode:
-                        </label>
-                        <div style={{ display: "flex", gap: "8px" }}>
+                      <div className="mb-3">
+                        <div className="flex gap-2">
                           <button
                             onClick={() => setWebAuthnMode("register")}
-                            style={{
-                              padding: "6px 12px",
-                              backgroundColor:
-                                webAuthnMode === "register"
-                                  ? "#3b82f6"
-                                  : "#f3f4f6",
-                              color:
-                                webAuthnMode === "register"
-                                  ? "white"
-                                  : "#374151",
-                              border: "1px solid #d1d5db",
-                              borderRadius: "4px",
-                              fontSize: "12px",
-                              cursor: "pointer",
-                            }}
+                            className={`px-3 py-1.5 border border-gray-300 rounded text-[12px] cursor-pointer ${
+                              webAuthnMode === "register"
+                                ? "bg-blue-500 text-white"
+                                : "bg-gray-100 text-gray-700"
+                            }`}
                           >
                             Register New
                           </button>
                           <button
                             onClick={() => setWebAuthnMode("authenticate")}
-                            style={{
-                              padding: "6px 12px",
-                              backgroundColor:
-                                webAuthnMode === "authenticate"
-                                  ? "#3b82f6"
-                                  : "#f3f4f6",
-                              color:
-                                webAuthnMode === "authenticate"
-                                  ? "white"
-                                  : "#374151",
-                              border: "1px solid #d1d5db",
-                              borderRadius: "4px",
-                              fontSize: "12px",
-                              cursor: "pointer",
-                            }}
+                            className={`px-3 py-1.5 border border-gray-300 rounded text-[12px] cursor-pointer ${
+                              webAuthnMode === "authenticate"
+                                ? "bg-blue-500 text-white"
+                                : "bg-gray-100 text-gray-700"
+                            }`}
                           >
                             Use Existing
                           </button>
@@ -2038,15 +1564,8 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                       </div>
 
                       {webAuthnMode === "register" && (
-                        <div style={{ marginBottom: "12px" }}>
-                          <label
-                            style={{
-                              fontSize: "13px",
-                              fontWeight: "500",
-                              marginBottom: "6px",
-                              display: "block",
-                            }}
-                          >
+                        <div className="mb-3">
+                          <label className="text-[13px] font-medium mb-1.5 block">
                             Username (optional):
                           </label>
                           <input
@@ -2056,13 +1575,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                               setWebAuthnUsername(e.target.value)
                             }
                             placeholder="user@example.com"
-                            style={{
-                              width: "100%",
-                              padding: "8px 10px",
-                              border: "1px solid #d1d5db",
-                              borderRadius: "4px",
-                              fontSize: "12px",
-                            }}
+                            className="w-full px-2.5 py-2 border border-gray-300 rounded text-[12px]"
                           />
                         </div>
                       )}
@@ -2073,17 +1586,9 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                     selectedMethod === "stytch-sms" ||
                     selectedMethod === "stytch-whatsapp") && (
                     <div className="text-black">
-
                       {authStep === "input" && (
-                        <div style={{ marginBottom: "12px" }}>
-                          <label
-                            style={{
-                              fontSize: "13px",
-                              fontWeight: "500",
-                              marginBottom: "6px",
-                              display: "block",
-                            }}
-                          >
+                        <div className="mb-3">
+                          <label className="text-[13px] font-medium mb-1.5 block">
                             {selectedMethod === "stytch-email"
                               ? "Email Address:"
                               : "Phone Number:"}
@@ -2109,27 +1614,14 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                                 ? "user@example.com"
                                 : "+1234567890"
                             }
-                            style={{
-                              width: "100%",
-                              padding: "8px 10px",
-                              border: "1px solid #d1d5db",
-                              borderRadius: "4px",
-                              fontSize: "12px",
-                            }}
+                            className="w-full px-2.5 py-2 border border-gray-300 rounded text-[12px]"
                           />
                         </div>
                       )}
 
                       {authStep === "verify" && (
-                        <div style={{ marginBottom: "12px" }}>
-                          <label
-                            style={{
-                              fontSize: "13px",
-                              fontWeight: "500",
-                              marginBottom: "6px",
-                              display: "block",
-                            }}
-                          >
+                        <div className="mb-3">
+                          <label className="text-[13px] font-medium mb-1.5 block">
                             Verification Code:
                           </label>
                           <input
@@ -2138,16 +1630,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                             onChange={(e) => setOtpCode(e.target.value)}
                             placeholder="123456"
                             maxLength={6}
-                            style={{
-                              width: "100%",
-                              padding: "8px 10px",
-                              border: "1px solid #d1d5db",
-                              borderRadius: "4px",
-                              fontSize: "14px",
-                              fontFamily: "monospace",
-                              letterSpacing: "2px",
-                              textAlign: "center",
-                            }}
+                            className="w-full px-2.5 py-2 border border-gray-300 rounded text-[14px] font-mono tracking-[0.2em] text-center"
                           />
                         </div>
                       )}
@@ -2156,16 +1639,8 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
 
                   {selectedMethod === "stytch-totp" && (
                     <div className="text-black">
-
-                      <div style={{ marginBottom: "12px" }}>
-                        <label
-                          style={{
-                            fontSize: "13px",
-                            fontWeight: "500",
-                            marginBottom: "6px",
-                            display: "block",
-                          }}
-                        >
+                      <div className="mb-3">
+                        <label className="text-[13px] font-medium mb-1.5 block">
                           Stytch User ID:
                         </label>
                         <input
@@ -2173,26 +1648,12 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                           value={userId}
                           onChange={(e) => setUserId(e.target.value)}
                           placeholder="user-test-uuid-1234"
-                          style={{
-                            width: "100%",
-                            padding: "8px 10px",
-                            border: "1px solid #d1d5db",
-                            borderRadius: "4px",
-                            fontSize: "12px",
-                            fontFamily: "monospace",
-                          }}
+                          className="w-full px-2.5 py-2 border border-gray-300 rounded text-[12px] font-mono"
                         />
                       </div>
 
-                      <div style={{ marginBottom: "12px" }}>
-                        <label
-                          style={{
-                            fontSize: "13px",
-                            fontWeight: "500",
-                            marginBottom: "6px",
-                            display: "block",
-                          }}
-                        >
+                      <div className="mb-3">
+                        <label className="text-[13px] font-medium mb-1.5 block">
                           TOTP Code:
                         </label>
                         <input
@@ -2201,16 +1662,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                           onChange={(e) => setTotpCode(e.target.value)}
                           placeholder="123456"
                           maxLength={6}
-                          style={{
-                            width: "100%",
-                            padding: "8px 10px",
-                            border: "1px solid #d1d5db",
-                            borderRadius: "4px",
-                            fontSize: "14px",
-                            fontFamily: "monospace",
-                            letterSpacing: "2px",
-                            textAlign: "center",
-                          }}
+                          className="w-full px-2.5 py-2 border border-gray-300 rounded text-[14px] font-mono tracking-[0.2em] text-center"
                         />
                       </div>
                     </div>
@@ -2218,15 +1670,8 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
 
                   {selectedMethod === "custom" && (
                     <div className="text-black">
-                      <div style={{ marginBottom: "12px" }}>
-                        <label
-                          style={{
-                            fontSize: "13px",
-                            fontWeight: "500",
-                            marginBottom: "6px",
-                            display: "block",
-                          }}
-                        >
+                      <div className="mb-3">
+                        <label className="text-[13px] font-medium mb-1.5 block">
                           PKP Public Key:
                         </label>
                         <input
@@ -2235,26 +1680,12 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                           onChange={(e) =>
                             setCustomPkpPublicKey(e.target.value)
                           }
-                          style={{
-                            width: "100%",
-                            padding: "8px 10px",
-                            border: "1px solid #d1d5db",
-                            borderRadius: "4px",
-                            fontSize: "11px",
-                            fontFamily: "monospace",
-                          }}
+                          className="w-full px-2.5 py-2 border border-gray-300 rounded text-[11px] font-mono"
                         />
                       </div>
 
-                      <div style={{ marginBottom: "12px" }}>
-                        <label
-                          style={{
-                            fontSize: "13px",
-                            fontWeight: "500",
-                            marginBottom: "6px",
-                            display: "block",
-                          }}
-                        >
+                      <div className="mb-3">
+                        <label className="text-[13px] font-medium mb-1.5 block">
                           Validation CID:
                         </label>
                         <input
@@ -2263,84 +1694,38 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                           onChange={(e) =>
                             setCustomValidationCid(e.target.value)
                           }
-                          style={{
-                            width: "100%",
-                            padding: "8px 10px",
-                            border: "1px solid #d1d5db",
-                            borderRadius: "4px",
-                            fontSize: "12px",
-                            fontFamily: "monospace",
-                          }}
+                          className="w-full px-2.5 py-2 border border-gray-300 rounded text-[12px] font-mono"
                         />
                       </div>
 
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: "8px",
-                          marginBottom: "12px",
-                        }}
-                      >
-                        <div style={{ flex: 1 }}>
-                          <label
-                            style={{
-                              fontSize: "13px",
-                              fontWeight: "500",
-                              marginBottom: "6px",
-                              display: "block",
-                            }}
-                          >
+                      <div className="flex gap-2 mb-3">
+                        <div className="flex-1">
+                          <label className="text-[13px] font-medium mb-1.5 block">
                             Username:
                           </label>
                           <input
                             type="text"
                             value={customUsername}
                             onChange={(e) => setCustomUsername(e.target.value)}
-                            style={{
-                              width: "100%",
-                              padding: "8px 10px",
-                              border: "1px solid #d1d5db",
-                              borderRadius: "4px",
-                              fontSize: "12px",
-                            }}
+                            className="w-full px-2.5 py-2 border border-gray-300 rounded text-[12px]"
                           />
                         </div>
 
-                        <div style={{ flex: 1 }}>
-                          <label
-                            style={{
-                              fontSize: "13px",
-                              fontWeight: "500",
-                              marginBottom: "6px",
-                              display: "block",
-                            }}
-                          >
+                        <div className="flex-1">
+                          <label className="text-[13px] font-medium mb-1.5 block">
                             Password:
                           </label>
                           <input
                             type="password"
                             value={customPassword}
                             onChange={(e) => setCustomPassword(e.target.value)}
-                            style={{
-                              width: "100%",
-                              padding: "8px 10px",
-                              border: "1px solid #d1d5db",
-                              borderRadius: "4px",
-                              fontSize: "12px",
-                            }}
+                            className="w-full px-2.5 py-2 border border-gray-300 rounded text-[12px]"
                           />
                         </div>
                       </div>
 
-                      <div style={{ marginBottom: "12px" }}>
-                        <label
-                          style={{
-                            fontSize: "13px",
-                            fontWeight: "500",
-                            marginBottom: "6px",
-                            display: "block",
-                          }}
-                        >
+                      <div className="mb-3">
+                        <label className="text-[13px] font-medium mb-1.5 block">
                           Auth Method ID:
                         </label>
                         <input
@@ -2349,14 +1734,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                           onChange={(e) =>
                             setCustomAuthMethodId(e.target.value)
                           }
-                          style={{
-                            width: "100%",
-                            padding: "8px 10px",
-                            border: "1px solid #d1d5db",
-                            borderRadius: "4px",
-                            fontSize: "11px",
-                            fontFamily: "monospace",
-                          }}
+                          className="w-full px-2.5 py-2 border border-gray-300 rounded text-[11px] font-mono"
                         />
                       </div>
                     </div>
@@ -2366,33 +1744,14 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                 <button
                   onClick={handleAuthAction}
                   disabled={isAuthenticating}
-                  style={{
-                    width: "100%",
-                    padding: "10px",
-                    backgroundColor: isAuthenticating ? "#9ca3af" : "#3b82f6",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "6px",
-                    fontSize: "13px",
-                    fontWeight: "600",
-                    cursor: isAuthenticating ? "not-allowed" : "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "6px",
-                  }}
+                  className={`w-full px-3 py-2 ${
+                    isAuthenticating ? "bg-gray-400" : "bg-blue-500"
+                  } text-white rounded-md text-[13px] font-semibold ${
+                    isAuthenticating ? "cursor-not-allowed" : "cursor-pointer"
+                  } flex items-center justify-center gap-1.5`}
                 >
                   {isAuthenticating && (
-                    <div
-                      style={{
-                        width: "12px",
-                        height: "12px",
-                        border: "2px solid #ffffff40",
-                        borderTop: "2px solid #ffffff",
-                        borderRadius: "50%",
-                        animation: "spin 1s linear infinite",
-                      }}
-                    />
+                    <div className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                   )}
                   {isAuthenticating
                     ? "Connecting..."
@@ -2414,13 +1773,6 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
           </div>
         </div>
       )}
-
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
     </LitAuthContext.Provider>
   );
 };

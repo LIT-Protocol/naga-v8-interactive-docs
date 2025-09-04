@@ -40,6 +40,7 @@ export default function LoggedInDashboard() {
     initiateAuthentication,
     isInitializingServices,
     isServicesReady,
+    authServiceBaseUrl,
   } = useLitAuth();
 
   const hasAutoStartedRef = useRef(false);
@@ -360,11 +361,10 @@ export default function LoggedInDashboard() {
                 <a
                   key={t.id}
                   onClick={() => setActiveTab(t.id)}
-                  className={`cursor-pointer relative h-full gap-2 flex items-center hover:border-b ${
-                    activeTab === t.id
+                  className={`cursor-pointer relative h-full gap-2 flex items-center hover:border-b ${activeTab === t.id
                       ? "border-b border-b-[#EA580D] hover:border-b-[#EA580D]"
                       : "text-[#837F7E] hover:border-b-gray-300 hover:text-[#575250] font-medium"
-                  }`}
+                    }`}
                 >
                   {t.label}
                 </a>
@@ -544,6 +544,7 @@ export default function LoggedInDashboard() {
               authMethodName={user.method}
               services={services}
               disabled={false}
+              authServiceBaseUrl={authServiceBaseUrl}
             />
           </div>
         </div>
