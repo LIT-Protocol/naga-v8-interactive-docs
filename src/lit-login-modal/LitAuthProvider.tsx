@@ -1461,6 +1461,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                       authMethodName={`${tempMethod} Auth`}
                       services={services}
                       disabled={isAuthenticating}
+                      authServiceBaseUrl={authServiceBaseUrl}
                     />
                   )}
 

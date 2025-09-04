@@ -44,6 +44,7 @@ interface PkpSelectionForDemoProps {
   authMethodName: string;
   services: any;
   disabled?: boolean;
+  authServiceBaseUrl: string;
 }
 
 const PkpSelectionForDemo: React.FC<PkpSelectionForDemoProps> = ({
@@ -52,6 +53,7 @@ const PkpSelectionForDemo: React.FC<PkpSelectionForDemoProps> = ({
   authMethodName,
   services,
   disabled = false,
+  authServiceBaseUrl,
 }) => {
   const [mode, setMode] = useState<"existing" | "mint">("existing");
   const [pkps, setPkps] = useState<PkpInfo[]>([]);
@@ -336,10 +338,12 @@ const PkpSelectionForDemo: React.FC<PkpSelectionForDemoProps> = ({
   const handleMintNewPkp = async () => {
     setIsMinting(true);
     setStatus("Minting new PKP...");
-    
+    console.log("authServiceBaseUrl:", authServiceBaseUrl);
     try {
       const result = await services.litClient.authService.mintWithAuth({
         authData,
+        authServiceBaseUrl: authServiceBaseUrl,
+        scopes: ["sign-anything"]
       });
 
       if (result?.data) {
