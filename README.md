@@ -22,3 +22,12 @@ The `<LitAuthProvider />` does not redirect on successful login. It simply close
 The dashboard is always the index route for `/`, and it conditionally renders based on auth state from context. When the user logs in, React re-renders the same component with different UI.
 
 Inside `LoggedInDashboard`, it reads user from `useLitAuth()`. If there’s no user, it shows a sign-in experience and, in popup mode, auto-opens the modal.
+
+# Screenshots
+
+## Login Modal
+
+![Login Modal](./public/screenshot-1.png)
+
+## Logged in Dashboard
+![Logged in Dashboard](./public/screenshot-2.png)
