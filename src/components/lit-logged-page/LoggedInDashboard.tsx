@@ -1,11 +1,3 @@
-/**
- * ProtectedAppComplete Example
- *
- * This demonstrates the complete power of our modular architecture,
- * showing how a 4,700+ line component is now reduced to ~200 lines
- * while maintaining all functionality and improving maintainability.
- */
-
 import { useState, useEffect, useRef } from "react";
 import { useLitAuth } from "../../lit-login-modal/LitAuthProvider";
 import {
@@ -14,8 +6,7 @@ import {
   WalletOperationsDashboard,
   PaymentManagerOperationsDashboard,
   TransactionToastContainer,
-  DashboardLayout,
-  StatusDisplay,
+  DashboardContent,
   PkpInfo,
   BalanceInfo,
   TransactionToast,
@@ -24,7 +15,7 @@ import {
   type Tab,
 } from "./protectedApp/index";
 
-import PkpSelectionForDemo from "../../lit-login-modal/PKPSelectionSection";
+import PKPSelectionModal from "./PKPSelectionModal";
 
 enum LOGIN_STYLE {
   button = "button",
@@ -67,7 +58,7 @@ export default function LoggedInDashboard() {
   const [balance, setBalance] = useState<BalanceInfo | null>(null);
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
   const [selectedChain, setSelectedChain] = useState<string>("yellowstone");
-  const [status, setStatus] = useState<string>("");
+  const [, setStatus] = useState<string>("");
   const [activeTab, setActiveTab] = useState<string>("playground");
 
   // Transaction toast state
@@ -283,29 +274,19 @@ export default function LoggedInDashboard() {
   if (!user) {
     if (LOGIN_METHOD === LOGIN_STYLE.popup) {
       return (
-        <div style={{ padding: "20px", textAlign: "center" }}>
+        <div className="p-5 text-center">
           <h2>Starting sign-in</h2>
           <p>Launching the authentication popup…</p>
         </div>
       );
     }
     return (
-      <div style={{ padding: "20px", textAlign: "center" }}>
+      <div className="p-5 text-center">
         <h2>Not authenticated</h2>
         <p>Please sign in to continue.</p>
         <button
           onClick={initiateAuthentication}
-          style={{
-            padding: "12px 24px",
-            backgroundColor: "#007bff",
-            color: "white",
-            border: "none",
-            borderRadius: "8px",
-            fontSize: "16px",
-            fontWeight: "600",
-            cursor: "pointer",
-            marginTop: "20px",
-          }}
+          className="mt-5 inline-flex items-center justify-center rounded-lg bg-[#007bff] px-6 py-3 text-white text-base font-semibold hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[#007bff]/50"
         >
           Sign In
         </button>
@@ -315,34 +296,14 @@ export default function LoggedInDashboard() {
 
   if (user && !isServicesReady) {
     return (
-      <div style={{ padding: "20px", textAlign: "center" }}>
-        <div
-          style={{
-            display: "inline-block",
-            width: "40px",
-            height: "40px",
-            border: "4px solid #e3e3e3",
-            borderTop: "4px solid #007bff",
-            borderRadius: "50%",
-            animation: "spin 1s linear infinite",
-            marginBottom: "20px",
-          }}
-        />
-        <h2 style={{ color: "#333", marginBottom: "10px" }}>
-          Initialising Lit Protocol Services
-        </h2>
-        <p style={{ color: "#666" }}>
+      <div className="p-5 text-center">
+        <div className="inline-block w-10 h-10 border-4 border-gray-200 border-t-[#007bff] rounded-full animate-spin mb-5" />
+        <h2 className="text-[#333] mb-2">Initialising Lit Protocol Services</h2>
+        <p className="text-gray-600">
           {isInitializingServices
             ? "Setting up your authentication context..."
             : "Loading your PKP wallet..."}
         </p>
-
-        <style>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
       </div>
     );
   }
@@ -361,10 +322,11 @@ export default function LoggedInDashboard() {
                 <a
                   key={t.id}
                   onClick={() => setActiveTab(t.id)}
-                  className={`cursor-pointer relative h-full gap-2 flex items-center hover:border-b ${activeTab === t.id
+                  className={`cursor-pointer relative h-full gap-2 flex items-center hover:border-b ${
+                    activeTab === t.id
                       ? "border-b border-b-[#EA580D] hover:border-b-[#EA580D]"
                       : "text-[#837F7E] hover:border-b-gray-300 hover:text-[#575250] font-medium"
-                    }`}
+                  }`}
                 >
                   {t.label}
                 </a>
@@ -380,10 +342,7 @@ export default function LoggedInDashboard() {
           const { shouldDisplayNetworkMessage, currentNetworkName } =
             useLitAuth();
           return shouldDisplayNetworkMessage ? (
-            <div
-              className="w-full bg-[#FFF6E5] text-black text-sm text-yellow-700 p-2 text-center border-b border-[#FFDD8F] border-t font-light sticky top-28 z-50"
-              style={{ marginTop: "-1px" }}
-            >
+            <div className="w-full bg-[#FFF6E5] text-black text-sm text-yellow-700 p-2 text-center border-b border-[#FFDD8F] border-t font-light sticky top-28 z-50 -mt-px">
               ⚠️ The {currentNetworkName} testnet is a public testnet and is not
               meant for production use as there's no persistency guarantees.
               Please use for testing and development purposes only.
@@ -393,7 +352,7 @@ export default function LoggedInDashboard() {
           return null;
         }
       })()}
-      <DashboardLayout
+      <DashboardContent
         selectedPkp={selectedPkp}
         balance={balance}
         isLoadingBalance={isLoadingBalance}
@@ -420,14 +379,14 @@ export default function LoggedInDashboard() {
             services={services}
           />
         )}
-      </DashboardLayout>
+      </DashboardContent>
 
       {/* Status Display */}
       {/* <StatusDisplay status={status} onDismiss={() => setStatus("")} /> */}
 
       {/* Tab Navigation moved to top nav bar */}
 
-      {/* Tab Content moved inside DashboardLayout main area */}
+      {/* Tab Content moved inside DashboardContent main area */}
 
       {/* Transaction Toast Notifications */}
       <TransactionToastContainer
@@ -436,131 +395,21 @@ export default function LoggedInDashboard() {
       />
 
       {/* PKP Selection Modal */}
-      {showPkpModal && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-            padding: "20px",
-          }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowPkpModal(false);
-            }
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: "white",
-              color: "black",
-              borderRadius: "12px",
-              padding: "28px",
-              maxWidth: "48rem",
-              width: "100%",
-              maxHeight: "90vh",
-              overflowY: "auto",
-              boxShadow:
-                "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-              border: "1px solid #e5e7eb",
-            }}
-          >
-            {/* Modal Header */}
-            <div style={{ marginBottom: "20px" }}>
-              <button
-                onClick={() => setShowPkpModal(false)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "#6b7280",
-                  fontSize: "13px",
-                  cursor: "pointer",
-                  marginBottom: "12px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "4px 8px",
-                  borderRadius: "4px",
-                  transition: "all 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#f3f4f6";
-                  e.currentTarget.style.color = "#374151";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "transparent";
-                  e.currentTarget.style.color = "#6b7280";
-                }}
-              >
-                ← Close
-              </button>
+      <PKPSelectionModal
+        isOpen={showPkpModal}
+        onClose={() => setShowPkpModal(false)}
+        authData={user.authData}
+        authMethodName={user.method}
+        services={services}
+        disabled={false}
+        authServiceBaseUrl={authServiceBaseUrl}
+        onPkpSelected={(pkpInfo) => {
+          handlePkpSelected(pkpInfo);
+          setShowPkpModal(false);
+        }}
+      />
 
-              {/* <div
-                style={{
-                  padding: "16px",
-                  backgroundColor: "#f0f9ff",
-                  borderRadius: "8px",
-                  border: "1px solid #bfdbfe",
-                  marginBottom: "16px",
-                }}
-              >
-                <h3
-                  style={{
-                    fontSize: "18px",
-                    fontWeight: "600",
-                    color: "#1e40af",
-                    margin: "0 0 8px 0",
-                  }}
-                >
-                  🔄 Switch PKP Wallet
-                </h3>
-                <p
-                  style={{
-                    fontSize: "14px",
-                    color: "#1e40af",
-                    margin: "0",
-                    lineHeight: "1.4",
-                  }}
-                >
-                  Select a different PKP wallet from your available options.
-                </p>
-              </div> */}
-            </div>
-
-            {/* PKP Selection Component */}
-            <PkpSelectionForDemo
-              authData={user.authData}
-              onPkpSelected={(pkpInfo) => {
-                handlePkpSelected(pkpInfo);
-                setShowPkpModal(false);
-              }}
-              authMethodName={user.method}
-              services={services}
-              disabled={false}
-              authServiceBaseUrl={authServiceBaseUrl}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Global CSS */}
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        @keyframes slideIn {
-          0% { transform: translateX(100%); opacity: 0; }
-          100% { transform: translateX(0); opacity: 1; }
-        }
-      `}</style>
+      {/* Tailwind handles animations; no inline keyframes needed */}
     </PKPPermissionsProvider>
   );
 }

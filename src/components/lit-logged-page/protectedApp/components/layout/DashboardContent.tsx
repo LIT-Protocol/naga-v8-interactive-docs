@@ -1,14 +1,8 @@
-/**
- * DashboardLayout Component
- *
- * Provides consistent layout structure for the protected app
- */
-
 import React from "react";
 import { PkpInfo, BalanceInfo } from "../../types";
 import { PKPInfoCard } from "../pkp/PKPInfoCard";
 
-interface DashboardLayoutProps {
+interface DashboardContentProps {
   selectedPkp: PkpInfo | null;
   balance: BalanceInfo | null;
   isLoadingBalance: boolean;
@@ -19,7 +13,7 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
+export const DashboardContent: React.FC<DashboardContentProps> = ({
   selectedPkp,
   balance,
   isLoadingBalance,

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { APP_INFO } from "../_config";
+import { getAddress } from "viem";
 
 // Chain configuration for balance fetching
 const SUPPORTED_CHAINS = {
@@ -367,14 +368,9 @@ const PKPSelectionSection: React.FC<PKPSelectionSectionProps> = ({
     }
   };
 
-  const formatAddress = (address: string) => {
-    if (!address) return 'N/A';
-    return `${address.slice(0, 8)}...${address.slice(-6)}`;
-  };
-
   const formatPublicKey = (pubKey: string) => {
     if (!pubKey) return 'N/A';
-    return `${pubKey.slice(0, 12)}...${pubKey.slice(-8)}`;
+    return `${pubKey.slice(0, 32)}...${pubKey.slice(-8)}`;
   };
 
   const copyToClipboard = async (text: string, fieldId: string) => {
@@ -535,10 +531,10 @@ const PKPSelectionSection: React.FC<PKPSelectionSectionProps> = ({
                             </div>
                           )}
                         </div>
-                        <div className="text-[13px] text-gray-500 leading-snug">
-                          <div className="mb-1">
-                            <strong className="text-gray-700">Address:</strong>{" "}
-                            <span 
+                        <div className="text-[13px] text-gray-500 leading-snug grid grid-cols-[88px_1fr] gap-y-1.5">
+                          <div className="text-gray-700 font-semibold">Address:</div>
+                          <div>
+                            <span
                               onClick={(e) => {
                                 e.stopPropagation();
                                 copyToClipboard(pkp.ethAddress, `address-${pkp.tokenId}`);
@@ -560,30 +556,55 @@ const PKPSelectionSection: React.FC<PKPSelectionSectionProps> = ({
                               }}
                               title="Click to copy full address"
                             >
-                              {copiedAddress === `address-${pkp.tokenId}` ? "✅ Copied!" : formatAddress(pkp.ethAddress)}
+                              {copiedAddress === `address-${pkp.tokenId}` ? "✅ Copied!" : getAddress(pkp.ethAddress)}
                             </span>
                           </div>
-                          <div className="mb-1">
-                            <strong className="text-gray-700">Public Key:</strong>{" "}
-                            <span className="font-mono">
-                              {formatPublicKey(pkp.publicKey)}
+
+                          <div className="text-gray-700 font-semibold">Public Key:</div>
+                          <div>
+                            <span
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                copyToClipboard(pkp.publicKey, `pubkey-${pkp.tokenId}`);
+                              }}
+                              className={`font-mono cursor-pointer px-1.5 py-0.5 rounded border inline-block ${
+                                copiedAddress === `pubkey-${pkp.tokenId}`
+                                  ? "bg-green-100 text-green-600 border-green-200"
+                                  : "bg-transparent text-gray-700 border-transparent hover:bg-gray-100 hover:border-gray-300"
+                              }`}
+                              onMouseEnter={(e) => {
+                                if (copiedAddress !== `pubkey-${pkp.tokenId}`) {
+                                  e.currentTarget.classList.add("bg-gray-100", "border-gray-300");
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (copiedAddress !== `pubkey-${pkp.tokenId}`) {
+                                  e.currentTarget.classList.remove("bg-gray-100", "border-gray-300");
+                                }
+                              }}
+                              title="Click to copy public key"
+                            >
+                              {copiedAddress === `pubkey-${pkp.tokenId}` ? "✅ Copied!" : formatPublicKey(pkp.publicKey)}
                             </span>
                           </div>
+
+                          <div className="text-gray-700 font-semibold">Balance:</div>
                           <div className="flex items-center gap-1.5">
-                            <strong className="text-gray-700">Balance:</strong>{" "}
                             {pkp.isLoadingBalance ? (
                               <div className="flex items-center gap-1">
                                 <div className="w-3 h-3 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
                                 <span className="text-[12px] text-gray-400">Loading...</span>
                               </div>
                             ) : (
-                              <span className={`font-mono font-medium ${
-                                pkp.balance === "N/A"
-                                  ? "text-red-500"
-                                  : parseFloat(pkp.balance || "0") > 0
-                                  ? "text-green-600"
-                                  : "text-amber-500"
-                              }`}>
+                              <span
+                                className={`font-mono font-medium ${
+                                  pkp.balance === "N/A"
+                                    ? "text-red-500"
+                                    : parseFloat(pkp.balance || "0") > 0
+                                    ? "text-green-600"
+                                    : "text-amber-500"
+                                }`}
+                              >
                                 {pkp.balance || "N/A"} {pkp.balanceSymbol || "LPX"}
                               </span>
                             )}

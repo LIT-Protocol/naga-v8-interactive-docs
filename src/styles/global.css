@@ -357,3 +357,21 @@ p {
 .header {
   border-bottom: none !important;
 }
+
+@layer utilities {
+  @keyframes slide-in-from-right {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  .animate-slide-in {
+    animation: slide-in-from-right 0.3s ease-out both;
+  }
+
+  @keyframes pulse-shadow {
+    0%, 100% { box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15); }
+    50% { box-shadow: 0 8px 25px rgba(229, 62, 62, 0.3); }
+  }
+  .animate-pulse-shadow {
+    animation: pulse-shadow 2s ease-in-out infinite;
+  }
+}
