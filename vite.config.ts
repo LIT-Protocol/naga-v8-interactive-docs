@@ -1,25 +1,26 @@
 import { defineConfig, Plugin } from "vite";
 import react from "@vitejs/plugin-react-swc";
-import fs from 'fs';
-import path from 'path';
-import tailwindcss from '@tailwindcss/vite'
+import fs from "fs";
+import path from "path";
+import tailwindcss from "@tailwindcss/vite";
+// import inject from "@rollup/plugin-inject";
 
 /**
  * Custom Vite plugin to generate version.html with @lit-protocol package versions
  */
 function generateVersionPage(): Plugin {
   return {
-    name: 'generate-version-page',
+    name: "generate-version-page",
     generateBundle(_, bundle) {
       // Read package.json to extract @lit-protocol versions
-      const packageJsonPath = path.resolve(process.cwd(), 'package.json');
-      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
-      
+      const packageJsonPath = path.resolve(process.cwd(), "package.json");
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
+
       // Filter @lit-protocol packages
       const litPackages = Object.entries(packageJson.dependencies || {})
-        .filter(([name]) => name.startsWith('@lit-protocol'))
+        .filter(([name]) => name.startsWith("@lit-protocol"))
         .sort(([a], [b]) => a.localeCompare(b));
-      
+
       // Generate HTML content
       const html = `<!DOCTYPE html>
 <html lang="en">
@@ -101,12 +102,16 @@ function generateVersionPage(): Plugin {
         <p>This page shows all the Lit Protocol packages used in this build.</p>
         
         <ul class="package-list">
-            ${litPackages.map(([name, version]) => `
+            ${litPackages
+              .map(
+                ([name, version]) => `
             <li class="package-item">
                 <span class="package-name">${name}</span>
                 <span class="package-version">${version}</span>
             </li>
-            `).join('')}
+            `
+              )
+              .join("")}
         </ul>
         
         <div class="generated-time">
@@ -119,21 +124,31 @@ function generateVersionPage(): Plugin {
 </html>`;
 
       // Emit the version.html file
-      bundle['version.html'] = {
-        type: 'asset',
-        fileName: 'version.html',
-        source: html
+      bundle["version.html"] = {
+        type: "asset",
+        fileName: "version.html",
+        source: html,
       } as any;
-    }
+    },
   };
 }
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), generateVersionPage(), tailwindcss()],
+  preview: {
+    allowedHosts: ["lit-explorer-naga.onrender.com"],
+  },
+  plugins: [
+    react(),
+    // inject({ Buffer: ["buffer", "Buffer"] }),
+    generateVersionPage(),
+    tailwindcss(),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+    //   buffer: "buffer",
     },
   },
+//   optimizeDeps: { include: ["buffer"] },
 });

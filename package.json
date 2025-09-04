@@ -1,5 +1,5 @@
 {
-  "name": "web3-fast",
+  "name": "lit-explorer-naga",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -27,10 +27,7 @@
     "@wagmi/core": "^2.17.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "file-type": "^20.5.0",
-    "json-with-bigint": "^3.2.1",
     "lucide-react": "^0.542.0",
-    "node-localstorage": "^3.0.5",
     "prism-react-renderer": "^2.4.1",
     "prismjs": "^1.30.0",
     "react": "^18.2.0",
