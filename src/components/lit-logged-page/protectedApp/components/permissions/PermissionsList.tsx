@@ -9,6 +9,7 @@ import { RemoveButton } from '../ui/RemoveButton';
 import { usePKPPermissions } from '../../contexts/PKPPermissionsContext';
 import { hexToIpfsCid, getAuthMethodTypeName } from '../../utils';
 import { AUTH_METHOD_TYPE } from '../../types';
+import { getAddress, isAddress } from 'viem';
 
 export const PermissionsList: React.FC = () => {
   const {
@@ -17,6 +18,7 @@ export const PermissionsList: React.FC = () => {
     removePermittedAction,
     removePermittedAddress,
     removePermittedAuthMethod,
+    selectedPkp,
   } = usePKPPermissions();
 
   if (!permissionsContext) {
@@ -175,6 +177,23 @@ export const PermissionsList: React.FC = () => {
                     }}
                   >
                     {address}
+                    {(() => {
+                      try {
+                        if (
+                          selectedPkp?.ethAddress &&
+                          isAddress(address) &&
+                          isAddress(selectedPkp.ethAddress) &&
+                          getAddress(address) === getAddress(selectedPkp.ethAddress)
+                        ) {
+                          return (
+                            <span style={{ marginLeft: "8px", color: "#065f46", fontSize: "11px" }}>
+                              (Current PKP)
+                            </span>
+                          );
+                        }
+                      } catch {}
+                      return null;
+                    })()}
                   </div>
                   <div style={{ fontSize: "11px", color: "#6b7280" }}>
                     Ethereum Address
@@ -206,10 +225,18 @@ export const PermissionsList: React.FC = () => {
             {permissionsContext.authMethods.map((authMethod: any, index: number) => {
               const authType = Number(authMethod.authMethodType);
               const isLitAction = authType === AUTH_METHOD_TYPE.LitAction;
-              const displayId =
-                isLitAction && authMethod.id
-                  ? hexToIpfsCid(authMethod.id)
-                  : authMethod.id || "";
+              const isEthWallet = authType === AUTH_METHOD_TYPE.EthWallet;
+              const displayId = (() => {
+                if (isLitAction && authMethod.id) return hexToIpfsCid(authMethod.id);
+                if (isEthWallet && authMethod.id) {
+                  try {
+                    return getAddress(authMethod.id);
+                  } catch {
+                    return authMethod.id || "";
+                  }
+                }
+                return authMethod.id || "";
+              })();
 
               return (
                 <div
@@ -253,7 +280,31 @@ export const PermissionsList: React.FC = () => {
                           {displayId}
                         </a>
                       ) : (
-                        displayId
+                        (() => {
+                          const isCurrentPkpEth = (() => {
+                            try {
+                              return (
+                                isEthWallet &&
+                                selectedPkp?.ethAddress &&
+                                isAddress(authMethod.id) &&
+                                isAddress(selectedPkp.ethAddress) &&
+                                getAddress(authMethod.id) === getAddress(selectedPkp.ethAddress)
+                              );
+                            } catch {
+                              return false;
+                            }
+                          })();
+                          return (
+                            <>
+                              {displayId}
+                              {isCurrentPkpEth && (
+                                <span style={{ marginLeft: "8px", color: "#065f46", fontSize: "11px" }}>
+                                  (Current PKP)
+                                </span>
+                              )}
+                            </>
+                          );
+                        })()
                       )}
                     </div>
                     <div
