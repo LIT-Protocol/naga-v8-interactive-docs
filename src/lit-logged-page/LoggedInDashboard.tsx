@@ -74,7 +74,7 @@ export default function LoggedInDashboard() {
   const tabs: TopNavTab[] = [
     { id: "playground", label: "Playground" },
     { id: "permissions", label: "PKP Permissions" },
-    { id: "payment", label: "Payment Management" },
+    { id: "payment-management", label: "Payment Management" },
   ];
 
   // URL-driven tab state
@@ -83,12 +83,12 @@ export default function LoggedInDashboard() {
   const pathToTab: Record<string, string> = {
     "/playground": "playground",
     "/pkp-permissions": "permissions",
-    "/payment": "payment",
+    "/payment-management": "payment-management",
   };
   const tabToPath: Record<string, string> = {
     playground: "/playground",
     permissions: "/pkp-permissions",
-    payment: "/payment",
+    "payment-management": "/payment-management",
   };
   const activeTabId = pathToTab[location.pathname] ?? "playground";
 
@@ -442,7 +442,7 @@ export default function LoggedInDashboard() {
 
         {activeTabId === "permissions" && <PermissionsDashboard />}
 
-        {activeTabId === "payment" && (
+        {activeTabId === "payment-management" && (
           <PaymentManagementDashboard
             selectedPkp={selectedPkp}
             selectedChain={selectedChain}

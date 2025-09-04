@@ -11,7 +11,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="/playground" replace /> },
       { path: "playground", element: <LoggedInDashboard /> },
       { path: "pkp-permissions", element: <LoggedInDashboard /> },
-      { path: "payment", element: <LoggedInDashboard /> },
+      { path: "payment-management", element: <LoggedInDashboard /> },
     ],
   },
 ]);
