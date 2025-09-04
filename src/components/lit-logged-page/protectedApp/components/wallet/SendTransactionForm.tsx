@@ -410,7 +410,7 @@ export const SendTransactionForm: React.FC<SendTransactionFormProps> = ({
       )}
 
       {/* Faucet Information for testnets */}
-      {chainInfo?.testnet && (
+      {/* {chainInfo?.testnet && (
         <div
           style={{
             marginTop: "12px",
@@ -437,7 +437,7 @@ export const SendTransactionForm: React.FC<SendTransactionFormProps> = ({
           </a>{" "}
           to request free test tokens.
         </div>
-      )}
+      )} */}
     </div>
   );
 }; 

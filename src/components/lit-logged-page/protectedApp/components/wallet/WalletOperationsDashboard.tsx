@@ -54,7 +54,7 @@ export const WalletOperationsDashboard: React.FC<
       </div>
 
       {/* Encryption/Decryption */}
-      <EncryptDecryptForm selectedPkp={selectedPkp} disabled={disabled} />
+      {/* <EncryptDecryptForm selectedPkp={selectedPkp} disabled={disabled} /> */}
 
       {/* Lit Action Execution */}
       <LitActionForm selectedPkp={selectedPkp} disabled={disabled} />

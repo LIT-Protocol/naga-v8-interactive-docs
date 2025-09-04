@@ -423,7 +423,7 @@ export default function LoggedInDashboard() {
       </DashboardLayout>
 
       {/* Status Display */}
-      <StatusDisplay status={status} onDismiss={() => setStatus("")} />
+      {/* <StatusDisplay status={status} onDismiss={() => setStatus("")} /> */}
 
       {/* Tab Navigation moved to top nav bar */}
 
@@ -502,7 +502,7 @@ export default function LoggedInDashboard() {
                 ← Close
               </button>
 
-              <div
+              {/* <div
                 style={{
                   padding: "16px",
                   backgroundColor: "#f0f9ff",
@@ -531,7 +531,7 @@ export default function LoggedInDashboard() {
                 >
                   Select a different PKP wallet from your available options.
                 </p>
-              </div>
+              </div> */}
             </div>
 
             {/* PKP Selection Component */}
