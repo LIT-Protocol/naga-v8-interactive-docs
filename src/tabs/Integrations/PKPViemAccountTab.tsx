@@ -17,6 +17,7 @@ import AccountMethodSelector, {
   CREATE_ACCOUNT_WALLET_CLIENT_CODE,
 } from "../../components/common/AccountMethodSelector";
 import PkpSelectionComponent from "../../components/common/PkpSelectionComponent";
+import { createSiweMessage } from '@lit-protocol/auth-helpers';
 
 const AUTH_NAME = "PKP Viem Account Integration";
 
@@ -216,9 +217,24 @@ export default function PKPViemAccountTab() {
             "No wallet client available. Please connect your wallet."
           );
         }
-        authDataResult = await WalletClientAuthenticator.authenticate(
-          walletClient
-        );
+
+        // TODO: Temporary fix, ideally the createSiweMessage does the nonce fetching automatically
+        const domain = new URL(window.location.href).host; 
+        const uri = `https://${domain}`;
+        const nonce = await fetch('https://block-indexer.litgateway.com/get_most_recent_valid_block')
+          .then(r => r.json())
+          .then(b => b.blockhash);
+
+        const messageToSign = await createSiweMessage({
+          walletAddress: walletClient.account.address,
+          domain,                 
+          uri,                    
+          statement: 'Sign in to My App', 
+          chainId: 1,             
+          nonce,                  
+        });
+
+        authDataResult = await WalletClientAuthenticator.authenticate(walletClient, messageToSign);
       }
 
       setAuthData(authDataResult);

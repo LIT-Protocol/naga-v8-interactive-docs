@@ -13,6 +13,7 @@ import { useAppContext } from "../../router";
 import EoaAuthSection from "../../components/common/EoaAuthSection";
 import ExecuteJsComponent from "../../components/common/ExecuteJsComponent";
 import PaymentInformation from "../../components/tips/PaymentInformation";
+import { createSiweMessage } from '@lit-protocol/auth-helpers';
 
 const AUTH_NAME = "EOA Authentication";
 
@@ -132,7 +133,24 @@ export default function EoaAuthTab() {
             "No wallet client available. Please connect your wallet."
           );
         }
-        authData = await WalletClientAuthenticator.authenticate(walletClient);
+
+        // TODO: Temporary fix, ideally the createSiweMessage does the nonce fetching automatically
+        const domain = new URL(window.location.href).host;
+        const uri = `https://${domain}`;
+        const nonce = await fetch('https://block-indexer.litgateway.com/get_most_recent_valid_block')
+          .then(r => r.json())
+          .then(b => b.blockhash);
+
+        const messageToSign = await createSiweMessage({
+          walletAddress: walletClient.account.address,
+          domain,                 
+          uri,                    
+          statement: 'Sign in to My App', 
+          chainId: 1,             
+          nonce,                  
+        });
+
+        authData = await WalletClientAuthenticator.authenticate(walletClient, messageToSign);
       }
 
       setAuthData(authData);
