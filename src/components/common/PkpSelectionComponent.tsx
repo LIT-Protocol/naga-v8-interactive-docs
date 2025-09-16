@@ -45,9 +45,8 @@ const mintResult = await litClient.mintWithAuth({
 
 interface PKPInfo {
   tokenId: string;
-  publicKey: string;
+  pubkey: string;
   ethAddress: string;
-  pubkey?: string; // Alternative naming
 }
 
 interface PkpSelectionComponentProps {
@@ -154,9 +153,9 @@ export default function PkpSelectionComponent({
 
       const pkps = result.pkps.map((pkp: { tokenId: string; publicKey: string; ethAddress: string; pubkey: string }) => ({
         tokenId: pkp.tokenId,
-        publicKey: pkp.publicKey,
+        publicKey: pkp.pubkey,
         ethAddress: pkp.ethAddress,
-        pubkey: pkp.publicKey,
+        pubkey: pkp.pubkey,
       }));
 
       if (append) {
@@ -246,10 +245,9 @@ export default function PkpSelectionComponent({
       }
 
       const mintedPkpInfo: PKPInfo = {
-        tokenId: mintResult.data.tokenId,
-        publicKey: mintResult.data.pubkey,
-        ethAddress: mintResult.data.ethAddress,
+        tokenId: mintResult.data.tokenId.toString(),
         pubkey: mintResult.data.pubkey,
+        ethAddress: mintResult.data.ethAddress,
       };
 
       onPkpSelected(mintedPkpInfo);
@@ -397,10 +395,10 @@ export default function PkpSelectionComponent({
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <div style={{ flex: 1 }}>
                             <div style={{ fontSize: "12px", color: "#666", marginBottom: "4px" }}>
-                              Token ID: {pkp.tokenId.slice(0, 20)}...
+                              Token ID: {pkp.tokenId?.toString().slice(0, 20)}...
                             </div>
                             <div style={{ fontSize: "12px", color: "#666", marginBottom: "4px" }}>
-                              Public Key: {pkp.publicKey.slice(0, 30)}...
+                              Public Key: {pkp.pubkey?.toString().slice(0, 30)}...
                             </div>
                             <div style={{ fontSize: "14px", fontWeight: "500" }}>
                               ETH Address: {pkp.ethAddress}

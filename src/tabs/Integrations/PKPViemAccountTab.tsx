@@ -220,7 +220,7 @@ export default function PKPViemAccountTab() {
 
         // TODO: Temporary fix, ideally the createSiweMessage does the nonce fetching automatically
         const domain = new URL(window.location.href).host; 
-        const uri = `https://${domain}`;
+        const uri = `https://${domain}/test`;
         const nonce = await fetch('https://block-indexer.litgateway.com/get_most_recent_valid_block')
           .then(r => r.json())
           .then(b => b.blockhash);

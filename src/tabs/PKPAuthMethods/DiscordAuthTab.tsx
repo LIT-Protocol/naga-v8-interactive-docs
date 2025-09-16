@@ -15,7 +15,7 @@ const SIGN_IN_CODE = `
 import { DiscordAuthenticator } from "@lit-protocol/auth";
 
 const authData = await DiscordAuthenticator.authenticate(
-  "https://login.litgateway.com"
+  ${APP_INFO.litLoginServer}
 );`;
 
 const MINT_PKP_CODE = `
@@ -97,7 +97,7 @@ export default function DiscordAuthTab() {
       setStatus("Signing in with Discord...");
 
       const authData = await DiscordAuthenticator.authenticate(
-        "https://login.litgateway.com"
+        APP_INFO.litLoginServer
       );
 
       setAuthData(authData);

@@ -18,7 +18,7 @@ const SIGN_IN_CODE = `
 import { GoogleAuthenticator } from "@lit-protocol/auth";
 
 const authData = await GoogleAuthenticator.authenticate(
-  "https://login.litgateway.com"
+  ${APP_INFO.litLoginServer}
 );`;
 
 const MINT_PKP_CODE = `
@@ -98,7 +98,7 @@ export default function GoogleAuthTab() {
       setStatus("Signing in with Google...");
 
       const authData = await GoogleAuthenticator.authenticate(
-        "https://login.litgateway.com"
+        APP_INFO.litLoginServer
       );
 
       setAuthData(authData);

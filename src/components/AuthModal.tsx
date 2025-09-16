@@ -17,6 +17,7 @@ import googleIcon from "../assets/google.png";
 import discordIcon from "../assets/discord.png";
 import web3WalletIcon from "../assets/web3-wallet.svg";
 import passkeyIcon from "../assets/passkey.svg";
+import { APP_INFO } from "../_config";
 
 // Configuration constants
 const DEFAULT_PRIVATE_KEY =
@@ -159,7 +160,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setError(null);
 
       const authData = await GoogleAuthenticator.authenticate(
-        "https://login.litgateway.com"
+        APP_INFO.litLoginServer
       );
       setAuthData(authData);
       setCurrentStep("mint");
@@ -176,7 +177,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setError(null);
 
       const authData = await DiscordAuthenticator.authenticate(
-        "https://login.litgateway.com"
+        APP_INFO.litLoginServer
       );
       setAuthData(authData);
       setCurrentStep("mint");

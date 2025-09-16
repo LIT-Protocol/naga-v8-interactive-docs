@@ -136,7 +136,7 @@ export default function EoaAuthTab() {
 
         // TODO: Temporary fix, ideally the createSiweMessage does the nonce fetching automatically
         const domain = new URL(window.location.href).host;
-        const uri = `https://${domain}`;
+        const uri = `https://${domain}/test`;
         const nonce = await fetch('https://block-indexer.litgateway.com/get_most_recent_valid_block')
           .then(r => r.json())
           .then(b => b.blockhash);
@@ -180,15 +180,15 @@ export default function EoaAuthTab() {
 
       const { authManager, litClient } = assertDependenciesLoaded();
 
-      if (!pkpInfo) {
-        setStatus("Cannot sign: Missing PKP or Lit Client.");
+      if (!pkpInfo || (!pkpInfo.pubkey && !pkpInfo.publicKey)) {
+        setStatus("Cannot sign: Missing PKP or public key.");
         return;
       }
 
       console.log("Loading!!");
 
       console.log("authData:", authData);
-      console.log("pkpInfo.pubkey:", pkpInfo.pubkey);
+      console.log("pkpInfo:", pkpInfo);
 
       const authContext = await authManager.createPkpAuthContext({
         authData: authData,
@@ -394,6 +394,7 @@ export default function EoaAuthTab() {
         {/*               Mint PKP via EOA Auth              */}
         {/* ================================================ */}
         <PkpSelectionComponent
+          stepNumber={4}
           authData={authData}
           account={account}
           walletClient={walletClient}

@@ -540,7 +540,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
       setError(null);
 
       const authData = await GoogleAuthenticator.authenticate(
-        "https://login.litgateway.com"
+        APP_INFO.litLoginServer
       );
 
       if (modalMode === "signin") {
@@ -559,7 +559,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
       setError(null);
 
       const authData = await DiscordAuthenticator.authenticate(
-        "https://login.litgateway.com"
+        APP_INFO.litLoginServer
       );
 
       if (modalMode === "signin") {

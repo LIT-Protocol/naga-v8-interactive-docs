@@ -1,6 +1,6 @@
 /**
  * Application Configuration
- * 
+ *
  * This file centralizes all configurable settings for the application.
  * Modify these values to customize the application behavior.
  */
@@ -19,14 +19,16 @@ export const APP_INFO = {
   description: "Explore the Lit Protocol ecosystem",
   copyright: "Lit Protocol",
   version: "1.0.0",
-  network: 'naga-dev',
+  network: "naga-dev",
   networkModule: nagaDev,
-  litLoginServer: 'https://login.litgateway.com',
+  litLoginServer:
+    import.meta.env.VITE_LIT_LOGIN_GATEWAY || "https://login.litgateway.com",
 
   // 'https://naga-dev-auth-service.getlit.dev'
   litAuthServer: import.meta.env.VITE_AUTH_SERVICE_URL,
-  faucetUrl: 'https://chronicle-yellowstone-faucet.getlit.dev/',
-  defaultPrivateKey: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+  faucetUrl: "https://chronicle-yellowstone-faucet.getlit.dev/",
+  defaultPrivateKey:
+    "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 } as const;
 
 // Theme Configuration
@@ -53,7 +55,7 @@ export const THEME = {
     input: "214 32% 91%",
     ring: "264 54% 44%",
   },
-  
+
   // Direct color values for backward compatibility
   brandColors: {
     darkPurple: "#27233B",
@@ -64,13 +66,13 @@ export const THEME = {
     lightGray: "#f5f5f5",
     borderColor: "#e0e0e0",
   },
-  
+
   // Gradients
   gradients: {
     primary: "linear-gradient(to right, hsl(264 54% 44%), hsl(259 53% 36%))",
     active: "linear-gradient(-200deg, hsl(254 45% 35%), hsl(270 53% 47%))",
   },
-  
+
   // RainbowKit theme configuration
   rainbowKit: {
     accentColor: "#5732AE",
@@ -79,14 +81,15 @@ export const THEME = {
     fontStack: "system",
     overlayBlur: "small",
   },
-  
+
   // Border radius
   radius: "0.5rem",
-  
+
   // Font configuration
   fonts: {
     primary: "Space Grotesk",
-    fallback: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif",
+    fallback:
+      "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif",
   },
 };
 
