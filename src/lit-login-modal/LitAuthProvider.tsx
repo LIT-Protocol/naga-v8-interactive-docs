@@ -195,6 +195,14 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
     "wallet"
   );
 
+  // Compute network default once from the incoming module
+  // TODO: We need to use this as the default auth service base url instead
+  // of the hardcoded APP_INFO.litAuthServer
+  // const networkDefaultAuthUrl =
+  //   networkModule?.getDefaultAuthServiceBaseUrl?.();
+
+  // console.log("networkDefaultAuthUrl:", networkDefaultAuthUrl)
+
   // Stytch specific state
   const [authServiceBaseUrl, setAuthServiceBaseUrl] = useState(() => {
     try {

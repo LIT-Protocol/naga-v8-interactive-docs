@@ -87,7 +87,7 @@ const PKPSelectionSection: React.FC<PKPSelectionSectionProps> = ({
 
   // Add logging for pkps state changes to track re-renders
   useEffect(() => {
-    console.log(`🎨 [RENDER] PKPs state changed - count: ${pkps.length}, tokenIds:`, pkps.map((p: any) => p.tokenId?.slice(-8)));
+    console.log(`🎨 [RENDER] PKPs state changed - count: ${pkps.length}, tokenIds:`, pkps.map((p: any) => p.tokenId?.toString().slice(-8)));
     console.log(`🎨 [RENDER] Current page: ${currentPage}, should show PKPs for page ${currentPage}`);
   }, [pkps, currentPage]);
 
@@ -112,11 +112,11 @@ const PKPSelectionSection: React.FC<PKPSelectionSectionProps> = ({
 
   // Balance fetching function
   const fetchPkpBalance = async (pkp: PkpInfo, chainKey: string = "yellowstone"): Promise<{ balance: string; symbol: string } | null> => {
-    console.log(`💰 [BALANCE] Fetching balance for PKP ${pkp.tokenId?.slice(-8)} at address ${pkp.ethAddress}`);
+    console.log(`💰 [BALANCE] Fetching balance for PKP ${pkp.tokenId?.toString().slice(-8)} at address ${pkp.ethAddress}`);
     try {
       const chainInfo = SUPPORTED_CHAINS[chainKey as keyof typeof SUPPORTED_CHAINS];
       if (!chainInfo || !pkp.ethAddress) {
-        console.warn(`💰 [BALANCE] Missing chain info or address for PKP ${pkp.tokenId?.slice(-8)}`);
+        console.warn(`💰 [BALANCE] Missing chain info or address for PKP ${pkp.tokenId?.toString().slice(-8)}`);
         return null;
       }
 
@@ -152,21 +152,21 @@ const PKPSelectionSection: React.FC<PKPSelectionSectionProps> = ({
       });
 
       const formattedBalance = (Number(balance) / 1e18).toFixed(6);
-      console.log(`💰 [BALANCE] ✅ Success! PKP ${pkp.tokenId?.slice(-8)} balance: ${formattedBalance} ${chainInfo.symbol}`);
+      console.log(`💰 [BALANCE] ✅ Success! PKP ${pkp.tokenId?.toString().slice(-8)} balance: ${formattedBalance} ${chainInfo.symbol}`);
 
       return {
         balance: formattedBalance,
         symbol: chainInfo.symbol,
       };
     } catch (error) {
-      console.error(`💰 [BALANCE] ❌ Failed to fetch balance for PKP ${pkp.tokenId?.slice(-8)}:`, error);
+      console.error(`💰 [BALANCE] ❌ Failed to fetch balance for PKP ${pkp.tokenId?.toString().slice(-8)}:`, error);
       return null;
     }
   };
 
   // Load balances for all PKPs
   const loadBalancesForPkps = async (pkpsToLoad: PkpInfo[]) => {
-    console.log(`💰 [BALANCE_BATCH] Starting balance loading for ${pkpsToLoad.length} PKPs:`, pkpsToLoad.map(p => p.tokenId?.slice(-8)));
+    console.log(`💰 [BALANCE_BATCH] Starting balance loading for ${pkpsToLoad.length} PKPs:`, pkpsToLoad.map(p => p.tokenId?.toString().slice(-8)));
     const updatedPkps = [...pkpsToLoad];
     
     // Set loading state for all PKPs
@@ -191,11 +191,11 @@ const PKPSelectionSection: React.FC<PKPSelectionSectionProps> = ({
         const { balance, symbol } = result.value.balanceInfo;
         updatedPkps[idx].balance = balance;
         updatedPkps[idx].balanceSymbol = symbol;
-        console.log(`💰 [BALANCE_BATCH] ✅ PKP ${updatedPkps[idx].tokenId?.slice(-8)} balance updated: ${balance} ${symbol}`);
+        console.log(`💰 [BALANCE_BATCH] ✅ PKP ${updatedPkps[idx].tokenId?.toString().slice(-8)} balance updated: ${balance} ${symbol}`);
       } else {
         updatedPkps[idx].balance = "N/A";
         updatedPkps[idx].balanceSymbol = "LPX";
-        console.log(`💰 [BALANCE_BATCH] ❌ PKP ${updatedPkps[idx].tokenId?.slice(-8)} balance failed, set to N/A`);
+        console.log(`💰 [BALANCE_BATCH] ❌ PKP ${updatedPkps[idx].tokenId?.toString().slice(-8)} balance failed, set to N/A`);
       }
       updatedPkps[idx].isLoadingBalance = false;
     });
@@ -208,7 +208,7 @@ const PKPSelectionSection: React.FC<PKPSelectionSectionProps> = ({
   const loadExistingPkps = async (page: number, forceRefresh: boolean = false) => {
     console.log(`🔄 [PAGINATION] loadExistingPkps called - Page: ${page}, forceRefresh: ${forceRefresh}`);
     console.log(`🔄 [PAGINATION] Current state - currentPage: ${currentPage}, pkps.length: ${pkps.length}`);
-    console.log(`🔄 [PAGINATION] Current PKP tokenIds in state:`, pkps.map(p => p.tokenId?.slice(-8)));
+    console.log(`🔄 [PAGINATION] Current PKP tokenIds in state:`, pkps.map(p => p.tokenId?.toString().slice(-8)));
     
     const isPageChange = page > 1;
     
@@ -267,7 +267,7 @@ const PKPSelectionSection: React.FC<PKPSelectionSectionProps> = ({
       console.log(`Expected offset: ${(page - 1) * pageSize}, limit: ${pageSize}`);
       console.log(`Actual PKPs returned:`, result?.pkps?.length || 0);
       console.log(`From cache:`, result?.fromCache || false);
-      console.log(`Token IDs on this page:`, result?.pkps?.map((pkp: any) => pkp.tokenId?.slice(-8)) || []);
+      console.log(`Token IDs on this page:`, result?.pkps?.map((pkp: any) => pkp.tokenId?.toString().slice(-8)) || []);
 
       console.log(`📊 [API_RESPONSE] Detailed response analysis:`, {
         pageRequested: page,
@@ -276,8 +276,8 @@ const PKPSelectionSection: React.FC<PKPSelectionSectionProps> = ({
         totalFromAPI: result?.pagination?.total,
         offsetUsed: (page - 1) * pageSize,
         limitUsed: pageSize,
-        firstTokenId: result?.pkps?.[0]?.tokenId?.slice(-8),
-        lastTokenId: result?.pkps?.[result?.pkps?.length - 1]?.tokenId?.slice(-8)
+        firstTokenId: result?.pkps?.[0]?.tokenId?.toString().slice(-8),
+        lastTokenId: result?.pkps?.[result?.pkps?.length - 1]?.tokenId?.toString().slice(-8)
       });
 
       if (result?.pkps && result.pkps.length > 0) {
@@ -290,8 +290,8 @@ const PKPSelectionSection: React.FC<PKPSelectionSectionProps> = ({
         console.log(`🔄 [STATE_UPDATE] About to update state with formatted PKPs:`, {
           pageRequested: page,
           formattedPkpsCount: formattedPkps.length,
-          formattedTokenIds: formattedPkps.map((p: any) => p.tokenId?.slice(-8)),
-          previousPkpsInState: pkps.map((p: any) => p.tokenId?.slice(-8))
+          formattedTokenIds: formattedPkps.map((p: any) => p.tokenId?.toString().slice(-8)),
+          previousPkpsInState: pkps.map((p: any) => p.tokenId?.toString().slice(-8))
         });
         
         setPkps(formattedPkps);
@@ -494,13 +494,13 @@ const PKPSelectionSection: React.FC<PKPSelectionSectionProps> = ({
                 <div>
                   {/* Debug logging for UI render */}
                   {(() => {
-                    console.log(`🎨 [UI_RENDER] About to render ${pkps.length} PKPs for page ${currentPage}:`, pkps.map((p: any) => p.tokenId?.slice(-8)));
+                    console.log(`🎨 [UI_RENDER] About to render ${pkps.length} PKPs for page ${currentPage}:`, pkps.map((p: any) => p.tokenId?.toString().slice(-8)));
                     return null;
                   })()}
                   {/* PKP Grid */}
                   <div className={`grid gap-3 ${totalPages > 1 ? "mb-5" : "mb-0"}`}>
                     {pkps.map((pkp) => {
-                      console.log(`🔑 [PKP_RENDER] Rendering PKP: ${pkp.tokenId?.slice(-8)}, Address: ${pkp.ethAddress?.slice(-6)}, Balance: ${pkp.balance}, Loading: ${pkp.isLoadingBalance}`);
+                      console.log(`🔑 [PKP_RENDER] Rendering PKP: ${pkp.tokenId?.toString().slice(-8)}, Address: ${pkp.ethAddress?.slice(-6)}, Balance: ${pkp.balance}, Loading: ${pkp.isLoadingBalance}`);
                       return (
                       <div
                         key={pkp.tokenId}
@@ -523,7 +523,7 @@ const PKPSelectionSection: React.FC<PKPSelectionSectionProps> = ({
                       >
                         <div className="flex justify-between items-start mb-2">
                           <div className="text-[14px] font-semibold text-gray-900">
-                            🔑 PKP #{pkp.tokenId?.slice(-8) || 'N/A'}
+                            🔑 PKP #{pkp.tokenId?.toString().slice(-8) || 'N/A'}
                           </div>
                           {selectedPkp?.tokenId === pkp.tokenId && (
                             <div className="text-[12px] text-blue-500 font-semibold bg-blue-100 px-2 py-0.5 rounded-full">
