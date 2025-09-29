@@ -5,8 +5,6 @@
  * Modify these values to customize the application behavior.
  */
 
-import { nagaDev } from "@lit-protocol/networks";
-
 // WalletConnect Configuration
 export const WALLET_CONNECT = {
   projectId: "YOUR_WALLETCONNECT_PROJECT_ID", // Replace with your actual WalletConnect Project ID
@@ -15,10 +13,9 @@ export const WALLET_CONNECT = {
 // Application Information
 export const APP_INFO = {
   copyright: "Lit Protocol",
-  network: "naga-dev",
-  networkModule: nagaDev,
   // litLoginServer: "https://login.litgateway.com",
-  litLoginServer: import.meta.env.VITE_LOGIN_SERVICE_URL || 'https://login.litgateway.com',
+  litLoginServer:
+    import.meta.env.VITE_LOGIN_SERVICE_URL || "https://login.litgateway.com",
 
   // 'https://naga-dev-auth-service.getlit.dev'
   litAuthServer: import.meta.env.VITE_AUTH_SERVICE_URL,
