@@ -18,6 +18,7 @@ export const APP_INFO = {
   network: "naga-dev",
   networkModule: nagaDev,
   // litLoginServer: "https://login.litgateway.com",
+  litLoginServer: import.meta.env.VITE_LOGIN_SERVICE_URL || 'https://login.litgateway.com',
 
   // 'https://naga-dev-auth-service.getlit.dev'
   litAuthServer: import.meta.env.VITE_AUTH_SERVICE_URL,

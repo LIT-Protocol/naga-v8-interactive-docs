@@ -37,6 +37,8 @@ const DEFAULT_PRIVATE_KEY = APP_INFO.defaultPrivateKey;
 const FAUCET_URL = APP_INFO.faucetUrl;
 const DEFAULT_AUTH_SERVICE_BASE_URL = APP_INFO.litAuthServer;
 const AUTH_SERVICE_URL_STORAGE_KEY = "lit-auth-server-url"; // canonical key
+const DEFAULT_LOGIN_SERVICE_BASE_URL = APP_INFO.litLoginServer;
+const LOGIN_SERVICE_URL_STORAGE_KEY = "lit-login-server-url"; // canonical key
 
 type AuthMethod =
   | "google"
@@ -74,6 +76,8 @@ interface LitAuthContextValue {
   shouldDisplayNetworkMessage: boolean;
   authServiceBaseUrl: string;
   setAuthServiceBaseUrl: (url: string) => void;
+  loginServiceBaseUrl: string;
+  setLoginServiceBaseUrl: (url: string) => void;
 }
 
 const LitAuthContext = createContext<LitAuthContextValue | null>(null);
@@ -130,7 +134,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
   storageKey = "lit-auth-user",
   closeOnBackdropClick = true,
   networkModule = APP_INFO.networkModule,
-  supportedNetworks = ["naga-dev", "naga-staging"],
+  supportedNetworks = ["naga-dev", "naga-test", "naga"],
   defaultNetwork,
   showSettingsButton = true,
   showNetworkMessage = false,
@@ -213,6 +217,16 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
     }
   });
 
+  // Login service state
+  const [loginServiceBaseUrl, setLoginServiceBaseUrl] = useState(() => {
+    try {
+      const saved = localStorage.getItem(LOGIN_SERVICE_URL_STORAGE_KEY);
+      return saved || DEFAULT_LOGIN_SERVICE_BASE_URL;
+    } catch {
+      return DEFAULT_LOGIN_SERVICE_BASE_URL;
+    }
+  });
+
   // No restore effect needed; initialiser above ensures correct precedence on first render
 
   useEffect(() => {
@@ -226,6 +240,21 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
       console.warn("Failed to write auth service URL to storage", e);
     }
   }, [authServiceBaseUrl]);
+
+  useEffect(() => {
+    try {
+      if (loginServiceBaseUrl) {
+        localStorage.setItem(
+          LOGIN_SERVICE_URL_STORAGE_KEY,
+          loginServiceBaseUrl
+        );
+      } else {
+        localStorage.removeItem(LOGIN_SERVICE_URL_STORAGE_KEY);
+      }
+    } catch (e) {
+      console.warn("Failed to write login service URL to storage", e);
+    }
+  }, [loginServiceBaseUrl]);
   const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [otpCode, setOtpCode] = useState("");
@@ -683,7 +712,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
       setError(null);
 
       const authData = await GoogleAuthenticator.authenticate(
-        "https://login.litgateway.com"
+        loginServiceBaseUrl
       );
 
       if (modalMode === "signin") {
@@ -702,7 +731,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
       setError(null);
 
       const authData = await DiscordAuthenticator.authenticate(
-        "https://login.litgateway.com"
+        loginServiceBaseUrl
       );
 
       if (modalMode === "signin") {
@@ -807,7 +836,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
         // Register new credential and mint PKP
         const { pkpInfo } = await WebAuthnAuthenticator.registerAndMintPKP({
           authServiceBaseUrl: authServiceBaseUrl,
-          username: webAuthnUsername || `user-${Date.now()}`,
+          username: webAuthnUsername || `naga-user-${Date.now()}`,
           scopes: ["sign-anything"],
         });
 
@@ -1150,6 +1179,8 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
       showNetworkMessage && localNetworkName !== "naga",
     authServiceBaseUrl,
     setAuthServiceBaseUrl,
+    loginServiceBaseUrl,
+    setLoginServiceBaseUrl,
   };
 
   // Always render children with context
@@ -1241,11 +1272,13 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                   <div className="grid gap-2">
                     {supportedNetworks.map((net) => {
                       const isActive = localNetworkName === net;
+                      const isDisabled = net === "naga"; // future production, disabled
                       return (
                         <button
                           key={net}
                           onClick={async () => {
                             try {
+                              if (isDisabled) return;
                               const key = net as SupportedNetworkName;
                               const selected = NETWORK_MODULES[key] || nagaDev;
                               setLocalNetworkName(net);
@@ -1258,7 +1291,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                           }}
                           className={`flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md ${
                             isActive ? "bg-indigo-50" : "bg-white"
-                          } text-gray-900 cursor-pointer`}
+                          } text-gray-900 ${isDisabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
                         >
                           <span className="text-[13px] font-semibold">
                             {net}
@@ -1268,13 +1301,18 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                               Selected
                             </span>
                           )}
+                          {isDisabled && !isActive && (
+                            <span className="text-[12px] text-gray-500">
+                              (Coming soon)
+                            </span>
+                          )}
                         </button>
                       );
                     })}
                   </div>
                 </div>
 
-                {/* Auth Service URL moved to Settings */}
+                {/* Auth & Login Service URLs */}
                 <div className="p-3 bg-slate-50 rounded-lg border border-gray-200 mb-4">
                   <label className="text-[13px] font-semibold block mb-2 text-gray-900">
                     Auth Service URL
@@ -1290,6 +1328,29 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                     <button
                       onClick={() =>
                         setAuthServiceBaseUrl(DEFAULT_AUTH_SERVICE_BASE_URL)
+                      }
+                      className="px-3 py-1.5 border border-gray-300 rounded text-[12px] cursor-pointer bg-white hover:bg-gray-100 text-gray-700"
+                    >
+                      Reset to default
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-slate-50 rounded-lg border border-gray-200 mb-4">
+                  <label className="text-[13px] font-semibold block mb-2 text-gray-900">
+                    Login Service URL
+                  </label>
+                  <input
+                    type="url"
+                    value={loginServiceBaseUrl}
+                    onChange={(e) => setLoginServiceBaseUrl(e.target.value)}
+                    placeholder={APP_INFO.litLoginServer}
+                    className="w-full px-2.5 py-2 border border-gray-300 rounded text-[12px] font-mono"
+                  />
+                  <div className="mt-2">
+                    <button
+                      onClick={() =>
+                        setLoginServiceBaseUrl(DEFAULT_LOGIN_SERVICE_BASE_URL)
                       }
                       className="px-3 py-1.5 border border-gray-300 rounded text-[12px] cursor-pointer bg-white hover:bg-gray-100 text-gray-700"
                     >
