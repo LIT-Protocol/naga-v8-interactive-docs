@@ -1,6 +1,9 @@
 import React from "react";
 import PKPSelectionSection from "../lit-login-modal/PKPSelectionSection";
-import type { PkpInfo } from "./protectedApp/index";
+import { PKPData } from "@lit-protocol/schemas";
+import { createLitClient } from "@lit-protocol/lit-client";
+import { createAuthManager } from "@lit-protocol/auth";
+import { LitServices } from "@/hooks/useLitServiceSetup";
 
 /**
  * PKPSelectionModal
@@ -28,10 +31,10 @@ export interface PKPSelectionModalProps {
   onClose: () => void;
   authData: any;
   authMethodName: string;
-  services: { litClient: any; authManager: any } | null;
+  services: LitServices;
   disabled?: boolean;
   authServiceBaseUrl: string;
-  onPkpSelected: (pkpInfo: PkpInfo) => void;
+  onPkpSelected: (pkpInfo: PKPData) => void;
 }
 
 const PKPSelectionModal: React.FC<PKPSelectionModalProps> = ({

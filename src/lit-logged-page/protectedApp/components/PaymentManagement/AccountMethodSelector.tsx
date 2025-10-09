@@ -12,12 +12,7 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useState } from "react";
 import { privateKeyToAccount } from "viem/accounts";
 import { useWalletClient } from "wagmi";
-import { FEATURES } from "../../../../_config";
-
-// Configuration constants
-const DEFAULT_PRIVATE_KEY =
-  "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
-const FAUCET_URL = "https://chronicle-yellowstone-faucet.getlit.dev/";
+import { APP_INFO, FEATURES } from "../../../../_config";
 
 // Code snippets for documentation
 export const CREATE_ACCOUNT_PRIVATE_KEY_CODE = `
@@ -66,7 +61,7 @@ export default function AccountMethodSelector({
   const [accountMethod, setAccountMethod] = useState<
     "privateKey" | "walletClient"
   >("walletClient"); // Default to wallet client
-  const [privateKey, setPrivateKey] = useState<string>(DEFAULT_PRIVATE_KEY);
+  const [privateKey, setPrivateKey] = useState<string>(APP_INFO.defaultPrivateKey);
 
   // Utility function to format error messages properly
   const formatErrorMessage = (prefix: string, error: any): string => {
@@ -160,6 +155,7 @@ export default function AccountMethodSelector({
             display: "block",
             marginBottom: "8px",
             fontWeight: "500",
+            color: "#000",
           }}
         >
           Choose Account Method:
@@ -204,13 +200,14 @@ export default function AccountMethodSelector({
 
       {/* Private Key Input (only show when private key method is selected) */}
       {accountMethod === "privateKey" && (
-        <div style={{ marginBottom: "10px" }}>
+        <div style={{ marginBottom: "10px", color: "#000" }}>
           <label
             htmlFor="privateKey"
             style={{
               display: "block",
               marginBottom: "5px",
               fontWeight: "500",
+              color: "#000",
             }}
           >
             Private Key:
@@ -222,6 +219,7 @@ export default function AccountMethodSelector({
             onChange={(e) => setPrivateKey(e.target.value)}
             placeholder="0x..."
             disabled={disabled}
+            className="placeholder-black/70 text-black"
             style={{
               width: "100%",
               padding: "8px 12px",
@@ -230,6 +228,7 @@ export default function AccountMethodSelector({
               fontFamily: "monospace",
               fontSize: "14px",
               opacity: disabled ? 0.6 : 1,
+              color: "#000",
             }}
           />
           <small style={{ color: "#666", fontSize: "12px" }}>
@@ -250,15 +249,16 @@ export default function AccountMethodSelector({
             border: "1px solid #e9ecef",
           }}
         >
-          <p style={{ margin: "0 0 8px 0", fontSize: "14px" }}>
-            <strong>Using Connected Wallet:</strong> This will use your
-            currently connected wallet account (e.g., MetaMask).
+          <p style={{ margin: "0 0 8px 0", fontSize: "14px", color: "#000" }}>
+            <strong style={{ color: "#000" }}>Using Connected Wallet:</strong>{" "}
+            This will use your currently connected wallet account (e.g.,
+            MetaMask).
           </p>
-          <p style={{ margin: "0", fontSize: "12px", color: "#666" }}>
+          <p style={{ margin: "0", fontSize: "12px", color: "#000" }}>
             Make sure your wallet is connected and you have test tokens. Need
             tokens? Visit the{" "}
             <a
-              href={FAUCET_URL}
+              href={`${APP_INFO.faucetUrl}?action=ledger`}
               target="_blank"
               rel="noopener noreferrer"
               style={{ color: "#4285F4", textDecoration: "underline" }}

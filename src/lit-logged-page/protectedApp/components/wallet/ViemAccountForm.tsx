@@ -6,11 +6,12 @@
 
 import React, { useState } from "react";
 import { useLitAuth } from "../../../../lit-login-modal/LitAuthProvider";
-import { PkpInfo } from "../../types";
+import { UIPKP } from "../../types";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
+import { triggerLedgerRefresh } from "../../utils/ledgerRefresh";
 
 interface ViemAccountFormProps {
-  selectedPkp: PkpInfo | null;
+  selectedPkp: UIPKP | null;
   disabled?: boolean;
 }
 
@@ -35,6 +36,7 @@ export const ViemAccountForm: React.FC<ViemAccountFormProps> = ({
   const [status, setStatus] = useState<string>("");
 
   const signWithViemAccount = async () => {
+    console.log("[signWithViemAccount] Called.");
     if (
       !user?.authContext ||
       !viemAccountMessage.trim() ||
@@ -52,15 +54,17 @@ export const ViemAccountForm: React.FC<ViemAccountFormProps> = ({
 
       // Get PKP as a viem account
       const pkpViemAccount = await services.litClient.getPkpViemAccount({
-        pkpPublicKey: selectedPkp?.publicKey || user?.pkpInfo?.pubkey,
+        pkpPublicKey: selectedPkp?.pubkey || user?.pkpInfo?.pubkey,
         authContext: user.authContext,
         chainConfig: chainConfig,
       });
+      console.log("[signWithViemAccount] pkpViemAccount:", pkpViemAccount);
 
       // Sign the message
       const signature = await pkpViemAccount.signMessage({
         message: viemAccountMessage,
       });
+      console.log("[signWithViemAccount] signature:", signature);
 
       setViemSignature({
         message: viemAccountMessage,
@@ -68,12 +72,16 @@ export const ViemAccountForm: React.FC<ViemAccountFormProps> = ({
         address: pkpViemAccount.address,
         timestamp: new Date().toISOString(),
       });
+      setIsSigningViem(false);
       setStatus("Message signed with PKP Viem Account!");
+      try {
+        const addr = selectedPkp?.ethAddress || user.pkpInfo?.ethAddress;
+        if (addr) await triggerLedgerRefresh(addr);
+      } catch {}
     } catch (error: any) {
       console.error("Failed to sign with viem account:", error);
-      setStatus(`Failed to sign with viem account: ${error.message || error}`);
-    } finally {
       setIsSigningViem(false);
+      setStatus(`Failed to sign with viem account: ${error.message || error}`);
     }
   };
 

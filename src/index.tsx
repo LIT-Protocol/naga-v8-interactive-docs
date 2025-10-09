@@ -58,6 +58,7 @@ export const HomePage = () => {
       supportedNetworks={["naga-dev", "naga-test", "naga"]}
       defaultNetwork="naga-dev"
       authServiceBaseUrl={APP_INFO.litAuthServer}
+      persistUser={false}
       closeOnBackdropClick={false}
       showSettingsButton={true}
       showSignUpPage={false}

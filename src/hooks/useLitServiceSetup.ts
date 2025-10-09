@@ -8,26 +8,25 @@
 import React, { useState, useCallback, useRef } from "react";
 import { createLitClient } from "@lit-protocol/lit-client";
 import { createAuthManager, storagePlugins } from "@lit-protocol/auth";
-import { nagaDev, nagaStaging, nagaTest } from "@lit-protocol/networks";
+import { nagaDev, nagaTest } from "@lit-protocol/networks";
 
 // Configuration constants at the top
 const DEFAULT_APP_NAME = "lit-auth-app";
 const NETWORK_MODULES: Record<string, any> = {
   "naga-dev": nagaDev,
-  "naga-staging": nagaStaging,
   "naga-test": nagaTest,
 };
 
 interface LitServiceSetupConfig {
   appName?: string;
   networkName?: string;
-  network?: any;
+  network?: typeof nagaDev | typeof nagaTest;
   autoSetup?: boolean;
 }
 
-interface LitServices {
-  litClient: any;
-  authManager: any;
+export interface LitServices {
+  litClient: Awaited<ReturnType<typeof createLitClient>>;
+  authManager: Awaited<ReturnType<typeof createAuthManager>>;
 }
 
 interface UseLitServiceSetupReturn {
@@ -69,7 +68,7 @@ export const useLitServiceSetup = (
       console.log("🚀 Starting Lit Protocol service setup...");
 
       // Step 1: Create Lit Client with singleton pattern
-      console.log("📡 Creating Lit Client...");
+      console.log(`📡 Creating Lit Client...`);
       if (!config.network && !config.networkName) {
         throw new Error(
           "No network provided. Pass 'network' (module) or 'networkName' to useLitServiceSetup."
@@ -80,9 +79,7 @@ export const useLitServiceSetup = (
         const candidate = NETWORK_MODULES[config.networkName as string];
         if (!candidate) {
           throw new Error(
-            `Unknown or unsupported networkName: ${String(
-              config.networkName
-            )}.`
+            `Unknown or unsupported networkName: ${String(config.networkName)}.`
           );
         }
         networkModule = candidate;
@@ -110,7 +107,9 @@ export const useLitServiceSetup = (
       const newServices = { litClient, authManager };
       setServices(newServices);
 
-      console.log("🎉 All Lit Protocol services initialized successfully");
+      console.log(
+        `🎉 All Lit Protocol services initialized successfully. Network: ${config.networkName}`
+      );
       return newServices;
     } catch (err: any) {
       const errorMessage = `Failed to initialize Lit Protocol services: ${

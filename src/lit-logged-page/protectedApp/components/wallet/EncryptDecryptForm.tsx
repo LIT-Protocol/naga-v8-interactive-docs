@@ -6,14 +6,14 @@
 
 import React, { useState } from 'react';
 import { useLitAuth } from '../../../../lit-login-modal/LitAuthProvider';
-import { PkpInfo } from '../../types';
+import { UIPKP } from '../../types';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 
 // Default message constant
 const DEFAULT_ENCRYPT_MESSAGE = "This is my secret message! 🤫";
 
 interface EncryptDecryptFormProps {
-  selectedPkp: PkpInfo | null;
+  selectedPkp: UIPKP | null;
   disabled?: boolean;
 }
 
@@ -58,7 +58,7 @@ export const EncryptDecryptForm: React.FC<EncryptDecryptFormProps> = ({
       // Get the actual PKP address from the viem account
       const chainConfig = services.litClient.getChainConfig().viemConfig;
       const pkpViemAccount = await services.litClient.getPkpViemAccount({
-        pkpPublicKey: selectedPkp?.publicKey || user?.pkpInfo?.pubkey,
+        pkpPublicKey: selectedPkp?.pubkey || user?.pkpInfo?.pubkey,
         authContext: user.authContext,
         chainConfig: chainConfig,
       });
@@ -122,7 +122,7 @@ export const EncryptDecryptForm: React.FC<EncryptDecryptFormProps> = ({
       const decryptionAuthContext =
         await services.authManager.createPkpAuthContext({
           authData: user.authData,
-          pkpPublicKey: selectedPkp?.publicKey || user?.pkpInfo?.pubkey,
+          pkpPublicKey: selectedPkp?.pubkey || user?.pkpInfo?.pubkey,
           authConfig: {
             capabilityAuthSigs: [],
             expiration: new Date(

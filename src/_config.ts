@@ -13,13 +13,32 @@ export const WALLET_CONNECT = {
 // Application Information
 export const APP_INFO = {
   copyright: "Lit Protocol",
-  // litLoginServer: "https://login.litgateway.com",
+
+  // Global service URLs (with defaults)
   litLoginServer:
     import.meta.env.VITE_LOGIN_SERVICE_URL || "https://login.litgateway.com",
 
-  // 'https://naga-dev-auth-service.getlit.dev'
-  litAuthServer: import.meta.env.VITE_AUTH_SERVICE_URL,
-  faucetUrl: "https://chronicle-yellowstone-faucet.getlit.dev/",
+  // Network-specific auth service URLs
+  authServiceUrls: {
+    "naga-dev":
+      import.meta.env.VITE_AUTH_SERVICE_URL_NAGA_DEV ||
+      "https://auth-api.litprotocol.com",
+    "naga-test":
+      import.meta.env.VITE_AUTH_SERVICE_URL_NAGA_TEST ||
+      "https://auth-api.litprotocol.com",
+    naga:
+      import.meta.env.VITE_AUTH_SERVICE_URL_NAGA ||
+      "https://auth-api.litprotocol.com",
+  },
+
+  litAuthServerApiKey: import.meta.env.VITE_AUTH_SERVICE_API_KEY,
+
+  // Discord configuration
+  discordClientId:
+    import.meta.env.VITE_LOGIN_DISCORD_CLIENT_ID || "1052874239658692668",
+
+  // Other URLs
+  faucetUrl: "https://chronicle-yellowstone-faucet.getlit.dev/naga",
   defaultPrivateKey:
     "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 } as const;

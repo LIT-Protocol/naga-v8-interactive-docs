@@ -6,11 +6,12 @@ import React, {
   ReactNode,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { privateKeyToAccount } from "viem/accounts";
 import { useWalletClient } from "wagmi";
-import { useLitServiceSetup } from "../hooks/useLitServiceSetup";
+import { LitServices, useLitServiceSetup } from "../hooks/useLitServiceSetup";
 import litPrimaryOrangeIcon from "../assets/lit-primary-orange.svg";
 // Import icon assets
 import tfaIcon from "../assets/2fa.svg";
@@ -23,22 +24,26 @@ import web3WalletIcon from "../assets/web3-wallet.svg";
 import whatsappIcon from "../assets/whatsapp.svg";
 import PKPSelectionSection from "./PKPSelectionSection";
 import { APP_INFO } from "../_config";
-import { nagaDev, nagaStaging, nagaTest } from "@lit-protocol/networks";
+import { PaymentManagementDashboard } from "../lit-logged-page/protectedApp/components/PaymentManagement/PaymentManagementDashboard";
+import { nagaDev, nagaTest } from "@lit-protocol/networks";
+import { PKPData } from "@lit-protocol/schemas";
 
-type SupportedNetworkName = "naga" | "naga-dev" | "naga-staging" | "naga-test";
+type SupportedNetworkName = "naga" | "naga-dev" | "naga-test";
 const NETWORK_MODULES: Partial<Record<SupportedNetworkName, any>> = {
   "naga-dev": nagaDev,
-  "naga-staging": nagaStaging,
   "naga-test": nagaTest,
 };
 
 // Configuration constants
 const DEFAULT_PRIVATE_KEY = APP_INFO.defaultPrivateKey;
-const FAUCET_URL = APP_INFO.faucetUrl;
-const DEFAULT_AUTH_SERVICE_BASE_URL = APP_INFO.litAuthServer;
-const AUTH_SERVICE_URL_STORAGE_KEY = "lit-auth-server-url"; // canonical key
+const FAUCET_URL = `${APP_INFO.faucetUrl}?action=ledger`;
 const DEFAULT_LOGIN_SERVICE_BASE_URL = APP_INFO.litLoginServer;
+const DEFAULT_DISCORD_CLIENT_ID = APP_INFO.discordClientId;
+const DEFAULT_AUTH_SERVICE_URLS = APP_INFO.authServiceUrls;
 const LOGIN_SERVICE_URL_STORAGE_KEY = "lit-login-server-url"; // canonical key
+const DISCORD_CLIENT_ID_STORAGE_KEY = "lit-discord-client-id";
+const NETWORK_NAME_STORAGE_KEY = "lit-network-name";
+const AUTH_SERVICE_URL_MAP_STORAGE_KEY = "lit-auth-server-url-map";
 
 type AuthMethod =
   | "google"
@@ -53,7 +58,7 @@ type AuthMethod =
 
 interface AuthUser {
   authContext: any;
-  pkpInfo: any;
+  pkpInfo: PKPData;
   method: AuthMethod;
   timestamp: number;
   authData?: any; // Optional for backward compatibility
@@ -64,7 +69,7 @@ interface LitAuthContextValue {
   isAuthenticated: boolean;
   logout: () => void;
   isAuthenticating: boolean;
-  services: { litClient: any; authManager: any } | null;
+  services: LitServices | null;
   isServicesReady: boolean;
   showAuthModal: () => void;
   hideAuthModal: () => void;
@@ -106,6 +111,7 @@ interface LitAuthProviderProps {
   networkName?: string;
   autoSetup?: boolean;
   storageKey?: string;
+  persistUser?: boolean;
   closeOnBackdropClick?: boolean;
   networkModule?: any;
   supportedNetworks?: SupportedNetworkName[];
@@ -129,11 +135,12 @@ interface AuthMethodInfo {
 export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
   children,
   appName = "lit-auth-app",
-  networkName = APP_INFO.network,
+  networkName,
   autoSetup = false,
   storageKey = "lit-auth-user",
+  persistUser = false,
   closeOnBackdropClick = true,
-  networkModule = APP_INFO.networkModule,
+  networkModule,
   supportedNetworks = ["naga-dev", "naga-test", "naga"],
   defaultNetwork,
   showSettingsButton = true,
@@ -144,16 +151,95 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
 }) => {
   const { data: walletClient } = useWalletClient();
 
-  // Local network selection state for runtime switching
-  const [localNetwork, setLocalNetwork] = useState<any>(networkModule);
-  const [localNetworkName, setLocalNetworkName] = useState<string>(
-    defaultNetwork || networkName
-  );
+  // Local network selection state for runtime switching (persisted)
+  const [localNetworkName, setLocalNetworkName] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem(
+        NETWORK_NAME_STORAGE_KEY
+      ) as SupportedNetworkName | null;
+      return (
+        saved ||
+        (defaultNetwork as SupportedNetworkName) ||
+        (networkName as SupportedNetworkName) ||
+        "naga-dev"
+      );
+    } catch {
+      return (
+        (defaultNetwork as SupportedNetworkName) ||
+        (networkName as SupportedNetworkName) ||
+        "naga-dev"
+      );
+    }
+  });
+
+  const [localNetwork, setLocalNetwork] = useState<any>(() => {
+    const initialName = (() => {
+      try {
+        return (
+          (localStorage.getItem(
+            NETWORK_NAME_STORAGE_KEY
+          ) as SupportedNetworkName | null) ||
+          (defaultNetwork as SupportedNetworkName) ||
+          (networkName as SupportedNetworkName) ||
+          "naga-dev"
+        );
+      } catch {
+        return (
+          (defaultNetwork as SupportedNetworkName) ||
+          (networkName as SupportedNetworkName) ||
+          "naga-dev"
+        );
+      }
+    })();
+
+    const moduleFromName = NETWORK_MODULES[initialName as SupportedNetworkName];
+    return networkModule || moduleFromName || nagaDev;
+  });
 
   useEffect(() => {
-    setLocalNetwork(networkModule);
-    setLocalNetworkName(defaultNetwork || networkName);
-  }, [networkModule, networkName, defaultNetwork]);
+    const nextName =
+      (networkName as SupportedNetworkName | undefined) ||
+      (localNetworkName as SupportedNetworkName);
+
+    const nextModule =
+      networkModule ||
+      (nextName
+        ? NETWORK_MODULES[nextName as SupportedNetworkName]
+        : undefined);
+
+    if (!nextName || !nextModule) {
+      console.error("Network configuration missing or unknown:", { nextName });
+      return;
+    }
+
+    setLocalNetwork(nextModule);
+
+    // Only sync name from props when explicitly controlled via networkName
+    if (networkName && networkName !== localNetworkName) {
+      setLocalNetworkName(networkName);
+    }
+  }, [networkModule, networkName, localNetworkName]);
+
+  // Re-initialise services when network selection changes (post-initial mount)
+  const hasInitialisedNetworkRef = useRef(false);
+  useEffect(() => {
+    if (!hasInitialisedNetworkRef.current) {
+      hasInitialisedNetworkRef.current = true;
+      return;
+    }
+    (async () => {
+      try {
+        clearServices();
+        await setupServices();
+      } catch (err) {
+        console.warn(
+          "❗️ Failed to re-initialise services after network change:",
+          err
+        );
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localNetworkName, localNetwork]);
 
   // Setup Lit Protocol services
   const {
@@ -180,11 +266,16 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
   const [showModal, setShowModal] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<AuthMethod | null>(null);
   const [showMethodDetail, setShowMethodDetail] = useState(false);
-  const [authStep, setAuthStep] = useState<"select" | "input" | "verify">(
-    "select"
-  );
+  const [authStep, setAuthStep] = useState<
+    "select" | "input" | "verify" | "fund" | "create"
+  >("select");
   const [modalMode, setModalMode] = useState<"signin" | "signup">("signin");
   const [showSettingsView, setShowSettingsView] = useState(false);
+
+  // Pending funding/auth creation state
+  const [pendingPkpInfo, setPendingPkpInfo] = useState<PKPData | null>(null);
+  const [pendingAuthData, setPendingAuthData] = useState<any | null>(null);
+  const [isCheckingFunding, setIsCheckingFunding] = useState(false);
 
   // Ensure we never remain in signup mode when sign up page is disabled
   useEffect(() => {
@@ -199,23 +290,39 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
     "wallet"
   );
 
-  // Compute network default once from the incoming module
-  // TODO: We need to use this as the default auth service base url instead
-  // of the hardcoded APP_INFO.litAuthServer
-  // const networkDefaultAuthUrl =
-  //   networkModule?.getDefaultAuthServiceBaseUrl?.();
-
-  // console.log("networkDefaultAuthUrl:", networkDefaultAuthUrl)
-
-  // Stytch specific state
-  const [authServiceBaseUrl, setAuthServiceBaseUrl] = useState(() => {
+  // Auth Service URL per-network map
+  const [authServiceUrlMap, setAuthServiceUrlMap] = useState<
+    Record<string, string>
+  >(() => {
     try {
-      const saved = localStorage.getItem(AUTH_SERVICE_URL_STORAGE_KEY);
-      return saved || authServiceBaseUrlProp || DEFAULT_AUTH_SERVICE_BASE_URL;
-    } catch {
-      return authServiceBaseUrlProp || DEFAULT_AUTH_SERVICE_BASE_URL;
-    }
+      const raw = localStorage.getItem(AUTH_SERVICE_URL_MAP_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Record<string, string>;
+        return parsed || {};
+      }
+    } catch {}
+    // Seed defaults per known network from config
+    return {
+      "naga-dev": authServiceBaseUrlProp || DEFAULT_AUTH_SERVICE_URLS["naga-dev"],
+      "naga-test": authServiceBaseUrlProp || DEFAULT_AUTH_SERVICE_URLS["naga-test"],
+      naga: authServiceBaseUrlProp || DEFAULT_AUTH_SERVICE_URLS["naga"],
+    } as Record<string, string>;
   });
+  
+  const authServiceBaseUrl =
+    authServiceUrlMap[localNetworkName] ||
+    authServiceBaseUrlProp ||
+    DEFAULT_AUTH_SERVICE_URLS[localNetworkName as SupportedNetworkName] ||
+    DEFAULT_AUTH_SERVICE_URLS["naga-dev"];
+    
+  const setAuthServiceBaseUrl = (url: string) => {
+    setAuthServiceUrlMap((prev) => ({ ...prev, [localNetworkName]: url }));
+  };
+  
+  // Compute per-network default for comparison
+  const networkDefaultAuthUrl = DEFAULT_AUTH_SERVICE_URLS[localNetworkName as SupportedNetworkName] || DEFAULT_AUTH_SERVICE_URLS["naga-dev"];
+  const isAuthUrlCustom = (authServiceBaseUrl: string) =>
+    (authServiceBaseUrl || "") !== (networkDefaultAuthUrl || "");
 
   // Login service state
   const [loginServiceBaseUrl, setLoginServiceBaseUrl] = useState(() => {
@@ -227,19 +334,28 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
     }
   });
 
+  // Discord Client ID state
+  const [discordClientId, setDiscordClientId] = useState(() => {
+    try {
+      const saved = localStorage.getItem(DISCORD_CLIENT_ID_STORAGE_KEY);
+      return saved || DEFAULT_DISCORD_CLIENT_ID;
+    } catch {
+      return DEFAULT_DISCORD_CLIENT_ID;
+    }
+  });
+
   // No restore effect needed; initialiser above ensures correct precedence on first render
 
   useEffect(() => {
     try {
-      if (authServiceBaseUrl) {
-        localStorage.setItem(AUTH_SERVICE_URL_STORAGE_KEY, authServiceBaseUrl);
-      } else {
-        localStorage.removeItem(AUTH_SERVICE_URL_STORAGE_KEY);
-      }
+      localStorage.setItem(
+        AUTH_SERVICE_URL_MAP_STORAGE_KEY,
+        JSON.stringify(authServiceUrlMap)
+      );
     } catch (e) {
-      console.warn("Failed to write auth service URL to storage", e);
+      console.warn("Failed to write auth service URL map to storage", e);
     }
-  }, [authServiceBaseUrl]);
+  }, [authServiceUrlMap]);
 
   useEffect(() => {
     try {
@@ -255,6 +371,30 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
       console.warn("Failed to write login service URL to storage", e);
     }
   }, [loginServiceBaseUrl]);
+
+  useEffect(() => {
+    try {
+      if (discordClientId) {
+        localStorage.setItem(DISCORD_CLIENT_ID_STORAGE_KEY, discordClientId);
+      } else {
+        localStorage.removeItem(DISCORD_CLIENT_ID_STORAGE_KEY);
+      }
+    } catch (e) {
+      console.warn("Failed to write Discord Client ID to storage", e);
+    }
+  }, [discordClientId]);
+
+  useEffect(() => {
+    try {
+      if (localNetworkName) {
+        localStorage.setItem(NETWORK_NAME_STORAGE_KEY, localNetworkName);
+      } else {
+        localStorage.removeItem(NETWORK_NAME_STORAGE_KEY);
+      }
+    } catch (e) {
+      console.warn("Failed to write network name to storage", e);
+    }
+  }, [localNetworkName]);
   const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [otpCode, setOtpCode] = useState("");
@@ -348,13 +488,13 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
       description: "TOTP authenticator app",
       available: true,
     },
-    {
-      id: "custom",
-      name: "Custom Auth",
-      icon: passkeyIcon,
-      description: "Test custom authentication",
-      available: true,
-    },
+    // {
+    //   id: "custom",
+    //   name: "Custom Auth",
+    //   icon: passkeyIcon,
+    //   description: "Test custom authentication",
+    //   available: false,
+    // },
   ];
 
   // Determine which methods to show based on provided prop; defaults to all available
@@ -368,6 +508,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
 
   // Load user from localStorage on mount
   useEffect(() => {
+    if (!persistUser) return;
     try {
       const savedUser = localStorage.getItem(storageKey);
       if (savedUser) {
@@ -384,7 +525,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
       console.error("Failed to load saved user:", error);
       localStorage.removeItem(storageKey);
     }
-  }, [storageKey]);
+  }, [storageKey, persistUser]);
 
   // Auto-initialize services when user exists but services aren't ready
   useEffect(() => {
@@ -426,13 +567,12 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
             const newAuthContext =
               await services.authManager.createPkpAuthContext({
                 authData: user.authData,
-                pkpPublicKey: user.pkpInfo.pubkey || user.pkpInfo.publicKey,
+                pkpPublicKey: user.pkpInfo.pubkey,
                 authConfig: {
                   expiration: new Date(
                     Date.now() + 1000 * 60 * 60 * 24
                   ).toISOString(),
-                  statement: "",
-                  domain: "",
+
                   resources: [
                     ["pkp-signing", "*"],
                     ["lit-action-execution", "*"],
@@ -448,7 +588,9 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
               authContext: newAuthContext,
             };
             setUser(updatedUser);
-            localStorage.setItem(storageKey, JSON.stringify(updatedUser));
+            if (persistUser) {
+              localStorage.setItem(storageKey, JSON.stringify(updatedUser));
+            }
             console.log("✅ AuthContext recreated successfully");
           } catch (error) {
             console.error("Failed to recreate authContext:", error);
@@ -527,17 +669,23 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
     setTempAuthData(null);
     setTempMethod(null);
     setIsWebAuthnExistingFlow(false);
+    setPendingAuthData(null);
+    setPendingPkpInfo(null);
   };
 
   const saveUser = (userData: AuthUser) => {
     setUser(userData);
-    localStorage.setItem(storageKey, JSON.stringify(userData));
+    if (persistUser) {
+      localStorage.setItem(storageKey, JSON.stringify(userData));
+    }
     resetModalState();
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem(storageKey);
+    if (persistUser) {
+      localStorage.removeItem(storageKey);
+    }
     resetModalState();
     // Don't automatically show modal on logout - let user manually reconnect
 
@@ -585,19 +733,28 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
     }
   }, [isUserAuthenticated, showModal]);
 
-  const handlePkpSelectionInModal = async (pkpInfo: any) => {
+  const handlePkpSelectionInModal = async (pkpInfo: PKPData) => {
+    console.log("[handlePkpSelectionInModal] pkpInfo:", pkpInfo);
+
     if (!tempAuthData || !tempMethod || !services) {
       console.error("Cannot complete PKP selection: missing data or services");
       return;
     }
 
+    // wait for 2 seconds
+    console.log("[handlePkpSelectionInModal] Waiting for 2 seconds...");
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
     try {
       setIsAuthenticating(true);
 
+      console.log(
+        "[handlePkpSelectionInModal] Creating auth context for the selected PKP..."
+      );
       // Create auth context for the selected PKP
       const authContext = await services.authManager.createPkpAuthContext({
         authData: tempAuthData,
-        pkpPublicKey: pkpInfo.pubkey || pkpInfo.publicKey,
+        pkpPublicKey: pkpInfo.pubkey,
         authConfig: {
           expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
           statement: "",
@@ -611,6 +768,8 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
         litClient: services.litClient,
       });
 
+      console.log("[handlePkpSelectionInModal] authContext:", authContext);
+
       // Create complete user object
       const userData: AuthUser = {
         authContext,
@@ -622,7 +781,9 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
 
       // Save user and provide success feedback before closing modal
       setUser(userData);
-      localStorage.setItem(storageKey, JSON.stringify(userData));
+      if (persistUser) {
+        localStorage.setItem(storageKey, JSON.stringify(userData));
+      }
 
       // Brief success state before closing
       setTimeout(() => {
@@ -630,7 +791,18 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
       }, 800);
     } catch (error) {
       console.error("Failed to create auth context for selected PKP:", error);
-      handleError(error, "Failed to create auth context for selected PKP");
+      // If creating context fails (e.g., unpaid on naga-test), route to funding step
+      try {
+        setPendingAuthData(tempAuthData);
+        setPendingPkpInfo(pkpInfo);
+        setAuthStep("fund");
+        setShowPkpSelection(false);
+        setShowMethodDetail(true);
+        setSelectedMethod(tempMethod as AuthMethod);
+        setError(
+          "Please fund your Lit Ledger account for this PKP, then continue."
+        );
+      } catch {}
     } finally {
       setIsAuthenticating(false);
     }
@@ -666,39 +838,24 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
     }
   };
 
-  const mintAndCreateContext = async (authData: any, method: AuthMethod) => {
+  // New flow: Mint then await manual funding before creating auth context
+  const mintThenAwaitFunding = async (authData: any, method: AuthMethod) => {
+    console.log("[mintThenAwaitFunding] Called.");
     try {
-      // Mint PKP
       const result = await services!.litClient.authService.mintWithAuth({
         authData,
         scopes: ["sign-anything"],
+        authServiceBaseUrl: authServiceBaseUrl,
       });
 
-      // Create auth context
-      const authContext = await services!.authManager.createPkpAuthContext({
-        authData,
-        pkpPublicKey: result.data.pubkey,
-        authConfig: {
-          expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
-          statement: "",
-          domain: "",
-          resources: [
-            ["pkp-signing", "*"],
-            ["lit-action-execution", "*"],
-          ],
-        },
-        litClient: services!.litClient,
-      });
-
-      const userData: AuthUser = {
-        authContext,
-        pkpInfo: result.data,
-        method,
-        timestamp: Date.now(),
-        authData,
-      };
-
-      saveUser(userData);
+      // After minting, return to PKP selection so user can pick and fund
+      setTempAuthData(authData);
+      setTempMethod(method);
+      setShowPkpSelection(true);
+      setShowMethodDetail(false);
+      setSelectedMethod(null);
+      setAuthStep("select");
+      setError(null);
     } catch (error) {
       throw error;
     } finally {
@@ -718,10 +875,12 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
       if (modalMode === "signin") {
         await authenticateAndShowPkpSelection(authData, "google");
       } else {
-        await mintAndCreateContext(authData, "google");
+        await mintThenAwaitFunding(authData, "google");
       }
     } catch (error) {
       handleError(error, "Google authentication failed");
+    } finally {
+      setIsAuthenticating(false);
     }
   };
 
@@ -730,21 +889,31 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
       setIsAuthenticating(true);
       setError(null);
 
+      console.log("loginServiceBaseUrl", loginServiceBaseUrl);
+      console.log("discordClientId", discordClientId);
+
       const authData = await DiscordAuthenticator.authenticate(
-        loginServiceBaseUrl
+        loginServiceBaseUrl,
+        {
+          clientId: discordClientId,
+        }
       );
 
       if (modalMode === "signin") {
         await authenticateAndShowPkpSelection(authData, "discord");
       } else {
-        await mintAndCreateContext(authData, "discord");
+        await mintThenAwaitFunding(authData, "discord");
       }
     } catch (error) {
       handleError(error, "Discord authentication failed");
+    } finally {
+      setIsAuthenticating(false);
     }
   };
 
   const authenticateEOA = async () => {
+    console.log("[authenticateEOA] Called.");
+
     try {
       setIsAuthenticating(true);
       setError(null);
@@ -775,48 +944,8 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
       if (modalMode === "signin") {
         await authenticateAndShowPkpSelection(authData, "eoa");
       } else {
-        // Mint PKP and create context for signup
-        let result;
-        if (accountMethod === "privateKey") {
-          result = await services!.litClient.mintWithAuth({
-            account,
-            authData,
-            scopes: ["sign-anything"],
-          });
-        } else {
-          result = await services!.litClient.mintWithAuth({
-            account: walletClient,
-            authData,
-            scopes: ["sign-anything"],
-          });
-        }
-
-        const authContext = await services!.authManager.createPkpAuthContext({
-          authData,
-          pkpPublicKey: result.data.pubkey,
-          authConfig: {
-            expiration: new Date(
-              Date.now() + 1000 * 60 * 60 * 24
-            ).toISOString(),
-            statement: "",
-            domain: "",
-            resources: [
-              ["pkp-signing", "*"],
-              ["lit-action-execution", "*"],
-            ],
-          },
-          litClient: services!.litClient,
-        });
-
-        const userData: AuthUser = {
-          authContext,
-          pkpInfo: result.data,
-          method: "eoa",
-          timestamp: Date.now(),
-          authData: authData,
-        };
-
-        saveUser(userData);
+        // Signup: mint and route to PKP selection/funding flow
+        await mintThenAwaitFunding(authData, "eoa");
       }
     } catch (error) {
       handleError(error, "EOA authentication failed");
@@ -826,58 +955,93 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
   };
 
   const authenticateWebAuthn = async () => {
+    console.log("[authenticateWebAuthn] Called.");
+
     try {
       setIsAuthenticating(true);
       setError(null);
+
+      // Freeze network and URL for this run
+      const networkAtStart = localNetworkName;
+      const authUrlAtStart = authServiceBaseUrl;
+      console.log("[authenticateWebAuthn] context", {
+        networkAtStart,
+        authUrlAtStart,
+        isServicesReady,
+        loginServiceBaseUrl,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Ensure services are initialised (for current network)
+      if (!isServicesReady || !services) {
+        console.log(
+          "[authenticateWebAuthn] services not ready; setting up for network:",
+          networkAtStart
+        );
+        clearServices();
+        await setupServices();
+      }
+
+      try {
+        const chainCfg: any = services?.litClient?.getChainConfig?.();
+        console.log("[authenticateWebAuthn] litClient chainConfig:", chainCfg);
+      } catch {}
 
       const { WebAuthnAuthenticator } = await import("@lit-protocol/auth");
 
       if (webAuthnMode === "register" || modalMode === "signup") {
         // Register new credential and mint PKP
+        console.log("[authenticateWebAuthn][registerAndMintPKP] using:", {
+          networkAtStart,
+          authUrlAtStart,
+          username: webAuthnUsername || `${networkAtStart}-${Date.now()}`,
+        });
         const { pkpInfo } = await WebAuthnAuthenticator.registerAndMintPKP({
-          authServiceBaseUrl: authServiceBaseUrl,
-          username: webAuthnUsername || `naga-user-${Date.now()}`,
+          authServiceBaseUrl: authUrlAtStart,
+          username: webAuthnUsername || `${networkAtStart}-${Date.now()}`,
           scopes: ["sign-anything"],
         });
 
         // For registerAndMintPKP, we need to authenticate to get authData
         const authData = await WebAuthnAuthenticator.authenticate();
 
-        const authContext = await services!.authManager.createPkpAuthContext({
-          authData,
-          pkpPublicKey: pkpInfo.pubkey,
-          authConfig: {
-            expiration: new Date(
-              Date.now() + 1000 * 60 * 60 * 24
-            ).toISOString(),
-            statement: "",
-            domain: "",
-            resources: [
-              ["pkp-signing", "*"],
-              ["lit-action-execution", "*"],
-            ],
-          },
-          litClient: services!.litClient,
-        });
+        console.log(
+          "[authenticateWebAuthn][registerAndMintPKP] pkpInfo:",
+          pkpInfo
+        );
 
-        const userData: AuthUser = {
-          authContext,
-          pkpInfo,
-          method: "webauthn",
-          timestamp: Date.now(),
-          authData,
-        };
+        // wait for 1 seconds
+        console.log(
+          "[authenticateWebAuthn][registerAndMintPKP] Waiting for 1 seconds..."
+        );
+        await new Promise((resolve) => setTimeout(resolve, 1000));
 
-        saveUser(userData);
+        // New: return to PKP selection to choose which PKP to fund
+        setTempAuthData(authData);
+        setTempMethod("webauthn");
+        setShowPkpSelection(true);
+        setShowMethodDetail(false);
+        setSelectedMethod(null);
+        setAuthStep("select");
+        setError(null);
       } else {
         // Authenticate with existing credential
+        console.log(
+          "[authenticateWebAuthn][existing] calling authenticate (no override baseUrl)",
+          { networkAtStart, authUrlAtStart }
+        );
         const authData = await WebAuthnAuthenticator.authenticate();
 
         if (authData) {
+          console.log(
+            "[authenticateWebAuthn][existing] authenticated; proceeding",
+            { modalMode }
+          );
           if (modalMode === "signin") {
             await authenticateAndShowPkpSelection(authData, "webauthn");
           } else {
-            await mintAndCreateContext(authData, "webauthn");
+            // For signup too, go to PKP selection (after mint) instead of funding step
+            await mintThenAwaitFunding(authData, "webauthn");
           }
         }
       }
@@ -893,7 +1057,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
       setIsAuthenticating(true);
       setError(null);
 
-      let result;
+      let result: { methodId?: string } | undefined;
 
       if (selectedMethod === "stytch-email") {
         if (!email || !email.includes("@")) {
@@ -984,7 +1148,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
             selectedMethod as AuthMethod
           );
         } else {
-          await mintAndCreateContext(authData, selectedMethod as AuthMethod);
+          await mintThenAwaitFunding(authData, selectedMethod as AuthMethod);
         }
       }
     } catch (error) {
@@ -1013,7 +1177,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
       if (modalMode === "signin") {
         await authenticateAndShowPkpSelection(authData, "stytch-totp");
       } else {
-        await mintAndCreateContext(authData, "stytch-totp");
+        await mintThenAwaitFunding(authData, "stytch-totp");
       }
     } catch (error) {
       handleError(error, "TOTP authentication failed");
@@ -1066,7 +1230,11 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
 
       const userData: AuthUser = {
         authContext: customAuthContext,
-        pkpInfo: { pubkey: customPkpPublicKey, tokenId: "demo-token-id" },
+        pkpInfo: {
+          pubkey: customPkpPublicKey,
+          tokenId: 0n,
+          ethAddress: "0x0000000000000000000000000000000000000000",
+        },
         method: "custom",
         timestamp: Date.now(),
         authData: {
@@ -1265,86 +1433,19 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                   </button>
                 </div>
 
-                <div className="p-3 bg-slate-50 rounded-lg border border-gray-200 mb-4">
-                  <label className="text-[13px] font-semibold block mb-2 text-gray-900">
-                    Network
-                  </label>
-                  <div className="grid gap-2">
-                    {supportedNetworks.map((net) => {
-                      const isActive = localNetworkName === net;
-                      const isDisabled = net === "naga"; // future production, disabled
-                      return (
-                        <button
-                          key={net}
-                          onClick={async () => {
-                            try {
-                              if (isDisabled) return;
-                              const key = net as SupportedNetworkName;
-                              const selected = NETWORK_MODULES[key] || nagaDev;
-                              setLocalNetworkName(net);
-                              setLocalNetwork(selected);
-                              clearServices();
-                              await setupServices();
-                            } catch (err) {
-                              console.error("Failed to switch network:", err);
-                            }
-                          }}
-                          className={`flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md ${
-                            isActive ? "bg-indigo-50" : "bg-white"
-                          } text-gray-900 ${isDisabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
-                        >
-                          <span className="text-[13px] font-semibold">
-                            {net}
-                          </span>
-                          {isActive && (
-                            <span className="text-[12px] text-indigo-600 font-semibold">
-                              Selected
-                            </span>
-                          )}
-                          {isDisabled && !isActive && (
-                            <span className="text-[12px] text-gray-500">
-                              (Coming soon)
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Auth & Login Service URLs */}
-                <div className="p-3 bg-slate-50 rounded-lg border border-gray-200 mb-4">
-                  <label className="text-[13px] font-semibold block mb-2 text-gray-900">
-                    Auth Service URL
-                  </label>
-                  <input
-                    type="url"
-                    value={authServiceBaseUrl}
-                    onChange={(e) => setAuthServiceBaseUrl(e.target.value)}
-                    placeholder={APP_INFO.litAuthServer}
-                    className="w-full px-2.5 py-2 border border-gray-300 rounded text-[12px] font-mono"
-                  />
-                  <div className="mt-2">
-                    <button
-                      onClick={() =>
-                        setAuthServiceBaseUrl(DEFAULT_AUTH_SERVICE_BASE_URL)
-                      }
-                      className="px-3 py-1.5 border border-gray-300 rounded text-[12px] cursor-pointer bg-white hover:bg-gray-100 text-gray-700"
-                    >
-                      Reset to default
-                    </button>
-                  </div>
-                </div>
-
+                {/* Login Service URL (Global) */}
                 <div className="p-3 bg-slate-50 rounded-lg border border-gray-200 mb-4">
                   <label className="text-[13px] font-semibold block mb-2 text-gray-900">
                     Login Service URL
                   </label>
+                  <div className="text-[11px] text-gray-500 mb-2">
+                    Global setting – applies to all networks.
+                  </div>
                   <input
                     type="url"
                     value={loginServiceBaseUrl}
                     onChange={(e) => setLoginServiceBaseUrl(e.target.value)}
-                    placeholder={APP_INFO.litLoginServer}
+                    placeholder={DEFAULT_LOGIN_SERVICE_BASE_URL}
                     className="w-full px-2.5 py-2 border border-gray-300 rounded text-[12px] font-mono"
                   />
                   <div className="mt-2">
@@ -1358,6 +1459,146 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                     </button>
                   </div>
                 </div>
+
+                {/* Discord Client ID (Global) */}
+                <div className="p-3 bg-slate-50 rounded-lg border border-gray-200 mb-4">
+                  <label className="text-[13px] font-semibold block mb-2 text-gray-900">
+                    Discord Client ID
+                  </label>
+                  <div className="text-[11px] text-gray-500 mb-2">
+                    Global setting – used for Discord authentication.
+                  </div>
+                  <input
+                    type="text"
+                    value={discordClientId}
+                    onChange={(e) => setDiscordClientId(e.target.value)}
+                    placeholder={DEFAULT_DISCORD_CLIENT_ID}
+                    className="w-full px-2.5 py-2 border border-gray-300 rounded text-[12px] font-mono"
+                  />
+                  <div className="mt-2">
+                    <button
+                      onClick={() =>
+                        setDiscordClientId(DEFAULT_DISCORD_CLIENT_ID)
+                      }
+                      className="px-3 py-1.5 border border-gray-300 rounded text-[12px] cursor-pointer bg-white hover:bg-gray-100 text-gray-700"
+                    >
+                      Reset to default
+                    </button>
+                  </div>
+                </div>
+
+                {/* Current network banner */}
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[12px] font-semibold text-gray-700">
+                      Network
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 border border-gray-200 text-gray-800 text-[11px] font-semibold">
+                      <span
+                        className={`inline-block w-1.5 h-1.5 rounded-full ${
+                          localNetworkName === "naga-test"
+                            ? "bg-green-500"
+                            : "bg-indigo-500"
+                        }`}
+                      />
+                      <span className="font-mono">{localNetworkName}</span>
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 text-[11px] text-gray-500">
+                    <span className="inline-flex items-center justify-center w-3 h-3 rounded-full bg-gray-300 text-white text-[10px] leading-3">
+                      i
+                    </span>
+                    <span>Auth Service URL applies only to this network</span>
+                  </div>
+                </div>
+
+                {/* Network selection as tabs */}
+                <div className="p-3 bg-slate-50 rounded-lg border border-gray-200 mb-2">
+                  <label className="text-[13px] font-semibold block mb-2 text-gray-900">
+                    Network
+                  </label>
+                  <div className="flex gap-2 border-b border-gray-200">
+                    {supportedNetworks.map((net) => {
+                      const isActive = localNetworkName === net;
+                      const isDisabled = net === "naga";
+                      return (
+                        <button
+                          key={net}
+                          onClick={() => {
+                            try {
+                              if (isDisabled) return;
+                              const key = net as SupportedNetworkName;
+                              const selected = NETWORK_MODULES[key] || nagaDev;
+                              setLocalNetworkName(net);
+                              setLocalNetwork(selected);
+                            } catch (err) {
+                              console.error("Failed to switch network:", err);
+                            }
+                          }}
+                          className={`px-3 py-1.5 -mb-px border-b-2 ${
+                            isActive
+                              ? "border-indigo-600 text-indigo-700 font-semibold"
+                              : "border-transparent text-gray-600 hover:text-gray-800"
+                          } ${
+                            isDisabled
+                              ? "opacity-60 cursor-not-allowed"
+                              : "cursor-pointer"
+                          }`}
+                          title={isDisabled ? "Coming soon" : undefined}
+                        >
+                          {net}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Auth & Login Service URLs */}
+                <div className="p-3 bg-slate-50 rounded-lg border border-gray-200 mb-4">
+                  <label className="text-[13px] font-semibold block mb-2 text-gray-900">
+                    Auth Service URL
+                  </label>
+                  <div className="text-[11px] text-gray-500 mb-2">
+                    This is saved per network. Changing network switches to that
+                    network's saved URL.
+                  </div>
+                  <input
+                    type="url"
+                    value={authServiceBaseUrl}
+                    onChange={(e) => setAuthServiceBaseUrl(e.target.value)}
+                    placeholder={networkDefaultAuthUrl}
+                    className="w-full px-2.5 py-2 border border-gray-300 rounded text-[12px] font-mono"
+                  />
+                  <div className="mt-2 flex items-center gap-2">
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[11px] ${
+                        isAuthUrlCustom(authServiceBaseUrl)
+                          ? "bg-amber-50 border-amber-200 text-amber-700"
+                          : "bg-green-50 border-green-200 text-green-700"
+                      }`}
+                    >
+                      {isAuthUrlCustom(authServiceBaseUrl)
+                        ? "Custom"
+                        : "Default"}
+                    </span>
+                    <span className="text-[11px] text-gray-500">
+                      Default:{" "}
+                      <span className="font-mono">{networkDefaultAuthUrl}</span>
+                    </span>
+                  </div>
+                  <div className="mt-2">
+                    <button
+                      onClick={() =>
+                        setAuthServiceBaseUrl(networkDefaultAuthUrl)
+                      }
+                      className="px-3 py-1.5 border border-gray-300 rounded text-[12px] cursor-pointer bg-white hover:bg-gray-100 text-gray-700"
+                    >
+                      Use network default
+                    </button>
+                  </div>
+                </div>
+
+                {/* (Old position of Login Service URL removed; now shown first) */}
               </div>
             ) : !showMethodDetail ? (
               // Main method selection or PKP selection
@@ -1385,17 +1626,22 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                       disabled={isAuthenticating}
                       authServiceBaseUrl={authServiceBaseUrl}
                       singlePkpMessaging={isWebAuthnExistingFlow}
+                      currentNetworkName={localNetworkName}
                     />
                   )}
                 </div>
               ) : (
-                // Main method selection
+                // Main method selection or funding step
                 <div className="text-black">
                   <div className="text-center mb-5">
-                    <h2 className="text-[22px] font-bold mb-1.5 text-gray-900 leading-tight">
+                    <h2 className="text-[22px] font-bold text-gray-900 leading-tight">
                       {modalMode === "signin" ? "Log in" : "Sign up"}
                     </h2>
-                    <p className="text-[13px] text-gray-500 leading-snug m-0">
+                    <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 border border-gray-200 text-gray-700 text-[11px] font-semibold">
+                      <span>Network:</span>
+                      <span className="font-mono">{localNetworkName}</span>
+                    </div>
+                    <p className="mt-1.5 text-[13px] text-gray-500 leading-snug m-0">
                       {modalMode === "signin"
                         ? "Access your existing PKP wallet"
                         : "Create a new wallet secured by accounts you already have"}
@@ -1408,64 +1654,178 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                     </div>
                   )}
 
-                  <div className="grid gap-2 mb-4">
-                    {filteredAuthMethods.map((method) => (
-                      <button
-                        key={method.id}
-                        onClick={() => handleMethodSelect(method.id)}
-                        disabled={
-                          !method.available ||
-                          isAuthenticating ||
-                          (method.id === "webauthn" &&
-                            isFido2Available === false)
-                        }
-                        className={`flex items-center gap-3 px-3 py-2 border border-gray-300 rounded-lg text-[14px] font-medium text-gray-700 transition ${
-                          method.available &&
-                          !isAuthenticating &&
-                          !(
-                            method.id === "webauthn" &&
-                            isFido2Available === false
-                          )
-                            ? "bg-white hover:bg-gray-100 hover:border-gray-400 cursor-pointer"
-                            : "bg-gray-50 cursor-not-allowed opacity-60"
-                        } min-h-[44px] text-left`}
-                      >
-                        <div className="w-10 flex items-center justify-center">
-                          <img
-                            src={method.icon}
-                            alt={method.name}
-                            className="w-5 h-5 sm:w-6 sm:h-6 object-contain"
-                          />
+                  {authStep === "fund" && pendingPkpInfo ? (
+                    <div className="mb-4">
+                      <div className="mb-3 p-3 rounded border border-gray-200 bg-[#f9fafb] text-black">
+                        <div className="text-[13px] mb-1 font-medium">
+                          PKP Address
                         </div>
-                        <div className="flex-1 flex items-center justify-center">
-                          <span className="font-semibold leading-tight text-center">
-                            {method.name}
-                            {method.comingSoon && (
-                              <span className="text-[12px] text-gray-500 font-normal ml-1">
-                                (Soon)
-                              </span>
-                            )}
-                            {method.id === "webauthn" &&
-                              isFido2Available === false && (
-                                <span className="text-[12px] text-red-600 font-normal ml-1">
-                                  (Not Available)
+                        <div className="text-[12px] font-mono break-all">
+                          {pendingPkpInfo.ethAddress}
+                        </div>
+                      </div>
+                      <div className="mb-3 text-[12px] text-gray-600">
+                        Please fund your Lit Ledger account to continue. On
+                        naga-dev this is free; on naga-test real funds are
+                        required.
+                      </div>
+                      <PaymentManagementDashboard
+                        selectedPkp={{ ...(pendingPkpInfo as any) }}
+                        selectedChain={"Chronicle Yellowstone"}
+                        disabled={false}
+                        initialSource="pkp"
+                        presetRecipientAddress={pendingPkpInfo.ethAddress}
+                        onBalanceChange={() => {}}
+                      />
+                      <div className="mt-3 flex gap-2">
+                        <button
+                          onClick={async () => {
+                            if (
+                              !services ||
+                              !pendingAuthData ||
+                              !pendingPkpInfo
+                            )
+                              return;
+                            try {
+                              setIsCheckingFunding(true);
+                              const pm =
+                                await services.litClient.getPaymentManager({
+                                  account: undefined as any,
+                                });
+                              const balance = await pm.getBalance({
+                                userAddress: pendingPkpInfo.ethAddress,
+                              });
+                              const available = (balance?.raw
+                                ?.availableBalance ?? 0n) as bigint;
+                              if (available > 0n) {
+                                const authContext =
+                                  await services.authManager.createPkpAuthContext(
+                                    {
+                                      authData: pendingAuthData,
+                                      pkpPublicKey: pendingPkpInfo.pubkey,
+                                      authConfig: {
+                                        expiration: new Date(
+                                          Date.now() + 1000 * 60 * 60 * 24
+                                        ).toISOString(),
+                                        statement: "",
+                                        domain: "",
+                                        resources: [
+                                          ["pkp-signing", "*"],
+                                          ["lit-action-execution", "*"],
+                                          [
+                                            "access-control-condition-decryption",
+                                            "*",
+                                          ],
+                                        ],
+                                      },
+                                      litClient: services.litClient,
+                                    }
+                                  );
+                                const userData: AuthUser = {
+                                  authContext,
+                                  pkpInfo: pendingPkpInfo,
+                                  method: (tempMethod as AuthMethod) || "eoa",
+                                  timestamp: Date.now(),
+                                  authData: pendingAuthData,
+                                };
+                                saveUser(userData);
+                              } else {
+                                setError(
+                                  "No available balance yet. Please deposit, then click Continue again."
+                                );
+                              }
+                            } catch (e) {
+                              handleError(
+                                e,
+                                "Failed to verify funding or create auth context"
+                              );
+                            } finally {
+                              setIsCheckingFunding(false);
+                            }
+                          }}
+                          disabled={isCheckingFunding}
+                          className={`px-3 py-2 rounded text-white text-[13px] ${
+                            isCheckingFunding ? "bg-gray-400" : "bg-green-600"
+                          }`}
+                        >
+                          {isCheckingFunding ? "Checking..." : "Continue"}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setAuthStep("select");
+                            setPendingAuthData(null);
+                            setPendingPkpInfo(null);
+                            setShowMethodDetail(false);
+                            setSelectedMethod(null);
+                            setError(null);
+                          }}
+                          className="px-3 py-2 rounded border border-gray-300 text-[13px]"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid gap-2 mb-4">
+                      {filteredAuthMethods.map((method) => (
+                        <button
+                          key={method.id}
+                          onClick={() => handleMethodSelect(method.id)}
+                          disabled={
+                            !method.available ||
+                            isAuthenticating ||
+                            (method.id === "webauthn" &&
+                              isFido2Available === false)
+                          }
+                          className={`flex items-center gap-3 px-3 py-2 border border-gray-300 rounded-lg text-[14px] font-medium text-gray-700 transition ${
+                            method.available &&
+                            !isAuthenticating &&
+                            !(
+                              method.id === "webauthn" &&
+                              isFido2Available === false
+                            )
+                              ? "bg-white hover:bg-gray-100 hover:border-gray-400 cursor-pointer"
+                              : "bg-gray-50 cursor-not-allowed opacity-60"
+                          } min-h-[44px] text-left`}
+                        >
+                          <div className="w-10 flex items-center justify-center">
+                            <img
+                              src={method.icon}
+                              alt={method.name}
+                              className="w-5 h-5 sm:w-6 sm:h-6 object-contain"
+                            />
+                          </div>
+                          <div className="flex-1 flex items-center justify-center">
+                            <span className="font-semibold leading-tight text-center">
+                              {method.name}
+                              {method.comingSoon && (
+                                <span className="text-[12px] text-gray-500 font-normal ml-1">
+                                  (Soon)
                                 </span>
                               )}
-                          </span>
+                              {method.id === "webauthn" &&
+                                isFido2Available === false && (
+                                  <span className="text-[12px] text-red-600 font-normal ml-1">
+                                    (Not Available)
+                                  </span>
+                                )}
+                            </span>
+                          </div>
+                          <div className="w-10 flex items-center justify-center">
+                            {isAuthenticating &&
+                              selectedMethod === method.id && (
+                                <div className="w-4 h-4 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
+                              )}
+                          </div>
+                        </button>
+                      ))}
+                      {filteredAuthMethods.length === 0 && (
+                        <div className="px-3 py-2 border border-gray-200 rounded-lg text-gray-500 text-[12px] text-center">
+                          No sign-in methods available.
                         </div>
-                        <div className="w-10 flex items-center justify-center">
-                          {isAuthenticating && selectedMethod === method.id && (
-                            <div className="w-4 h-4 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
-                          )}
-                        </div>
-                      </button>
-                    ))}
-                    {filteredAuthMethods.length === 0 && (
-                      <div className="px-3 py-2 border border-gray-200 rounded-lg text-gray-500 text-[12px] text-center">
-                        No sign-in methods available.
-                      </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
+                  )}
 
                   {closeOnBackdropClick && (
                     <div className="text-center mt-4 text-[11px] text-gray-500">
@@ -1579,9 +1939,11 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                       {accountMethod === "wallet" && (
                         <div className="text-black mb-3 p-3 bg-[#f8f9fa] rounded border border-[#e9ecef]">
                           <p className="m-0 mb-2 text-[13px] font-medium">
-                            <strong>Using Connected Wallet:</strong>
+                            <strong className="text-black">
+                              Using Connected Wallet:
+                            </strong>
                           </p>
-                          <p className="m-0 mb-2 text-[12px] text-gray-600 leading-snug">
+                          <p className="m-0 mb-2 text-[12px] text-black leading-snug">
                             This will use your currently connected wallet
                             account (e.g., MetaMask). Make sure your wallet is
                             connected and you have test tokens.
@@ -1603,7 +1965,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                         </div>
                       )}
                       {accountMethod === "privateKey" && (
-                        <div className="mb-3">
+                        <div className="mb-3 text-black">
                           <label className="text-[13px] font-medium mb-1.5 block">
                             Private Key:
                           </label>
@@ -1614,7 +1976,7 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                               setPrivateKey(e.target.value as any)
                             }
                             placeholder="0x..."
-                            className="w-full px-3 py-2 border border-gray-300 rounded text-[12px] font-mono"
+                            className="w-full px-3 py-2 border border-gray-300 rounded text-[12px] font-mono placeholder-black/70"
                           />
                           <small className="text-gray-600 text-[11px] block mt-1">
                             Default test private key is provided. Replace with
@@ -1830,29 +2192,31 @@ export const LitAuthProvider: React.FC<LitAuthProviderProps> = ({
                   )}
                 </div>
 
-                <button
-                  onClick={handleAuthAction}
-                  disabled={isAuthenticating}
-                  className={`w-full px-3 py-2 ${
-                    isAuthenticating ? "bg-gray-400" : "bg-blue-500"
-                  } text-white rounded-md text-[13px] font-semibold ${
-                    isAuthenticating ? "cursor-not-allowed" : "cursor-pointer"
-                  } flex items-center justify-center gap-1.5`}
-                >
-                  {isAuthenticating && (
-                    <div className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                  )}
-                  {isAuthenticating
-                    ? "Connecting..."
-                    : authStep === "verify"
-                    ? "Verify Code"
-                    : authStep === "input" &&
-                      (selectedMethod === "stytch-email" ||
-                        selectedMethod === "stytch-sms" ||
-                        selectedMethod === "stytch-whatsapp")
-                    ? "Send Code"
-                    : "Connect"}
-                </button>
+                {authStep !== "fund" && (
+                  <button
+                    onClick={handleAuthAction}
+                    disabled={isAuthenticating}
+                    className={`w-full px-3 py-2 ${
+                      isAuthenticating ? "bg-gray-400" : "bg-blue-500"
+                    } text-white rounded-md text-[13px] font-semibold ${
+                      isAuthenticating ? "cursor-not-allowed" : "cursor-pointer"
+                    } flex items-center justify-center gap-1.5`}
+                  >
+                    {isAuthenticating && (
+                      <div className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    )}
+                    {isAuthenticating
+                      ? "Connecting..."
+                      : authStep === "verify"
+                      ? "Verify Code"
+                      : authStep === "input" &&
+                        (selectedMethod === "stytch-email" ||
+                          selectedMethod === "stytch-sms" ||
+                          selectedMethod === "stytch-whatsapp")
+                      ? "Send Code"
+                      : "Connect"}
+                  </button>
+                )}
               </div>
             )}
             <div className="text-gray-700 text-xs text-center font-bold mt-4 flex items-center justify-center gap-1">

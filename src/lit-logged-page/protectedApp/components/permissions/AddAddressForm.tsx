@@ -8,6 +8,8 @@ import React, { useState } from 'react';
 import { ScopeCheckboxes } from '../ui/ScopeCheckboxes';
 import { AVAILABLE_SCOPES } from '../../types';
 import { usePKPPermissions } from '../../contexts/PKPPermissionsContext';
+import { useLitAuth } from '../../../../lit-login-modal/LitAuthProvider';
+import { triggerLedgerRefresh } from '../../utils/ledgerRefresh';
 
 interface AddAddressFormProps {
   disabled?: boolean;
@@ -15,6 +17,7 @@ interface AddAddressFormProps {
 
 export const AddAddressForm: React.FC<AddAddressFormProps> = ({ disabled = false }) => {
   const { addPermittedAddress } = usePKPPermissions();
+  const { user } = useLitAuth();
   const [newPermittedAddress, setNewPermittedAddress] = useState(
     "0xef3eE1bD838aF5B36482FAe8a6Fc394C68d5Fa9F"
   );
@@ -33,6 +36,10 @@ export const AddAddressForm: React.FC<AddAddressFormProps> = ({ disabled = false
       // Clear form on success
       setNewPermittedAddress("");
       setNewAddressSelectedScopes([]);
+      try {
+        const addr = user?.pkpInfo?.ethAddress;
+        if (addr) await triggerLedgerRefresh(addr);
+      } catch {}
     } catch (error) {
       console.error("Failed to add permitted address:", error);
     } finally {

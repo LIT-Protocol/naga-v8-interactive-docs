@@ -7,8 +7,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import Editor from "@monaco-editor/react";
 import { useLitAuth } from "../../../../lit-login-modal/LitAuthProvider";
-import { PkpInfo } from "../../types";
+import { UIPKP } from "../../types";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
+import { triggerLedgerRefresh } from "../../utils/ledgerRefresh";
 
 // UI constants
 const EDITOR_FONT_SIZE_COMPACT = 10;
@@ -55,7 +56,7 @@ const DEFAULT_LIT_ACTION2 = `(async () => {
 })();`;
 
 interface LitActionFormProps {
-  selectedPkp: PkpInfo | null;
+  selectedPkp: UIPKP | null;
   disabled?: boolean;
 }
 
@@ -118,6 +119,8 @@ export const LitActionForm: React.FC<LitActionFormProps> = ({
   };
 
   const executeLitAction = async () => {
+    console.log("[executeLitAction] Called.");
+    console.log("[executeLitAction] Context:", await services?.litClient.getContext());
     if (!user?.authContext || !litActionCode.trim() || !services?.litClient) {
       setStatus("No auth context, Lit Action code, or Lit client");
       return;
@@ -130,22 +133,27 @@ export const LitActionForm: React.FC<LitActionFormProps> = ({
         authContext: user.authContext,
         code: litActionCode,
         jsParams: {
-          publicKey: selectedPkp?.publicKey || user?.pkpInfo?.pubkey,
+          publicKey: selectedPkp?.pubkey || user?.pkpInfo?.pubkey,
           sigName: "sig1",
           toSign: "Hello from Lit Action",
         },
       });
+      console.log("[executeLitAction] result:", result);
 
       setLitActionResult({
         result,
         timestamp: new Date().toISOString(),
       });
+      setIsExecutingAction(false);
       setStatus("Lit Action executed successfully!");
+      try {
+        const addr = selectedPkp?.ethAddress || user.pkpInfo?.ethAddress;
+        if (addr) await triggerLedgerRefresh(addr);
+      } catch {}
     } catch (error: any) {
       console.error("Failed to execute Lit Action:", error);
-      setStatus(`Failed to execute Lit Action: ${error.message || error}`);
-    } finally {
       setIsExecutingAction(false);
+      setStatus(`Failed to execute Lit Action: ${error.message || error}`);
     }
   };
 

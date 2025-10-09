@@ -4,12 +4,16 @@ export interface BalanceInfo {
   chainId: number;
 }
 
-export interface PkpInfo {
-  tokenId: string;
-  publicKey: string;
-  ethAddress: string;
-  pubkey?: string; // Alternative property name used in some contexts
-}
+import type { PKPData } from "@lit-protocol/schemas";
+
+export type UIPKP = PKPData & {
+  // UI-augmented fields for balances and loading states
+  balance?: string;
+  balanceSymbol?: string;
+  isLoadingBalance?: boolean;
+  // Some parts of the UI reference publicKey; map from pubkey when needed
+  publicKey?: string;
+};
 
 export interface TransactionResult {
   hash: string;
@@ -26,7 +30,7 @@ export interface TransactionToast {
   id: string;
   message: string;
   txHash: string;
-  type: 'success' | 'error';
+  type: "success" | "error";
   timestamp: number;
 }
 
@@ -53,11 +57,11 @@ export interface PermissionCheckResults {
 // Scope values used throughout the app
 export const SCOPE_VALUES = [
   "no-permissions",
-  "sign-anything", 
+  "sign-anything",
   "personal-sign",
 ] as const;
 
-export type ScopeValue = typeof SCOPE_VALUES[number];
+export type ScopeValue = (typeof SCOPE_VALUES)[number];
 
 // Available scope configurations
 export interface ScopeConfig {
@@ -74,7 +78,7 @@ export const AVAILABLE_SCOPES: ScopeConfig[] = [
   },
   {
     id: "personal-sign",
-    label: "Personal Sign", 
+    label: "Personal Sign",
     description: "Allow personal message signing only",
   },
 ];
@@ -93,4 +97,4 @@ export const AUTH_METHOD_TYPE = {
   StytchSmsFactorOtp: 11,
   StytchWhatsAppFactorOtp: 12,
   StytchTotpFactorOtp: 13,
-} as const; 
+} as const;

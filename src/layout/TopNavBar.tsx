@@ -36,7 +36,7 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
   return (
     <div className={`${stickyClassName} z-50 bg-white`}>
       <div id="header-nav" className="text-black max-w-8xl mx-auto">
-        <div className="px-4 sm:px-6 lg:px-12 h-12 font-medium text-sm bg-white flex items-center justify-between">
+        <div className="px-4 sm:px-6 lg:px-12 h-12 font-medium text-sm bg-white flex items-center justify-between pr-1">
           <div className="nav-tabs h-full flex text-sm gap-x-4 sm:gap-x-6 overflow-x-auto whitespace-nowrap no-scrollbar">
             {tabs.map((t) => (
               <a

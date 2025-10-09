@@ -8,6 +8,8 @@ import React, { useState } from 'react';
 import { ScopeCheckboxes } from '../ui/ScopeCheckboxes';
 import { AVAILABLE_SCOPES } from '../../types';
 import { usePKPPermissions } from '../../contexts/PKPPermissionsContext';
+import { useLitAuth } from '../../../../lit-login-modal/LitAuthProvider';
+import { triggerLedgerRefresh } from '../../utils/ledgerRefresh';
 
 interface AddActionFormProps {
   disabled?: boolean;
@@ -15,6 +17,7 @@ interface AddActionFormProps {
 
 export const AddActionForm: React.FC<AddActionFormProps> = ({ disabled = false }) => {
   const { addPermittedAction } = usePKPPermissions();
+  const { user } = useLitAuth();
   const [newActionIpfsId, setNewActionIpfsId] = useState(
     "QmSQDKRWEXZ9CGoucSTR11Mv6fhGqaytZ1MqrfHdkuS1Vg"
   );
@@ -33,6 +36,10 @@ export const AddActionForm: React.FC<AddActionFormProps> = ({ disabled = false }
       // Clear form on success
       setNewActionIpfsId("");
       setNewActionSelectedScopes([]);
+      try {
+        const addr = user?.pkpInfo?.ethAddress;
+        if (addr) await triggerLedgerRefresh(addr);
+      } catch {}
     } catch (error) {
       console.error("Failed to add permitted action:", error);
     } finally {

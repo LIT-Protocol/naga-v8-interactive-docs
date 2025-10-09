@@ -6,12 +6,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useLitAuth } from '../../../../lit-login-modal/LitAuthProvider';
-import { PkpInfo, TransactionResult } from '../../types';
+import { UIPKP, TransactionResult } from '../../types';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { getAllChains } from '../../utils/chains';
+import { triggerLedgerRefresh } from '../../utils/ledgerRefresh';
 
 interface SendTransactionFormProps {
-  selectedPkp: PkpInfo | null;
+  selectedPkp: UIPKP | null;
   selectedChain: string;
   disabled?: boolean;
   onTransactionComplete?: (result: TransactionResult) => void;
@@ -105,7 +106,7 @@ export const SendTransactionForm: React.FC<SendTransactionFormProps> = ({
 
       // Get PKP as a viem account
       const pkpViemAccount = await services.litClient.getPkpViemAccount({
-        pkpPublicKey: selectedPkp?.publicKey || user?.pkpInfo?.pubkey,
+        pkpPublicKey: selectedPkp?.pubkey || user?.pkpInfo?.pubkey,
         authContext: user.authContext,
         chainConfig: chainConfig,
       });
@@ -139,14 +140,18 @@ export const SendTransactionForm: React.FC<SendTransactionFormProps> = ({
       };
 
       setTransactionResult(result);
+      setIsSending(false);
       setStatus("Transaction sent successfully!");
+      try {
+        const addr = selectedPkp?.ethAddress || user.pkpInfo?.ethAddress;
+        if (addr) await triggerLedgerRefresh(addr);
+      } catch {}
 
-      // Notify parent component
-      if (onTransactionComplete) {
-        onTransactionComplete(result);
-      }
+      // Invoke callback if provided
+      if (onTransactionComplete) onTransactionComplete(result);
     } catch (error: any) {
       console.error("Failed to send transaction:", error);
+      setIsSending(false);
       setStatus(`Failed to send transaction: ${error.message || error}`);
     } finally {
       setIsSendingTransaction(false);
