@@ -8,12 +8,12 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { useLitAuth } from '../../../lit-login-modal/LitAuthProvider';
-import { PkpInfo } from '../types';
+import { UIPKP } from '../types';
 import { createLitClient } from '@lit-protocol/lit-client';
 
 interface PKPPermissionsContextType {
   // PKP data
-  selectedPkp: PkpInfo | null;
+  selectedPkp: UIPKP | null;
   
   // Permissions data
   permissionsContext: any;
@@ -54,7 +54,7 @@ const PKPPermissionsContext = createContext<PKPPermissionsContextType | undefine
 
 interface PKPPermissionsProviderProps {
   children: React.ReactNode;
-  selectedPkp: PkpInfo | null;
+  selectedPkp: UIPKP | null;
   setStatus: (status: string) => void;
   addTransactionToast: (message: string, txHash: string, type?: 'success' | 'error') => void;
 }
@@ -84,7 +84,7 @@ export const PKPPermissionsProvider: React.FC<PKPPermissionsProviderProps> = ({
       throw new Error("Missing required data");
     }
 
-    const currentCacheKey = `${selectedPkp.tokenId}-${selectedPkp.publicKey}`;
+    const currentCacheKey = `${selectedPkp.tokenId}-${selectedPkp.pubkey}`;
     
     // Return cached manager if available and valid
     if (cachedPermissionsManager && cacheKey === currentCacheKey) {
@@ -94,7 +94,7 @@ export const PKPPermissionsProvider: React.FC<PKPPermissionsProviderProps> = ({
     // Create new permissions manager
     const chainConfig = services.litClient.getChainConfig().viemConfig;
     const pkpViemAccount = await services.litClient.getPkpViemAccount({
-      pkpPublicKey: selectedPkp.publicKey || user?.pkpInfo?.pubkey,
+      pkpPublicKey: selectedPkp.pubkey || user?.pkpInfo?.pubkey,
       authContext: user.authContext,
       chainConfig: chainConfig,
     });
@@ -117,7 +117,7 @@ export const PKPPermissionsProvider: React.FC<PKPPermissionsProviderProps> = ({
   useEffect(() => {
     setCachedPermissionsManager(null);
     setCacheKey("");
-  }, [selectedPkp?.tokenId, selectedPkp?.publicKey]);
+  }, [selectedPkp?.tokenId, selectedPkp?.pubkey]);
 
   const loadPermissionsContext = useCallback(async () => {
     if (!selectedPkp) {

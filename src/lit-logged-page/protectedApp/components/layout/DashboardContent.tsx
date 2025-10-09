@@ -1,9 +1,9 @@
 import React from "react";
-import { PkpInfo, BalanceInfo } from "../../types";
+import { UIPKP, BalanceInfo } from "../../types";
 import { PKPInfoCard } from "../pkp/PKPInfoCard";
 
 interface DashboardContentProps {
-  selectedPkp: PkpInfo | null;
+  selectedPkp: UIPKP | null;
   balance: BalanceInfo | null;
   isLoadingBalance: boolean;
   selectedChain: string;
@@ -110,6 +110,20 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
               >
                 <div className="flex-1 flex items-center space-x-2.5">
                   <div className="text-sm">LitActions API Docs</div>
+                </div>
+              </a>
+            </li>
+
+            <li className="text-sm text-[#1D1917] font-light pr-3 rounded-xl cursor-pointer">
+              <a
+                className="group flex items-center pr-3 py-2 cursor-pointer focus:outline-primary dark:focus:outline-primary-light gap-x-3 rounded-xl hover:bg-gray-600/5 hover:text-black"
+                style={{ paddingLeft: "1rem", marginLeft: "-1rem" }}
+                href="https://naga.developer.litprotocol.com/sdk/introduction/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <div className="flex-1 flex items-center space-x-2.5">
+                  <div className="text-sm">Naga SDK Docs</div>
                 </div>
               </a>
             </li>

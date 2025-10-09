@@ -5,14 +5,14 @@
  */
 
 import React from "react";
-import { PkpInfo, TransactionResult } from "../../types";
+import { UIPKP, TransactionResult } from "../../types";
 import { EncryptDecryptForm } from "./EncryptDecryptForm";
 import { LitActionForm } from "./LitActionForm";
 import { ViemAccountForm } from "./ViemAccountForm";
 import { SendTransactionForm } from "./SendTransactionForm";
 
 interface WalletOperationsDashboardProps {
-  selectedPkp: PkpInfo | null;
+  selectedPkp: UIPKP | null;
   selectedChain: string;
   disabled?: boolean;
   onTransactionComplete?: (result: TransactionResult) => void;

@@ -5,12 +5,12 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { PkpInfo, TransactionResult } from '../../types';
+import { UIPKP, TransactionResult } from '../../types';
 import { SendTransactionForm } from './SendTransactionForm';
 import { SUPPORTED_CHAINS } from '../../utils/chains';
 
 interface PaymentOperationsDashboardProps {
-  selectedPkp: PkpInfo | null;
+  selectedPkp: UIPKP | null;
   selectedChain: string;
   disabled?: boolean;
   onTransactionComplete?: (result: TransactionResult) => void;

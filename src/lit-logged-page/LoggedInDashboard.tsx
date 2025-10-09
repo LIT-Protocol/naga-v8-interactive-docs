@@ -6,14 +6,18 @@ import {
   WalletOperationsDashboard,
   PaymentManagementDashboard,
   TransactionToastContainer,
-  PkpInfo,
   BalanceInfo,
   TransactionToast,
   TransactionResult,
   getAllChains,
   PKPInfoCard,
 } from "./protectedApp/index";
-import { TopNavBar, GlobalMessage, StickySidebarLayout, type TopNavTab } from "@layout";
+import {
+  TopNavBar,
+  GlobalMessage,
+  StickySidebarLayout,
+  type TopNavTab,
+} from "@layout";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import PKPSelectionModal from "./PKPSelectionModal";
@@ -21,6 +25,7 @@ import { useState as useReactState } from "react";
 import copyIcon from "../assets/copy.svg";
 import { getAddress } from "viem";
 import { formatPublicKey } from "./protectedApp/utils";
+import { PKPData } from "@lit-protocol/schemas";
 
 enum LOGIN_STYLE {
   button = "button",
@@ -37,6 +42,8 @@ export default function LoggedInDashboard() {
     isInitializingServices,
     isServicesReady,
     authServiceBaseUrl,
+    currentNetworkName,
+    shouldDisplayNetworkMessage,
   } = useLitAuth();
 
   const hasAutoStartedRef = useRef(false);
@@ -57,7 +64,7 @@ export default function LoggedInDashboard() {
 
   // Core state
   const [showPkpModal, setShowPkpModal] = useState(false);
-  const [selectedPkp, setSelectedPkp] = useState<PkpInfo | null>(
+  const [selectedPkp, setSelectedPkp] = useState<PKPData | null>(
     user?.pkpInfo || null
   );
   const [balance, setBalance] = useState<BalanceInfo | null>(null);
@@ -273,17 +280,17 @@ export default function LoggedInDashboard() {
     if (user?.pkpInfo) {
       const mappedPkp = {
         tokenId: user.pkpInfo.tokenId || "unknown",
-        publicKey: user.pkpInfo.pubkey || user.pkpInfo.publicKey || "",
+        pubkey: user.pkpInfo.pubkey || "",
         ethAddress: user.pkpInfo.ethAddress || "",
       };
-      setSelectedPkp(mappedPkp);
+      setSelectedPkp(mappedPkp as PKPData);
     } else {
       setSelectedPkp(null);
     }
   }, [user?.pkpInfo]);
 
   // PKP selection handler
-  const handlePkpSelected = (pkpInfo: PkpInfo) => {
+  const handlePkpSelected = (pkpInfo: PKPData) => {
     console.log("PKP selected:", pkpInfo);
     setSelectedPkp(pkpInfo);
     setStatus(`Selected PKP: ${pkpInfo.ethAddress}`);
@@ -338,28 +345,25 @@ export default function LoggedInDashboard() {
         activeTab={activeTabId}
         onTabChange={(id) => navigate(tabToPath[id] ?? "/playground")}
         rightSlot={
-          <AccountMenu
-            selectedChain={selectedChain}
-            onChainChange={setSelectedChain}
-            onShowPkpModal={() => setShowPkpModal(true)}
-          />
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 border border-gray-200 text-gray-700 text-[11px] font-semibold mr-13">
+              <span>Network:</span>
+              <span className="font-mono">{currentNetworkName}</span>
+            </span>
+            <AccountMenu
+              selectedChain={selectedChain}
+              onChainChange={setSelectedChain}
+              onShowPkpModal={() => setShowPkpModal(true)}
+            />
+          </div>
         }
       />
 
       <div className="w-full border-b border-gray-500/5"></div>
-      {(() => {
-        try {
-          const { shouldDisplayNetworkMessage, currentNetworkName } = useLitAuth();
-          return (
-            <GlobalMessage
-              visible={Boolean(shouldDisplayNetworkMessage)}
-              message={`⚠️ The ${currentNetworkName} testnet is a public testnet and is not meant for production use as there's no persistency guarantees. Please use for testing and development purposes only.`}
-            />
-          );
-        } catch {
-          return null;
-        }
-      })()}
+      <GlobalMessage
+        visible={Boolean(shouldDisplayNetworkMessage)}
+        message={`⚠️ The ${currentNetworkName} testnet is a public testnet and is not meant for production use as there's no persistency guarantees. Please use for testing and development purposes only.`}
+      />
 
       <StickySidebarLayout
         sidebar={
@@ -428,6 +432,19 @@ export default function LoggedInDashboard() {
                   </div>
                 </a>
               </li>
+              <li className="text-sm text-[#1D1917] font-light pr-3 rounded-xl cursor-pointer">
+                <a
+                  className="group flex items-center pr-3 py-2 cursor-pointer focus:outline-primary dark:focus:outline-primary-light gap-x-3 rounded-xl hover:bg-gray-600/5 hover:text-black"
+                  style={{ paddingLeft: "1rem", marginLeft: "-1rem" }}
+                  href="https://naga.developer.litprotocol.com/sdk/introduction/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <div className="flex-1 flex items-center space-x-2.5">
+                    <div className="text-sm">Naga SDK Docs</div>
+                  </div>
+                </a>
+              </li>
             </ul>
           </>
         }
@@ -466,19 +483,21 @@ export default function LoggedInDashboard() {
       />
 
       {/* PKP Selection Modal */}
-      <PKPSelectionModal
-        isOpen={showPkpModal}
-        onClose={() => setShowPkpModal(false)}
-        authData={user.authData}
-        authMethodName={user.method}
-        services={services}
-        disabled={false}
-        authServiceBaseUrl={authServiceBaseUrl}
-        onPkpSelected={(pkpInfo) => {
-          handlePkpSelected(pkpInfo);
-          setShowPkpModal(false);
-        }}
-      />
+      {services && (
+        <PKPSelectionModal
+          isOpen={showPkpModal}
+          onClose={() => setShowPkpModal(false)}
+          authData={user.authData}
+          authMethodName={user.method}
+          services={services}
+          disabled={false}
+          authServiceBaseUrl={authServiceBaseUrl}
+          onPkpSelected={(pkpInfo) => {
+            handlePkpSelected(pkpInfo);
+            setShowPkpModal(false);
+          }}
+        />
+      )}
 
       {/* Tailwind handles animations; no inline keyframes needed */}
     </PKPPermissionsProvider>
@@ -499,7 +518,7 @@ function AccountMenu({
   const [copiedField, setCopiedField] = useReactState<string | null>(null);
   if (!user) return null;
   const pkp = user.pkpInfo || {};
-  const publicKey: string = pkp.pubkey || pkp.publicKey || "";
+  const publicKey: string = pkp.pubkey || "";
   const ethAddress: string = pkp.ethAddress || "";
 
   const handleCopy = async (value: string, field: string) => {
@@ -529,34 +548,40 @@ function AccountMenu({
         <div className="absolute right-0 mt-2 w-[300px] max-w-[90vw] bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-[1200] overflow-hidden">
           <div className="text-xs text-gray-500 mb-2 font-semibold">PKP</div>
           <div className="grid gap-2 text-xs text-gray-800">
-            {pkp.tokenId && (
-              <div className="grid grid-cols-[72px_1fr] items-center gap-2">
-                <div className="text-gray-500 whitespace-nowrap text-[11px]">
-                  Token ID
+            {Boolean(
+              pkp.tokenId &&
+                typeof pkp.tokenId === "bigint" &&
+                pkp.tokenId.toString() !== "0n"
+            ) && (
+                <div className="grid grid-cols-[72px_1fr] items-center gap-2">
+                  <div className="text-gray-500 whitespace-nowrap text-[11px]">
+                    Token ID
+                  </div>
+                  <button
+                    onClick={() =>
+                      handleCopy(pkp.tokenId.toString(), "tokenId")
+                    }
+                    className={`group w-full px-1.5 py-1 rounded border flex items-center justify-between gap-1 min-w-0 overflow-hidden ${
+                      copiedField === "tokenId"
+                        ? "bg-green-50 border-green-200"
+                        : "bg-gray-50 border-gray-200 hover:bg-gray-100"
+                    }`}
+                    title="Click to copy Token ID"
+                  >
+                    <span className="truncate font-mono text-[11px]">
+                      {copiedField === "tokenId"
+                        ? `✅ ${pkp.tokenId.toString()}`
+                        : pkp.tokenId.toString()}
+                    </span>
+                    <img
+                      src={copyIcon}
+                      alt="Copy"
+                      className="h-3 w-3 opacity-70 group-hover:opacity-100"
+                    />
+                  </button>
                 </div>
-                <button
-                  onClick={() => handleCopy(String(pkp.tokenId), "tokenId")}
-                  className={`group w-full px-1.5 py-1 rounded border flex items-center justify-between gap-1 min-w-0 overflow-hidden ${
-                    copiedField === "tokenId"
-                      ? "bg-green-50 border-green-200"
-                      : "bg-gray-50 border-gray-200 hover:bg-gray-100"
-                  }`}
-                  title="Click to copy Token ID"
-                >
-                  <span className="truncate font-mono text-[11px]">
-                    {copiedField === "tokenId"
-                      ? `✅ ${pkp.tokenId}`
-                      : String(pkp.tokenId)}
-                  </span>
-                  <img
-                    src={copyIcon}
-                    alt="Copy"
-                    className="h-3 w-3 opacity-70 group-hover:opacity-100"
-                  />
-                </button>
-              </div>
-            )}
-            {publicKey && (
+              )}
+            {publicKey && typeof publicKey === "string" && publicKey !== "" && (
               <div className="grid grid-cols-[72px_1fr] items-center gap-2">
                 <div className="text-gray-500 whitespace-nowrap text-[11px]">
                   Public Key
@@ -572,7 +597,7 @@ function AccountMenu({
                 >
                   <span className="truncate font-mono text-[11px]">
                     {copiedField === "publicKey"
-                      ? `✅ ${publicKey}`
+                      ? `✅ ${publicKey.toString()}`
                       : formatPublicKey(publicKey)}
                   </span>
                   <img
@@ -583,35 +608,40 @@ function AccountMenu({
                 </button>
               </div>
             )}
-            {ethAddress && (
-              <div className="grid grid-cols-[72px_1fr] items-center gap-2">
-                <div className="text-gray-500 whitespace-nowrap text-[11px]">
-                  ETH
+            {ethAddress &&
+              typeof ethAddress === "string" &&
+              ethAddress !== "" && (
+                <div className="grid grid-cols-[72px_1fr] items-center gap-2">
+                  <div className="text-gray-500 whitespace-nowrap text-[11px]">
+                    ETH
+                  </div>
+                  <button
+                    onClick={() =>
+                      handleCopy(
+                        getAddress(ethAddress.toString()),
+                        "ethAddress"
+                      )
+                    }
+                    className={`group w-full px-1.5 py-1 rounded border flex items-center justify-between gap-1 min-w-0 overflow-hidden ${
+                      copiedField === "ethAddress"
+                        ? "bg-green-50 border-green-200"
+                        : "bg-gray-50 border-gray-200 hover:bg-gray-100"
+                    }`}
+                    title="Click to copy ETH Address"
+                  >
+                    <span className="truncate font-mono text-[11px]">
+                      {copiedField === "ethAddress"
+                        ? `✅ ${getAddress(ethAddress.toString())}`
+                        : getAddress(ethAddress)}
+                    </span>
+                    <img
+                      src={copyIcon}
+                      alt="Copy"
+                      className="h-3 w-3 opacity-70 group-hover:opacity-100"
+                    />
+                  </button>
                 </div>
-                <button
-                  onClick={() =>
-                    handleCopy(getAddress(ethAddress), "ethAddress")
-                  }
-                  className={`group w-full px-1.5 py-1 rounded border flex items-center justify-between gap-1 min-w-0 overflow-hidden ${
-                    copiedField === "ethAddress"
-                      ? "bg-green-50 border-green-200"
-                      : "bg-gray-50 border-gray-200 hover:bg-gray-100"
-                  }`}
-                  title="Click to copy ETH Address"
-                >
-                  <span className="truncate font-mono text-[11px]">
-                    {copiedField === "ethAddress"
-                      ? `✅ ${getAddress(ethAddress)}`
-                      : getAddress(ethAddress)}
-                  </span>
-                  <img
-                    src={copyIcon}
-                    alt="Copy"
-                    className="h-3 w-3 opacity-70 group-hover:opacity-100"
-                  />
-                </button>
-              </div>
-            )}
+              )}
           </div>
           <div className="mt-3 pt-3 border-t border-gray-200">
             <div className="text-xs text-gray-500 mb-2 font-semibold">

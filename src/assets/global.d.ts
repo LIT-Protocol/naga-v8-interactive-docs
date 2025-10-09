@@ -447,3 +447,11 @@ declare namespace Lit {
 
 // Add ethers global declaration
 declare const ethers: typeof import("ethers");
+
+// Global LOG_LEVEL
+declare global {
+  interface Window {
+    LOG_LEVEL?: 'silent' | 'error' | 'warn' | 'info' | 'debug';
+  }
+}
+export {};

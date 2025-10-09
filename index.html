@@ -50,6 +50,19 @@
     </script>
 
     <div id="root"></div>
+    <script>
+      (function () {
+        try {
+          var params = new URLSearchParams(window.location.search);
+          var raw = params.get('logLevel') || params.get('loglevel');
+          var value = raw && raw.toLowerCase();
+          var allowed = { silent: 1, error: 1, warn: 1, info: 1, debug: 1, debug2: 1 };
+          if (value && allowed[value]) {
+            window.LOG_LEVEL = value;
+          }
+        } catch (e) {}
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

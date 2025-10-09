@@ -55,10 +55,10 @@ export const HomePage = () => {
   return (
     <LitAuthProvider
       appName="lit-auth-modal-demo"
-      networkModule={APP_INFO.networkModule}
-      supportedNetworks={["naga-dev"]}
+      supportedNetworks={["naga-dev", "naga-test", "naga"]}
       defaultNetwork="naga-dev"
       authServiceBaseUrl={APP_INFO.litAuthServer}
+      persistUser={false}
       closeOnBackdropClick={false}
       showSettingsButton={true}
       showSignUpPage={false}

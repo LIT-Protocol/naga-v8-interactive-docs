@@ -11,6 +11,7 @@ import { hexToIpfsCid, getAuthMethodTypeName } from '../../utils';
 import { AUTH_METHOD_TYPE } from '../../types';
 import { getAddress, isAddress } from 'viem';
 import { useLitAuth } from '../../../../lit-login-modal/LitAuthProvider';
+import { triggerLedgerRefresh } from '../../utils/ledgerRefresh';
 
 export const PermissionsList: React.FC = () => {
   const {
@@ -52,6 +53,10 @@ export const PermissionsList: React.FC = () => {
     );
     if (!ok) return;
     await removePermittedAction(actionCid);
+    try {
+      const addr = selectedPkp?.ethAddress || user?.pkpInfo?.ethAddress;
+      if (addr) await triggerLedgerRefresh(addr);
+    } catch {}
   };
 
   const handleRemoveAddress = async (address: string) => {
@@ -60,6 +65,10 @@ export const PermissionsList: React.FC = () => {
     );
     if (!ok) return;
     await removePermittedAddress(address);
+    try {
+      const addr = selectedPkp?.ethAddress || user?.pkpInfo?.ethAddress;
+      if (addr) await triggerLedgerRefresh(addr);
+    } catch {}
   };
 
   const handleRemoveAuthMethod = async (
@@ -85,6 +94,10 @@ export const PermissionsList: React.FC = () => {
     }
 
     await removePermittedAuthMethod(authType, authId);
+    try {
+      const addr = selectedPkp?.ethAddress || user?.pkpInfo?.ethAddress;
+      if (addr) await triggerLedgerRefresh(addr);
+    } catch {}
   };
 
   if (!permissionsContext) {

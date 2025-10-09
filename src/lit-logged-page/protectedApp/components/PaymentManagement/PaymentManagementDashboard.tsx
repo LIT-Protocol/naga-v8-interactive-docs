@@ -1,14 +1,26 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { PkpInfo, TransactionResult } from "../../types";
+import { UIPKP, TransactionResult } from "../../types";
 import AccountMethodSelector from "./AccountMethodSelector";
 import { useOptionalLitAuth } from "../../../../lit-login-modal/LitAuthProvider";
+import { triggerLedgerRefresh } from "../../utils/ledgerRefresh";
 
 interface PaymentManagementDashboardProps {
-  selectedPkp: PkpInfo | null;
+  selectedPkp: UIPKP | null;
   selectedChain: string;
   disabled?: boolean;
   onTransactionComplete?: (result: TransactionResult) => void;
   services?: any;
+  initialSource?: "pkp" | "eoa";
+  presetRecipientAddress?: string;
+  onBalanceChange?: (balance: BalanceInfo | null) => void;
+  // When true, disables using PKP as the account source (EOA-only)
+  disablePkpOption?: boolean;
+  // Show only deposit-for-PKP and show balance for the PKP address
+  fundPkOnly?: boolean;
+  // Override user address for balance and deposit-for-user (use PKP address)
+  targetUserAddress?: string;
+  // Hide the account selection section and show as streamlined steps
+  hideAccountSelection?: boolean;
 }
 
 interface BalanceInfo {
@@ -39,15 +51,52 @@ export const PaymentManagementDashboard: React.FC<
   disabled = false,
   onTransactionComplete,
   services,
+  initialSource,
+  presetRecipientAddress,
+  onBalanceChange,
+  disablePkpOption = false,
+  fundPkOnly = false,
+  targetUserAddress,
+  hideAccountSelection = false,
 }) => {
   // const { data: walletClient } = useWalletClient();
   const optionalAuth = useOptionalLitAuth();
   const user = optionalAuth?.user;
   const litServices = optionalAuth?.services;
+  const currentNetworkName = (optionalAuth as any)?.currentNetworkName as
+    | string
+    | undefined;
+  
+  // Determine the correct unit for Lit Ledger balance
+  const isTestnet = currentNetworkName === "naga-dev" || currentNetworkName === "naga-test";
+  const ledgerUnit = isTestnet ? "tstLPX" : "LITKEY";
 
   // Account state
   const [account, setAccount] = useState<any>(null);
-  const [accountSource, setAccountSource] = useState<"pkp" | "eoa">("pkp");
+  const [accountSource, setAccountSource] = useState<"pkp" | "eoa">(
+    initialSource || "pkp"
+  );
+  
+  // Step/tab state for hideAccountSelection mode
+  const [currentStep, setCurrentStep] = useState<1 | 2>(1);
+  const [fundingSuccess, setFundingSuccess] = useState(false);
+  const [fundingTxHash, setFundingTxHash] = useState<string>("");
+
+  // Enforce EOA-only when PKP option is disabled
+  useEffect(() => {
+    if (disablePkpOption && accountSource === "pkp") {
+      setAccountSource("eoa");
+    }
+  }, [disablePkpOption, accountSource]);
+  
+  // Reset funding success state when target address changes (new PKP selected)
+  useEffect(() => {
+    if (hideAccountSelection && targetUserAddress) {
+      setFundingSuccess(false);
+      setFundingTxHash("");
+      setCurrentStep(1);
+    }
+  }, [hideAccountSelection, targetUserAddress]);
 
   // PaymentManager state
   const [paymentManager, setPaymentManager] = useState<any>(null);
@@ -107,13 +156,13 @@ export const PaymentManagementDashboard: React.FC<
   // Create a PKP viem account when PKP is selected as the source
   useEffect(() => {
     const hasAuthContext = Boolean(user?.authContext);
-    const pkpPublicKey = selectedPkp?.publicKey || user?.pkpInfo?.pubkey;
+    const pkpPublicKey = selectedPkp?.pubkey || user?.pkpInfo?.pubkey;
     const targetServices = services || litServices;
     const canUsePkp = Boolean(
       targetServices?.litClient && hasAuthContext && pkpPublicKey
     );
 
-    if (accountSource !== "pkp") {
+    if (accountSource !== "pkp" || disablePkpOption) {
       return;
     }
 
@@ -191,15 +240,16 @@ export const PaymentManagementDashboard: React.FC<
 
   // Load balance
   const loadBalance = useCallback(async () => {
-    const accountAddress = account?.address || account?.account?.address;
+    const accountAddress = targetUserAddress || account?.address || account?.account?.address;
     if (!paymentManager || !accountAddress) return;
 
     try {
       setIsLoadingBalance(true);
-      const balance = await paymentManager.getBalance({
-        userAddress: accountAddress,
-      });
+      const balance = await paymentManager.getBalance({ userAddress: accountAddress });
       setBalanceInfo(balance);
+      try {
+        onBalanceChange?.(balance);
+      } catch {}
     } catch (error: any) {
       console.error("Balance check failed:", error);
       showError(`Balance check failed: ${error.message}`);
@@ -207,6 +257,12 @@ export const PaymentManagementDashboard: React.FC<
       setIsLoadingBalance(false);
     }
   }, [paymentManager, account]);
+
+  useEffect(() => {
+    if (presetRecipientAddress) {
+      setDepositForUserAddress(presetRecipientAddress);
+    }
+  }, [presetRecipientAddress]);
 
   // Auto-refresh balance
   useEffect(() => {
@@ -285,6 +341,10 @@ export const PaymentManagementDashboard: React.FC<
 
       // Refresh balance after deposit
       setTimeout(loadBalance, 2000);
+      try {
+        const addr = targetUserAddress || accountAddress;
+        if (addr) triggerLedgerRefresh(addr);
+      } catch {}
     } catch (error: any) {
       console.error("Deposit failed:", error);
       showError(`Deposit failed: ${error.message}`);
@@ -308,7 +368,19 @@ export const PaymentManagementDashboard: React.FC<
       showSuccess("deposit-for-user");
       onTransactionComplete?.(result);
       setDepositForUserAmount("");
+      
+      // Show success message in hideAccountSelection mode
+      if (hideAccountSelection) {
+        setFundingSuccess(true);
+        // Extract transaction hash from result
+        const txHash = result?.transactionHash || result?.hash || "";
+        setFundingTxHash(txHash);
+      }
       setDepositForUserAddress("");
+      try {
+        const addr = targetUserAddress || depositForUserAddress;
+        if (addr) triggerLedgerRefresh(addr);
+      } catch {}
     } catch (error: any) {
       console.error("Deposit for user failed:", error);
       showError(`Deposit for user failed: ${error.message}`);
@@ -334,6 +406,10 @@ export const PaymentManagementDashboard: React.FC<
 
       // Refresh withdrawal status
       setTimeout(loadWithdrawalStatus, 2000);
+      try {
+        const addr = targetUserAddress || accountAddress;
+        if (addr) triggerLedgerRefresh(addr);
+      } catch {}
     } catch (error: any) {
       console.error("Withdrawal request failed:", error);
       showError(`Withdrawal request failed: ${error.message}`);
@@ -359,6 +435,10 @@ export const PaymentManagementDashboard: React.FC<
       setWithdrawInfo(null);
       setCanExecuteInfo(null);
       setTimeout(loadBalance, 2000);
+      try {
+        const addr = targetUserAddress || accountAddress;
+        if (addr) triggerLedgerRefresh(addr);
+      } catch {}
     } catch (error: any) {
       console.error("Withdrawal execution failed:", error);
       showError(`Withdrawal execution failed: ${error.message}`);
@@ -379,100 +459,332 @@ export const PaymentManagementDashboard: React.FC<
         </div>
       )}
 
-      {/* Account Setup */}
-      <div className="mb-8 p-5 bg-white rounded-xl border border-gray-200">
-        <h3 style={{ margin: "0 0 15px 0", color: "#1f2937" }}>
-          Select a Payment Manager Account
-        </h3>
+      {/* Account Setup - Conditional rendering based on hideAccountSelection */}
+      {!hideAccountSelection ? (
+        <div className="mb-8 p-5 bg-white rounded-xl border border-gray-200">
+          <h3 style={{ margin: "0 0 15px 0", color: "#1f2937" }}>
+            Select a Payment Manager Account
+          </h3>
 
-        {/* Account source selector: PKP (default) or EOA */}
-        <div style={{ display: "flex", gap: "10px", marginBottom: "15px" }}>
-          <button
-            onClick={() => {
-              setAccountSource("pkp");
-            }}
-            disabled={disabled}
-            style={{
-              padding: "8px 15px",
-              backgroundColor: accountSource === "pkp" ? "#B7410D" : "#f0f0f0",
-              color: accountSource === "pkp" ? "white" : "#333",
-              border: "1px solid #ddd",
-              borderRadius: "6px",
-              cursor: disabled ? "not-allowed" : "pointer",
-              fontSize: "14px",
-              opacity: disabled ? 0.6 : 1,
-            }}
-          >
-            Current PKP Wallet
-          </button>
-          <button
-            onClick={() => {
-              setAccountSource("eoa");
-              setAccount(null);
-            }}
-            disabled={disabled}
-            style={{
-              padding: "8px 15px",
-              backgroundColor: accountSource === "eoa" ? "#B7410D" : "#f0f0f0",
-              color: accountSource === "eoa" ? "white" : "#333",
-              border: "1px solid #ddd",
-              borderRadius: "6px",
-              cursor: disabled ? "not-allowed" : "pointer",
-              fontSize: "14px",
-              opacity: disabled ? 0.6 : 1,
-            }}
-          >
-            Externally Owned Account (EOA)
-          </button>
-        </div>
-
-        {/* EOA account manual selection */}
-        {accountSource === "eoa" && (
-          <AccountMethodSelector
-            onAccountCreated={setAccount}
-            onMethodChange={() => {}}
-            setStatus={() => {}}
-            showError={showError}
-            showSuccess={() => {}}
-            successActionIds={{
-              createAccount: "pm-create-account",
-              getWalletAccount: "pm-get-wallet-account",
-            }}
-            successActions={successActions}
-            disabled={disabled}
-          />
-        )}
-
-        {account && (
-          <div
-            style={{
-              marginTop: "15px",
-              padding: "12px",
-              backgroundColor: "#f0f9ff",
-              borderRadius: "8px",
-              border: "1px solid #bfdbfe",
-            }}
-          >
-            <div style={{ fontSize: "14px", color: "#1e40af" }}>
-              <strong>Connected Account:</strong>{" "}
-              {account.address || account.account?.address}
-            </div>
-            <div
-              style={{ fontSize: "12px", color: "#3b82f6", marginTop: "4px" }}
+          {/* Account source selector: PKP (default) or EOA */}
+          <div style={{ display: "flex", gap: "10px", marginBottom: "15px" }}>
+            {!disablePkpOption && (
+              <button
+                onClick={() => {
+                  if (disablePkpOption || disabled) return;
+                  setAccountSource("pkp");
+                }}
+                disabled={disabled || disablePkpOption}
+                style={{
+                  padding: "8px 15px",
+                  backgroundColor:
+                    accountSource === "pkp" && !disablePkpOption ? "#B7410D" : "#f0f0f0",
+                  color:
+                    accountSource === "pkp" && !disablePkpOption ? "white" : "#333",
+                  border: "1px solid #ddd",
+                  borderRadius: "6px",
+                  cursor: disabled || disablePkpOption ? "not-allowed" : "pointer",
+                  fontSize: "14px",
+                  opacity: disabled || disablePkpOption ? 0.6 : 1,
+                }}
+              >
+                Current PKP Wallet
+              </button>
+            )}
+            <button
+              onClick={() => {
+                setAccountSource("eoa");
+                setAccount(null);
+              }}
+              disabled={disabled}
+              style={{
+                padding: "8px 15px",
+                backgroundColor: accountSource === "eoa" ? "#B7410D" : "#f0f0f0",
+                color: accountSource === "eoa" ? "white" : "#333",
+                border: "1px solid #ddd",
+                borderRadius: "6px",
+                cursor: disabled ? "not-allowed" : "pointer",
+                fontSize: "14px",
+                opacity: disabled ? 0.6 : 1,
+              }}
             >
-              PaymentManager:{" "}
-              {paymentManager
-                ? "✅ Ready"
-                : loading
-                ? "⏳ Loading..."
-                : "❌ Failed to load"}
-            </div>
+              Externally Owned Account (EOA)
+            </button>
           </div>
-        )}
-      </div>
+
+          {/* EOA account manual selection */}
+          {accountSource === "eoa" && (
+            <AccountMethodSelector
+              onAccountCreated={setAccount}
+              onMethodChange={() => {}}
+              setStatus={() => {}}
+              showError={showError}
+              showSuccess={() => {}}
+              successActionIds={{
+                createAccount: "pm-create-account",
+                getWalletAccount: "pm-get-wallet-account",
+              }}
+              successActions={successActions}
+              disabled={disabled}
+            />
+          )}
+
+          {account && (
+            <div
+              style={{
+                marginTop: "15px",
+                padding: "12px",
+                backgroundColor: "#f0f9ff",
+                borderRadius: "8px",
+                border: "1px solid #bfdbfe",
+              }}
+            >
+              <div style={{ fontSize: "14px", color: "#1e40af" }}>
+                <strong>Connected Account:</strong>{" "}
+                {account.address || account.account?.address}
+              </div>
+              <div
+                style={{ fontSize: "12px", color: "#3b82f6", marginTop: "4px" }}
+              >
+                PaymentManager:{" "}
+                {paymentManager
+                  ? "✅ Ready"
+                  : loading
+                  ? "⏳ Loading..."
+                  : "❌ Failed to load"}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Streamlined tab-based flow for funding modal */
+        <div className="mb-6">
+          {/* Tab Navigation */}
+          <div className="flex border-b border-gray-200 mb-6">
+            <button
+              onClick={() => setCurrentStep(1)}
+              className={`px-4 py-3 text-[14px] font-medium border-b-2 transition ${
+                currentStep === 1
+                  ? "border-indigo-600 text-indigo-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-bold ${
+                  currentStep === 1 ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-600"
+                }`}>1</span>
+                Choose Account
+              </span>
+            </button>
+            <button
+              onClick={() => {
+                if (account && paymentManager) setCurrentStep(2);
+              }}
+              disabled={!account || !paymentManager}
+              className={`px-4 py-3 text-[14px] font-medium border-b-2 transition ${
+                currentStep === 2
+                  ? "border-indigo-600 text-indigo-600"
+                  : !account || !paymentManager
+                  ? "border-transparent text-gray-300 cursor-not-allowed"
+                  : "border-transparent text-gray-500 hover:text-gray-700 cursor-pointer"
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-bold ${
+                  currentStep === 2 
+                    ? "bg-indigo-600 text-white" 
+                    : !account || !paymentManager
+                    ? "bg-gray-200 text-gray-400"
+                    : "bg-gray-200 text-gray-600"
+                }`}>2</span>
+                Deposit Funds
+              </span>
+            </button>
+          </div>
+
+          {/* Step 1: Choose Account Method */}
+          {currentStep === 1 && (
+            <div className="p-5 bg-gray-50 rounded-xl border border-gray-200">
+              <h3 className="text-[16px] font-semibold text-gray-900 m-0 mb-2">
+                Choose Account Method
+              </h3>
+              <p className="text-[13px] text-gray-600 mb-4">
+                Select how you want to fund the Lit Ledger for this PKP
+              </p>
+              <AccountMethodSelector
+                onAccountCreated={(acc) => {
+                  setAccount(acc);
+                }}
+                onMethodChange={() => {}}
+                setStatus={() => {}}
+                showError={showError}
+                showSuccess={() => {}}
+                successActionIds={{
+                  createAccount: "pm-create-account",
+                  getWalletAccount: "pm-get-wallet-account",
+                }}
+                successActions={successActions}
+                disabled={disabled}
+              />
+              {account && (
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="text-[13px] text-blue-900">
+                    <strong>Connected Account:</strong>{" "}
+                    {account.address || account.account?.address}
+                  </div>
+                  <div className="text-[12px] text-blue-700 mt-1">
+                    PaymentManager:{" "}
+                    {paymentManager
+                      ? "✅ Ready"
+                      : loading
+                      ? "⏳ Loading..."
+                      : "❌ Failed to load"}
+                  </div>
+                </div>
+              )}
+              {account && paymentManager && (
+                <div className="mt-4 text-center">
+                  <button
+                    onClick={() => setCurrentStep(2)}
+                    className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[14px] font-medium transition"
+                  >
+                    Continue to Deposit →
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step 2: Deposit for PKP */}
+          {currentStep === 2 && account && paymentManager && (
+            <div className="p-5 bg-gray-50 rounded-xl border border-gray-200">
+              {fundingSuccess ? (
+                /* Success Message */
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h3 className="text-[18px] font-semibold text-gray-900 m-0 mb-2">
+                    ✅ Funding Successful!
+                  </h3>
+                  <p className="text-[14px] text-gray-600 mb-4">
+                    Your PKP's Lit Ledger has been funded successfully. You can now close this modal and log in to your PKP account.
+                  </p>
+                  
+                  {/* Transaction Hash */}
+                  {fundingTxHash && (
+                    <div className="mb-6 p-3 bg-gray-50 border border-gray-200 rounded-lg max-w-md mx-auto">
+                      <div className="text-[12px] font-medium text-gray-700 mb-1">Transaction Hash</div>
+                      <div className="flex items-center gap-2 justify-center">
+                        <code className="text-[12px] text-gray-600 font-mono">
+                          {fundingTxHash.slice(0, 10)}...{fundingTxHash.slice(-8)}
+                        </code>
+                        <a
+                          href={`https://yellowstone-explorer.litprotocol.com/tx/${fundingTxHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded text-[11px] font-medium transition"
+                          title="View on Chronicle Yellowstone Explorer"
+                        >
+                          View on Explorer
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="flex gap-3 justify-center">
+                    <button
+                      onClick={() => {
+                        setFundingSuccess(false);
+                        setFundingTxHash("");
+                        setCurrentStep(1);
+                        setDepositForUserAmount("");
+                      }}
+                      className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-[14px] font-medium transition"
+                    >
+                      Fund Another Amount
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Deposit Form */
+                <>
+                  <h3 className="text-[16px] font-semibold text-gray-900 m-0 mb-2">
+                    Deposit for PKP
+                  </h3>
+                  <p className="text-[13px] text-gray-600 mb-4">
+                    Enter the amount you want to deposit to the PKP's Lit Ledger
+                  </p>
+                  <div className="mb-3">
+                    <label className="block text-[12px] font-medium text-gray-700 mb-1">
+                      Recipient PKP Address
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Recipient address (0x...)"
+                      value={targetUserAddress || depositForUserAddress}
+                      onChange={(e) => setDepositForUserAddress(e.target.value)}
+                      disabled
+                      className="w-full px-3 py-2 rounded-lg text-sm border bg-gray-50 border-gray-300 text-black"
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <label className="block text-[12px] font-medium text-gray-700 mb-1">
+                      Amount to Deposit
+                    </label>
+                    <input
+                      type="number"
+                      step="0.001"
+                      min="0"
+                      placeholder={`Amount in ${ledgerUnit}`}
+                      value={depositForUserAmount}
+                      onChange={(e) => setDepositForUserAmount(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg text-sm border bg-white border-gray-300 text-black"
+                    />
+                    <p className="text-[11px] text-gray-500 mt-1">
+                      Need test tokens? Visit the{" "}
+                      <a
+                        href="https://chronicle-yellowstone-faucet.getlit.dev/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-700 underline"
+                      >
+                        Chronicle Yellowstone Faucet
+                      </a>
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleDepositForUser}
+                    disabled={
+                      isDepositingForUser ||
+                      !paymentManager ||
+                      !depositForUserAmount ||
+                      !(targetUserAddress || depositForUserAddress)
+                    }
+                    className={`w-full px-4 py-2.5 rounded-lg text-[14px] font-medium transition ${
+                      isDepositingForUser ||
+                      !depositForUserAmount ||
+                      !(targetUserAddress || depositForUserAddress)
+                        ? "bg-gray-400 cursor-not-allowed text-white"
+                        : "bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer"
+                    }`}
+                  >
+                    {isDepositingForUser ? "Processing..." : "💰 Deposit for PKP"}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Balance Section */}
-      {paymentManager && (
+      {paymentManager && !hideAccountSelection && (
         <div className="mb-8 p-5 bg-white rounded-xl border border-gray-200">
           <div
             style={{
@@ -483,7 +795,7 @@ export const PaymentManagementDashboard: React.FC<
             }}
           >
             <h3 style={{ margin: 0, color: "#1f2937" }}>
-              Lit Ledger Balance Overview
+              PKP Lit Ledger Balance
             </h3>
             <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
               <label style={{ fontSize: "14px", color: "#6b7280" }}>
@@ -545,7 +857,7 @@ export const PaymentManagementDashboard: React.FC<
                     color: "#1e40af",
                   }}
                 >
-                  {balanceInfo.totalBalance} ETH
+                  {balanceInfo.totalBalance} {ledgerUnit}
                 </div>
                 <div
                   style={{
@@ -582,7 +894,7 @@ export const PaymentManagementDashboard: React.FC<
                     color: "#15803d",
                   }}
                 >
-                  {balanceInfo.availableBalance} ETH
+                  {balanceInfo.availableBalance} {ledgerUnit}
                 </div>
                 <div
                   style={{
@@ -606,7 +918,7 @@ export const PaymentManagementDashboard: React.FC<
       )}
 
       {/* Operations Grid */}
-      {paymentManager && (
+      {paymentManager && !fundPkOnly && !hideAccountSelection && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Deposit Section */}
           <div className="p-5 bg-white rounded-xl border border-gray-200">
@@ -652,7 +964,7 @@ export const PaymentManagementDashboard: React.FC<
                 type="number"
                 step="0.001"
                 min="0"
-                placeholder="Amount in ETH"
+                placeholder={`Amount in ${ledgerUnit}`}
                 value={depositAmount}
                 onChange={(e) => setDepositAmount(e.target.value)}
                 disabled={!account}
@@ -716,7 +1028,7 @@ export const PaymentManagementDashboard: React.FC<
                   type="number"
                   step="0.001"
                   min="0"
-                  placeholder="Amount in ETH"
+                  placeholder={`Amount in ${ledgerUnit}`}
                   value={depositForUserAmount}
                   onChange={(e) => setDepositForUserAmount(e.target.value)}
                   disabled={!account}
@@ -833,7 +1145,7 @@ export const PaymentManagementDashboard: React.FC<
                     type="number"
                     step="0.001"
                     min="0"
-                    placeholder="Amount in ETH"
+                    placeholder={`Amount in ${ledgerUnit}`}
                     value={withdrawAmount}
                     onChange={(e) => setWithdrawAmount(e.target.value)}
                     disabled={!account}
@@ -915,6 +1227,52 @@ export const PaymentManagementDashboard: React.FC<
               {isCheckingWithdraw ? "🔄 Checking..." : "🔄 Refresh Status"}
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Fund-PK-only simplified Deposit for PKP */}
+      {paymentManager && fundPkOnly && !hideAccountSelection && (
+        <div className="p-5 bg-white rounded-xl border border-gray-200">
+          <h3 style={{ margin: "0 0 15px 0", color: "#1f2937" }}>
+            💰 Deposit for PKP
+          </h3>
+          <div className="mb-3">
+            <input
+              type="text"
+              placeholder="Recipient address (0x...)"
+              value={targetUserAddress || depositForUserAddress}
+              onChange={(e) => setDepositForUserAddress(e.target.value)}
+              disabled
+              className={`w-full px-3 py-2 rounded-lg text-sm border bg-gray-50 border-gray-300 text-black`}
+            />
+          </div>
+          <div className="mb-3">
+            <input
+              type="number"
+              step="0.001"
+              min="0"
+              placeholder={`Amount in ${ledgerUnit}`}
+              value={depositForUserAmount}
+              onChange={(e) => setDepositForUserAmount(e.target.value)}
+              className={`w-full px-3 py-2 rounded-lg text-sm border bg-white border-gray-300 text-black`}
+            />
+          </div>
+          <button
+            onClick={handleDepositForUser}
+            disabled={
+              isDepositingForUser ||
+              !paymentManager ||
+              !depositForUserAmount ||
+              !(targetUserAddress || depositForUserAddress)
+            }
+            className={`w-full p-2.5 rounded-lg text-sm font-medium border-1 border-gray-200 ${
+              isDepositingForUser
+                ? "bg-gray-400 cursor-not-allowed text-white"
+                : "bg-[#B7410D] text-white cursor-pointer"
+            }`}
+          >
+            {isDepositingForUser ? "Processing..." : "👥 Deposit for PKP"}
+          </button>
         </div>
       )}
 
