@@ -88,6 +88,9 @@ const PKPSelectionSection: React.FC<PKPSelectionSectionProps> = ({
   // Login loading state
   const [loggingInTokenId, setLoggingInTokenId] = useState<string | null>(null);
 
+  const isNagaDevNetwork =
+    currentNetworkName?.toLowerCase() === "naga-dev";
+
   // Debug logging
   useEffect(() => {
     // console.log("PKPSelectionSection mounted with:", {
@@ -106,6 +109,9 @@ const PKPSelectionSection: React.FC<PKPSelectionSectionProps> = ({
 
   // Subscribe to global ledger refresh; refresh a single PKP or all visible
   useLedgerRefresh(({ address }) => {
+    if (isNagaDevNetwork) {
+      return;
+    }
     if (address) {
       refreshOnePkpLedger(address);
     } else {
@@ -309,6 +315,9 @@ const PKPSelectionSection: React.FC<PKPSelectionSectionProps> = ({
 
   // Load Lit Ledger balances for all PKPs
   const loadLedgerBalancesForPkps = async (pkpsToLoad: UIPKP[]) => {
+    if (isNagaDevNetwork) {
+      return;
+    }
     const updated = [...pkpsToLoad];
     updated.forEach((pkp) => {
       (pkp as any).isLoadingLedger = true;
@@ -493,9 +502,13 @@ const PKPSelectionSection: React.FC<PKPSelectionSectionProps> = ({
         setSelectedPkp(newPkp);
         // Do not auto-login; require funding + explicit selection
         setStatus(
-          `✅ Minted new PKP: ${
-            newPkp.ethAddress.slice(0, 10) || "N/A"
-          }... — click the Fund button to add funds to the Lit Ledger, then click Log in.`
+          isNagaDevNetwork
+            ? `✅ Minted new PKP: ${
+                newPkp.ethAddress.slice(0, 10) || "N/A"
+              }... — you can log in immediately on naga-dev.`
+            : `✅ Minted new PKP: ${
+                newPkp.ethAddress.slice(0, 10) || "N/A"
+              }... — click the Fund button to add funds to the Lit Ledger, then click Log in.`
         );
         setMode("existing");
         // Insert the new PKP at the top of the list
@@ -680,6 +693,10 @@ const PKPSelectionSection: React.FC<PKPSelectionSectionProps> = ({
                 >
                   {pkps.map((pkp) => {
                     // console.log(`🔑 [PKP_RENDER] Rendering PKP: ${pkp.tokenId?.toString().slice(-8)}, Address: ${pkp.ethAddress?.slice(-6)}, Balance: ${pkp.balance}, Loading: ${pkp.isLoadingBalance}`);
+                    const ledgerBalanceWei = ((pkp as any).ledgerBalanceWei ??
+                      0n) as bigint;
+                    const isLedgerFunded = ledgerBalanceWei > 0n;
+                    const canLogin = isNagaDevNetwork || isLedgerFunded;
                     return (
                       <div
                         key={pkp.tokenId}
@@ -816,69 +833,85 @@ const PKPSelectionSection: React.FC<PKPSelectionSectionProps> = ({
                             )}
                           </div>
 
-                          <div className="text-gray-700 font-semibold">Ledger:</div>
-                          <div className="flex items-center gap-2">
-                            {(pkp as any).isLoadingLedger ? (
-                              <div className="flex items-center gap-1">
-                                <div className="w-3 h-3 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
-                                <span className="text-[12px] text-gray-400">Loading...</span>
-                              </div>
-                            ) : (
-                              <span className={`font-mono text-[12px] font-medium ${((pkp as any).ledgerBalanceWei ?? 0n) > 0n ? "text-green-600" : "text-amber-600"}`}>
-                                {((pkp as any).ledgerBalanceWei ?? 0n) > 0n 
-                                  ? `${(pkp as any).ledgerBalance || "0"} tstLPX`
-                                  : "Not funded"}
-                              </span>
-                            )}
-
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                refreshOnePkpLedger(pkp.ethAddress);
-                              }}
-                              disabled={(pkp as any).isLoadingLedger}
-                              className={`p-0.5 border border-gray-300 rounded text-[12px] ${
-                                (pkp as any).isLoadingLedger
-                                  ? "cursor-not-allowed opacity-50"
-                                  : "cursor-pointer hover:bg-gray-100"
-                              }`}
-                              title="Refresh Ledger Balance"
-                            >
-                              <svg 
-                                className="w-3 h-3 text-gray-600" 
-                                fill="none" 
-                                stroke="currentColor" 
-                                viewBox="0 0 24 24"
-                              >
-                                <path 
-                                  strokeLinecap="round" 
-                                  strokeLinejoin="round" 
-                                  strokeWidth={2} 
-                                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" 
-                                />
-                              </svg>
-                            </button>
-                            
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setFundingTokenId(String(pkp.tokenId));
-                              }}
-                              className="px-2 py-0.5 border border-gray-300 rounded text-[12px] cursor-pointer hover:bg-gray-100"
-                            >
-                              Fund
-                            </button>
-                            <a
-                              href={`${APP_INFO.faucetUrl}?action=ledger&address=${pkp.ethAddress}&network=${currentNetworkName}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="px-2 py-0.5 border border-gray-300 rounded text-[12px] cursor-pointer hover:bg-gray-100 text-blue-600"
-                              title="Fund from Lit Ledger Faucet"
-                            >
-                              Faucet ↗
-                            </a>
+                          <div className="text-gray-700 font-semibold">
+                            Ledger:
                           </div>
+                          {isNagaDevNetwork ? (
+                            <div className="text-[12px] font-medium text-green-600">
+                              FREE for naga-dev (centralised network)
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              {(pkp as any).isLoadingLedger ? (
+                                <div className="flex items-center gap-1">
+                                  <div className="w-3 h-3 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
+                                  <span className="text-[12px] text-gray-400">
+                                    Loading...
+                                  </span>
+                                </div>
+                              ) : (
+                                <span
+                                  className={`font-mono text-[12px] font-medium ${
+                                    isLedgerFunded
+                                      ? "text-green-600"
+                                      : "text-amber-600"
+                                  }`}
+                                >
+                                  {isLedgerFunded
+                                    ? `${(pkp as any).ledgerBalance || "0"} tstLPX`
+                                    : "Not funded"}
+                                </span>
+                              )}
+
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  refreshOnePkpLedger(pkp.ethAddress);
+                                }}
+                                disabled={(pkp as any).isLoadingLedger}
+                                className={`p-0.5 border border-gray-300 rounded text-[12px] ${
+                                  (pkp as any).isLoadingLedger
+                                    ? "cursor-not-allowed opacity-50"
+                                    : "cursor-pointer hover:bg-gray-100"
+                                }`}
+                                title="Refresh Ledger Balance"
+                              >
+                                <svg
+                                  className="w-3 h-3 text-gray-600"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                                  />
+                                </svg>
+                              </button>
+
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setFundingTokenId(String(pkp.tokenId));
+                                }}
+                                className="px-2 py-0.5 border border-gray-300 rounded text-[12px] cursor-pointer hover:bg-gray-100"
+                              >
+                                Fund
+                              </button>
+                              <a
+                                href={`${APP_INFO.faucetUrl}?action=ledger&address=${pkp.ethAddress}&network=${currentNetworkName}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="px-2 py-0.5 border border-gray-300 rounded text-[12px] cursor-pointer hover:bg-gray-100 text-blue-600"
+                                title="Fund from Lit Ledger Faucet"
+                              >
+                                Faucet ↗
+                              </a>
+                            </div>
+                          )}
                         </div>
 
                         {/* Login action */}
@@ -887,8 +920,7 @@ const PKPSelectionSection: React.FC<PKPSelectionSectionProps> = ({
                             onClick={(e) => {
                               e.stopPropagation();
                               if ((pkp as any).isLoadingLedger || loggingInTokenId === String(pkp.tokenId)) return;
-                              const funded = (((pkp as any).ledgerBalanceWei ?? 0n) as bigint) > 0n;
-                              if (funded) {
+                              if (canLogin) {
                                 handlePkpSelect(pkp);
                               } else {
                                 setStatus("⚠️ This PKP is not funded yet. Fund via the button above or the faucet, then try again.");
@@ -898,15 +930,17 @@ const PKPSelectionSection: React.FC<PKPSelectionSectionProps> = ({
                             className={`w-full px-3 py-2 text-[13px] rounded font-medium flex items-center justify-center gap-2 ${
                               loggingInTokenId === String(pkp.tokenId)
                                 ? "bg-indigo-500 text-white cursor-not-allowed"
-                                : ((pkp as any).ledgerBalanceWei ?? 0n) > 0n
+                                : canLogin
                                 ? "bg-indigo-600 text-white cursor-pointer hover:bg-indigo-700"
                                 : "bg-gray-200 text-gray-500 cursor-not-allowed"
                             }`}
                             title={
                               loggingInTokenId === String(pkp.tokenId)
                                 ? "Logging in..."
-                                : ((pkp as any).ledgerBalanceWei ?? 0n) > 0n
-                                ? "Create auth context with this PKP"
+                                : canLogin
+                                ? isNagaDevNetwork
+                                  ? "Log in with this PKP (naga-dev access is free)"
+                                  : "Create auth context with this PKP"
                                 : "Requires funding to continue"
                             }
                           >
