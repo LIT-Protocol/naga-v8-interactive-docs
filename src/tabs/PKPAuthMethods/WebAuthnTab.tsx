@@ -7,6 +7,8 @@ import { useAppContext } from "../../router";
 import PkpSigningComponent from "../../components/common/PkpSigningComponent";
 import ExecuteJsComponent from "../../components/common/ExecuteJsComponent";
 import { APP_INFO } from "../../_config";
+import { useRuntimeUrls } from "../../hooks/useRuntimeUrls";
+import FundPkpLedgerCheck from "../../components/common/FundPkpLedgerCheck";
 
 const AUTH_NAME = "WebAuthn Authentication";
 
@@ -15,7 +17,7 @@ const REGISTER_CODE = `
 import { WebAuthnAuthenticator } from "@lit-protocol/auth";
 
 const { pkpInfo, webAuthnPublicKey } = await WebAuthnAuthenticator.registerAndMintPKP({
-  authServiceBaseUrl: "https://naga-auth-service.onrender.com",
+  authServiceBaseUrl,
   scopes: ["sign-anything"],
 });
 `;
@@ -23,9 +25,7 @@ const { pkpInfo, webAuthnPublicKey } = await WebAuthnAuthenticator.registerAndMi
 const AUTHENTICATE_CODE = `
 import { WebAuthnAuthenticator } from "@lit-protocol/auth";
 
-const authData = await WebAuthnAuthenticator.authenticate({
-  authServiceBaseUrl: "https://naga-auth-service.onrender.com",
-});
+const authData = await WebAuthnAuthenticator.authenticate();
 `;
 
 // WebAuthn flow does not present a re-mint option; credential is bound to one PKP
@@ -68,8 +68,21 @@ export default function WebAuthnTab() {
 
   const [authData, setAuthData] = useState<any>(null);
   const [pkpInfo, setPkpInfo] = useState<any>();
+  const [isPkpFunded, setIsPkpFunded] = useState<boolean>(false);
   const [step1Done, setStep1Done] = useState(false);
   const [step1bDone, setStep1bDone] = useState(false);
+  const [loginUrl, setLoginUrl] = useState<string>(APP_INFO.litLoginServer);
+  const [authServiceBaseUrl, setAuthServiceBaseUrl] = useState<string>((APP_INFO as any).authServiceUrls?.[APP_INFO.network] || "");
+  // Shared, synchronised runtime URLs
+  const {
+    loginUrl: syncedLogin,
+    setLoginUrl: setSyncedLogin,
+    authServiceUrlCurrentNet: syncedAuthUrl,
+    setAuthServiceUrlForNetwork: setSyncedAuthUrl,
+  } = useRuntimeUrls();
+
+  useEffect(() => { setLoginUrl(syncedLogin); }, [syncedLogin]);
+  useEffect(() => { setAuthServiceBaseUrl(syncedAuthUrl || ""); }, [syncedAuthUrl]);
 
   // Success feedback state
   const [successActions, setSuccessActions] = useState<Set<string>>(new Set());
@@ -278,21 +291,21 @@ export default function WebAuthnTab() {
   const CreateAuthContextButton = () => (
     <button
       onClick={createAuthContext}
-      disabled={isCreatingAuthContext || !pkpInfo}
+      disabled={isCreatingAuthContext || !pkpInfo || !isPkpFunded}
       style={{
         padding: "12px 20px",
         backgroundColor:
-          isCreatingAuthContext || !pkpInfo ? "#cccccc" : "#007bff",
+          isCreatingAuthContext || !pkpInfo || !isPkpFunded ? "#cccccc" : "#007bff",
         color: "white",
         border: "none",
         borderRadius: "4px",
-        cursor: isCreatingAuthContext || !pkpInfo ? "not-allowed" : "pointer",
+        cursor: isCreatingAuthContext || !pkpInfo || !isPkpFunded ? "not-allowed" : "pointer",
         fontWeight: "500",
       }}
     >
       {isCreatingAuthContext
         ? "Creating..."
-        : "Create AuthContext with WebAuthn PKP"}
+        : !isPkpFunded ? "Fund PKP first (naga-test)" : "Create AuthContext with WebAuthn PKP"}
     </button>
   );
 
@@ -348,12 +361,30 @@ export default function WebAuthnTab() {
             )}
           </li>
           <li>
-            Lit Auth Server (eg. https://auth.litgateway.com):{" "}
-            {true ? (
-              <span style={{ color: "green" }}>✓ Initialised</span>
-            ) : (
-              <span style={{ color: "red" }}>✗ Not initialised</span>
-            )}
+            Login Service URL:
+            <div style={{ marginTop: 6 }}>
+              <input
+                type="url"
+                value={loginUrl}
+                onChange={(e) => setSyncedLogin(e.target.value)}
+                placeholder={APP_INFO.litLoginServer}
+                style={{ width: "100%", padding: "6px 10px", border: "1px solid #ddd", borderRadius: 4, fontFamily: "monospace" }}
+              />
+              <small style={{ color: "#666" }}>Stored in 'lit-login-server-url'</small>
+            </div>
+          </li>
+          <li>
+            Auth Service URL for {APP_INFO.network}:
+            <div style={{ marginTop: 6 }}>
+              <input
+                type="url"
+                value={authServiceBaseUrl}
+                onChange={(e) => setSyncedAuthUrl(e.target.value)}
+                placeholder={(APP_INFO as any).authServiceUrls?.[APP_INFO.network]}
+                style={{ width: "100%", padding: "6px 10px", border: "1px solid #ddd", borderRadius: 4, fontFamily: "monospace" }}
+              />
+              <small style={{ color: "#666" }}>Stored in 'lit-auth-server-url-map' keyed by network</small>
+            </div>
           </li>
           <li>
             FIDO2-Compatible Device (such as a security key, fingerprint sensor,
@@ -523,10 +554,26 @@ export default function WebAuthnTab() {
 
       <GreyBoarderWhiteBgContainer>
         {/* ================================================ */}
+        {/*               Fund PKP Ledger                    */}
+        {/* ================================================ */}
+        <h3 style={{ marginTop: 0 }}>
+          Step 3: Fund PKP Ledger {(!pkpInfo) && (
+            <span style={{ color: "orange" }}>(Register & Fetch PKP first)</span>
+          )}
+        </h3>
+        <p>
+          On naga-test, you must fund your PKP ledger before creating an AuthContext.
+          Use the balance check and deposit example below to top up at least 0.1 ETH.
+        </p>
+        <FundPkpLedgerCheck pkpAddress={pkpInfo?.ethAddress} onStatusChange={setIsPkpFunded} />
+      </GreyBoarderWhiteBgContainer>
+
+      <GreyBoarderWhiteBgContainer>
+        {/* ================================================ */}
         {/*               Create AuthContext                  */}
         {/* ================================================ */}
         <h3 style={{ marginTop: 0 }}>
-          Step 3: Create AuthContext{" "}
+          Step 4: Create AuthContext{" "}
           {!pkpInfo && (
             <span style={{ color: "orange" }}>(Register & Mint PKP first)</span>
           )}
@@ -575,7 +622,7 @@ export default function WebAuthnTab() {
           setStatus={setStatus}
           assertDependenciesLoaded={assertDependenciesLoaded}
           defaultMessage="Hello from WebAuthn PKP!"
-          componentTitle={`Step 4: Sign Message with PKP (${AUTH_NAME})`}
+          componentTitle={`Step 5: Sign Message with PKP (${AUTH_NAME})`}
         />
       </GreyBoarderWhiteBgContainer>
 
@@ -590,7 +637,7 @@ export default function WebAuthnTab() {
           setStatus={setStatus}
           assertDependenciesLoaded={assertDependenciesLoaded}
           defaultMessage="Hello from WebAuthn Lit Action!"
-          componentTitle={`Step 5: Execute Lit Action (${AUTH_NAME})`}
+          componentTitle={`Step 6: Execute Lit Action (${AUTH_NAME})`}
           showError={showError}
         />
       </GreyBoarderWhiteBgContainer>

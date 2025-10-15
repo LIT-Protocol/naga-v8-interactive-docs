@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DisplayCode } from "../../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../../components/layout/GreyboardWhiteBgContainer";
 import EoaAuthSection from "../../components/common/EoaAuthSection";
@@ -7,11 +7,13 @@ import { useAppContext } from "../../router";
 import PkpSigningComponent from "../../components/common/PkpSigningComponent";
 import ExecuteJsComponent from "../../components/common/ExecuteJsComponent";
 import { APP_INFO } from "../../_config";
+import { useRuntimeUrls } from "../../hooks/useRuntimeUrls";
+import FundPkpLedgerCheck from "../../components/common/FundPkpLedgerCheck";
 
 const AUTH_NAME = "Stytch WhatsApp OTP Authentication";
 
 // Configuration constants
-const DEFAULT_AUTH_SERVICE_BASE_URL = APP_INFO.litAuthServer;
+const DEFAULT_AUTH_SERVICE_BASE_URL = (APP_INFO as any).authServiceUrls?.[APP_INFO.network] as string;
 
 // Code snippets for each functionality
 const SEND_OTP_CODE = `
@@ -98,12 +100,23 @@ export default function StytchWhatsAppOtpAuthTab() {
 
   const [phoneNumber, setPhoneNumber] = useState<string>("");
   const [otpCode, setOtpCode] = useState<string>("");
-  const [authServiceBaseUrl, setAuthServiceBaseUrl] = useState<string>(
-    DEFAULT_AUTH_SERVICE_BASE_URL
-  );
+  const [authServiceBaseUrl, setAuthServiceBaseUrl] = useState<string>(DEFAULT_AUTH_SERVICE_BASE_URL || "");
+  const [loginUrl, setLoginUrl] = useState<string>(APP_INFO.litLoginServer);
+
+  // Shared, synchronised runtime URLs
+  const {
+    loginUrl: syncedLogin,
+    setLoginUrl: setSyncedLogin,
+    authServiceUrlCurrentNet: syncedAuthUrl,
+    setAuthServiceUrlForNetwork: setSyncedAuthUrl,
+  } = useRuntimeUrls();
+
+  useEffect(() => { setLoginUrl(syncedLogin); }, [syncedLogin]);
+  useEffect(() => { setAuthServiceBaseUrl(syncedAuthUrl || ""); }, [syncedAuthUrl]);
   const [methodId, setMethodId] = useState<string>("");
   const [authData, setAuthData] = useState<any>(null);
   const [pkpInfo, setPkpInfo] = useState<any>(null);
+  const [isPkpFunded, setIsPkpFunded] = useState<boolean>(false);
 
   const sendOtp = async () => {
     try {
@@ -319,12 +332,30 @@ export default function StytchWhatsAppOtpAuthTab() {
             )}
           </li>
           <li>
-            Stytch Auth Service (backend required):{" "}
-            {authServiceBaseUrl ? (
-              <span style={{ color: "green" }}>✓ Configured</span>
-            ) : (
-              <span style={{ color: "red" }}>✗ Not configured</span>
-            )}
+            Login Service URL:
+            <div style={{ marginTop: 6 }}>
+              <input
+                type="url"
+                value={loginUrl}
+                onChange={(e) => persistLoginUrl(e.target.value)}
+                placeholder={APP_INFO.litLoginServer}
+                style={{ width: "100%", padding: "6px 10px", border: "1px solid #ddd", borderRadius: 4, fontFamily: "monospace" }}
+              />
+              <small style={{ color: "#666" }}>Stored in 'lit-login-server-url'</small>
+            </div>
+          </li>
+          <li>
+            Stytch Auth Service (backend required):
+            <div style={{ marginTop: 6 }}>
+              <input
+                type="url"
+                value={authServiceBaseUrl}
+                onChange={(e) => persistAuthServiceUrlForNetwork(e.target.value)}
+                placeholder={String(DEFAULT_AUTH_SERVICE_BASE_URL || "")}
+                style={{ width: "100%", padding: "6px 10px", border: "1px solid #ddd", borderRadius: 4, fontFamily: "monospace" }}
+              />
+              <small style={{ color: "#666" }}>Stored in 'lit-auth-server-url-map' for {APP_INFO.network}</small>
+            </div>
           </li>
           <li>
             Valid Phone Number:{" "}
@@ -414,7 +445,7 @@ export default function StytchWhatsAppOtpAuthTab() {
                   id="authServiceBaseUrl"
                   type="url"
                   value={authServiceBaseUrl}
-                  onChange={(e) => setAuthServiceBaseUrl(e.target.value)}
+                  onChange={(e) => persistAuthServiceUrlForNetwork(e.target.value)}
                   placeholder={APP_INFO.litAuthServer}
                   style={{
                     width: "100%",
@@ -883,6 +914,22 @@ export default function StytchWhatsAppOtpAuthTab() {
 
       <GreyBoarderWhiteBgContainer>
         {/* ================================================ */}
+        {/*               Fund PKP Ledger                    */}
+        {/* ================================================ */}
+        <h3 style={{ marginTop: 0 }}>
+          Step 3: Fund PKP Ledger {(!pkpInfo) && (
+            <span style={{ color: "orange" }}>(Select or mint PKP first)</span>
+          )}
+        </h3>
+        <p>
+          On naga-test, you must fund your PKP ledger before creating an AuthContext.
+          Use the balance check and deposit example below to top up at least 0.1 ETH.
+        </p>
+        <FundPkpLedgerCheck pkpAddress={pkpInfo?.ethAddress} onStatusChange={setIsPkpFunded} />
+      </GreyBoarderWhiteBgContainer>
+
+      <GreyBoarderWhiteBgContainer>
+        {/* ================================================ */}
         {/*               Create AuthContext                  */}
         {/* ================================================ */}
         <h3 style={{ marginTop: 0 }}>
@@ -915,26 +962,24 @@ export default function StytchWhatsAppOtpAuthTab() {
         <DisplayCode
           code={CREATE_AUTH_CONTEXT_CODE}
           language="typescript"
-          renderComponent={
-            <button
-              onClick={createAuthContext}
-              disabled={isCreatingAuthContext || !pkpInfo}
-              style={{
-                padding: "12px 20px",
-                backgroundColor:
-                  isCreatingAuthContext || !pkpInfo ? "#cccccc" : "#007bff",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: isCreatingAuthContext || !pkpInfo ? "not-allowed" : "pointer",
-                fontWeight: "500",
-              }}
-            >
-              {isCreatingAuthContext
-                ? "Creating..."
-                : "Create AuthContext with Stytch PKP"}
-            </button>
-          }
+          renderComponent={<button
+            onClick={createAuthContext}
+            disabled={isCreatingAuthContext || !pkpInfo || !isPkpFunded}
+            style={{
+              padding: "12px 20px",
+              backgroundColor:
+                isCreatingAuthContext || !pkpInfo || !isPkpFunded ? "#cccccc" : "#007bff",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: isCreatingAuthContext || !pkpInfo || !isPkpFunded ? "not-allowed" : "pointer",
+              fontWeight: "500",
+            }}
+          >
+            {isCreatingAuthContext
+              ? "Creating..."
+              : !isPkpFunded ? "Fund PKP first (naga-test)" : "Create AuthContext with Stytch PKP"}
+          </button>}
           resultData={authContext}
           resultLabel="AuthContext Information"
           useSideBySide={true}

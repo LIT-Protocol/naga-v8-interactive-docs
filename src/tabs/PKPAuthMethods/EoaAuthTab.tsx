@@ -13,6 +13,7 @@ import { useAppContext } from "../../router";
 import EoaAuthSection from "../../components/common/EoaAuthSection";
 import ExecuteJsComponent from "../../components/common/ExecuteJsComponent";
 import PaymentInformation from "../../components/tips/PaymentInformation";
+import FundPkpLedgerCheck from "../../components/common/FundPkpLedgerCheck";
 import { createSiweMessage } from '@lit-protocol/auth-helpers';
 
 const AUTH_NAME = "EOA Authentication";
@@ -79,6 +80,7 @@ export default function EoaAuthTab() {
   const [account, setAccount] = useState<any>(null);
   const [authData, setAuthData] = useState<any>(null);
   const [pkpInfo, setPkpInfo] = useState<any>(null);
+  const [isPkpFunded, setIsPkpFunded] = useState<boolean>(false);
 
   // Success feedback state
   const [successActions, setSuccessActions] = useState<Set<string>>(new Set());
@@ -410,6 +412,22 @@ export default function EoaAuthTab() {
 
       <GreyBoarderWhiteBgContainer>
         {/* ================================================ */}
+        {/*               Fund PKP Ledger                    */}
+        {/* ================================================ */}
+        <h3 style={{ marginTop: 0 }}>
+          Step 3: Fund PKP Ledger {(!pkpInfo) && (
+            <span style={{ color: "orange" }}>(Select or mint PKP first)</span>
+          )}
+        </h3>
+        <p>
+          On naga-test, you must fund your PKP ledger before creating an AuthContext.
+          Use the balance check and deposit example below to top up at least 0.1 ETH.
+        </p>
+        <FundPkpLedgerCheck pkpAddress={pkpInfo?.ethAddress} onStatusChange={setIsPkpFunded} />
+      </GreyBoarderWhiteBgContainer>
+
+      <GreyBoarderWhiteBgContainer>
+        {/* ================================================ */}
         {/*               Create AuthContext                  */}
         {/* ================================================ */}
         <h3 style={{ marginTop: 0 }}>
@@ -442,27 +460,25 @@ export default function EoaAuthTab() {
         <DisplayCode
           code={CREATE_AUTH_CONTEXT_CODE}
           language="typescript"
-          renderComponent={
-            <button
-              onClick={createAuthContext}
-              disabled={isCreatingAuthContext || !pkpInfo}
-              style={{
-                padding: "12px 20px",
-                backgroundColor:
-                  isCreatingAuthContext || !pkpInfo ? "#cccccc" : "#007bff",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor:
-                  isCreatingAuthContext || !pkpInfo ? "not-allowed" : "pointer",
-                fontWeight: "500",
-              }}
-            >
-              {isCreatingAuthContext
-                ? "Creating..."
-                : "Create AuthContext with EOA PKP"}
-            </button>
-          }
+          renderComponent={<button
+            onClick={createAuthContext}
+            disabled={isCreatingAuthContext || !pkpInfo || !isPkpFunded}
+            style={{
+              padding: "12px 20px",
+              backgroundColor:
+                isCreatingAuthContext || !pkpInfo || !isPkpFunded ? "#cccccc" : "#007bff",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor:
+                isCreatingAuthContext || !pkpInfo || !isPkpFunded ? "not-allowed" : "pointer",
+              fontWeight: "500",
+            }}
+          >
+            {isCreatingAuthContext
+              ? "Creating..."
+              : !isPkpFunded ? "Fund PKP first (naga-test)" : "Create AuthContext with EOA PKP"}
+          </button>}
           resultData={authContext}
           resultLabel="AuthContext Information"
           useSideBySide={true}

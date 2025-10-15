@@ -5,7 +5,7 @@
  * Modify these values to customize the application behavior.
  */
 
-import { nagaDev, nagaStaging } from "@lit-protocol/networks";
+import { nagaDev, nagaTest } from "@lit-protocol/networks";
 
 // WalletConnect Configuration
 export const WALLET_CONNECT = {
@@ -19,12 +19,44 @@ export const APP_INFO = {
   description: "Explore the Lit Protocol ecosystem",
   copyright: "Lit Protocol",
   version: "1.0.0",
-  network: 'naga-dev',
-  networkModule: nagaDev,
-  litLoginServer: 'https://login.litgateway.com',
+  // Selected Lit network for demos (persisted via localStorage by Header selector)
+  network: (typeof window !== "undefined" && window.localStorage?.getItem("lit-network-name")) || 'naga-dev',
+  networkModule: ((): any => {
+    if (typeof window !== "undefined") {
+      const name = window.localStorage?.getItem("lit-network-name");
+      if (name === 'naga-test') return nagaTest;
+    }
+    return nagaDev;
+  })(),
+  supportedNetworks: ["naga-dev", "naga-test"] as const,
+  // Login service URL (global). Read from localStorage if set; fall back to env, then default
+  litLoginServer: ((): string => {
+    try {
+      const saved = typeof window !== 'undefined' ? window.localStorage?.getItem('lit-login-server-url') : null;
+      if (saved) return saved;
+    } catch {}
+    return import.meta.env.VITE_LOGIN_SERVICE_URL || 'https://login.litgateway.com';
+  })(),
 
-  // 'https://naga-dev-auth-service.getlit.dev'
-  litAuthServer: import.meta.env.VITE_AUTH_SERVICE_URL,
+  // Discord Client ID (global)
+  discordClientId: import.meta.env.VITE_LOGIN_DISCORD_CLIENT_ID || '1052874239658692668',
+
+  // Per-network Auth Service URLs; prefer localStorage map, otherwise env defaults per network
+  authServiceUrls: ((): Record<string, string> => {
+    const defaults: Record<string, string> = {
+      'naga-dev': import.meta.env.VITE_AUTH_SERVICE_URL_NAGA_DEV || 'https://naga-dev-auth-service.getlit.dev',
+      'naga-test': import.meta.env.VITE_AUTH_SERVICE_URL_NAGA_TEST || 'https://naga-test-auth-service.getlit.dev',
+      'naga': import.meta.env.VITE_AUTH_SERVICE_URL_NAGA || 'https://naga-auth-service.getlit.dev',
+    };
+    try {
+      const raw = typeof window !== 'undefined' ? window.localStorage?.getItem('lit-auth-server-url-map') : null;
+      if (raw) {
+        const parsed = JSON.parse(raw) as Record<string, string>;
+        return { ...defaults, ...parsed };
+      }
+    } catch {}
+    return defaults;
+  })(),
   faucetUrl: 'https://chronicle-yellowstone-faucet.getlit.dev/',
   defaultPrivateKey: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
 } as const;

@@ -10,6 +10,7 @@ import PkpSelectionComponent from "../../components/common/PkpSelectionComponent
 import ExecuteJsComponent from "../../components/common/ExecuteJsComponent";
 import { APP_INFO } from "../../_config";
 import PaymentInformation from "../../components/tips/PaymentInformation";
+import FundPkpLedgerCheck from "../../components/common/FundPkpLedgerCheck";
 
 const AUTH_NAME = "Google Authentication";
 
@@ -17,9 +18,8 @@ const AUTH_NAME = "Google Authentication";
 const SIGN_IN_CODE = `
 import { GoogleAuthenticator } from "@lit-protocol/auth";
 
-const authData = await GoogleAuthenticator.authenticate(
-  "https://login.litgateway.com"
-);`;
+// Use the Login Service URL from config or local settings
+const authData = await GoogleAuthenticator.authenticate(APP_INFO.litLoginServer);`;
 
 const MINT_PKP_CODE = `
 const res = await litClient.authService.mintWithAuth({
@@ -62,6 +62,7 @@ export default function GoogleAuthTab() {
   const [isCreatingAuthContext, setIsCreatingAuthContext] = useState(false);
   const [authData, setAuthData] = useState<any>();
   const [pkpInfo, setPkpInfo] = useState<any>();
+  const [isPkpFunded, setIsPkpFunded] = useState<boolean>(false);
 
   // Success feedback state
   const [successActions, setSuccessActions] = useState<Set<string>>(new Set());
@@ -97,9 +98,7 @@ export default function GoogleAuthTab() {
       setIsSigningIn(true);
       setStatus("Signing in with Google...");
 
-      const authData = await GoogleAuthenticator.authenticate(
-        "https://login.litgateway.com"
-      );
+      const authData = await GoogleAuthenticator.authenticate(APP_INFO.litLoginServer);
 
       setAuthData(authData);
       setStatus("Successfully signed in with Google");
@@ -130,11 +129,33 @@ export default function GoogleAuthTab() {
         return;
       }
 
+      // Preflight: ensure PKP ledger funded on current network before session key signing
+      try {
+        // Use a read-only viem account for checking balance
+        const { privateKeyToAccount } = await import("viem/accounts");
+        const roAccount = privateKeyToAccount(
+          (APP_INFO.defaultPrivateKey as unknown as `0x${string}`)
+        );
+        const pm = await litClient.getPaymentManager({ account: roAccount });
+        const bal = await pm.getBalance({ userAddress: pkpInfo.ethAddress });
+        const available = parseFloat(bal?.availableBalance || "0");
+        if (available <= 0) {
+          throw new Error(
+            `PKP Lit Ledger has 0 available balance. Please fund at least 0.1 on ${APP_INFO.network} before creating an AuthContext.`
+          );
+        }
+      } catch (preErr: any) {
+        setIsCreatingAuthContext(false);
+        const msg = formatErrorMessage("Failed to create auth context: ", preErr);
+        setStatus(msg);
+        showError?.(msg);
+        return;
+      }
+
       const authContext = await authManager.createPkpAuthContext({
         authData: authData,
         pkpPublicKey: pkpInfo.pubkey,
         authConfig: {
-          capabilityAuthSigs: [],
           expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
           statement: "",
           domain: "",
@@ -186,20 +207,22 @@ export default function GoogleAuthTab() {
   const CreateAuthContextButton = () => (
     <button
       onClick={createAuthContext}
-      disabled={isCreatingAuthContext || !pkpInfo}
+      disabled={isCreatingAuthContext || !pkpInfo || !isPkpFunded}
       style={{
         padding: "12px 20px",
         backgroundColor:
-          isCreatingAuthContext || !pkpInfo ? "#cccccc" : "#007bff",
+          isCreatingAuthContext || !pkpInfo || !isPkpFunded ? "#cccccc" : "#007bff",
         color: "white",
         border: "none",
         borderRadius: "4px",
-        cursor: isCreatingAuthContext || !pkpInfo ? "not-allowed" : "pointer",
+        cursor: isCreatingAuthContext || !pkpInfo || !isPkpFunded ? "not-allowed" : "pointer",
         fontWeight: "500",
       }}
     >
       {isCreatingAuthContext
         ? "Creating..."
+        : !isPkpFunded
+        ? "Fund PKP first (naga-test)"
         : "Create AuthContext with Google PKP"}
     </button>
   );
@@ -238,20 +261,51 @@ export default function GoogleAuthTab() {
             )}
           </li>
           <li>
-            Lit Login Server (eg. {APP_INFO.litLoginServer}):{" "}
-            {true ? (
-              <span style={{ color: "blue" }}>Manual setup</span>
-            ) : (
-              <span style={{ color: "red" }}>✗ Not initialised</span>
-            )}
+            Lit Login Server URL
+            <div style={{ marginTop: 6 }}>
+              <input
+                type="url"
+                defaultValue={APP_INFO.litLoginServer}
+                onBlur={(e) => {
+                  try {
+                    if (e.target.value) {
+                      window.localStorage.setItem('lit-login-server-url', e.target.value);
+                      setStatus('Saved Login Service URL. Reload to take effect.');
+                    } else {
+                      window.localStorage.removeItem('lit-login-server-url');
+                    }
+                  } catch {}
+                }}
+                placeholder="https://login.litgateway.com"
+                style={{ width: '100%', padding: '8px 10px', border: '1px solid #ddd', borderRadius: 6 }}
+              />
+              <small style={{ color: '#666' }}>Stored locally. Leave blank to use default.</small>
+            </div>
           </li>
           <li>
-            Lit Auth Server (eg. {APP_INFO.litAuthServer}):{" "}
-            {true ? (
-              <span style={{ color: "blue" }}>Manual setup</span>
-            ) : (
-              <span style={{ color: "red" }}>✗ Not initialised</span>
-            )}
+            Auth Service URL (per network)
+            <div style={{ marginTop: 6 }}>
+              <input
+                type="url"
+                defaultValue={(APP_INFO as any).authServiceUrls?.[APP_INFO.network]}
+                onBlur={(e) => {
+                  try {
+                    const raw = window.localStorage.getItem('lit-auth-server-url-map');
+                    const map = raw ? (JSON.parse(raw) as Record<string,string>) : {};
+                    if (e.target.value) {
+                      map[APP_INFO.network] = e.target.value;
+                    } else {
+                      delete map[APP_INFO.network];
+                    }
+                    window.localStorage.setItem('lit-auth-server-url-map', JSON.stringify(map));
+                    setStatus(`Saved Auth Service URL for ${APP_INFO.network}. Reload to take effect.`);
+                  } catch {}
+                }}
+                placeholder={(APP_INFO as any).authServiceUrls?.[APP_INFO.network]}
+                style={{ width: '100%', padding: '8px 10px', border: '1px solid #ddd', borderRadius: 6 }}
+              />
+              <small style={{ color: '#666' }}>Stored locally per network. Leave blank to use default.</small>
+            </div>
           </li>
         </ul>
       </GreyBoarderWhiteBgContainer>
@@ -296,10 +350,26 @@ export default function GoogleAuthTab() {
 
       <GreyBoarderWhiteBgContainer>
         {/* ================================================ */}
+        {/*               Fund PKP Ledger                    */}
+        {/* ================================================ */}
+        <h3 style={{ marginTop: 0 }}>
+          Step 3: Fund PKP Ledger {(!pkpInfo) && (
+            <span style={{ color: "orange" }}>(Select or mint PKP first)</span>
+          )}
+        </h3>
+        <p>
+          On naga-test, you must fund your PKP ledger before creating an AuthContext.
+          Use the balance check and deposit example below to top up at least 0.1 ETH.
+        </p>
+        <FundPkpLedgerCheck pkpAddress={pkpInfo?.ethAddress} onStatusChange={setIsPkpFunded} />
+      </GreyBoarderWhiteBgContainer>
+
+      <GreyBoarderWhiteBgContainer>
+        {/* ================================================ */}
         {/*               Create AuthContext                  */}
         {/* ================================================ */}
         <h3 style={{ marginTop: 0 }}>
-          Step 3: Create AuthContext{" "}
+          Step 4: Create AuthContext{" "}
           {!pkpInfo && (
             <span style={{ color: "orange" }}>(Select or mint PKP first)</span>
           )}
@@ -348,7 +418,7 @@ export default function GoogleAuthTab() {
           setStatus={setStatus}
           assertDependenciesLoaded={assertDependenciesLoaded}
           defaultMessage="Hello from Google PKP!"
-          componentTitle={`Step 4: Sign Message with PKP (${AUTH_NAME})`}
+          componentTitle={`Step 5: Sign Message with PKP (${AUTH_NAME})`}
         />
       </GreyBoarderWhiteBgContainer>
 
@@ -363,7 +433,7 @@ export default function GoogleAuthTab() {
           setStatus={setStatus}
           assertDependenciesLoaded={assertDependenciesLoaded}
           defaultMessage="Hello from Google Lit Action!"
-          componentTitle={`Step 5: Execute Lit Action (${AUTH_NAME})`}
+          componentTitle={`Step 6: Execute Lit Action (${AUTH_NAME})`}
           showError={showError}
         />
       </GreyBoarderWhiteBgContainer>

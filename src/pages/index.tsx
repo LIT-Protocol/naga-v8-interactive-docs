@@ -395,6 +395,14 @@ const ACTIONS = [
     category: "Payment Management",
     type: "primary",
   },
+  {
+    id: "jss100-custom-contract",
+    path: "/jss100-custom-contract",
+    name: "JSS100 Custom Contract",
+    description: "Use a custom contract for access control conditions",
+    category: "Payment Management",
+    type: "primary",
+  },
 
   // More authentication methods will be added here
 ];

@@ -7,11 +7,12 @@ import { useAppContext } from "../../../router";
 import PkpSigningComponent from "../../../components/common/PkpSigningComponent";
 import ExecuteJsComponent from "../../../components/common/ExecuteJsComponent";
 import { APP_INFO } from "../../../_config";
+import { useRuntimeUrls } from "../../../hooks/useRuntimeUrls";
 
 const AUTH_NAME = "Stytch TOTP 2FA Authentication";
 
 // Configuration constants
-const DEFAULT_AUTH_SERVICE_BASE_URL = APP_INFO.litAuthServer;
+const DEFAULT_AUTH_SERVICE_BASE_URL = (APP_INFO as any).authServiceUrls?.[APP_INFO.network] as string;
 
 // Code snippets for each functionality
 const AUTHENTICATE_TOTP_CODE = `
@@ -62,9 +63,19 @@ export default function StytchTotpAuthTab() {
 
   const [userId, setUserId] = useState<string>("");
   const [totpCode, setTotpCode] = useState<string>("");
-  const [authServiceBaseUrl, setAuthServiceBaseUrl] = useState<string>(
-    DEFAULT_AUTH_SERVICE_BASE_URL
-  );
+  const [authServiceBaseUrl, setAuthServiceBaseUrl] = useState<string>(DEFAULT_AUTH_SERVICE_BASE_URL || "");
+  const [loginUrl, setLoginUrl] = useState<string>(APP_INFO.litLoginServer);
+
+  // Shared, synchronised runtime URLs
+  const {
+    loginUrl: syncedLogin,
+    setLoginUrl: setSyncedLogin,
+    authServiceUrlCurrentNet: syncedAuthUrl,
+    setAuthServiceUrlForNetwork: setSyncedAuthUrl,
+  } = useRuntimeUrls();
+
+  useEffect(() => { setLoginUrl(syncedLogin); }, [syncedLogin]);
+  useEffect(() => { setAuthServiceBaseUrl(syncedAuthUrl || ""); }, [syncedAuthUrl]);
   const [authData, setAuthData] = useState<any>(null);
   const [pkpInfo, setPkpInfo] = useState<any>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
@@ -234,7 +245,34 @@ export default function StytchTotpAuthTab() {
           </li>
         </ul>
 
-        {/* Auth Service Base URL Configuration */}
+        {/* Login & Auth Service URL Configuration */}
+        <div style={{ marginTop: "15px" }}>
+          <label
+            htmlFor="loginServiceUrl"
+            style={{ display: "block", marginBottom: "5px", fontWeight: "500" }}
+          >
+            Login Service URL:
+          </label>
+          <input
+            id="loginServiceUrl"
+            type="url"
+            value={loginUrl}
+            onChange={(e) => setSyncedLogin(e.target.value)}
+            placeholder={APP_INFO.litLoginServer}
+            style={{
+              width: "100%",
+              padding: "8px 12px",
+              border: "1px solid #ddd",
+              borderRadius: "4px",
+              fontSize: "14px",
+              fontFamily: "monospace",
+            }}
+          />
+          <small style={{ color: "#666", display: "block", marginTop: 4 }}>
+            Stored in 'lit-login-server-url'
+          </small>
+        </div>
+
         <div style={{ marginTop: "15px" }}>
           <label
             htmlFor="authServiceBaseUrl"
@@ -246,7 +284,7 @@ export default function StytchTotpAuthTab() {
             id="authServiceBaseUrl"
             type="url"
             value={authServiceBaseUrl}
-            onChange={(e) => setAuthServiceBaseUrl(e.target.value)}
+            onChange={(e) => setSyncedAuthUrl(e.target.value)}
             placeholder={APP_INFO.litAuthServer}
             style={{
               width: "100%",
@@ -258,7 +296,7 @@ export default function StytchTotpAuthTab() {
             }}
           />
           <small style={{ color: "#666", fontSize: "12px" }}>
-            URL of your authentication service that handles Stytch interaction.
+            URL stored in 'lit-auth-server-url-map' for {APP_INFO.network}
           </small>
         </div>
 

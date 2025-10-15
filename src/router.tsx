@@ -26,6 +26,7 @@ import EoaNativeTab from "./tabs/EoaNativeTab";
 import StoragePluginsTab from "./tabs/GettingStarted/StoragePluginsTab";
 import StytchTotpAuthTab from "./tabs/PKPAuthMethods/2fa/StytchTotpAuthTab";
 import PaymentManagerTab from "./tabs/PaymentManagerTab";
+import JSS100CustomContractTab from "./tabs/JSS100CustomContractTab";
 
 // Create a type for the context
 type ContextType = {
@@ -158,6 +159,10 @@ export const router = createBrowserRouter([
       {
         path: "payment-manager",
         element: <PaymentManagerTab />,
+      },
+      {
+        path: "jss100-custom-contract",
+        element: <JSS100CustomContractTab />,
       },
     ],
   },

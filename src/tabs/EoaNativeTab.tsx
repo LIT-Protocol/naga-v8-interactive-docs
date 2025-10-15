@@ -9,6 +9,7 @@ import AccountMethodSelector, {
 import { DisplayCode } from "../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgContainer";
 import { useAppContext } from "../router";
+import { APP_INFO } from "../_config";
 
 const OPERATION_NAME = "EOA Auth";
 
@@ -51,6 +52,55 @@ const addPermissionsTx = await pkpPermissionsManager.addPermittedAction({
 });
 ]);`;
 
+const CREATE_EOA_AUTH_CONTEXT_CODE = `
+// Create an EOA AuthContext to use your EOA-owned PKP for signing
+const eoaAuthContext = await authManager.createEoaAuthContext({
+  config: {
+    account: myAccount, // your EOA (walletClient or viem account)
+  },
+  authConfig: {
+    domain: window.location.origin,
+    statement: 'Use PKP with EOA',
+    expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
+    resources: [
+      ['pkp-signing', '*'],
+      ['lit-action-execution', '*'],
+    ],
+  },
+  litClient,
+});`;
+
+const PKP_SIGN_CODE = `
+// Sign a message with your EOA-owned PKP via viem account
+// Precondition: you created eoaAuthContext and funded the PKP ledger
+const chainConfig = litClient.getChainConfig().viemConfig;
+const pkpViemAccount = await litClient.getPkpViemAccount({
+  pkpPublicKey: mintedPkpInfo.pubkey,
+  authContext: eoaAuthContext,
+  chainConfig,
+});
+const signature = await pkpViemAccount.signMessage({ message: 'Hello from EOA PKP' });
+console.log('signature:', signature);`;
+
+const LIT_ACTION_EXECUTE_CODE = `
+// Execute a Lit Action using your EOA-owned PKP (inline code example)
+// Precondition: eoaAuthContext exists and PKP ledger is funded
+const code = ` + "`" + `
+const go = async () => {
+  const message = (jsParams && jsParams.message) || 'Hello from EOA PKP';
+  // Return a simple response
+  Lit.Actions.setResponse({ response: message });
+};
+go();
+` + "`" + `;
+
+const result = await litClient.executeJs({
+  code,
+  authContext: eoaAuthContext,
+  jsParams: { message: 'Hello from EOA PKP' },
+});
+console.log('Lit Action result:', result);`;
+
 import { createLitClient } from "@lit-protocol/lit-client";
 type LitClient = Awaited<
   ReturnType<
@@ -82,6 +132,16 @@ export default function EoaNativeTab() {
   );
   const [pkpPermissions, setPkpPermissions] = useState<any>(null);
   const [addPermissionsResult, setAddPermissionsResult] = useState<any>(null);
+  const [eoaAuthContext, setEoaAuthContext] = useState<any>(null);
+  const [pkpSignature, setPkpSignature] = useState<string>("");
+  const [litActionResult, setLitActionResult] = useState<any>(null);
+  // Funding state for PKP Ledger
+  const [fundAccount, setFundAccount] = useState<any>(null);
+  const [fundAmount, setFundAmount] = useState<string>("0.1");
+  const [fundTxHash, setFundTxHash] = useState<string>("");
+  const [isFunding, setIsFunding] = useState<boolean>(false);
+  const [isCheckingBalance, setIsCheckingBalance] = useState<boolean>(false);
+  const [availableBalance, setAvailableBalance] = useState<string>("");
 
   // Success feedback state
   const [successActions, setSuccessActions] = useState<Set<string>>(new Set());
@@ -235,6 +295,174 @@ export default function EoaNativeTab() {
       showError?.(errorMessage);
     } finally {
       setIsAddingPermissions(false);
+    }
+  };
+
+  // Create EOA AuthContext (required for pkpSign)
+  const createEoaAuthContext = async () => {
+    try {
+      const { authManager, litClient } = assertDependenciesLoaded();
+      if (!account) {
+        throw new Error("No account found. Create or connect an account first.");
+      }
+      setStatus("Creating EOA AuthContext for PKP usage...");
+      const ctx = await authManager.createEoaAuthContext({
+        config: { account },
+        authConfig: {
+          domain: window.location.origin,
+          statement: "Use PKP with EOA",
+          expiration: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          resources: [["pkp-signing", "*"], ["lit-action-execution", "*"]],
+        },
+        litClient,
+      });
+      setEoaAuthContext(ctx);
+      setStatus("EOA AuthContext created successfully");
+      showSuccess("eoa-native-create-eoa-auth");
+    } catch (error: any) {
+      const msg = formatErrorMessage("Failed to create EOA AuthContext: ", error);
+      setStatus(msg);
+      showError?.(msg);
+    }
+  };
+
+  // Sign a message using the EOA-owned PKP
+  const signWithPkp = async () => {
+    try {
+      console.log("[EOA_NATIVE][pkpSign] Clicked Sign Message with PKP");
+      const { litClient } = assertDependenciesLoaded();
+      console.log("[EOA_NATIVE][pkpSign] litClient ready:", !!litClient);
+      const pkpPublicKey = mintedPkpInfo?.pubkey || mintedPkpInfo?.publicKey;
+      console.log("[EOA_NATIVE][pkpSign] mintedPkpInfo:", mintedPkpInfo);
+      console.log("[EOA_NATIVE][pkpSign] pkpPublicKey detected:", pkpPublicKey);
+      if (!pkpPublicKey) {
+        throw new Error("No PKP found. Mint or load a PKP first.");
+      }
+      console.log("[EOA_NATIVE][pkpSign] eoaAuthContext present:", !!eoaAuthContext);
+      if (!eoaAuthContext) {
+        throw new Error("No EOA AuthContext. Create it first.");
+      }
+
+      // Preflight: ensure PKP ledger is funded on current network
+      try {
+        console.log("[EOA_NATIVE][pkpSign] Getting PaymentManager with account:",
+          account?.address || walletClient?.account?.address);
+        const pm = await litClient.getPaymentManager({ account: account || walletClient });
+        const bal = await pm.getBalance({ userAddress: mintedPkpInfo.ethAddress });
+        console.log("[EOA_NATIVE][pkpSign] PKP balance:", bal);
+        const available = parseFloat(bal?.availableBalance || "0");
+        if (available <= 0) {
+          setStatus(
+            `PKP Lit Ledger has 0 balance on ${APP_INFO.network}. Please fund ${mintedPkpInfo.ethAddress} and try again.`
+          );
+          console.warn("[EOA_NATIVE][pkpSign] Insufficient ledger balance. Aborting sign.");
+          return;
+        }
+      } catch {}
+
+      setStatus("Signing with PKP via viem...");
+      const chainConfig = litClient.getChainConfig().viemConfig;
+      console.log("[EOA_NATIVE][pkpSign] chainConfig ready:", !!chainConfig);
+      const pkpViemAccount = await litClient.getPkpViemAccount({
+        pkpPublicKey,
+        authContext: eoaAuthContext,
+        chainConfig,
+      });
+      console.log("[EOA_NATIVE][pkpSign] Derived pkpViemAccount:", {
+        address: pkpViemAccount?.address,
+        type: typeof pkpViemAccount,
+      });
+      const sig = await pkpViemAccount.signMessage({ message: "Hello from EOA PKP" });
+      console.log("[EOA_NATIVE][pkpSign] signature:", sig);
+      setPkpSignature(sig);
+      setStatus("Signed with PKP successfully");
+      showSuccess("eoa-native-pkp-sign");
+    } catch (error: any) {
+      console.error("[EOA_NATIVE][pkpSign] Error:", error);
+      const msg = formatErrorMessage("Failed to sign with PKP: ", error);
+      setStatus(msg);
+      showError?.(msg);
+    }
+  };
+
+  // Execute a Lit Action using the EOA-owned PKP
+  const executeLitAction = async () => {
+    try {
+      const { litClient } = assertDependenciesLoaded();
+      const pkpPublicKey = mintedPkpInfo?.pubkey || mintedPkpInfo?.publicKey;
+      if (!pkpPublicKey) throw new Error("No PKP found. Mint or load a PKP first.");
+      if (!eoaAuthContext) throw new Error("No EOA AuthContext. Create it first.");
+
+      // Preflight funding (reuse fundAccount or account)
+      try {
+        const pm = await litClient.getPaymentManager({ account: fundAccount || account || walletClient });
+        const bal = await pm.getBalance({ userAddress: mintedPkpInfo.ethAddress });
+        const available = parseFloat(bal?.availableBalance || "0");
+        if (available <= 0) {
+          setStatus(
+            `PKP Lit Ledger has 0 balance on ${APP_INFO.network}. Please fund ${mintedPkpInfo.ethAddress} and try again.`
+          );
+          return;
+        }
+      } catch {}
+
+      setStatus("Executing Lit Action with PKP...");
+      const code = `\nconst go = async () => {\n  const message = (jsParams && jsParams.message) || 'Hello from EOA PKP';\n  Lit.Actions.setResponse({ response: message });\n};\ngo();\n`;
+      const res = await litClient.executeJs({
+        code,
+        authContext: eoaAuthContext,
+        jsParams: { message: 'Hello from EOA PKP' },
+      });
+      setLitActionResult(res);
+      setStatus("Lit Action executed successfully");
+      showSuccess("eoa-native-execute-lit-action");
+    } catch (error: any) {
+      const msg = formatErrorMessage("Failed to execute Lit Action: ", error);
+      setStatus(msg);
+      showError?.(msg);
+    }
+  };
+
+  // Fund PKP Ledger helpers
+  const checkPkpBalance = async () => {
+    if (!mintedPkpInfo?.ethAddress || !fundAccount) return;
+    try {
+      setIsCheckingBalance(true);
+      const { litClient } = assertDependenciesLoaded();
+      const pm = await litClient.getPaymentManager({ account: fundAccount });
+      const bal = await pm.getBalance({ userAddress: mintedPkpInfo.ethAddress });
+      setAvailableBalance(bal?.availableBalance || "0");
+      setStatus(`Available balance: ${bal?.availableBalance || "0"} ETH`);
+    } catch (e: any) {
+      const msg = formatErrorMessage("Balance check failed: ", e);
+      setStatus(msg);
+      showError?.(msg);
+    } finally {
+      setIsCheckingBalance(false);
+    }
+  };
+
+  const fundPkp = async () => {
+    if (!mintedPkpInfo?.ethAddress || !fundAccount || !fundAmount) return;
+    try {
+      setIsFunding(true);
+      const { litClient } = assertDependenciesLoaded();
+      const pm = await litClient.getPaymentManager({ account: fundAccount });
+      const tx = await pm.depositForUser({
+        userAddress: mintedPkpInfo.ethAddress,
+        amountInEth: fundAmount,
+      });
+      const hash = (tx as any)?.transactionHash || (tx as any)?.hash || "";
+      setFundTxHash(hash);
+      setStatus(`Funding submitted: ${hash}`);
+      await checkPkpBalance();
+      showSuccess("eoa-native-fund-pkp");
+    } catch (e: any) {
+      const msg = formatErrorMessage("Funding failed: ", e);
+      setStatus(msg);
+      showError?.(msg);
+    } finally {
+      setIsFunding(false);
     }
   };
 
@@ -576,6 +804,206 @@ export default function EoaNativeTab() {
           useSideBySide={true}
           theme="dracula"
           isSuccess={successActions.has("eoa-native-add-permissions")}
+        />
+      </GreyBoarderWhiteBgContainer>
+
+      <GreyBoarderWhiteBgContainer>
+        {/* ================================================ */}
+        {/*                Fund PKP Ledger (EOA)             */}
+        {/* ================================================ */}
+        <h3 style={{ marginTop: "20px" }}>
+          Step 6: Fund PKP Ledger {(!mintedPkpInfo) && (
+            <span style={{ color: "orange" }}>(Mint PKP first)</span>
+          )}
+        </h3>
+        <p>
+          Use your EOA to deposit to the PKP's Lit Ledger on the selected network. Default amount is 0.1.
+        </p>
+        <div style={{ marginTop: "8px" }}>
+          <div style={{ marginBottom: "8px" }}>
+            <AccountMethodSelector
+              onAccountCreated={setFundAccount}
+              onMethodChange={() => {}}
+              setStatus={setStatus}
+              showError={showError}
+              showSuccess={showSuccess}
+              successActionIds={{
+                createAccount: "eoa-native-fund-create-account",
+                getWalletAccount: "eoa-native-fund-get-wallet-account",
+              }}
+              successActions={successActions}
+            />
+          </div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <label>Amount (ETH):</label>
+            <input
+              type="number"
+              min="0"
+              step="0.001"
+              value={fundAmount}
+              onChange={(e) => setFundAmount(e.target.value)}
+              style={{ padding: "6px 8px", border: "1px solid #ddd", borderRadius: 4 }}
+            />
+            <button
+              onClick={fundPkp}
+              disabled={!fundAccount || !mintedPkpInfo || isFunding}
+              style={{
+                padding: "8px 12px",
+                backgroundColor: !fundAccount || !mintedPkpInfo || isFunding ? "#cccccc" : "#0ea5e9",
+                color: "white",
+                border: "none",
+                borderRadius: 4,
+                cursor: !fundAccount || !mintedPkpInfo || isFunding ? "not-allowed" : "pointer",
+                fontWeight: "500",
+              }}
+            >
+              {isFunding ? "Funding..." : "Fund Now"}
+            </button>
+            <button
+              onClick={checkPkpBalance}
+              disabled={!fundAccount || !mintedPkpInfo || isCheckingBalance}
+              style={{
+                padding: "8px 12px",
+                backgroundColor: !fundAccount || !mintedPkpInfo || isCheckingBalance ? "#cccccc" : "#198754",
+                color: "white",
+                border: "none",
+                borderRadius: 4,
+                cursor: !fundAccount || !mintedPkpInfo || isCheckingBalance ? "not-allowed" : "pointer",
+                fontWeight: "500",
+              }}
+            >
+              {isCheckingBalance ? "Checking..." : "Check Balance"}
+            </button>
+          </div>
+          {(availableBalance || fundTxHash) && (
+            <div style={{ marginTop: 8, fontFamily: "monospace", fontSize: 12 }}>
+              {availableBalance && <div>Available: {availableBalance} ETH</div>}
+              {fundTxHash && <div>Tx: {fundTxHash}</div>}
+            </div>
+          )}
+        </div>
+      </GreyBoarderWhiteBgContainer>
+
+      <GreyBoarderWhiteBgContainer>
+        {/* ================================================ */}
+        {/*      Create EOA AuthContext for PKP Usage        */}
+        {/* ================================================ */}
+        <h3 style={{ marginTop: "20px" }}>
+          Step 7: Create EOA AuthContext {(!account) && (
+            <span style={{ color: "orange" }}>(Create account first)</span>
+          )}
+        </h3>
+        <p>
+          Create an EOA AuthContext to authorise the PKP for signing and Lit Action execution.
+        </p>
+
+        <DisplayCode
+          code={CREATE_EOA_AUTH_CONTEXT_CODE}
+          language="typescript"
+          renderComponent={
+            <button
+              onClick={createEoaAuthContext}
+              disabled={!account}
+              style={{
+                padding: "10px 15px",
+                backgroundColor: !account ? "#cccccc" : "#0d6efd",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: !account ? "not-allowed" : "pointer",
+                fontWeight: "500",
+              }}
+            >
+              Create EOA AuthContext
+            </button>
+          }
+          resultData={eoaAuthContext}
+          resultLabel="EOA AuthContext"
+          useSideBySide={true}
+          theme="dracula"
+          isSuccess={successActions.has("eoa-native-create-eoa-auth")}
+        />
+      </GreyBoarderWhiteBgContainer>
+
+      <GreyBoarderWhiteBgContainer>
+        {/* ================================================ */}
+        {/*                Sign with PKP (EOA)               */}
+        {/* ================================================ */}
+        <h3 style={{ marginTop: "20px" }}>
+          Step 8: Sign Message with PKP {(!mintedPkpInfo || !eoaAuthContext) && (
+            <span style={{ color: "orange" }}>(Mint PKP and create EOA AuthContext first)</span>
+          )}
+        </h3>
+        <p>
+          Use your EOA-owned PKP to sign a message. Ensure the PKP ledger is funded on naga‑test.
+        </p>
+
+        <DisplayCode
+          code={PKP_SIGN_CODE}
+          language="typescript"
+          renderComponent={
+            <button
+              onClick={signWithPkp}
+              disabled={!mintedPkpInfo || !eoaAuthContext}
+              style={{
+                padding: "10px 15px",
+                backgroundColor: !mintedPkpInfo || !eoaAuthContext ? "#cccccc" : "#198754",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: !mintedPkpInfo || !eoaAuthContext ? "not-allowed" : "pointer",
+                fontWeight: "500",
+              }}
+            >
+              Sign Message with PKP
+            </button>
+          }
+          resultData={pkpSignature ? { signature: pkpSignature } : null}
+          resultLabel="PKP Signature"
+          useSideBySide={true}
+          theme="dracula"
+          isSuccess={successActions.has("eoa-native-pkp-sign")}
+        />
+      </GreyBoarderWhiteBgContainer>
+
+      <GreyBoarderWhiteBgContainer>
+        {/* ================================================ */}
+        {/*              Execute Lit Action (EOA PKP)         */}
+        {/* ================================================ */}
+        <h3 style={{ marginTop: "20px" }}>
+          Step 9: Execute Lit Action {(!mintedPkpInfo || !eoaAuthContext) && (
+            <span style={{ color: "orange" }}>(Mint PKP and create EOA AuthContext first)</span>
+          )}
+        </h3>
+        <p>
+          Run a Lit Action using your EOA-owned PKP. Ensure the PKP ledger is funded on the selected network.
+        </p>
+
+        <DisplayCode
+          code={LIT_ACTION_EXECUTE_CODE}
+          language="typescript"
+          renderComponent={
+            <button
+              onClick={executeLitAction}
+              disabled={!mintedPkpInfo || !eoaAuthContext}
+              style={{
+                padding: "10px 15px",
+                backgroundColor: !mintedPkpInfo || !eoaAuthContext ? "#cccccc" : "#6610f2",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: !mintedPkpInfo || !eoaAuthContext ? "not-allowed" : "pointer",
+                fontWeight: "500",
+              }}
+            >
+              Execute Lit Action
+            </button>
+          }
+          resultData={litActionResult}
+          resultLabel="Lit Action Result"
+          useSideBySide={true}
+          theme="dracula"
+          isSuccess={successActions.has("eoa-native-execute-lit-action")}
         />
       </GreyBoarderWhiteBgContainer>
 

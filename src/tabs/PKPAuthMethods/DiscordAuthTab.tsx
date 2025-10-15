@@ -1,5 +1,5 @@
 import { DiscordAuthenticator } from "@lit-protocol/auth";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import PkpSigningComponent from "../../components/common/PkpSigningComponent";
 import PkpSelectionComponent from "../../components/common/PkpSelectionComponent";
 import { DisplayCode } from "../../components/DisplayCode";
@@ -7,6 +7,8 @@ import GreyBoarderWhiteBgContainer from "../../components/layout/GreyboardWhiteB
 import { useAppContext } from "../../router";
 import ExecuteJsComponent from "../../components/common/ExecuteJsComponent";
 import { APP_INFO } from "../../_config";
+import { useRuntimeUrls } from "../../hooks/useRuntimeUrls";
+import FundPkpLedgerCheck from "../../components/common/FundPkpLedgerCheck";
 
 const AUTH_NAME = "Discord Authentication";
 
@@ -14,9 +16,8 @@ const AUTH_NAME = "Discord Authentication";
 const SIGN_IN_CODE = `
 import { DiscordAuthenticator } from "@lit-protocol/auth";
 
-const authData = await DiscordAuthenticator.authenticate(
-  "https://login.litgateway.com"
-);`;
+// Use your configured Login Service URL
+const authData = await DiscordAuthenticator.authenticate(loginUrl);`;
 
 const MINT_PKP_CODE = `
 const res = await litClient.authService.mintWithAuth({
@@ -61,6 +62,15 @@ export default function DiscordAuthTab() {
   const [isCreatingAuthContext, setIsCreatingAuthContext] = useState(false);
   const [authData, setAuthData] = useState<any>();
   const [pkpInfo, setPkpInfo] = useState<any>();
+  const [isPkpFunded, setIsPkpFunded] = useState<boolean>(false);
+
+  // Shared, synchronised runtime URLs
+  const {
+    loginUrl,
+    setLoginUrl: persistLoginUrl,
+    authServiceUrlCurrentNet,
+    setAuthServiceUrlForNetwork: persistAuthServiceUrlForNetwork,
+  } = useRuntimeUrls();
 
   // Success feedback state
   const [successActions, setSuccessActions] = useState<Set<string>>(new Set());
@@ -96,9 +106,7 @@ export default function DiscordAuthTab() {
       setIsSigningIn(true);
       setStatus("Signing in with Discord...");
 
-      const authData = await DiscordAuthenticator.authenticate(
-        "https://login.litgateway.com"
-      );
+      const authData = await DiscordAuthenticator.authenticate(loginUrl);
 
       setAuthData(authData);
       setStatus("Successfully signed in with Discord");
@@ -184,21 +192,18 @@ export default function DiscordAuthTab() {
   const CreateAuthContextButton = () => (
     <button
       onClick={createAuthContext}
-      disabled={isCreatingAuthContext || !pkpInfo}
+      disabled={isCreatingAuthContext || !pkpInfo || !isPkpFunded}
       style={{
         padding: "12px 20px",
-        backgroundColor:
-          isCreatingAuthContext || !pkpInfo ? "#cccccc" : "#007bff",
+        backgroundColor: isCreatingAuthContext || !pkpInfo || !isPkpFunded ? "#cccccc" : "#007bff",
         color: "white",
         border: "none",
         borderRadius: "4px",
-        cursor: isCreatingAuthContext || !pkpInfo ? "not-allowed" : "pointer",
+        cursor: isCreatingAuthContext || !pkpInfo || !isPkpFunded ? "not-allowed" : "pointer",
         fontWeight: "500",
       }}
     >
-      {isCreatingAuthContext
-        ? "Creating..."
-        : "Create AuthContext with Discord PKP"}
+      {isCreatingAuthContext ? "Creating..." : !isPkpFunded ? "Fund PKP first (naga-test)" : "Create AuthContext with Discord PKP"}
     </button>
   );
 
@@ -234,20 +239,30 @@ export default function DiscordAuthTab() {
             )}
           </li>
           <li>
-            Lit Login Server (eg. {APP_INFO.litLoginServer}):{" "}
-            {true ? (
-              <span style={{ color: "blue" }}>Manual setup</span>
-            ) : (
-              <span style={{ color: "red" }}>✗ Not initialised</span>
-            )}
+            Lit Login Server URL:
+            <div style={{ marginTop: 6 }}>
+              <input
+                type="url"
+                value={loginUrl}
+                onChange={(e) => persistLoginUrl(e.target.value)}
+                placeholder={APP_INFO.litLoginServer}
+                style={{ width: "100%", padding: "6px 10px", border: "1px solid #ddd", borderRadius: 4, fontFamily: "monospace" }}
+              />
+              <small style={{ color: "#666" }}>Stored in localStorage key 'lit-login-server-url'</small>
+            </div>
           </li>
           <li>
-            Lit Auth Server (eg. {APP_INFO.litAuthServer}):{" "}
-            {true ? (
-              <span style={{ color: "blue" }}>Manual setup</span>
-            ) : (
-              <span style={{ color: "red" }}>✗ Not initialised</span>
-            )}
+            Auth Service URL for {APP_INFO.network}:
+            <div style={{ marginTop: 6 }}>
+              <input
+                type="url"
+                value={authServiceUrlCurrentNet}
+                onChange={(e) => persistAuthServiceUrlForNetwork(e.target.value)}
+                placeholder={(APP_INFO as any).authServiceUrls?.[APP_INFO.network]}
+                style={{ width: "100%", padding: "6px 10px", border: "1px solid #ddd", borderRadius: 4, fontFamily: "monospace" }}
+              />
+              <small style={{ color: "#666" }}>Stored in 'lit-auth-server-url-map' keyed by network</small>
+            </div>
           </li>
         </ul>
       </GreyBoarderWhiteBgContainer>
@@ -292,10 +307,26 @@ export default function DiscordAuthTab() {
 
       <GreyBoarderWhiteBgContainer>
         {/* ================================================ */}
+        {/*               Fund PKP Ledger                    */}
+        {/* ================================================ */}
+        <h3 style={{ marginTop: 0 }}>
+          Step 3: Fund PKP Ledger {(!pkpInfo) && (
+            <span style={{ color: "orange" }}>(Select or mint PKP first)</span>
+          )}
+        </h3>
+        <p>
+          On naga-test, you must fund your PKP ledger before creating an AuthContext.
+          Use the balance check and deposit example below to top up at least 0.1 ETH.
+        </p>
+        <FundPkpLedgerCheck pkpAddress={pkpInfo?.ethAddress} onStatusChange={setIsPkpFunded} />
+      </GreyBoarderWhiteBgContainer>
+
+      <GreyBoarderWhiteBgContainer>
+        {/* ================================================ */}
         {/*               Create AuthContext                  */}
         {/* ================================================ */}
         <h3 style={{ marginTop: 0 }}>
-          Step 3: Create AuthContext{" "}
+          Step 4: Create AuthContext{" "}
           {!pkpInfo && (
             <span style={{ color: "orange" }}>(Select or mint PKP first)</span>
           )}
@@ -344,7 +375,7 @@ export default function DiscordAuthTab() {
           setStatus={setStatus}
           assertDependenciesLoaded={assertDependenciesLoaded}
           defaultMessage="Hello from Discord PKP!"
-          componentTitle={`Step 4: Sign Message with PKP (${AUTH_NAME})`}
+          componentTitle={`Step 5: Sign Message with PKP (${AUTH_NAME})`}
         />
       </GreyBoarderWhiteBgContainer>
 
@@ -359,7 +390,7 @@ export default function DiscordAuthTab() {
           setStatus={setStatus}
           assertDependenciesLoaded={assertDependenciesLoaded}
           defaultMessage="Hello from Discord Lit Action!"
-          componentTitle={`Step 5: Execute Lit Action (${AUTH_NAME})`}
+          componentTitle={`Step 6: Execute Lit Action (${AUTH_NAME})`}
           showError={showError}
         />
       </GreyBoarderWhiteBgContainer>

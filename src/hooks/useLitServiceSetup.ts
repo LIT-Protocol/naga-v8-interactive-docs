@@ -9,11 +9,17 @@ import React, { useState, useCallback, useRef } from "react";
 import { createLitClient } from "@lit-protocol/lit-client";
 import { createAuthManager, storagePlugins } from "@lit-protocol/auth";
 import { APP_INFO } from "../_config";
+import { nagaDev, nagaTest } from "@lit-protocol/networks";
 
 // Configuration constants at the top
 const DEFAULT_APP_NAME = "lit-auth-app";
 const DEFAULT_NETWORK_NAME = APP_INFO.network;
 const DEFAULT_NETWORK = APP_INFO.networkModule;
+
+const NETWORK_MODULES: Record<string, any> = {
+  "naga-dev": nagaDev,
+  "naga-test": nagaTest,
+};
 
 interface LitServiceSetupConfig {
   appName?: string;
@@ -67,9 +73,15 @@ export const useLitServiceSetup = (
 
       // Step 1: Create Lit Client with singleton pattern
       console.log("📡 Creating Lit Client...");
-      const litClient = await createLitClient({
-        network: config.network || DEFAULT_NETWORK,
-      });
+      let networkModule = config.network || DEFAULT_NETWORK;
+      if (!networkModule && config.networkName) {
+        const candidate = NETWORK_MODULES[config.networkName as string];
+        if (!candidate) {
+          throw new Error(`Unknown or unsupported networkName: ${String(config.networkName)}`);
+        }
+        networkModule = candidate;
+      }
+      const litClient = await createLitClient({ network: networkModule });
       console.log("✅ Lit Client created successfully");
 
       // Step 2: Create Auth Manager with storage configuration
@@ -85,7 +97,7 @@ export const useLitServiceSetup = (
       const newServices = { litClient, authManager };
       setServices(newServices);
 
-      console.log("🎉 All Lit Protocol services initialized successfully");
+      console.log(`🎉 All Lit Protocol services initialized successfully. Network: ${config.networkName || DEFAULT_NETWORK_NAME}`);
       return newServices;
     } catch (err: any) {
       const errorMessage = `Failed to initialize Lit Protocol services: ${

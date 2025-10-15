@@ -17,6 +17,7 @@ import {
 import { DisplayCode } from "../components/DisplayCode";
 import GreyBoarderWhiteBgContainer from "../components/layout/GreyboardWhiteBgContainer";
 import { useAppContext } from "../router";
+import { APP_INFO } from "../_config";
 import PaymentInformation from "../components/tips/PaymentInformation";
 
 const OPERATION_NAME = "Encrypt & Decrypt";
@@ -347,6 +348,34 @@ export default function EncryptionTab() {
       return;
     }
 
+    // Preflight: Ensure Bob's Lit Ledger account is funded on current network before creating AuthContext
+    try {
+      const { litClient } = assertDependenciesLoaded();
+      const roAccount = privateKeyToAccount(
+        (APP_INFO.defaultPrivateKey as unknown as `0x${string}`)
+      );
+      const pm = await litClient.getPaymentManager({ account: roAccount });
+      const bal = await pm.getBalance({ userAddress: bobAccount.address });
+      const available = parseFloat(bal?.availableBalance || "0");
+      if (available <= 0) {
+        setStatus(
+          `Bob's Lit Ledger balance is 0 on ${APP_INFO.network}. Please deposit funds to ${bobAccount.address} before creating an AuthContext.`
+        );
+        showError?.(
+          `Deposit at least 0.1 to the Lit Ledger for ${bobAccount.address} on ${APP_INFO.network} and try again.`
+        );
+        return;
+      }
+    } catch (preErr: any) {
+      setStatus(
+        `Failed to verify Bob's Lit Ledger balance: ${preErr?.message || String(preErr)}`
+      );
+      showError?.(
+        `Failed to verify Bob's Lit Ledger balance: ${preErr?.message || String(preErr)}`
+      );
+      return;
+    }
+
     setIsCreatingAuth(true);
     try {
       const { authManager, litClient } = assertDependenciesLoaded();
@@ -503,6 +532,35 @@ export default function EncryptionTab() {
     if (!areDependenciesLoaded()) {
       setStatus(
         "Lit Protocol not initialised. Please check the Dependencies tab."
+      );
+      return;
+    }
+
+    // Preflight: Ensure Bob's Lit Ledger account is funded on current network
+    try {
+      const { litClient } = assertDependenciesLoaded();
+      // Use a read-only viem account for balance checks
+      const roAccount = privateKeyToAccount(
+        (APP_INFO.defaultPrivateKey as unknown as `0x${string}`)
+      );
+      const pm = await litClient.getPaymentManager({ account: roAccount });
+      const bal = await pm.getBalance({ userAddress: bobAccount.address });
+      const available = parseFloat(bal?.availableBalance || "0");
+      if (available <= 0) {
+        setStatus(
+          `Bob's Lit Ledger balance is 0 on ${APP_INFO.network}. Please deposit funds to ${bobAccount.address} before decrypting.`
+        );
+        showError?.(
+          `Deposit at least 0.1 to the Lit Ledger for ${bobAccount.address} on ${APP_INFO.network} and try again.`
+        );
+        return;
+      }
+    } catch (preErr: any) {
+      setStatus(
+        `Failed to verify Bob's Lit Ledger balance: ${preErr?.message || String(preErr)}`
+      );
+      showError?.(
+        `Failed to verify Bob's Lit Ledger balance: ${preErr?.message || String(preErr)}`
       );
       return;
     }
@@ -1457,16 +1515,18 @@ export default function EncryptionTab() {
                                   type: actualData.type,
                                   url: imageSrc,
                                 });
-                              } else if (
+      } else if (
                                 actualData instanceof Uint8Array ||
                                 actualData instanceof ArrayBuffer
                               ) {
                                 // Create blob with proper MIME type
-                                const blobData =
+                                const blobData: Uint8Array =
                                   actualData instanceof Uint8Array
                                     ? actualData
-                                    : new Uint8Array(actualData);
-                                const blob = new Blob([blobData], {
+                                    : new Uint8Array(actualData as ArrayBuffer);
+                                const ab = new ArrayBuffer(blobData.byteLength);
+                                new Uint8Array(ab).set(blobData);
+                                const blob = new Blob([ab], {
                                   type: mimeType,
                                 });
                                 imageSrc = URL.createObjectURL(blob);
@@ -1607,11 +1667,13 @@ export default function EncryptionTab() {
                                 actualData instanceof ArrayBuffer
                               ) {
                                 // Create blob with proper MIME type
-                                const blobData =
+                                const blobData: Uint8Array =
                                   actualData instanceof Uint8Array
                                     ? actualData
-                                    : new Uint8Array(actualData);
-                                const blob = new Blob([blobData], {
+                                    : new Uint8Array(actualData as ArrayBuffer);
+                                const ab = new ArrayBuffer(blobData.byteLength);
+                                new Uint8Array(ab).set(blobData);
+                                const blob = new Blob([ab], {
                                   type: mimeType,
                                 });
                                 videoSrc = URL.createObjectURL(blob);

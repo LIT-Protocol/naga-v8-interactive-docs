@@ -17,6 +17,7 @@ import { DisplayCode } from "../DisplayCode";
 // import { storagePlugins } from "@lit-protocol/auth";
 import { APP_INFO } from "../../_config";
 import { createLitClient } from "@lit-protocol/lit-client";
+import { useAppContext } from "../../router";
 
 // Configuration constants
 const DEFAULT_PAGE_SIZE = 5;
@@ -98,6 +99,10 @@ export default function PkpSelectionComponent({
   // Minting state
   const [isMinting, setIsMinting] = useState(false);
 
+  // Post-mint funding UI removed; use dedicated Step 3 component instead
+
+  const appCtx = useAppContext?.();
+
   // Success feedback state
   const [successActions, setSuccessActions] = useState<Set<string>>(new Set());
 
@@ -152,11 +157,14 @@ export default function PkpSelectionComponent({
 
       console.log("result:", result);
 
-      const pkps = result.pkps.map((pkp: { tokenId: string; publicKey: string; ethAddress: string; pubkey: string }) => ({
-        tokenId: pkp.tokenId,
-        publicKey: pkp.publicKey,
-        ethAddress: pkp.ethAddress,
-        pubkey: pkp.publicKey,
+      const pkps = result.pkps.map((pkp: any) => ({
+        // tokenId may be bigint; normalise to string for UI
+        tokenId: (pkp?.tokenId as any)?.toString?.() ?? String(pkp?.tokenId ?? ""),
+        // prefer 'publicKey', fallback to 'pubkey'
+        publicKey: pkp?.publicKey || pkp?.pubkey || "",
+        ethAddress: pkp?.ethAddress || "",
+        // keep original pubkey for consumers expecting this naming
+        pubkey: pkp?.publicKey || pkp?.pubkey || "",
       }));
 
       if (append) {
@@ -238,9 +246,18 @@ export default function PkpSelectionComponent({
         console.log("3. Using auth service");
         console.log("authData:", authData);
         // Fallback for other auth methods (like Google)
+        // Resolve auth service URL at runtime from localStorage map, else config defaults
+        let baseUrl = (APP_INFO as any).authServiceUrls?.[APP_INFO.network] as string | undefined;
+        try {
+          const raw = typeof window !== 'undefined' ? window.localStorage?.getItem('lit-auth-server-url-map') : null;
+          if (raw) {
+            const map = JSON.parse(raw) as Record<string, string>;
+            baseUrl = map?.[APP_INFO.network] || baseUrl;
+          }
+        } catch {}
         mintResult = await litClient.authService.mintWithAuth({
           authData: authData,
-          authServiceBaseUrl: APP_INFO.litAuthServer,
+          authServiceBaseUrl: baseUrl,
           scopes: ["sign-anything"]
         });
       }
@@ -269,6 +286,8 @@ export default function PkpSelectionComponent({
       setIsMinting(false);
     }
   };
+
+  // Removed post-mint funding action; users fund in dedicated Step 3
 
   // Load existing PKPs when component mounts or auth data changes
   useEffect(() => {
@@ -397,10 +416,10 @@ export default function PkpSelectionComponent({
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <div style={{ flex: 1 }}>
                             <div style={{ fontSize: "12px", color: "#666", marginBottom: "4px" }}>
-                              Token ID: {pkp.tokenId.slice(0, 20)}...
+                              Token ID: {String(pkp.tokenId ?? "").slice(0, 20)}...
                             </div>
                             <div style={{ fontSize: "12px", color: "#666", marginBottom: "4px" }}>
-                              Public Key: {pkp.publicKey.slice(0, 30)}...
+                              Public Key: {String(pkp.publicKey ?? pkp.pubkey ?? "").slice(0, 30)}...
                             </div>
                             <div style={{ fontSize: "14px", fontWeight: "500" }}>
                               ETH Address: {pkp.ethAddress}
@@ -477,6 +496,8 @@ export default function PkpSelectionComponent({
           isSuccess={successActions.has("mint-pkp")}
         />
       )}
+
+      {/* Post-mint funding prompt removed; use Step 3: Fund PKP Ledger */}
 
       {/* Info Box */}
       {/* <div
