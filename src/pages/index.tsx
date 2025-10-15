@@ -437,6 +437,12 @@ export const HomePage = () => {
   const [error, setError] = useState<string | null>(null);
   const [isErrorVisible, setIsErrorVisible] = useState<boolean>(false);
 
+  useEffect(() => {
+    if (window.location.hostname !== "naga-explorer.getlit.dev") {
+      window.location.replace("https://naga-explorer.getlit.dev/");
+    }
+  }, []);
+
   // Function to show error with auto-hide
   const showError = (errorMessage: string, autoHide: boolean = true) => {
     setError(errorMessage);
